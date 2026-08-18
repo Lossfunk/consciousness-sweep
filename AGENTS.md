@@ -14,6 +14,7 @@ Scientific conflict → `PROTOCOL.md`. Execution conflict → `AGENTS.md`. Neith
 
 ```text
 consciousness-sweep/
+├── README.md
 ├── AGENTS.md
 ├── PROTOCOL.md
 ├── seeds_empirical.csv
