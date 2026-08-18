@@ -24,7 +24,8 @@ except ModuleNotFoundError as exc:
     )
     raise SystemExit(3) from None
 
-from validate_run import immutable_hashes
+from structured_write import allocate_identifier, append_jsonl_record, load_schema
+from validate_run import immutable_hashes, load_jsonl_rows
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,12 +53,6 @@ def write_json(path: Path, value: Any) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     temporary.replace(path)
-
-
-def append_event(path: Path, event: dict[str, Any]) -> None:
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
-        handle.flush()
 
 
 def validate_event(root: Path, event: dict[str, Any]) -> None:
@@ -150,7 +145,9 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
         "agent": args.agent_harness,
     }
     validate_event(root, event)
-    append_event(run_dir / "decision_log.jsonl", event)
+    append_jsonl_record(
+        run_dir / "decision_log.jsonl", load_schema(root, "decision_log.schema.json"), event
+    )
     write_json(run_dir / "run_state.json", state)
     validator = Draft202012Validator(
         json.loads((root / "schemas" / "run_state.schema.json").read_text(encoding="utf-8")),
@@ -199,10 +196,15 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
     search_ids = read_ids(run_dir / "search_log.csv", "search_id")
     discovery_ids = read_ids(run_dir / "discoveries.csv", "discovery_id")
     auxiliary_ids = read_ids(run_dir / "auxiliary_sources.csv", "auxiliary_id")
-    decision_ids = []
-    for line in (run_dir / "decision_log.jsonl").read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            decision_ids.append(json.loads(line)["decision_id"])
+    decision_errors: list[str] = []
+    decision_rows = load_jsonl_rows(
+        run_dir / "decision_log.jsonl",
+        load_schema(root, "decision_log.schema.json"),
+        decision_errors,
+    )
+    if decision_errors:
+        raise SystemExit("cannot reconcile decision log: " + "; ".join(decision_errors))
+    decision_ids = [row["decision_id"] for row in decision_rows]
     next_decision = suffix_max(decision_ids, "_D") + 1
     experiment_counters = {
         paper_id: max(
@@ -220,8 +222,19 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
     }
     timestamp = now()
     reason = args.reopen_reason or "Resumed an existing validated run without resetting prior state."
+    state.update({
+        "next_paper_counter": max([int(value[1:]) for value in paper_ids], default=0) + 1,
+        "next_experiment_counters": experiment_counters,
+        "next_comparison_counters": comparison_counters,
+        "next_decision_counter": next_decision,
+        "next_search_counter": suffix_max(search_ids, "_S") + 1,
+        "next_discovery_counter": suffix_max(discovery_ids, "_R") + 1,
+        "next_auxiliary_counter": suffix_max(auxiliary_ids, "_AUX") + 1,
+    })
+    write_json(state_path, state)
+    resume_decision_id = allocate_identifier(run_dir, "decision")
     event = {
-        "decision_id": f"{args.run_id}_D{next_decision:06d}",
+        "decision_id": resume_decision_id,
         "run_id": args.run_id,
         "timestamp": timestamp,
         "entity_type": "run",
@@ -235,18 +248,14 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
         "agent": args.agent_harness,
     }
     validate_event(root, event)
-    append_event(run_dir / "decision_log.jsonl", event)
+    append_jsonl_record(
+        run_dir / "decision_log.jsonl", load_schema(root, "decision_log.schema.json"), event
+    )
+    state = json.loads(state_path.read_text(encoding="utf-8"))
     state.update({
         "run_mode": "resume",
         "status": "running",
         "status_reason": reason,
-        "next_paper_counter": max([int(value[1:]) for value in paper_ids], default=0) + 1,
-        "next_experiment_counters": experiment_counters,
-        "next_comparison_counters": comparison_counters,
-        "next_decision_counter": next_decision + 1,
-        "next_search_counter": suffix_max(search_ids, "_S") + 1,
-        "next_discovery_counter": suffix_max(discovery_ids, "_R") + 1,
-        "next_auxiliary_counter": suffix_max(auxiliary_ids, "_AUX") + 1,
         "last_checkpoint_at": timestamp,
         "model": args.model if args.model is not None else state.get("model"),
         "model_version": args.model_version if args.model_version is not None else state.get("model_version"),

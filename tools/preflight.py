@@ -153,6 +153,7 @@ def main() -> int:
     for field in (
         "comparison_id", "awareness_evidence_type", "objective_visibility_test_informative",
         "critical_dependency_status", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
+        "Y_evidence_role", "mechanistic_interpretation", "mechanism_clarity",
         "null_equivalence_margin", "null_equivalence_result", "null_BF01",
         "null_CI_region", "null_CI_entirely_within_region",
     ):
@@ -168,8 +169,12 @@ def main() -> int:
         if field not in state_properties:
             errors.append(f"run-state schema lacks {field}")
     paper_properties = schemas.get("papers.schema.json", {}).get("properties", {})
-    if "abstract_status" not in paper_properties:
-        errors.append("papers schema lacks abstract_status")
+    for field in (
+        "abstract_status", "title_screen_method", "title_screen_rule_id",
+        "abstract_screen_method", "abstract_screen_rule_id",
+    ):
+        if field not in paper_properties:
+            errors.append(f"papers schema lacks {field}")
     missing_properties = schemas.get("missing_texts.schema.json", {}).get("properties", {})
     for field in ("obtained_at", "obtained_wave", "obtained_by", "acquisition_route"):
         if field not in missing_properties:

@@ -135,6 +135,37 @@ def load_csv_rows(path: Path, schema: dict[str, Any], errors: list[str]) -> list
     return rows
 
 
+def load_jsonl_rows(
+    path: Path, schema: dict[str, Any], errors: list[str]
+) -> list[dict[str, Any]]:
+    """Parse JSONL using physical LF bytes, never Unicode split-line semantics."""
+    rows: list[dict[str, Any]] = []
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    try:
+        raw_records = path.read_bytes().split(b"\n")
+    except OSError as exc:
+        errors.append(f"{path}: {exc}")
+        return rows
+    if raw_records and raw_records[-1] == b"":
+        raw_records.pop()
+    for record_number, raw in enumerate(raw_records, start=1):
+        if not raw.strip():
+            errors.append(f"{path}:{record_number}: blank JSONL record")
+            continue
+        try:
+            event = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            errors.append(f"{path}:{record_number}: {exc}")
+            continue
+        if not isinstance(event, dict):
+            errors.append(f"{path}:{record_number}: JSONL record is not an object")
+            continue
+        for error in validator.iter_errors(event):
+            errors.append(f"{path}:{record_number}: {error.message}")
+        rows.append(event)
+    return rows
+
+
 def check_unique(rows: list[dict[str, Any]], field: str, label: str, errors: list[str]) -> None:
     seen: set[Any] = set()
     for row in rows:
@@ -253,19 +284,9 @@ def main() -> int:
     decisions: list[dict[str, Any]] = []
     decision_path = run_dir / "decision_log.jsonl"
     if decision_path.exists() and "decision_log.schema.json" in schemas:
-        validator = Draft202012Validator(schemas["decision_log.schema.json"], format_checker=FormatChecker())
-        for line_number, line in enumerate(decision_path.read_text(encoding="utf-8").splitlines(), start=1):
-            if not line.strip():
-                errors.append(f"{decision_path}:{line_number}: blank JSONL line")
-                continue
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError as exc:
-                errors.append(f"{decision_path}:{line_number}: {exc}")
-                continue
-            for error in validator.iter_errors(event):
-                errors.append(f"{decision_path}:{line_number}: {error.message}")
-            decisions.append(event)
+        decisions = load_jsonl_rows(
+            decision_path, schemas["decision_log.schema.json"], errors
+        )
 
     state: dict[str, Any] = {}
     state_path = run_dir / "run_state.json"

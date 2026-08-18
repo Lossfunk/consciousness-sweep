@@ -5,12 +5,16 @@ from __future__ import annotations
 
 import argparse
 import csv
+import fcntl
 import json
 import os
+import re
 import tempfile
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote, unquote
 
 try:
     from jsonschema import Draft202012Validator, FormatChecker
@@ -22,7 +26,7 @@ except ModuleNotFoundError as exc:
     )
     raise SystemExit(3) from None
 
-from validate_run import load_csv_rows
+from validate_run import load_csv_rows, load_jsonl_rows
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +47,40 @@ PRIMARY_KEYS = {
     "auxiliary_sources.csv": "auxiliary_id",
 }
 ARRAY_FIELDS = {"stats_flags", "attempted_sources"}
+DOI_PREFIX = re.compile(
+    r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*|doi\.org/)", re.IGNORECASE
+)
+
+
+@contextmanager
+def run_write_lock(directory: Path):
+    """Serialize every counter allocation and run-file read-modify-write."""
+    directory.mkdir(parents=True, exist_ok=True)
+    lock_path = directory / ".structured-write.lock"
+    with lock_path.open("a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def normalize_doi(value: str | None) -> str | None:
+    """Return the canonical lower-case DOI without a resolver/prefix wrapper."""
+    if value is None:
+        return None
+    normalized = unquote(value.strip())
+    normalized = DOI_PREFIX.sub("", normalized, count=1).strip().lower()
+    return normalized or None
+
+
+def doi_resolver_url(value: str | None) -> str | None:
+    """Build an RFC 3986-safe doi.org URL from a raw or normalized DOI."""
+    normalized = normalize_doi(value)
+    if normalized is None:
+        return None
+    encoded = quote(normalized, safe="/:@!$&'()*+,;=-._~")
+    return f"https://doi.org/{encoded}"
 
 
 def load_schema(root: Path, name: str) -> dict[str, Any]:
@@ -83,6 +121,42 @@ def _atomic_write_csv(path: Path, headers: list[str], rows: list[dict[str, Any]]
         raise
 
 
+def _atomic_write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(value, handle, ensure_ascii=True, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def _atomic_write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+            for row in rows:
+                handle.write(json.dumps(row, ensure_ascii=True, separators=(",", ":")) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
 def write_csv_record(
     path: Path,
     schema: dict[str, Any],
@@ -92,60 +166,114 @@ def write_csv_record(
 ) -> None:
     """Append, or key-upsert, only after the existing table and new row validate."""
     validate_record(record, schema)
-    errors: list[str] = []
-    existing = load_csv_rows(path, schema, errors)
-    if errors:
-        raise ValueError("existing table is invalid; refusing mutation: " + "; ".join(errors))
-    if key_field is None:
-        primary_key = PRIMARY_KEYS.get(path.name)
-        if primary_key and any(row[primary_key] == record[primary_key] for row in existing):
-            raise ValueError(f"duplicate {primary_key} {record[primary_key]!r}; refusing append")
-        existing.append(record)
-    else:
-        if key_field not in schema["properties"]:
-            raise ValueError(f"unknown key field {key_field!r}")
-        matches = [index for index, row in enumerate(existing) if row[key_field] == record[key_field]]
-        if len(matches) > 1:
-            raise ValueError(f"multiple existing rows have {key_field}={record[key_field]!r}")
-        if matches:
-            existing[matches[0]] = record
-        else:
+    with run_write_lock(path.parent):
+        errors: list[str] = []
+        existing = load_csv_rows(path, schema, errors)
+        if errors:
+            raise ValueError("existing table is invalid; refusing mutation: " + "; ".join(errors))
+        if key_field is None:
+            primary_key = PRIMARY_KEYS.get(path.name)
+            if primary_key and any(row[primary_key] == record[primary_key] for row in existing):
+                raise ValueError(f"duplicate {primary_key} {record[primary_key]!r}; refusing append")
             existing.append(record)
-    _atomic_write_csv(path, list(schema["properties"].keys()), existing)
+        else:
+            if key_field not in schema["properties"]:
+                raise ValueError(f"unknown key field {key_field!r}")
+            matches = [index for index, row in enumerate(existing) if row[key_field] == record[key_field]]
+            if len(matches) > 1:
+                raise ValueError(f"multiple existing rows have {key_field}={record[key_field]!r}")
+            if matches:
+                existing[matches[0]] = record
+            else:
+                existing.append(record)
+        _atomic_write_csv(path, list(schema["properties"].keys()), existing)
 
 
 def append_jsonl_record(path: Path, schema: dict[str, Any], record: dict[str, Any]) -> None:
     validate_record(record, schema)
-    validator = Draft202012Validator(schema, format_checker=FormatChecker())
-    decision_ids: set[str] = set()
-    if path.exists():
-        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-            if not line.strip():
-                raise ValueError(f"existing JSONL has blank line {line_number}; refusing mutation")
-            existing = json.loads(line)
-            validator.validate(existing)
-            decision_ids.add(existing["decision_id"])
-    if record["decision_id"] in decision_ids:
-        raise ValueError(f"duplicate decision_id {record['decision_id']!r}; refusing append")
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
-        handle.flush()
-        os.fsync(handle.fileno())
+    with run_write_lock(path.parent):
+        errors: list[str] = []
+        existing = load_jsonl_rows(path, schema, errors) if path.exists() else []
+        if errors:
+            raise ValueError("existing JSONL is invalid; refusing mutation: " + "; ".join(errors))
+        decision_ids = {row["decision_id"] for row in existing}
+        if record["decision_id"] in decision_ids:
+            raise ValueError(f"duplicate decision_id {record['decision_id']!r}; refusing append")
+        _atomic_write_jsonl(path, [*existing, record])
+
+
+def allocate_identifier(run_dir: Path, kind: str, parent_id: str | None = None) -> str:
+    """Atomically reserve one never-recycled identifier from run_state.json."""
+    scalar_kinds = {
+        "paper": ("next_paper_counter", "P", 6),
+        "decision": ("next_decision_counter", "_D", 6),
+        "search": ("next_search_counter", "_S", 6),
+        "discovery": ("next_discovery_counter", "_R", 6),
+        "auxiliary": ("next_auxiliary_counter", "_AUX", 6),
+    }
+    with run_write_lock(run_dir):
+        state_path = run_dir / "run_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        run_id = state["run_id"]
+        if kind in scalar_kinds:
+            field, marker, width = scalar_kinds[kind]
+            counter = state[field]
+            if counter > (10 ** width) - 1:
+                raise ValueError(f"{kind} counter exhausted for run {run_id}")
+            prefix = "" if kind == "paper" else run_id
+            identifier = f"{prefix}{marker}{counter:0{width}d}"
+            state[field] = counter + 1
+        elif kind == "experiment":
+            if parent_id is None or not re.fullmatch(r"P[0-9]{6}", parent_id):
+                raise ValueError("experiment allocation requires --parent-id P######")
+            counters = state["next_experiment_counters"]
+            counter = counters.get(parent_id, 1)
+            if counter > 99:
+                raise ValueError(f"experiment counter exhausted for {parent_id}")
+            identifier = f"{parent_id}_E{counter:02d}"
+            counters[parent_id] = counter + 1
+        elif kind == "comparison":
+            if parent_id is None or not re.fullmatch(r"P[0-9]{6}_E[0-9]{2}", parent_id):
+                raise ValueError("comparison allocation requires --parent-id P######_E##")
+            counters = state["next_comparison_counters"]
+            counter = counters.get(parent_id, 1)
+            if counter > 99:
+                raise ValueError(f"comparison counter exhausted for {parent_id}")
+            identifier = f"{parent_id}_C{counter:02d}"
+            counters[parent_id] = counter + 1
+        else:
+            raise ValueError(f"unknown identifier kind {kind!r}")
+        _atomic_write_json(state_path, state)
+    return identifier
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("operation", choices=("append-csv", "upsert-csv", "append-decision"))
+    parser.add_argument(
+        "operation", choices=("append-csv", "upsert-csv", "append-decision", "allocate-id")
+    )
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--row-file", type=Path, required=True, help="JSON object containing typed values")
+    parser.add_argument("--row-file", type=Path, help="JSON object containing typed values")
     parser.add_argument("--table", choices=tuple(TABLE_SCHEMAS))
     parser.add_argument("--key-field")
+    parser.add_argument(
+        "--id-kind",
+        choices=("paper", "experiment", "comparison", "decision", "search", "discovery", "auxiliary"),
+    )
+    parser.add_argument("--parent-id")
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--runs-root", type=Path)
     args = parser.parse_args()
     root = args.root.resolve()
     runs_root = args.runs_root.resolve() if args.runs_root else root / "runs"
     run_dir = runs_root / args.run_id
+    if args.operation == "allocate-id":
+        if not args.id_kind:
+            raise SystemExit("--id-kind is required for allocate-id")
+        print(allocate_identifier(run_dir, args.id_kind, args.parent_id))
+        return 0
+    if not args.row_file:
+        raise SystemExit("--row-file is required for record writes")
     record = json.loads(args.row_file.read_text(encoding="utf-8"))
     if not isinstance(record, dict):
         raise SystemExit("row file must contain one JSON object")

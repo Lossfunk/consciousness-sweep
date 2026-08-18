@@ -8,7 +8,8 @@
   "required": [
     "paper_id", "title", "authors", "year", "doi", "url", "publication_status",
     "first_discovery_route", "first_discovery_parent", "first_discovery_query_id", "first_search_id", "first_seen_wave",
-    "title_screen", "title_screen_reason", "abstract_status", "abstract_screen", "abstract_screen_reason",
+    "title_screen", "title_screen_reason", "title_screen_method", "title_screen_rule_id",
+    "abstract_status", "abstract_screen", "abstract_screen_reason", "abstract_screen_method", "abstract_screen_rule_id",
     "fulltext_priority", "fulltext_priority_reason", "fulltext_status", "fulltext_source",
     "missing_text_priority", "citation_expansion_status", "citation_expansion_reason",
     "duplicate_of", "duplicate_reason", "current_status", "notes"
@@ -55,6 +56,8 @@
     "first_seen_wave": { "type": "integer", "minimum": 0 },
     "title_screen": { "enum": ["not-screened", "retain", "exclude"] },
     "title_screen_reason": { "$ref": "#/$defs/nullableString" },
+    "title_screen_method": { "$ref": "#/$defs/screenMethod" },
+    "title_screen_rule_id": { "$ref": "#/$defs/nullableString" },
     "abstract_status": {
       "enum": ["not-sought", "available", "unavailable", "not-applicable"]
     },
@@ -62,6 +65,8 @@
       "enum": ["not-screened", "screen-in", "screen-uncertain", "screen-out", "not-applicable"]
     },
     "abstract_screen_reason": { "$ref": "#/$defs/nullableString" },
+    "abstract_screen_method": { "$ref": "#/$defs/screenMethod" },
+    "abstract_screen_rule_id": { "$ref": "#/$defs/nullableString" },
     "fulltext_priority": { "enum": ["not-assigned", "high", "medium", "low"] },
     "fulltext_priority_reason": { "$ref": "#/$defs/nullableString" },
     "fulltext_status": {
@@ -97,11 +102,22 @@
   "allOf": [
     {
       "if": { "properties": { "title_screen": { "enum": ["retain", "exclude"] } }, "required": ["title_screen"] },
-      "then": { "properties": { "title_screen_reason": { "type": "string", "minLength": 1 } } }
+      "then": {
+        "properties": {
+          "title_screen_reason": { "type": "string", "minLength": 1 },
+          "title_screen_method": { "enum": ["agent-semantic", "human-semantic", "preregistered-deterministic"] }
+        }
+      }
     },
     {
       "if": { "properties": { "title_screen": { "const": "not-screened" } }, "required": ["title_screen"] },
-      "then": { "properties": { "title_screen_reason": { "type": "null" } } }
+      "then": {
+        "properties": {
+          "title_screen_reason": { "type": "null" },
+          "title_screen_method": { "const": "not-screened" },
+          "title_screen_rule_id": { "type": "null" }
+        }
+      }
     },
     {
       "if": { "properties": { "abstract_screen": { "enum": ["screen-in", "screen-uncertain"] } }, "required": ["abstract_screen"] },
@@ -109,6 +125,7 @@
         "properties": {
           "abstract_status": { "const": "available" },
           "abstract_screen_reason": { "type": "string", "minLength": 1 },
+          "abstract_screen_method": { "enum": ["agent-semantic", "human-semantic", "preregistered-deterministic"] },
           "fulltext_priority": { "enum": ["high", "medium", "low"] },
           "fulltext_priority_reason": { "type": "string", "minLength": 1 }
         }
@@ -120,6 +137,7 @@
         "properties": {
           "abstract_status": { "const": "available" },
           "abstract_screen_reason": { "type": "string", "minLength": 1 },
+          "abstract_screen_method": { "enum": ["agent-semantic", "human-semantic", "preregistered-deterministic"] },
           "fulltext_priority": { "const": "not-assigned" },
           "fulltext_priority_reason": { "type": "null" }
         }
@@ -137,6 +155,8 @@
         "properties": {
           "abstract_screen": { "const": "not-screened" },
           "abstract_screen_reason": { "type": "string", "minLength": 1 },
+          "abstract_screen_method": { "const": "not-screened" },
+          "abstract_screen_rule_id": { "type": "null" },
           "fulltext_priority": { "enum": ["high", "medium", "low"] },
           "fulltext_priority_reason": { "type": "string", "minLength": 1 },
           "current_status": { "enum": ["abstract-unavailable", "awaiting-fulltext", "fulltext-retrieved", "fulltext-evaluated", "unresolved"] }
@@ -157,12 +177,30 @@
           {
             "properties": {
               "abstract_screen_reason": { "type": "null" },
+              "abstract_screen_method": { "enum": ["not-screened", "not-applicable"] },
+              "abstract_screen_rule_id": { "type": "null" },
               "fulltext_priority": { "const": "not-assigned" },
               "fulltext_priority_reason": { "type": "null" }
             }
           }
         ]
       }
+    },
+    {
+      "if": { "properties": { "title_screen_method": { "const": "preregistered-deterministic" } }, "required": ["title_screen_method"] },
+      "then": { "properties": { "title_screen_rule_id": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "title_screen_method": { "enum": ["agent-semantic", "human-semantic"] } }, "required": ["title_screen_method"] },
+      "then": { "properties": { "title_screen_rule_id": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "abstract_screen_method": { "const": "preregistered-deterministic" } }, "required": ["abstract_screen_method"] },
+      "then": { "properties": { "abstract_screen_rule_id": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "abstract_screen_method": { "enum": ["agent-semantic", "human-semantic"] } }, "required": ["abstract_screen_method"] },
+      "then": { "properties": { "abstract_screen_rule_id": { "type": "null" } } }
     },
     {
       "if": { "properties": { "fulltext_status": { "enum": ["retrieved-published", "retrieved-repository", "retrieved-preprint"] } }, "required": ["fulltext_status"] },
@@ -196,6 +234,9 @@
     }
   ],
   "$defs": {
+    "screenMethod": {
+      "enum": ["agent-semantic", "human-semantic", "preregistered-deterministic", "not-screened", "not-applicable"]
+    },
     "nullableString": {
       "anyOf": [{ "type": "string" }, { "type": "null" }]
     }

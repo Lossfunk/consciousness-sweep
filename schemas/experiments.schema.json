@@ -11,7 +11,8 @@
     "objective_visibility_test_reason", "A_code", "A_reason", "critical_dependency_status",
     "critical_dependency_reason", "first_order_measure", "E_code", "E_reason",
     "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
-    "Y_label", "Y_description", "F_code", "F_reason", "Y_interpretation_clarity",
+    "Y_label", "Y_description", "Y_evidence_role", "F_code", "F_reason",
+    "Y_interpretation_clarity", "mechanistic_interpretation", "mechanism_clarity",
     "critical_comparison", "outcome", "outcome_reason", "direction", "critical_effect",
     "unaware_Y_evidence", "difference_tested", "null_evidence_strength", "null_evidence_adequacy",
     "null_equivalence_margin", "null_equivalence_result", "null_BF01",
@@ -82,8 +83,20 @@
     },
     "Y_label": { "$ref": "#/$defs/nullableString" },
     "Y_description": { "$ref": "#/$defs/nullableString" },
+    "Y_evidence_role": {
+      "description": "Whether the dependent evidence operationalizes a downstream function, leaves the function unresolved, or only supports a mechanism/direct registration.",
+      "anyOf": [
+        {
+          "enum": [
+            "downstream-functional-measure", "function-level-unresolved",
+            "mechanistic-support-only", "direct-registration-only", "not-assessed"
+          ]
+        },
+        { "type": "null" }
+      ]
+    },
     "F_code": {
-      "description": "F-ambiguous is discovery-supporting only: downstream use/transformation is plausible, but the specific Y cannot be uniquely identified.",
+      "description": "F-ambiguous is discovery-supporting only: even a conservative function-level Y cannot be chosen without selecting among substantively different downstream uses. Mechanism ambiguity alone does not imply F-ambiguous.",
       "anyOf": [
         { "enum": ["F-meaningful", "F-ambiguous", "F-not-meaningful"] },
         { "type": "null" }
@@ -93,6 +106,14 @@
     "Y_interpretation_clarity": {
       "anyOf": [
         { "enum": ["clear", "ambiguous", "unclear"] },
+        { "type": "null" }
+      ]
+    },
+    "mechanistic_interpretation": { "$ref": "#/$defs/nullableString" },
+    "mechanism_clarity": {
+      "description": "Clarity of the finer cognitive/neural implementation; this field is not part of the F gate.",
+      "anyOf": [
+        { "enum": ["clear", "ambiguous", "not-assessed"] },
         { "type": "null" }
       ]
     },
@@ -300,6 +321,34 @@
       "then": { "properties": { "F_reason": { "type": "string", "minLength": 1 } } }
     },
     {
+      "if": { "properties": { "F_code": { "const": "F-meaningful" } }, "required": ["F_code"] },
+      "then": {
+        "properties": {
+          "Y_interpretation_clarity": { "const": "clear" },
+          "Y_evidence_role": { "const": "downstream-functional-measure" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "F_code": { "const": "F-ambiguous" } }, "required": ["F_code"] },
+      "then": {
+        "properties": {
+          "Y_interpretation_clarity": { "const": "ambiguous" },
+          "Y_evidence_role": { "const": "function-level-unresolved" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "F_code": { "const": "F-not-meaningful" } }, "required": ["F_code"] },
+      "then": {
+        "properties": {
+          "Y_evidence_role": {
+            "enum": ["mechanistic-support-only", "direct-registration-only", "not-assessed"]
+          }
+        }
+      }
+    },
+    {
       "if": { "properties": { "outcome": { "type": "string" } }, "required": ["outcome"] },
       "then": { "properties": { "outcome_reason": { "type": "string", "minLength": 1 } } }
     },
@@ -425,8 +474,11 @@
           "E_equivalence_result": { "type": "string" },
           "Y_label": { "type": "string", "minLength": 1 },
           "Y_description": { "type": "string", "minLength": 1 },
+          "Y_evidence_role": { "type": "string" },
           "F_code": { "type": "string" },
           "Y_interpretation_clarity": { "type": "string" },
+          "mechanistic_interpretation": { "type": "string", "minLength": 1 },
+          "mechanism_clarity": { "type": "string" },
           "critical_comparison": { "type": "string", "minLength": 1 },
           "outcome": { "type": "string" },
           "critical_effect": { "type": "string", "minLength": 1 },

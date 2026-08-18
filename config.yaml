@@ -1,7 +1,7 @@
 # Draft configuration. Freeze and version every null/TODO before a registered run.
-protocol_version: "draft-0.4"
-package_version: "prefreeze-package-0.4"
-schema_version: "prefreeze-schema-0.4"
+protocol_version: "draft-0.5"
+package_version: "prefreeze-package-0.5"
+schema_version: "prefreeze-schema-0.5"
 registration_status: "pre-freeze"
 
 # Supplied by a registered run invocation; never set during scaffold construction.
@@ -44,6 +44,12 @@ search:
   preferred_sources: []
   # TODO before freeze: specify deterministic fallbacks for unavailable sources.
   fallback_order: []
+  # Calibration conclusion only; this does not populate the frozen registered fields above.
+  calibration_source_strategy:
+    OpenAlex: "primary broad discovery, identity, and citation source"
+    Europe_PMC: "parallel metadata/full-text source and conditional biomedical citation fallback"
+    Crossref: "DOI/bibliographic identity and publisher-deposited backward-reference fallback"
+    Semantic_Scholar: "optional; not required"
 
 calibration_002:
   # DRAFT calibration parameters only. CALIB002 must determine whether each
@@ -58,3 +64,15 @@ calibration_002:
   citation_union_max_records_per_direction_per_source: 200
   citation_union_record_overlap: true
   citation_union_record_source_unique_title_survivors: true
+
+calibration_003:
+  # DRAFT calibration instruments only; no CALIB003 run is authorized by this file.
+  query_page_size: 100
+  query_max_pages_per_family_source: 2
+  query_max_records_per_family_source: 200
+  screen_all_within_bound: true
+  sentinel_recovery_threshold: null
+  fulltext_sample_size: 12
+  fulltext_sample_population: "newly discovered abstract screen-in candidates"
+  fulltext_sample_order: "fulltext priority high-to-low, then earliest durable discovery_id, then paper_id"
+  fulltext_sample_tie_breaker_excludes_expected_outcome: true

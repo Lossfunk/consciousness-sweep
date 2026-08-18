@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.4, pre-freeze
+**Status:** draft-0.5, pre-freeze
 
 ## 1. Authority split
 
@@ -37,6 +37,7 @@ consciousness-sweep/
 │   ├── validate_run.py
 │   ├── derive_outputs.py
 │   ├── structured_write.py
+│   ├── calibration_sampling.py
 │   └── bootstrap_env.py
 ├── tests/
 ├── runs/
@@ -125,7 +126,7 @@ Every new run records `protocol_version`, `package_version`, `schema_version`, t
 - Discovery result: `<RUN_ID>_R000001`.
 - Auxiliary source: `<RUN_ID>_AUX000001`.
 
-Assign each ID once; never recycle or renumber it. On resume, each next counter must exceed the greatest durable identifier already present. Per-paper experiment counters and per-experiment comparison counters are stored as mappings or recovered equivalently from durable IDs. Multiple rows may share an `experiment_id`, but `comparison_id` must be unique.
+Assign each ID once; never recycle or renumber it. Allocate every post-initialization ID through the locked allocator in `tools/structured_write.py`; workers must not infer a next identifier by reading a table or `run_state.json`. Allocation atomically advances durable state before returning the reserved ID, so a crash may retire an unused ID but may never permit reuse. On resume, each next counter must exceed the greatest durable identifier already present. Per-paper experiment counters and per-experiment comparison counters are stored as mappings or recovered equivalently from durable IDs. Multiple rows may share an `experiment_id`, but `comparison_id` must be unique.
 
 ## 6. Current state, complete provenance, and continuous writes
 
@@ -144,7 +145,7 @@ Write continuously:
 
 Do not reconstruct records from memory at the end. Write a parent record before using its ID elsewhere. `papers_master.csv` fields prefixed `first_` record only the first discovery; they never substitute for `discoveries.csv`.
 
-Registered agents must not construct CSV rows by shell concatenation or raw delimiter joining. Use `tools/structured_write.py` (or its imported schema-aware writer functions) for master-row append/upsert and decision-log append. The tool derives field order from the schema, performs typed JSON Schema validation before mutation, applies CSV quoting automatically, and writes CSV updates atomically. A decision event must still be appended before a current-state upsert.
+Registered agents must not construct CSV rows by shell concatenation or raw delimiter joining. Use `tools/structured_write.py` (or its imported schema-aware writer functions) for ID allocation, master-row append/upsert, and decision-log append. One per-run lock serializes counter allocation and all read-modify-write operations. The tool derives field order from the schema, performs typed JSON Schema validation before mutation, applies CSV quoting automatically, and atomically replaces CSV/JSONL files. Its JSONL writer ASCII-escapes embedded Unicode separators and writes exactly one physical LF-terminated record per event. A decision event must still be appended before a current-state upsert.
 
 Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependency, citation-expansion, deduplication, comparison split, A/evidence-type/F/provisional-E/final-E, result, statistics, preserved-capacity component, Meyen, exclusion, revision, uncertainty, and run-state decision requires a short why. Comparison-level scientific decisions use `entity_type = comparison` and the stable `comparison_id`. Auxiliary evidence uses `entity_type = auxiliary_source`. Experiment-level bookkeeping may use `entity_type = experiment`. Full-text decisions should include page, figure, table, analysis, or auxiliary pointers where possible. Validate every decision event against `schemas/decision_log.schema.json`.
 
@@ -173,6 +174,8 @@ Apply bibliographic deduplication deterministically:
 4. Do not automatically collapse uncertain matches. Mark them `possible-duplicate` and keep separate paper records until resolved.
 5. Link preprint and published versions as one logical work only when authorship, title/content, and explicit version relationship make the link sufficiently clear.
 
+Use `normalize_doi` and `doi_resolver_url` from `tools/structured_write.py` for stored DOI comparisons and resolver URLs. Percent-decode before canonical normalization, then percent-encode unsafe DOI path characters when constructing `https://doi.org/` links; never interpolate a raw DOI into a URI field.
+
 Every deduplication or merge requires `dedup_reason`/`duplicate_reason` and a decision-log event. A confirmed duplicate points `duplicate_of` to the retained paper ID; history and discovery rows are never deleted.
 
 ## 9. Missing texts and manual full-text ingestion
@@ -194,7 +197,11 @@ Never backdate availability or imply that the file was available in an earlier w
 
 For every title-retained paper whose abstract cannot reasonably be obtained, set `abstract_status = unavailable`, retain `abstract_screen = not-screened` with a reason, and assign full-text priority from title, discovery provenance, and metadata. This state may proceed to retrieval; it is never converted to `screen-out` merely because the abstract is missing.
 
-### 9.2 Auxiliary evidence sources
+### 9.2 Registered screening execution
+
+Title and abstract screening are paper-specific semantic decisions under `PROTOCOL.md`, even when records are presented in batches. Record the screening method and a separate reason for every paper. Keyword or regex signals may order work for efficiency, but may not independently produce `exclude` or `screen-out`. A deterministic exclusion is permitted only when its exact rule is preregistered and the row records that rule identifier; the default method is `agent-semantic`.
+
+### 9.3 Auxiliary evidence sources
 
 Record each explicit classification-critical dependency in `auxiliary_sources.csv` before finalizing the affected comparison. The row must identify its purpose, target paper/comparison, source pointer in the target article, retrieval/acquisition provenance, transfer assessment where applicable, and whether it was used. A resolved dependency requires a retrieved linked auxiliary row used for the decision. An unresolved dependency requires a linked row documenting why it could not be resolved. Auxiliary rows do not create `papers_master.csv` or `discoveries.csv` records unless the work is independently encountered through an ordinary discovery event.
 
@@ -232,6 +239,8 @@ At the end of every search wave:
 8. update `run_state.json` checkpoint timestamp, counters, wave, status, and reason.
 
 Resolve validation failures before another wave. Do not add ad hoc categorical values.
+
+For CALIB003 only, after title/abstract screening, select at most 12 newly discovered `screen-in` candidates with `tools/calibration_sampling.py`: sort by full-text priority (`high`, `medium`, `low`), then earliest durable first-discovery ID, then `paper_id`, and take the first 12 (or all if fewer). Expected A/E/F/outcome must not enter selection or tie-breaking. Attempt retrieval for all selected papers, fully evaluate every obtained text, and apply normal missing-text handling to the rest. This bounded sampling rule is not the registered sweep rule; a registered sweep evaluates every retrievable paper passing its full-text threshold.
 
 ## 12. Independent-run isolation and completion
 

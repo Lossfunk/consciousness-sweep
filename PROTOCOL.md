@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.4
+**Version:** draft-0.5
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -62,11 +62,13 @@ Tsushima, Sasaki, and Watanabe (2006) motivate `E-diagnostic`: interference is n
 
 F is primarily an eligibility gate, not an ordinal score.
 
-- `F-meaningful`: Y clearly reflects a distinct downstream use of X, such as control or suppression, metacognitive evaluation, updating, binding, maintenance or memory, action selection, rule-guided use, or adaptive use.
-- `F-ambiguous`: the dependent measure plausibly reflects a downstream use or transformation of X beyond direct registration or report, but the particular cognitive process Y producing the effect cannot be uniquely identified. For example, an effect may plausibly reflect suppression, updating, or another control operation without distinguishing among them.
+- `F-meaningful`: the dependent measure identifies a defensible distinct downstream functional relation or use of X at an appropriately conservative level, such as regulation/control of distractor interference, metacognitive evaluation, updating, binding, maintenance or memory, action selection, rule-guided use, or adaptive use. The exact cognitive or neural mechanism implementing that function need not be identified.
+- `F-ambiguous`: the dependent measure plausibly reflects downstream use or transformation beyond direct registration or report, but even a conservative function-level Y cannot be assigned without choosing among substantively different downstream uses.
 - `F-not-meaningful`: the dependent variable establishes only direct detection or discrimination of X, generic registration, a generic neural response, or generic priming whose principal implication is merely that some information about X survived.
 
-For every comparison, also record `Y_label`, `Y_description`, and `Y_interpretation_clarity`. `F-ambiguous` supports discovery recall but does not pass the strongest empirical-lot filter, which continues to require `F-meaningful`.
+Assign Y at the most specific functional level justified by the dependent measure. Do not make Y artificially fine-grained, and do not require the experiment to identify the mechanism implementing Y in order for Y to be meaningful. For example, a behavioral measure may justify `Y = regulation/control of the behavioral influence of a task-irrelevant distractor` while leaving active spatial suppression, inhibitory control in LPFC, attentional filtering, altered capture, and other implementations unresolved. That is `F-meaningful` with ambiguous mechanism, not `F-ambiguous`.
+
+For every comparison, record `Y_label`, `Y_description`, `Y_evidence_role`, and `Y_interpretation_clarity` separately from `mechanistic_interpretation` and `mechanism_clarity`. `mechanism_clarity` is never part of the F gate. Neural evidence may support a proposed mechanism for a behavioral Y, but a generic neural difference is not itself a qualifying Y merely because it is compatible with that mechanism. `F-ambiguous` supports discovery recall but does not pass the strongest empirical-lot filter, which continues to require `F-meaningful`.
 
 ## 3. Result classification
 
@@ -121,6 +123,8 @@ Record `Meyen_applicable` as `yes` or `no`. When applicable, use `Meyen-satisfie
 
 Every encountered paper remains in the master audit record. Every decision includes a brief why.
 
+Title and abstract screens are semantic decisions under this protocol. Agents may process records in batches, but each paper receives its own decision, method, and reason. Keyword, regex, or similar lexical heuristics may assist prioritization; they may not independently produce a scientific exclusion unless that exact deterministic exclusion rule was preregistered and its rule identifier is recorded. In the absence of such a frozen rule, the registered default is agent semantic screening.
+
 ### 6.1 Title screening
 
 Bias toward recall. Exclude only when irrelevance is clear. Record the decision and reason.
@@ -172,11 +176,11 @@ First enumerate the distinct X→Y comparisons within each potentially relevant 
 1. Identify X and the aware/unaware contrast.
 2. Identify the awareness measure or validation.
 3. Identify the direct first-order evidence measure.
-4. Identify Y and its dependent measure.
+4. Identify Y at the most specific conservative functional level justified by its dependent measure; record finer mechanistic interpretation separately.
 5. Check the article and supplement for explicit classification-critical external dependencies; resolve and record each auxiliary source where reasonably possible.
 6. Assign A from the qualifying awareness evidence, record `awareness_evidence_type`, and explain objective-test informativeness where applicable.
 7. Assign F from the downstream-use design and explain why.
-8. Record Y interpretation clarity.
+8. Record the Y evidence role and function-level interpretation clarity separately from the proposed mechanism and mechanism clarity; do not use mechanism ambiguity as the F gate.
 9. Assess design-based E: assign `E-matched` if its positive requirements are met; otherwise record provisional `E-physical-only` or `E-uncontrolled`.
 10. If evidence is not matched, inspect the full pattern only to test the frozen `E-diagnostic` criterion.
 11. Finalize E and explain why.
@@ -215,13 +219,15 @@ Use a frozen broad set of review, theory, method, and other discovery-anchor pap
 
 ### 9.3 Independent query search
 
-Before the registered run, freeze broad query families as a recall check against citation-network blind spots. Cover aware/unaware and conscious/unconscious; visibility; cognitive function or use; control, evaluation, monitoring, updating, binding, and related observed processes; matched performance or evidence; blindsight; and masking, continuous flash suppression, thresholds, or spontaneous visibility changes. Freeze the exact strings later; do not alter them during a registered run.
+Before the registered run, freeze source-specific query families as a supplementary recall check against citation-network blind spots. This lane complements, rather than replaces, the empirical-seed graph, review/discovery anchors, and process-triggered searches. Use several conceptually motivated families that separately cross awareness terminology with broad downstream-use classes, including attention/control/inhibition/distractor control; metacognition/confidence/monitoring/error evaluation; binding/integration/object or event updating; memory/maintenance/working memory; decision/action/rule-guided or flexible use; and learning/adaptation. Unknown Y remains discoverable through review, citation, and process-trigger routes. Do not rely on relevance ranking from one multimillion-record monolithic query as the main instrument.
 
 Every frozen source-specific query block must state its sort/ranking, page size, whether every returned record is screened, and—if not exhaustive—the exact preregistered record/page maximum. It must also specify behavior for ties, source reordering, cursor failure/API truncation, and deduplication across blocks. A registered instruction to merely “run the query” is insufficient. Pre-freeze calibration may use explicitly labeled draft bounds to determine whether exhaustive screening is feasible; those bounds do not become registered defaults by convenience.
 
 ### 9.3.1 Citation-source coverage calibration before freeze
 
 Before fixing the citation-source rule, compare the OpenAlex graph alone with the union of OpenAlex and Europe PMC wherever Europe PMC supplies usable references/citations. Record overlap, source-unique references/citations, and source-unique records surviving title screening. Crossref may be tested as a publisher-deposited backward-reference fallback. Citation counts from different services remain non-interchangeable.
+
+CALIB002 found no retained Europe-PMC-only citation candidates for the tested nodes. The current calibration conclusion, not yet a registered rule, is OpenAlex primary for broad discovery/identity/citations; Europe PMC parallel for metadata/full text and conditional biomedical citation fallback; Crossref for DOI/bibliographic identity and publisher-deposited backward references; Semantic Scholar optional. Do not require an OpenAlex/Europe PMC citation union at every node, and do not repeat mandatory union calibration unless a new coverage problem appears.
 
 ### 9.4 Process-triggered expansion
 
@@ -246,6 +252,8 @@ This repository is currently **draft / pre-freeze**, not preregistered. Before t
 5. Freeze and version the protocol, empirical seeds, review and discovery anchors, exact queries, search sources and fallbacks, publication cutoff, missing-text batch size, schemas, execution utilities, and stopping rules.
 
 During a registered run, agents are not told what classifications seeds are expected to receive. Criteria are not modified. Unforeseen cases are recorded rather than resolved by inventing rules.
+
+Pre-freeze query sentinels test only whether a draft query instrument has obviously poor recall within its stated calibration window. Sentinel recovery is not scientific inclusion, sentinel titles/DOIs must not be embedded in search strings, and title lookups do not count as query recovery. Do not tell registered agents expected A/E/F/outcome classifications. No final numeric sentinel-recovery threshold is set in this draft.
 
 ## 11. Independent multi-agent execution and adjudication
 
