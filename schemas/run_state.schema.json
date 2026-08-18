@@ -6,9 +6,10 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "run_id", "run_mode", "status", "status_reason", "protocol_version", "registration_status",
+    "run_id", "run_mode", "status", "status_reason", "protocol_version", "package_version",
+    "schema_version", "registration_status",
     "repository_commit", "immutable_inputs_sha256", "current_wave", "next_paper_counter", "next_experiment_counters", "next_comparison_counters",
-    "next_decision_counter", "next_search_counter", "next_discovery_counter",
+    "next_decision_counter", "next_search_counter", "next_discovery_counter", "next_auxiliary_counter",
     "started_at", "last_checkpoint_at", "model", "model_version", "agent_harness"
   ],
   "properties": {
@@ -17,6 +18,8 @@
     "status": { "enum": ["running", "paused", "complete", "failed"] },
     "status_reason": { "type": "string", "minLength": 1 },
     "protocol_version": { "type": "string", "minLength": 1 },
+    "package_version": { "type": "string", "minLength": 1 },
+    "schema_version": { "type": "string", "minLength": 1 },
     "registration_status": { "type": "string", "minLength": 1 },
     "repository_commit": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
     "immutable_inputs_sha256": {
@@ -40,6 +43,7 @@
     "next_decision_counter": { "type": "integer", "minimum": 1 },
     "next_search_counter": { "type": "integer", "minimum": 1 },
     "next_discovery_counter": { "type": "integer", "minimum": 1 },
+    "next_auxiliary_counter": { "type": "integer", "minimum": 1 },
     "started_at": { "type": "string", "format": "date-time" },
     "last_checkpoint_at": {
       "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]

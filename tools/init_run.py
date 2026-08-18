@@ -13,8 +13,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import yaml
-from jsonschema import Draft202012Validator, FormatChecker
+try:
+    import yaml
+    from jsonschema import Draft202012Validator, FormatChecker
+except ModuleNotFoundError as exc:
+    print(
+        f"ERROR: missing repository dependency {exc.name!r}. "
+        "Run: python3 tools/bootstrap_env.py --venv .venv",
+        file=sys.stderr,
+    )
+    raise SystemExit(3) from None
 
 from validate_run import immutable_hashes
 
@@ -27,6 +35,7 @@ CSV_TO_SCHEMA = {
     "search_log.csv": "search_log.schema.json",
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
+    "auxiliary_sources.csv": "auxiliary_sources.schema.json",
     "design_eligible_experiments.csv": "experiments.schema.json",
     "constraint_ready_experiments.csv": "experiments.schema.json",
     "awareness_linked_differences.csv": "experiments.schema.json",
@@ -49,6 +58,11 @@ def append_event(path: Path, event: dict[str, Any]) -> None:
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
         handle.flush()
+
+
+def validate_event(root: Path, event: dict[str, Any]) -> None:
+    schema = json.loads((root / "schemas" / "decision_log.schema.json").read_text(encoding="utf-8"))
+    Draft202012Validator(schema, format_checker=FormatChecker()).validate(event)
 
 
 def repository_commit(root: Path) -> str | None:
@@ -86,7 +100,7 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
     if run_dir.exists():
         raise SystemExit(f"refusing overwrite: {run_dir} already exists")
     run_dir.mkdir(parents=True)
-    (run_dir / "manual_fulltexts").mkdir()
+    (run_dir / "fulltexts").mkdir()
     for filename, schema_name in CSV_TO_SCHEMA.items():
         with (run_dir / filename).open("x", newline="", encoding="utf-8") as handle:
             csv.writer(handle, lineterminator="\n").writerow(schema_headers(root, schema_name))
@@ -102,6 +116,8 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
         "status": "running",
         "status_reason": "Run infrastructure initialized after successful preflight.",
         "protocol_version": config["protocol_version"],
+        "package_version": config["package_version"],
+        "schema_version": config["schema_version"],
         "registration_status": config["registration_status"],
         "repository_commit": repository_commit(root),
         "immutable_inputs_sha256": immutable_hashes(root),
@@ -112,6 +128,7 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
         "next_decision_counter": 2,
         "next_search_counter": 1,
         "next_discovery_counter": 1,
+        "next_auxiliary_counter": 1,
         "started_at": timestamp,
         "last_checkpoint_at": timestamp,
         "model": args.model,
@@ -132,6 +149,7 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
         "source_location": "run_state.json",
         "agent": args.agent_harness,
     }
+    validate_event(root, event)
     append_event(run_dir / "decision_log.jsonl", event)
     write_json(run_dir / "run_state.json", state)
     validator = Draft202012Validator(
@@ -145,15 +163,29 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
 def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path, config: dict[str, Any]) -> None:
     if not run_dir.is_dir():
         raise SystemExit(f"cannot resume missing run: {run_dir}")
+    state_path = run_dir / "run_state.json"
+    try:
+        compatibility_state = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"cannot read run compatibility state: {exc}") from None
+    expected = {
+        field: config[field]
+        for field in ("protocol_version", "package_version", "schema_version")
+    }
+    observed = {field: compatibility_state.get(field) for field in expected}
+    if observed != expected:
+        raise SystemExit(
+            "refusing resume: incompatible run package/schema; "
+            f"run={observed}, current={expected}. Historical runs are not migrated implicitly."
+        )
     validation = subprocess.run([
         sys.executable, str(root / "tools" / "validate_run.py"), "--run-id", args.run_id,
         "--root", str(root), "--runs-root", str(runs_root), "--allow-stale-counters",
     ])
     if validation.returncode:
         raise SystemExit(validation.returncode)
-    state_path = run_dir / "run_state.json"
     state = json.loads(state_path.read_text(encoding="utf-8"))
-    if state["protocol_version"] != config["protocol_version"] or state["registration_status"] != config["registration_status"]:
+    if state["registration_status"] != config["registration_status"]:
         raise SystemExit("refusing resume: frozen version/status differs")
     if state["immutable_inputs_sha256"] != immutable_hashes(root):
         raise SystemExit("refusing resume: immutable inputs changed")
@@ -166,6 +198,7 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
     comparison_ids = read_ids(run_dir / "experiments_master.csv", "comparison_id")
     search_ids = read_ids(run_dir / "search_log.csv", "search_id")
     discovery_ids = read_ids(run_dir / "discoveries.csv", "discovery_id")
+    auxiliary_ids = read_ids(run_dir / "auxiliary_sources.csv", "auxiliary_id")
     decision_ids = []
     for line in (run_dir / "decision_log.jsonl").read_text(encoding="utf-8").splitlines():
         if line.strip():
@@ -201,6 +234,7 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
         "source_location": "run_state.json",
         "agent": args.agent_harness,
     }
+    validate_event(root, event)
     append_event(run_dir / "decision_log.jsonl", event)
     state.update({
         "run_mode": "resume",
@@ -212,6 +246,7 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
         "next_decision_counter": next_decision + 1,
         "next_search_counter": suffix_max(search_ids, "_S") + 1,
         "next_discovery_counter": suffix_max(discovery_ids, "_R") + 1,
+        "next_auxiliary_counter": suffix_max(auxiliary_ids, "_AUX") + 1,
         "last_checkpoint_at": timestamp,
         "model": args.model if args.model is not None else state.get("model"),
         "model_version": args.model_version if args.model_version is not None else state.get("model_version"),

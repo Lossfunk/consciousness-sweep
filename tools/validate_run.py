@@ -12,8 +12,16 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
-from jsonschema import Draft202012Validator, FormatChecker
+try:
+    import yaml
+    from jsonschema import Draft202012Validator, FormatChecker
+except ModuleNotFoundError as exc:
+    print(
+        f"ERROR: missing repository dependency {exc.name!r}. "
+        "Run: python3 tools/bootstrap_env.py --venv .venv",
+        file=sys.stderr,
+    )
+    raise SystemExit(3) from None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +31,7 @@ CSV_SCHEMAS = {
     "search_log.csv": "search_log.schema.json",
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
+    "auxiliary_sources.csv": "auxiliary_sources.schema.json",
     "design_eligible_experiments.csv": "experiments.schema.json",
     "constraint_ready_experiments.csv": "experiments.schema.json",
     "awareness_linked_differences.csv": "experiments.schema.json",
@@ -30,11 +39,11 @@ CSV_SCHEMAS = {
     "inconclusive_experiments.csv": "experiments.schema.json",
 }
 ARRAY_FIELDS = {"stats_flags", "attempted_sources"}
-BOOLEAN_FIELDS = {"manually_requested"}
+BOOLEAN_FIELDS = {"manually_requested", "used_for_decision"}
 FLOAT_FIELDS = {"null_BF01"}
 INTEGER_FIELDS = {
     "year", "first_seen_wave", "wave", "results_returned", "new_unique_papers",
-    "result_rank", "manual_request_wave", "provided_wave",
+    "result_rank", "manual_request_wave", "obtained_wave",
 }
 
 
@@ -145,6 +154,45 @@ def max_suffix(values: list[str], marker: str, width: int = 6) -> int:
     return max(found, default=0)
 
 
+def dependency_errors(
+    experiments: list[dict[str, Any]], auxiliary: list[dict[str, Any]]
+) -> list[str]:
+    """Return comparison-level errors for classification-critical auxiliary dependencies."""
+    errors: list[str] = []
+    by_comparison: dict[str, list[dict[str, Any]]] = {}
+    for source in auxiliary:
+        target = source.get("target_comparison_id")
+        if target:
+            by_comparison.setdefault(target, []).append(source)
+    for row in experiments:
+        comparison_id = row.get("comparison_id")
+        status = row.get("critical_dependency_status")
+        linked = by_comparison.get(comparison_id, [])
+        if status == "resolved" and not any(source.get("used_for_decision") for source in linked):
+            errors.append(
+                f"experiments_master.csv: {comparison_id} has resolved critical dependency "
+                "without a linked auxiliary source used for the decision"
+            )
+        if status == "unresolved" and not any(
+            source.get("retrieval_status") in {"unavailable", "unresolved"} for source in linked
+        ):
+            errors.append(
+                f"experiments_master.csv: {comparison_id} has unresolved critical dependency "
+                "without a linked unavailable/unresolved auxiliary source"
+            )
+    return errors
+
+
+def read_compatibility_state(run_dir: Path) -> tuple[dict[str, Any] | None, str | None]:
+    try:
+        value = json.loads((run_dir / "run_state.json").read_text(encoding="utf-8"))
+        if not isinstance(value, dict):
+            return None, "run_state.json is not an object"
+        return value, None
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, str(exc)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-id", required=True)
@@ -157,7 +205,33 @@ def main() -> int:
     run_dir = runs_root / args.run_id
     errors: list[str] = []
 
-    required = [*CSV_SCHEMAS, "decision_log.jsonl", "run_state.json", "run_summary.md", "manual_fulltexts"]
+    compatibility_state, compatibility_error = read_compatibility_state(run_dir)
+    try:
+        config = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"ERROR: config.yaml: {exc}", file=sys.stderr)
+        return 1
+    if compatibility_error:
+        print(f"ERROR: cannot read compatibility state: {compatibility_error}", file=sys.stderr)
+        return 1
+    expected_versions = {
+        field: config.get(field)
+        for field in ("protocol_version", "package_version", "schema_version")
+    }
+    observed_versions = {
+        field: compatibility_state.get(field) if compatibility_state else None
+        for field in expected_versions
+    }
+    if observed_versions != expected_versions:
+        print(
+            "ERROR: incompatible run package/schema; "
+            f"run={observed_versions}, current={expected_versions}. "
+            "Historical runs require an explicit migration and are not validated under the current schema.",
+            file=sys.stderr,
+        )
+        return 3
+
+    required = [*CSV_SCHEMAS, "decision_log.jsonl", "run_state.json", "run_summary.md", "fulltexts"]
     for name in required:
         if not (run_dir / name).exists():
             errors.append(f"missing run path: {run_dir / name}")
@@ -209,12 +283,14 @@ def main() -> int:
     searches = tables.get("search_log.csv", [])
     discoveries = tables.get("discoveries.csv", [])
     missing = tables.get("missing_texts.csv", [])
+    auxiliary = tables.get("auxiliary_sources.csv", [])
     for rows, field, label in (
         (papers, "paper_id", "papers_master.csv"),
         (experiments, "comparison_id", "experiments_master.csv"),
         (searches, "search_id", "search_log.csv"),
         (discoveries, "discovery_id", "discoveries.csv"),
         (missing, "paper_id", "missing_texts.csv"),
+        (auxiliary, "auxiliary_id", "auxiliary_sources.csv"),
         (decisions, "decision_id", "decision_log.jsonl"),
     ):
         check_unique(rows, field, label, errors)
@@ -230,6 +306,7 @@ def main() -> int:
     comparison_ids = {row["comparison_id"] for row in experiments}
     search_ids = {row["search_id"] for row in searches}
     discovery_ids = {row["discovery_id"] for row in discoveries}
+    auxiliary_ids = {row["auxiliary_id"] for row in auxiliary}
     for row in papers:
         for field in ("first_discovery_parent", "duplicate_of"):
             if row.get(field) is not None and row[field] not in paper_ids:
@@ -266,6 +343,27 @@ def main() -> int:
                 digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
                 if digest != row["file_sha256"]:
                     errors.append(f"missing_texts.csv: SHA-256 mismatch for {local_path}")
+    for row in auxiliary:
+        if row["target_paper_id"] not in paper_ids:
+            errors.append(
+                f"auxiliary_sources.csv: {row['auxiliary_id']} references missing paper {row['target_paper_id']}"
+            )
+        if row.get("target_comparison_id") is not None and row["target_comparison_id"] not in comparison_ids:
+            errors.append(
+                f"auxiliary_sources.csv: {row['auxiliary_id']} references missing comparison "
+                f"{row['target_comparison_id']}"
+            )
+        local_path = row.get("local_fulltext_path")
+        if local_path:
+            candidate = Path(local_path)
+            candidate = candidate if candidate.is_absolute() else root / candidate
+            if not candidate.exists():
+                errors.append(f"auxiliary_sources.csv: local_fulltext_path does not exist: {local_path}")
+            elif row.get("file_sha256"):
+                digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+                if digest != row["file_sha256"]:
+                    errors.append(f"auxiliary_sources.csv: SHA-256 mismatch for {local_path}")
+    errors.extend(dependency_errors(experiments, auxiliary))
 
     valid_entities = {
         "paper": paper_ids,
@@ -274,6 +372,7 @@ def main() -> int:
         "search": search_ids,
         "discovery": discovery_ids,
         "missing_text": paper_ids,
+        "auxiliary_source": auxiliary_ids,
         "run": {args.run_id},
     }
     for event in decisions:
@@ -286,14 +385,11 @@ def main() -> int:
     if state:
         if state.get("run_id") != args.run_id:
             errors.append("run_state.json: run_id does not match directory")
-        try:
-            config = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8"))
-            if state.get("protocol_version") != config.get("protocol_version"):
-                errors.append("run_state.json: protocol_version differs from config")
-            if state.get("registration_status") != config.get("registration_status"):
-                errors.append("run_state.json: registration_status differs from config")
-        except Exception as exc:
-            errors.append(f"config.yaml: {exc}")
+        for field in ("protocol_version", "package_version", "schema_version"):
+            if state.get(field) != config.get(field):
+                errors.append(f"run_state.json: {field} differs from config")
+        if state.get("registration_status") != config.get("registration_status"):
+            errors.append("run_state.json: registration_status differs from config")
         try:
             if state.get("immutable_inputs_sha256") != immutable_hashes(root):
                 errors.append("run_state.json: immutable input hashes have changed")
@@ -319,6 +415,7 @@ def main() -> int:
                 ("next_decision_counter", max_suffix([row.get("decision_id", "") for row in decisions], "_D")),
                 ("next_search_counter", max_suffix(list(search_ids), "_S")),
                 ("next_discovery_counter", max_suffix(list(discovery_ids), "_R")),
+                ("next_auxiliary_counter", max_suffix(list(auxiliary_ids), "_AUX")),
             )
             for field, maximum in counter_checks:
                 if state.get(field, 0) <= maximum:

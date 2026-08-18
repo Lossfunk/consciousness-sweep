@@ -19,30 +19,36 @@ The atomic scientific record is a **paper × experiment × X→Y comparison**. I
 
 ## Commands
 
-Install the small Python dependency set:
+Create the canonical isolated environment and install the pinned dependency set:
 
 ```sh
-python -m pip install -r requirements.txt
+python3 tools/bootstrap_env.py --venv .venv
 ```
 
 Audit the current draft without authorizing a run:
 
 ```sh
-python tools/preflight.py --mode pre-freeze
+.venv/bin/python tools/preflight.py --mode pre-freeze
 ```
 
 After the package is frozen, initialize or resume an independent run with:
 
 ```sh
-python tools/init_run.py --run-id <RUN_ID> --run-mode start --agent-harness <HARNESS>
-python tools/init_run.py --run-id <RUN_ID> --run-mode resume --agent-harness <HARNESS>
+.venv/bin/python tools/init_run.py --run-id <RUN_ID> --run-mode start --agent-harness <HARNESS>
+.venv/bin/python tools/init_run.py --run-id <RUN_ID> --run-mode resume --agent-harness <HARNESS>
 ```
 
 At checkpoints:
 
 ```sh
-python tools/derive_outputs.py --run-id <RUN_ID>
-python tools/validate_run.py --run-id <RUN_ID>
+.venv/bin/python tools/derive_outputs.py --run-id <RUN_ID>
+.venv/bin/python tools/validate_run.py --run-id <RUN_ID>
+```
+
+Run synthetic regression tests with:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -v
 ```
 
 See `PROTOCOL.md` and `AGENTS.md` before executing a registered sweep.

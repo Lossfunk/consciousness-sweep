@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/auxiliary_sources.schema.json",
+  "title": "Classification-critical auxiliary evidence source",
+  "description": "One auxiliary_sources.csv row. Auxiliary sources support a named classification-critical premise and do not enter the X-to-Y candidate pool merely by being consulted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "auxiliary_id", "target_paper_id", "target_comparison_id", "purpose", "citation",
+    "doi", "url", "retrieval_status", "local_fulltext_path", "file_sha256",
+    "obtained_at", "obtained_by", "acquisition_route", "source_location",
+    "transfer_assessment", "transfer_reason", "used_for_decision", "notes"
+  ],
+  "properties": {
+    "auxiliary_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+_AUX[0-9]{6}$"
+    },
+    "target_paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" },
+    "target_comparison_id": {
+      "anyOf": [
+        { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$" },
+        { "type": "null" }
+      ]
+    },
+    "purpose": {
+      "enum": [
+        "awareness-validation", "first-order-evidence-validation",
+        "statistical-methodological-detail", "other"
+      ]
+    },
+    "citation": { "type": "string", "minLength": 1 },
+    "doi": { "$ref": "#/$defs/nullableString" },
+    "url": {
+      "anyOf": [{ "type": "string", "format": "uri" }, { "type": "null" }]
+    },
+    "retrieval_status": {
+      "enum": ["not-attempted", "retrieved", "unavailable", "unresolved"]
+    },
+    "local_fulltext_path": {
+      "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "file_sha256": {
+      "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
+    },
+    "obtained_at": {
+      "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    },
+    "obtained_by": {
+      "anyOf": [{ "enum": ["agent", "user", "preexisting"] }, { "type": "null" }]
+    },
+    "acquisition_route": { "$ref": "#/$defs/nullableString" },
+    "source_location": { "type": "string", "minLength": 1 },
+    "transfer_assessment": {
+      "enum": ["supports-transfer", "transfer-risk", "does-not-transfer", "not-applicable", "unresolved"]
+    },
+    "transfer_reason": { "type": "string", "minLength": 1 },
+    "used_for_decision": { "type": "boolean" },
+    "notes": { "$ref": "#/$defs/nullableString" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "retrieval_status": { "const": "retrieved" } }, "required": ["retrieval_status"] },
+      "then": {
+        "properties": {
+          "local_fulltext_path": { "type": "string", "minLength": 1 },
+          "file_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "obtained_at": { "type": "string", "format": "date-time" },
+          "obtained_by": { "enum": ["agent", "user", "preexisting"] },
+          "acquisition_route": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "retrieval_status": { "enum": ["not-attempted", "unavailable", "unresolved"] } },
+        "required": ["retrieval_status"]
+      },
+      "then": {
+        "properties": {
+          "local_fulltext_path": { "type": "null" },
+          "file_sha256": { "type": "null" },
+          "obtained_at": { "type": "null" },
+          "obtained_by": { "type": "null" },
+          "acquisition_route": { "type": "null" },
+          "used_for_decision": { "const": false }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "purpose": { "const": "awareness-validation" } }, "required": ["purpose"] },
+      "then": {
+        "properties": {
+          "transfer_assessment": { "enum": ["supports-transfer", "transfer-risk", "does-not-transfer", "unresolved"] },
+          "transfer_reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "used_for_decision": { "const": true } }, "required": ["used_for_decision"] },
+      "then": {
+        "properties": {
+          "target_comparison_id": { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$" },
+          "retrieval_status": { "const": "retrieved" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nullableString": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  }
+}

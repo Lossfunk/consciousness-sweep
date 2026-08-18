@@ -8,25 +8,117 @@ These query families are recall checks and discovery tools, not eligibility defi
 
 **Purpose:** Broad coverage of awareness of X combined with a distinct downstream use Y.
 
-```text
-(awareness OR aware OR unaware OR conscious OR unconscious OR visibility OR seen OR unseen)
-AND
-("cognitive function" OR "cognitive control" OR use OR utilization OR evaluation OR monitoring OR updating OR binding OR maintenance OR memory OR "action selection" OR "rule guided" OR adaptation)
-AND
-(experiment OR task OR performance)
-```
+The universal monolithic draft used in CALIB001 is retired because it returned approximately 12.2 million OpenAlex and 40,000 Europe PMC records. CALIB002 must test these source-specific blocks without treating their draft bounds as frozen stopping rules.
+
+### Q001-OA-BR1 — OpenAlex broad recall
+
+- Parent: Q001
+- Source/endpoint: OpenAlex `/works`
+- Fields: `default.search` (OpenAlex text search over its indexed work text)
+- Exact parameter: `search=(awareness OR aware OR unaware OR conscious OR unconscious OR visibility OR seen OR unseen) AND ("cognitive control" OR evaluation OR monitoring OR updating OR binding OR maintenance OR memory OR "action selection" OR adaptation) AND (experiment OR task OR performance)`
+- Sort/ranking: `sort=relevance_score:desc`
+- Page size: `per_page=100`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: broad recall
+- Translation: removes the unqualified terms `use`, `utilization`, and `cognitive function`, which dominated unrelated domains in CALIB001; OpenAlex Boolean text-search syntax is used without wildcard pseudo-syntax.
+
+### Q001-OA-PR1 — OpenAlex title/abstract precision
+
+- Parent: Q001
+- Source/endpoint: OpenAlex `/works`
+- Fields: `title_and_abstract.search`
+- Exact parameter: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR unseen) AND ("cognitive control" OR evaluation OR monitoring OR updating OR binding OR maintenance OR "action selection" OR adaptation)`
+- Sort/ranking: `sort=relevance_score:desc`
+- Page size: `per_page=100`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: field-constrained precision and a coverage comparison with Q001-OA-BR1
+- Translation: excludes generic `memory` unless paired through the separate maintenance term; title/abstract restriction deliberately trades recall for precision.
+
+### Q001-EPMC-BR1 — Europe PMC broad recall
+
+- Parent: Q001
+- Source/endpoint: Europe PMC `/search`
+- Fields: unfielded indexed text
+- Exact query: `(awareness OR aware OR unaware OR conscious OR unconscious OR visibility OR seen OR unseen) AND ("cognitive control" OR evaluation OR monitoring OR updating OR binding OR maintenance OR memory OR "action selection" OR adaptation) AND (experiment OR task OR performance)`
+- Sort/ranking: default relevance (`sort` omitted; score descending)
+- Page size: `pageSize=100`, `cursorMark=*` then returned `nextCursorMark`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: Europe PMC broad-recall comparator
+- Translation: no synonym expansion (`synonym=false`); generic `use`/`utilization` are removed for the same calibrated noise reason as OpenAlex.
+
+### Q001-EPMC-PR1 — Europe PMC title/abstract precision
+
+- Parent: Q001
+- Source/endpoint: Europe PMC `/search`
+- Fields: `TITLE_ABS`
+- Exact query: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:unseen) AND (TITLE_ABS:"cognitive control" OR TITLE_ABS:evaluation OR TITLE_ABS:monitoring OR TITLE_ABS:updating OR TITLE_ABS:binding OR TITLE_ABS:maintenance OR TITLE_ABS:"action selection" OR TITLE_ABS:adaptation)`
+- Sort/ranking: default relevance (`sort` omitted; score descending)
+- Page size: `pageSize=100`, `cursorMark=*` then returned `nextCursorMark`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: field-constrained precision and coverage comparison with Q001-EPMC-BR1
+- Translation: uses Europe PMC's supported `TITLE_ABS` field and exact phrase syntax; `synonym=false`.
 
 ## Q002 — Performance-matched awareness
 
 **Purpose:** Find designs that match or diagnose first-order evidence while contrasting awareness.
 
-```text
-(awareness OR conscious OR unconscious OR visibility OR seen OR unseen)
-AND
-("performance matched" OR "matched performance" OR "objective performance" OR discrimination OR d-prime OR d' OR titrat* OR threshold* OR "signal strength" OR evidence)
-AND
-(control OR evaluation OR monitoring OR updating OR binding OR memory OR decision OR action)
-```
+The universal Q002 draft is retired. Its apostrophe/wildcard pseudo-syntax failed in OpenAlex and its generic `evidence`/`decision`/`action` terms produced approximately 10.2 million OpenAlex and 62,000 Europe PMC records.
+
+### Q002-OA-BR1 — OpenAlex broad evidence-control recall
+
+- Parent: Q002
+- Source/endpoint: OpenAlex `/works`
+- Fields: `default.search`
+- Exact parameter: `search=(awareness OR conscious OR unconscious OR visibility OR seen OR unseen) AND ("performance matched" OR "matched performance" OR "objective performance" OR discrimination OR "d prime" OR titration OR threshold OR "signal strength") AND ("cognitive control" OR evaluation OR monitoring OR updating OR binding OR maintenance OR memory)`
+- Sort/ranking: `sort=relevance_score:desc`
+- Page size: `per_page=100`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: broad recall for explicit first-order-evidence control language
+- Translation: `d'` becomes `d prime`; unsupported wildcard stems become the literal variants `titration` and `threshold`; generic `evidence`, `decision`, and `action` are removed.
+
+### Q002-OA-PR1 — OpenAlex title/abstract matching precision
+
+- Parent: Q002
+- Source/endpoint: OpenAlex `/works`
+- Fields: `title_and_abstract.search`
+- Exact parameter: `filter=title_and_abstract.search:("performance matched" OR "matched performance" OR titration OR threshold OR "d prime") AND (awareness OR conscious OR unconscious OR visibility OR unseen) AND (control OR monitoring OR updating OR binding OR maintenance OR memory)`
+- Sort/ranking: `sort=relevance_score:desc`
+- Page size: `per_page=100`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: precision for explicit matching/titration/threshold designs
+- Translation: no apostrophe or wildcard pseudo-syntax; title/abstract restriction is intentional.
+
+### Q002-EPMC-BR1 — Europe PMC broad evidence-control recall
+
+- Parent: Q002
+- Source/endpoint: Europe PMC `/search`
+- Fields: unfielded indexed text
+- Exact query: `(awareness OR conscious OR unconscious OR visibility OR seen OR unseen) AND ("performance matched" OR "matched performance" OR "objective performance" OR discrimination OR "d prime" OR "d-prime" OR titrat* OR threshold* OR "signal strength") AND ("cognitive control" OR evaluation OR monitoring OR updating OR binding OR maintenance OR memory)`
+- Sort/ranking: default relevance (`sort` omitted; score descending)
+- Page size: `pageSize=100`, `cursorMark=*` then returned `nextCursorMark`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: Europe PMC broad-recall comparator
+- Translation: uses supported Europe PMC wildcards; omits the syntax-fragile apostrophe form `d'` in favor of explicit hyphen/space variants; `synonym=false`.
+
+### Q002-EPMC-PR1 — Europe PMC title/abstract matching precision
+
+- Parent: Q002
+- Source/endpoint: Europe PMC `/search`
+- Fields: `TITLE_ABS`
+- Exact query: `(TITLE_ABS:awareness OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:unseen) AND (TITLE_ABS:"performance matched" OR TITLE_ABS:"matched performance" OR TITLE_ABS:titrat* OR TITLE_ABS:threshold* OR TITLE_ABS:"d prime" OR TITLE_ABS:"d-prime") AND (TITLE_ABS:control OR TITLE_ABS:monitoring OR TITLE_ABS:updating OR TITLE_ABS:binding OR TITLE_ABS:maintenance OR TITLE_ABS:memory)`
+- Sort/ranking: default relevance (`sort` omitted; score descending)
+- Page size: `pageSize=100`, `cursorMark=*` then returned `nextCursorMark`
+- Draft CALIB002 bound: at most 3 pages / 300 encountered records; screen all records actually returned within the bound
+- Role: field-constrained precision and coverage comparison with Q002-EPMC-BR1
+- Translation: uses supported `TITLE_ABS` and wildcard syntax; `synonym=false`.
+
+## CALIB002 pagination and stopping instrumentation (DRAFT, not frozen)
+
+CALIB002 uses page size 100 and an initial ceiling of 3 pages / 300 encountered records per block. Every record actually returned within that ceiling is screened. These values are calibration instruments, not a proposed universal registered maximum. For each block CALIB002 must report whether the complete result set was exhausted, marginal title-retain yield by page, duplicates across blocks, and the result-count/ranking stability observed on a repeated first-page request.
+
+Persist stable identifiers for each completed page before requesting the next page. If a source reorders results, a cursor expires, a request truncates, or a tied rank crosses a boundary, deduplicate by stable identifier, record the instability, and repeat/continue only within the stated draft record ceiling; do not silently substitute a different ordering. Deduplication across blocks follows `AGENTS.md`, while every rediscovery remains in `discoveries.csv`.
+
+CALIB002 must also compare each seed/anchor citation direction from (A) OpenAlex alone with (B) the union of OpenAlex and Europe PMC where Europe PMC coverage is usable. Record overlap, source-unique records, and source-unique records surviving title screening. Use page size 100 and a draft ceiling of 200 records per direction per source. Crossref may be assessed only as a publisher-deposited backward-reference fallback. Do not infer the final citation-source rule from counts alone.
 
 ## Q003 — Blindsight and metacognition
 

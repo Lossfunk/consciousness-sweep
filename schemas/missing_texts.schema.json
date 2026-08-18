@@ -8,7 +8,7 @@
   "required": [
     "paper_id", "priority", "reason", "attempted_sources", "last_attempt_date", "status",
     "manually_requested", "manual_request_wave", "local_fulltext_path", "file_sha256",
-    "provided_at", "provided_wave", "notes"
+    "obtained_at", "obtained_wave", "obtained_by", "acquisition_route", "notes"
   ],
   "properties": {
     "paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" },
@@ -21,7 +21,7 @@
       "minItems": 1
     },
     "last_attempt_date": { "type": "string", "format": "date" },
-    "status": { "enum": ["pending", "manually-requested", "provided-by-user", "retrieved", "unavailable", "closed-not-needed"] },
+    "status": { "enum": ["pending", "manually-requested", "obtained", "unavailable", "closed-not-needed"] },
     "manually_requested": { "type": "boolean" },
     "manual_request_wave": {
       "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
@@ -32,11 +32,17 @@
     "file_sha256": {
       "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
     },
-    "provided_at": {
+    "obtained_at": {
       "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
     },
-    "provided_wave": {
+    "obtained_wave": {
       "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+    },
+    "obtained_by": {
+      "anyOf": [{ "enum": ["agent", "user", "preexisting"] }, { "type": "null" }]
+    },
+    "acquisition_route": {
+      "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
     },
     "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
   },
@@ -46,12 +52,27 @@
       "then": { "properties": { "manual_request_wave": { "type": "integer", "minimum": 0 } } }
     },
     {
-      "if": { "properties": { "status": { "enum": ["provided-by-user", "retrieved"] } }, "required": ["status"] },
+      "if": { "properties": { "status": { "const": "obtained" } }, "required": ["status"] },
       "then": {
         "properties": {
           "local_fulltext_path": { "type": "string", "minLength": 1 },
-          "provided_at": { "type": "string", "format": "date-time" },
-          "provided_wave": { "type": "integer", "minimum": 0 }
+          "obtained_at": { "type": "string", "format": "date-time" },
+          "obtained_wave": { "type": "integer", "minimum": 0 },
+          "obtained_by": { "enum": ["agent", "user", "preexisting"] },
+          "acquisition_route": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["pending", "manually-requested", "unavailable", "closed-not-needed"] } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "local_fulltext_path": { "type": "null" },
+          "file_sha256": { "type": "null" },
+          "obtained_at": { "type": "null" },
+          "obtained_wave": { "type": "null" },
+          "obtained_by": { "type": "null" },
+          "acquisition_route": { "type": "null" }
         }
       }
     }

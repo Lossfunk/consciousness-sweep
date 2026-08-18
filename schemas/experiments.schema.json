@@ -7,7 +7,9 @@
   "additionalProperties": false,
   "required": [
     "comparison_id", "experiment_id", "paper_id", "experiment_label", "X_label", "X_description",
-    "awareness_measure", "A_code", "A_reason", "first_order_measure", "E_code", "E_reason",
+    "awareness_measure", "awareness_evidence_type", "objective_visibility_test_informative",
+    "objective_visibility_test_reason", "A_code", "A_reason", "critical_dependency_status",
+    "critical_dependency_reason", "first_order_measure", "E_code", "E_reason",
     "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
     "Y_label", "Y_description", "F_code", "F_reason", "Y_interpretation_clarity",
     "critical_comparison", "outcome", "outcome_reason", "direction", "critical_effect",
@@ -25,6 +27,19 @@
     "X_label": { "$ref": "#/$defs/nullableString" },
     "X_description": { "$ref": "#/$defs/nullableString" },
     "awareness_measure": { "$ref": "#/$defs/nullableString" },
+    "awareness_evidence_type": {
+      "anyOf": [
+        { "enum": ["subjective", "objective-invisibility", "mixed", "none"] },
+        { "type": "null" }
+      ]
+    },
+    "objective_visibility_test_informative": {
+      "anyOf": [
+        { "enum": ["yes", "no", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "objective_visibility_test_reason": { "$ref": "#/$defs/nullableString" },
     "A_code": {
       "anyOf": [
         { "enum": ["A-direct", "A-validated", "A-transfer-risk", "A-absent"] },
@@ -32,6 +47,13 @@
       ]
     },
     "A_reason": { "$ref": "#/$defs/nullableString" },
+    "critical_dependency_status": {
+      "anyOf": [
+        { "enum": ["checked-none", "resolved", "unresolved"] },
+        { "type": "null" }
+      ]
+    },
+    "critical_dependency_reason": { "$ref": "#/$defs/nullableString" },
     "first_order_measure": { "$ref": "#/$defs/nullableString" },
     "E_code": {
       "anyOf": [
@@ -172,6 +194,77 @@
     {
       "if": { "properties": { "A_code": { "type": "string" } }, "required": ["A_code"] },
       "then": { "properties": { "A_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": {
+        "properties": { "A_code": { "enum": ["A-direct", "A-validated"] } },
+        "required": ["A_code"]
+      },
+      "then": {
+        "properties": {
+          "awareness_evidence_type": { "enum": ["subjective", "objective-invisibility", "mixed"] }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "awareness_evidence_type": { "const": "objective-invisibility" } },
+        "required": ["awareness_evidence_type"]
+      },
+      "then": {
+        "properties": {
+          "objective_visibility_test_reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_evidence_type": { "const": "objective-invisibility" },
+          "A_code": { "enum": ["A-direct", "A-validated"] }
+        },
+        "required": ["awareness_evidence_type", "A_code"]
+      },
+      "then": {
+        "properties": { "objective_visibility_test_informative": { "const": "yes" } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "awareness_evidence_type": { "const": "none" } },
+        "required": ["awareness_evidence_type"]
+      },
+      "then": {
+        "properties": {
+          "objective_visibility_test_informative": { "const": "not-applicable" },
+          "objective_visibility_test_reason": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "critical_dependency_status": { "type": "string" } },
+        "required": ["critical_dependency_status"]
+      },
+      "then": {
+        "properties": { "critical_dependency_reason": { "type": "string", "minLength": 1 } }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          { "properties": { "A_code": { "type": "string" } }, "required": ["A_code"] },
+          { "properties": { "E_code": { "type": "string" } }, "required": ["E_code"] },
+          { "properties": { "F_code": { "type": "string" } }, "required": ["F_code"] },
+          { "properties": { "stats_status": { "type": "string" } }, "required": ["stats_status"] }
+        ]
+      },
+      "then": {
+        "properties": {
+          "critical_dependency_status": { "type": "string" },
+          "critical_dependency_reason": { "type": "string", "minLength": 1 }
+        }
+      }
     },
     {
       "if": { "properties": { "E_code": { "type": "string" } }, "required": ["E_code"] },
@@ -321,7 +414,11 @@
           "X_label": { "type": "string", "minLength": 1 },
           "X_description": { "type": "string", "minLength": 1 },
           "awareness_measure": { "type": "string", "minLength": 1 },
+          "awareness_evidence_type": { "type": "string" },
+          "objective_visibility_test_informative": { "type": "string" },
           "A_code": { "type": "string" },
+          "critical_dependency_status": { "type": "string" },
+          "critical_dependency_reason": { "type": "string", "minLength": 1 },
           "first_order_measure": { "type": "string", "minLength": 1 },
           "E_code": { "type": "string" },
           "E_matching_basis": { "type": "string" },

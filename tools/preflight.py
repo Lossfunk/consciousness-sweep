@@ -9,8 +9,17 @@ import json
 import sys
 from pathlib import Path
 
-import yaml
-from jsonschema import Draft202012Validator
+try:
+    import yaml
+    from jsonschema import Draft202012Validator
+except ModuleNotFoundError as exc:
+    print(
+        "ERROR: missing repository dependency "
+        f"{exc.name!r}. Run: python3 tools/bootstrap_env.py --venv .venv\n"
+        "Then use: .venv/bin/python tools/preflight.py --mode pre-freeze",
+        file=sys.stderr,
+    )
+    raise SystemExit(3) from None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +29,7 @@ SCHEMAS = (
     "search_log.schema.json",
     "discoveries.schema.json",
     "missing_texts.schema.json",
+    "auxiliary_sources.schema.json",
     "decision_log.schema.json",
     "run_state.schema.json",
 )
@@ -117,8 +127,14 @@ def main() -> int:
         except OSError as exc:
             errors.append(f"{name}: {exc}")
 
+    for version_field in ("protocol_version", "package_version", "schema_version"):
+        value = config.get(version_field)
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f"config.yaml: missing non-empty {version_field}")
+
     expected_categories = {
         "A-direct", "A-validated", "A-transfer-risk", "A-absent",
+        "subjective", "objective-invisibility", "mixed", "none",
         "E-matched", "E-diagnostic", "E-physical-only", "E-uncontrolled",
         "F-meaningful", "F-ambiguous", "F-not-meaningful",
         "awareness-linked-difference", "preserved-capacity", "inconclusive",
@@ -135,7 +151,8 @@ def main() -> int:
 
     experiment_properties = schemas.get("experiments.schema.json", {}).get("properties", {})
     for field in (
-        "comparison_id", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
+        "comparison_id", "awareness_evidence_type", "objective_visibility_test_informative",
+        "critical_dependency_status", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
         "null_equivalence_margin", "null_equivalence_result", "null_BF01",
         "null_CI_region", "null_CI_entirely_within_region",
     ):
@@ -147,8 +164,24 @@ def main() -> int:
     state_properties = schemas.get("run_state.schema.json", {}).get("properties", {})
     if "next_comparison_counters" not in state_properties:
         errors.append("run-state schema lacks next_comparison_counters")
+    for field in ("package_version", "schema_version", "next_auxiliary_counter"):
+        if field not in state_properties:
+            errors.append(f"run-state schema lacks {field}")
+    paper_properties = schemas.get("papers.schema.json", {}).get("properties", {})
+    if "abstract_status" not in paper_properties:
+        errors.append("papers schema lacks abstract_status")
+    missing_properties = schemas.get("missing_texts.schema.json", {}).get("properties", {})
+    for field in ("obtained_at", "obtained_wave", "obtained_by", "acquisition_route"):
+        if field not in missing_properties:
+            errors.append(f"missing-text schema lacks source-neutral field {field}")
+    auxiliary_properties = schemas.get("auxiliary_sources.schema.json", {}).get("properties", {})
+    for field in ("auxiliary_id", "target_paper_id", "target_comparison_id", "purpose", "used_for_decision"):
+        if field not in auxiliary_properties:
+            errors.append(f"auxiliary-source schema lacks {field}")
     if (config.get("identifiers") or {}).get("comparison_separator") != "_C":
         errors.append("config identifiers.comparison_separator must be '_C'")
+    if (config.get("identifiers") or {}).get("auxiliary_separator") != "_AUX":
+        errors.append("config identifiers.auxiliary_separator must be '_AUX'")
 
     for key, relative in (config.get("paths") or {}).items():
         if not (root / str(relative)).exists():

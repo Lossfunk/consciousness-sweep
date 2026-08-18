@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.3
+**Version:** draft-0.4
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -21,12 +21,23 @@ The atomic scientific unit is a **paper × experiment × X→Y comparison**, not
 
 Code awareness independently of E and F.
 
-- `A-direct`: awareness of X is assessed subjectively in the relevant experiment, trial, block, or condition. Examples include seen/unseen judgments, graded visibility, and PAS-like ratings. The response need not be verbal.
-- `A-validated`: awareness is assessed in a separate validation procedure whose conditions plausibly transfer to the main experiment. Assess transfer using at least stimulus parameters, masking or suppression, timing, attentional allocation, task demands, and participant population. A validation regime must not plausibly make awareness lower than in the main experiment while being used to establish unawareness there.
-- `A-transfer-risk`: separate subjective validation exists, but transfer to the main experiment is materially uncertain.
-- `A-absent`: awareness is inferred only from masking, stimulus condition, objective accuracy, neural activity, or another indirect measure.
+Unawareness of X may be supported by subjective awareness evidence, sufficiently informative objective invisibility evidence, or both. Record the orthogonal `awareness_evidence_type` as `subjective`, `objective-invisibility`, `mixed`, or `none`.
 
-> Objective discrimination is not treated as a theory-neutral measure of awareness. It instead contributes evidence about first-order information available about X.
+- `A-direct`: qualifying subjective or objective-invisibility evidence is obtained in the relevant experiment, trial, block, condition, or stimulus regime. Subjective examples include seen/unseen judgments, graded visibility, and PAS-like ratings; the response need not be verbal.
+- `A-validated`: qualifying subjective or objective-invisibility evidence is obtained in a separate validation procedure whose conditions plausibly transfer to the main experiment. Assess transfer using at least stimulus parameters, masking or suppression, timing, attentional allocation, task demands, and participant population. A validation regime must not plausibly make awareness lower than in the main experiment while being used to establish unawareness there.
+- `A-transfer-risk`: a separate subjective or objective-invisibility validation exists, but its sensitivity or transfer to the main experiment is materially uncertain.
+- `A-absent`: no qualifying subjective or objective-invisibility evidence supports the awareness classification. Masking, stimulus condition, neural activity, or an insensitive visibility test alone does not qualify.
+
+Objective invisibility evidence may support `A-direct` or `A-validated` only when all of the following are true:
+
+1. the task directly tests perceptual access to the relevant X;
+2. it has a meaningful objective chance or no-access baseline;
+3. the design and amount of evidence are sufficiently sensitive for the invisibility inference being made; and
+4. the observed result supports performance being at or sufficiently near that baseline.
+
+Do not impose a universal modern equivalence-test or Bayes-factor requirement on legacy awareness-validation studies. However, a merely nonsignificant comparison against chance from an obviously underpowered or insensitive test is not sufficient. Every `A-direct` or `A-validated` classification using objective invisibility must record why the visibility test is sufficiently informative in `objective_visibility_test_reason` and set `objective_visibility_test_informative = yes`.
+
+The relationship between A and E is asymmetric. Above-chance objective detection or discrimination does not by itself imply awareness and does not invalidate an independent subjective-unawareness classification; it primarily informs first-order evidence E. Conversely, sufficiently informative chance-level or no-access performance on an appropriate objective visibility task can support unawareness for A. Objective performance is therefore not a universally theory-neutral awareness measure, but neither is it categorically excluded from A.
 
 ### 2.2 E — first-order evidence about X
 
@@ -120,6 +131,8 @@ Use `screen-in`, `screen-uncertain`, or `screen-out`. `screen-in` means the abst
 
 For `screen-in` and `screen-uncertain`, assign full-text priority `high`, `medium`, or `low`, with a reason. For `screen-out`, leave full-text priority `not-assigned`. Never make a final A, E, or F classification from an abstract alone.
 
+Record `abstract_status` separately as `not-sought`, `available`, `unavailable`, or `not-applicable`. Failure to obtain an abstract is not a screen-out decision. A title-retained paper with `abstract_status = unavailable` remains in the audit and receives a reasoned full-text priority from its title, discovery provenance, and available metadata. It may proceed to retrieval when that priority warrants.
+
 ## 7. Full-text retrieval and missing texts
 
 Attempt, in order:
@@ -134,6 +147,24 @@ No final A, E, or F classification is allowed without full text. A likely releva
 
 When a user supplies requested full text, preserve its later provenance: associate the file with the paper ID, record its repository-relative manual-ingestion path and a SHA-256 hash where practical, update the missing-text state, and evaluate it on resume. Do not represent it as having been available in earlier waves. New citation or process-search obligations activated by the text reopen the corresponding stopping condition under the unchanged frozen protocol.
 
+For every obtained full text, regardless of source, record `obtained_at`, `obtained_wave`, `obtained_by` (`agent`, `user`, or `preexisting`), and `acquisition_route`. Acquisition provenance must describe how the target article was obtained and verified; a nominally free link is not sufficient.
+
+## 7.1 Classification-critical auxiliary evidence
+
+Before finalizing A, E, F, or a statistical classification, inspect the candidate article and supplement for an explicit dependency on an external source for a classification-critical premise. Examples include a cited prior visibility validation, a cited perceptual threshold, matching or titration established elsewhere, or an external statistical method required to interpret the critical analysis.
+
+This dependency check is not ordinary citation-network expansion. When a dependency exists:
+
+1. retrieve and inspect the cited source where reasonably possible;
+2. evaluate only the classification-critical claim for which it was cited;
+3. record it in `auxiliary_sources.csv` and link it to the target comparison;
+4. assess transfer where the purpose is awareness validation, explicitly covering stimulus parameters, masking/suppression, timing, attentional allocation, task demands, and participant population; and
+5. only then finalize the affected classification.
+
+If the source cannot be obtained, record an unresolved auxiliary dependency and assign the A/E/F/statistical category warranted by that uncertainty. Do not silently treat the cited evidence as nonexistent and do not silently accept the article's claim.
+
+Auxiliary sources do not need to pass the X→Y title/abstract screen merely to be consulted. Consultation does not add them to the candidate-paper pool, make them citation-network nodes, or trigger expansion. They may enter the ordinary pipeline only if independently encountered under the registered discovery rules.
+
 ## 8. Full-text comparison evaluation order
 
 First enumerate the distinct X→Y comparisons within each potentially relevant experiment. Assign a separate comparison when Y is genuinely different or when a distinct critical awareness contrast supports a different inference. Measures that jointly operationalize the same Y and critical inference may remain together. Then, for each comparison:
@@ -142,20 +173,21 @@ First enumerate the distinct X→Y comparisons within each potentially relevant 
 2. Identify the awareness measure or validation.
 3. Identify the direct first-order evidence measure.
 4. Identify Y and its dependent measure.
-5. Assign A from the awareness design and explain why.
-6. Assign F from the downstream-use design and explain why.
-7. Record Y interpretation clarity.
-8. Assess design-based E: assign `E-matched` if its positive requirements are met; otherwise record provisional `E-physical-only` or `E-uncontrolled`.
-9. If evidence is not matched, inspect the full pattern only to test the frozen `E-diagnostic` criterion.
-10. Finalize E and explain why.
-11. Only now classify the empirical outcome and explain why.
-12. Identify the critical aware/unaware comparison.
-13. Record `unaware_Y_evidence` when relevant.
-14. Record the structured null-evidence basis, `null_evidence_strength`, and `null_evidence_adequacy` when relevant.
-15. Perform the statistical audit, including whether the critical difference was tested.
-16. Apply the Meyen diagnostic when relevant.
-17. Write a one- or two-sentence empirical-constraint statement.
-18. Record page, figure, table, and analysis locations.
+5. Check the article and supplement for explicit classification-critical external dependencies; resolve and record each auxiliary source where reasonably possible.
+6. Assign A from the qualifying awareness evidence, record `awareness_evidence_type`, and explain objective-test informativeness where applicable.
+7. Assign F from the downstream-use design and explain why.
+8. Record Y interpretation clarity.
+9. Assess design-based E: assign `E-matched` if its positive requirements are met; otherwise record provisional `E-physical-only` or `E-uncontrolled`.
+10. If evidence is not matched, inspect the full pattern only to test the frozen `E-diagnostic` criterion.
+11. Finalize E and explain why.
+12. Only now classify the empirical outcome and explain why.
+13. Identify the critical aware/unaware comparison.
+14. Record `unaware_Y_evidence` when relevant.
+15. Record the structured null-evidence basis, `null_evidence_strength`, and `null_evidence_adequacy` when relevant.
+16. Perform the statistical audit, including whether the critical difference was tested.
+17. Apply the Meyen diagnostic when relevant.
+18. Write a one- or two-sentence empirical-constraint statement.
+19. Record page, figure, table, analysis, and auxiliary-source locations.
 
 ## 9. Discovery routes and stopping rules
 
@@ -184,6 +216,12 @@ Use a frozen broad set of review, theory, method, and other discovery-anchor pap
 ### 9.3 Independent query search
 
 Before the registered run, freeze broad query families as a recall check against citation-network blind spots. Cover aware/unaware and conscious/unconscious; visibility; cognitive function or use; control, evaluation, monitoring, updating, binding, and related observed processes; matched performance or evidence; blindsight; and masking, continuous flash suppression, thresholds, or spontaneous visibility changes. Freeze the exact strings later; do not alter them during a registered run.
+
+Every frozen source-specific query block must state its sort/ranking, page size, whether every returned record is screened, and—if not exhaustive—the exact preregistered record/page maximum. It must also specify behavior for ties, source reordering, cursor failure/API truncation, and deduplication across blocks. A registered instruction to merely “run the query” is insufficient. Pre-freeze calibration may use explicitly labeled draft bounds to determine whether exhaustive screening is feasible; those bounds do not become registered defaults by convenience.
+
+### 9.3.1 Citation-source coverage calibration before freeze
+
+Before fixing the citation-source rule, compare the OpenAlex graph alone with the union of OpenAlex and Europe PMC wherever Europe PMC supplies usable references/citations. Record overlap, source-unique references/citations, and source-unique records surviving title screening. Crossref may be tested as a publisher-deposited backward-reference fallback. Citation counts from different services remain non-interchangeable.
 
 ### 9.4 Process-triggered expansion
 

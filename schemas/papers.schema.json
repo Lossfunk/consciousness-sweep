@@ -8,7 +8,7 @@
   "required": [
     "paper_id", "title", "authors", "year", "doi", "url", "publication_status",
     "first_discovery_route", "first_discovery_parent", "first_discovery_query_id", "first_search_id", "first_seen_wave",
-    "title_screen", "title_screen_reason", "abstract_screen", "abstract_screen_reason",
+    "title_screen", "title_screen_reason", "abstract_status", "abstract_screen", "abstract_screen_reason",
     "fulltext_priority", "fulltext_priority_reason", "fulltext_status", "fulltext_source",
     "missing_text_priority", "citation_expansion_status", "citation_expansion_reason",
     "duplicate_of", "duplicate_reason", "current_status", "notes"
@@ -55,6 +55,9 @@
     "first_seen_wave": { "type": "integer", "minimum": 0 },
     "title_screen": { "enum": ["not-screened", "retain", "exclude"] },
     "title_screen_reason": { "$ref": "#/$defs/nullableString" },
+    "abstract_status": {
+      "enum": ["not-sought", "available", "unavailable", "not-applicable"]
+    },
     "abstract_screen": {
       "enum": ["not-screened", "screen-in", "screen-uncertain", "screen-out", "not-applicable"]
     },
@@ -85,7 +88,7 @@
     "current_status": {
       "enum": [
         "encountered", "title-retained", "title-excluded", "abstract-in", "abstract-uncertain",
-        "abstract-out", "awaiting-fulltext", "fulltext-retrieved", "fulltext-evaluated",
+        "abstract-out", "abstract-unavailable", "awaiting-fulltext", "fulltext-retrieved", "fulltext-evaluated",
         "duplicate", "unresolved"
       ]
     },
@@ -104,6 +107,7 @@
       "if": { "properties": { "abstract_screen": { "enum": ["screen-in", "screen-uncertain"] } }, "required": ["abstract_screen"] },
       "then": {
         "properties": {
+          "abstract_status": { "const": "available" },
           "abstract_screen_reason": { "type": "string", "minLength": 1 },
           "fulltext_priority": { "enum": ["high", "medium", "low"] },
           "fulltext_priority_reason": { "type": "string", "minLength": 1 }
@@ -114,6 +118,7 @@
       "if": { "properties": { "abstract_screen": { "const": "screen-out" } }, "required": ["abstract_screen"] },
       "then": {
         "properties": {
+          "abstract_status": { "const": "available" },
           "abstract_screen_reason": { "type": "string", "minLength": 1 },
           "fulltext_priority": { "const": "not-assigned" },
           "fulltext_priority_reason": { "type": "null" }
@@ -121,13 +126,42 @@
       }
     },
     {
-      "if": { "properties": { "abstract_screen": { "enum": ["not-screened", "not-applicable"] } }, "required": ["abstract_screen"] },
+      "if": {
+        "properties": {
+          "abstract_status": { "const": "unavailable" },
+          "title_screen": { "const": "retain" }
+        },
+        "required": ["abstract_status", "title_screen"]
+      },
       "then": {
         "properties": {
-          "abstract_screen_reason": { "type": "null" },
-          "fulltext_priority": { "const": "not-assigned" },
-          "fulltext_priority_reason": { "type": "null" }
+          "abstract_screen": { "const": "not-screened" },
+          "abstract_screen_reason": { "type": "string", "minLength": 1 },
+          "fulltext_priority": { "enum": ["high", "medium", "low"] },
+          "fulltext_priority_reason": { "type": "string", "minLength": 1 },
+          "current_status": { "enum": ["abstract-unavailable", "awaiting-fulltext", "fulltext-retrieved", "fulltext-evaluated", "unresolved"] }
         }
+      }
+    },
+    {
+      "if": {
+        "properties": { "abstract_screen": { "enum": ["not-screened", "not-applicable"] } },
+        "required": ["abstract_screen"]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": { "abstract_status": { "const": "unavailable" } },
+            "required": ["abstract_status"]
+          },
+          {
+            "properties": {
+              "abstract_screen_reason": { "type": "null" },
+              "fulltext_priority": { "const": "not-assigned" },
+              "fulltext_priority_reason": { "type": "null" }
+            }
+          }
+        ]
       }
     },
     {

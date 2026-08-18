@@ -1,5 +1,7 @@
 # Draft configuration. Freeze and version every null/TODO before a registered run.
-protocol_version: "draft-0.3"
+protocol_version: "draft-0.4"
+package_version: "prefreeze-package-0.4"
+schema_version: "prefreeze-schema-0.4"
 registration_status: "pre-freeze"
 
 # Supplied by a registered run invocation; never set during scaffold construction.
@@ -35,9 +37,24 @@ identifiers:
   decision_separator: "_D"
   search_separator: "_S"
   discovery_separator: "_R"
+  auxiliary_separator: "_AUX"
 
 search:
   # TODO before freeze: name the permitted search/citation sources in fixed order.
   preferred_sources: []
   # TODO before freeze: specify deterministic fallbacks for unavailable sources.
   fallback_order: []
+
+calibration_002:
+  # DRAFT calibration parameters only. CALIB002 must determine whether each
+  # query block can be screened exhaustively or needs a frozen bound.
+  query_page_size: 100
+  query_max_pages_per_block: 3
+  query_max_records_per_block: 300
+  screen_all_within_bound: true
+  ordering_instability_policy: "save identifiers for each completed page; on retry deduplicate by stable identifier and continue from the last durable cursor/page"
+  citation_union_sources: ["OpenAlex", "Europe PMC"]
+  citation_union_page_size: 100
+  citation_union_max_records_per_direction_per_source: 200
+  citation_union_record_overlap: true
+  citation_union_record_source_unique_title_survivors: true

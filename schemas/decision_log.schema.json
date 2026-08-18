@@ -13,7 +13,7 @@
     "decision_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+_D[0-9]{6}$" },
     "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$", "minLength": 1 },
     "timestamp": { "type": "string", "format": "date-time" },
-    "entity_type": { "enum": ["paper", "experiment", "comparison", "search", "discovery", "missing_text", "run"] },
+    "entity_type": { "enum": ["paper", "experiment", "comparison", "search", "discovery", "missing_text", "auxiliary_source", "run"] },
     "entity_id": { "type": "string", "minLength": 1 },
     "decision_type": { "type": "string", "minLength": 1 },
     "field": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
