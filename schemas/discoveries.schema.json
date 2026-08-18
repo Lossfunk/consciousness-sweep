@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/discoveries.schema.json",
+  "title": "Search-result discovery row",
+  "description": "One discoveries.csv row per paper result actually encountered through a logged search or citation event, including rediscoveries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "discovery_id", "search_id", "paper_id", "result_rank", "raw_title", "raw_doi",
+    "raw_url", "discovered_at", "dedup_status", "dedup_reason", "notes"
+  ],
+  "properties": {
+    "discovery_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+_R[0-9]{6}$" },
+    "search_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+_S[0-9]{6}$" },
+    "paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" },
+    "result_rank": {
+      "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+    },
+    "raw_title": { "type": "string", "minLength": 1 },
+    "raw_doi": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "raw_url": {
+      "anyOf": [{ "type": "string", "format": "uri" }, { "type": "null" }]
+    },
+    "discovered_at": { "type": "string", "format": "date-time" },
+    "dedup_status": { "enum": ["new-paper", "existing-paper", "confirmed-duplicate", "possible-duplicate"] },
+    "dedup_reason": { "type": "string", "minLength": 1 },
+    "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  }
+}

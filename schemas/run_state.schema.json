@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/run_state.schema.json",
+  "title": "Run state",
+  "description": "Durable per-run invocation, version, status, wave, and paper/experiment/comparison counter state.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "run_mode", "status", "status_reason", "protocol_version", "registration_status",
+    "repository_commit", "immutable_inputs_sha256", "current_wave", "next_paper_counter", "next_experiment_counters", "next_comparison_counters",
+    "next_decision_counter", "next_search_counter", "next_discovery_counter",
+    "started_at", "last_checkpoint_at", "model", "model_version", "agent_harness"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$", "minLength": 1 },
+    "run_mode": { "enum": ["start", "resume"] },
+    "status": { "enum": ["running", "paused", "complete", "failed"] },
+    "status_reason": { "type": "string", "minLength": 1 },
+    "protocol_version": { "type": "string", "minLength": 1 },
+    "registration_status": { "type": "string", "minLength": 1 },
+    "repository_commit": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "immutable_inputs_sha256": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "type": "string", "minLength": 1 },
+      "additionalProperties": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    },
+    "current_wave": { "type": "integer", "minimum": 0 },
+    "next_paper_counter": { "type": "integer", "minimum": 1 },
+    "next_experiment_counters": {
+      "type": "object",
+      "propertyNames": { "pattern": "^P[0-9]{6}$" },
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "next_comparison_counters": {
+      "type": "object",
+      "propertyNames": { "pattern": "^P[0-9]{6}_E[0-9]{2}$" },
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "next_decision_counter": { "type": "integer", "minimum": 1 },
+    "next_search_counter": { "type": "integer", "minimum": 1 },
+    "next_discovery_counter": { "type": "integer", "minimum": 1 },
+    "started_at": { "type": "string", "format": "date-time" },
+    "last_checkpoint_at": {
+      "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    },
+    "model": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "model_version": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "agent_harness": { "type": "string", "minLength": 1 }
+  }
+}

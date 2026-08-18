@@ -1,0 +1,43 @@
+# Draft configuration. Freeze and version every null/TODO before a registered run.
+protocol_version: "draft-0.3"
+registration_status: "pre-freeze"
+
+# Supplied by a registered run invocation; never set during scaffold construction.
+run_id: null
+
+# TODO before freeze: set the inclusive publication cutoff and its timezone/interpretation.
+publication_cutoff: null
+
+ask_text_batch_size: 10
+
+paths:
+  protocol: "PROTOCOL.md"
+  empirical_seeds: "seeds_empirical.csv"
+  review_seeds: "seeds_reviews.csv"
+  queries: "queries.md"
+  schemas: "schemas"
+  tools: "tools"
+  runs: "runs"
+  consolidated_outputs: "outputs/consolidated"
+
+fulltext:
+  permit_preprints: true
+  require_fulltext_for_final_classification: true
+
+execution:
+  independent_run: true
+  checkpoint_after_each_wave: true
+
+identifiers:
+  paper_prefix: "P"
+  experiment_separator: "_E"
+  comparison_separator: "_C"
+  decision_separator: "_D"
+  search_separator: "_S"
+  discovery_separator: "_R"
+
+search:
+  # TODO before freeze: name the permitted search/citation sources in fixed order.
+  preferred_sources: []
+  # TODO before freeze: specify deterministic fallbacks for unavailable sources.
+  fallback_order: []

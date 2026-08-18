@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/experiments.schema.json",
+  "title": "X-to-Y comparison master row",
+  "description": "One experiments_master.csv row represents one paper x experiment x X-to-Y comparison. comparison_id is unique while experiment_id may repeat. CSV blanks become JSON null only where permitted; stats_flags is a JSON array encoded in its CSV cell.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "comparison_id", "experiment_id", "paper_id", "experiment_label", "X_label", "X_description",
+    "awareness_measure", "A_code", "A_reason", "first_order_measure", "E_code", "E_reason",
+    "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
+    "Y_label", "Y_description", "F_code", "F_reason", "Y_interpretation_clarity",
+    "critical_comparison", "outcome", "outcome_reason", "direction", "critical_effect",
+    "unaware_Y_evidence", "difference_tested", "null_evidence_strength", "null_evidence_adequacy",
+    "null_equivalence_margin", "null_equivalence_result", "null_BF01",
+    "null_CI_region", "null_CI_entirely_within_region",
+    "Meyen_applicable", "Meyen_status", "Meyen_reason", "stats_status", "stats_flags", "stats_reason",
+    "constraint_summary", "source_pages", "source_figures_tables", "current_status", "notes"
+  ],
+  "properties": {
+    "comparison_id": { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$" },
+    "experiment_id": { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}$" },
+    "paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" },
+    "experiment_label": { "type": "string", "minLength": 1 },
+    "X_label": { "$ref": "#/$defs/nullableString" },
+    "X_description": { "$ref": "#/$defs/nullableString" },
+    "awareness_measure": { "$ref": "#/$defs/nullableString" },
+    "A_code": {
+      "anyOf": [
+        { "enum": ["A-direct", "A-validated", "A-transfer-risk", "A-absent"] },
+        { "type": "null" }
+      ]
+    },
+    "A_reason": { "$ref": "#/$defs/nullableString" },
+    "first_order_measure": { "$ref": "#/$defs/nullableString" },
+    "E_code": {
+      "anyOf": [
+        { "enum": ["E-matched", "E-diagnostic", "E-physical-only", "E-uncontrolled"] },
+        { "type": "null" }
+      ]
+    },
+    "E_reason": { "$ref": "#/$defs/nullableString" },
+    "E_matching_basis": {
+      "description": "Positive basis for E-matched. A nonsignificant difference or an unanchored narrow confidence interval is represented as none/unclear, not as a matching route.",
+      "anyOf": [
+        { "enum": ["active-matching-or-titration", "equivalence-procedure", "none", "unclear"] },
+        { "type": "null" }
+      ]
+    },
+    "E_equivalence_margin": {
+      "description": "The stated first-order equivalence margin when E_matching_basis is equivalence-procedure.",
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_equivalence_result": {
+      "description": "Whether the stated-margin first-order equivalence procedure supported equivalence.",
+      "anyOf": [
+        { "enum": ["supports-equivalence", "does-not-support-equivalence", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "Y_label": { "$ref": "#/$defs/nullableString" },
+    "Y_description": { "$ref": "#/$defs/nullableString" },
+    "F_code": {
+      "description": "F-ambiguous is discovery-supporting only: downstream use/transformation is plausible, but the specific Y cannot be uniquely identified.",
+      "anyOf": [
+        { "enum": ["F-meaningful", "F-ambiguous", "F-not-meaningful"] },
+        { "type": "null" }
+      ]
+    },
+    "F_reason": { "$ref": "#/$defs/nullableString" },
+    "Y_interpretation_clarity": {
+      "anyOf": [
+        { "enum": ["clear", "ambiguous", "unclear"] },
+        { "type": "null" }
+      ]
+    },
+    "critical_comparison": { "$ref": "#/$defs/nullableString" },
+    "outcome": {
+      "anyOf": [
+        { "enum": ["awareness-linked-difference", "preserved-capacity", "inconclusive"] },
+        { "type": "null" }
+      ]
+    },
+    "outcome_reason": { "$ref": "#/$defs/nullableString" },
+    "direction": {
+      "anyOf": [
+        { "enum": ["aware>unaware", "unaware>aware", "qualitative-change", "no-detectable-difference", "other"] },
+        { "type": "null" }
+      ]
+    },
+    "critical_effect": { "$ref": "#/$defs/nullableString" },
+    "unaware_Y_evidence": {
+      "anyOf": [
+        { "enum": ["positive", "absent", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "difference_tested": {
+      "anyOf": [
+        { "enum": ["yes", "no", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "null_evidence_strength": {
+      "anyOf": [
+        { "enum": ["equivalence-testing", "bayesian-evidence", "informative-confidence-intervals", "nonsignificant-only", "mixed", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "null_evidence_adequacy": {
+      "description": "Adequate only for a successful stated-margin equivalence test, null_BF01 >= 3, or a CI entirely inside a stated smallest-effect/equivalence region.",
+      "anyOf": [
+        { "enum": ["adequate", "weak", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "null_equivalence_margin": { "$ref": "#/$defs/nullableString" },
+    "null_equivalence_result": {
+      "anyOf": [
+        { "enum": ["supports-equivalence", "does-not-support-equivalence", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "null_BF01": {
+      "anyOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }]
+    },
+    "null_CI_region": { "$ref": "#/$defs/nullableString" },
+    "null_CI_entirely_within_region": {
+      "anyOf": [
+        { "enum": ["yes", "no", "region-not-stated", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "Meyen_applicable": {
+      "anyOf": [{ "enum": ["yes", "no"] }, { "type": "null" }]
+    },
+    "Meyen_status": {
+      "anyOf": [
+        { "enum": ["Meyen-satisfied", "Meyen-failed", "Meyen-unassessable"] },
+        { "type": "null" }
+      ]
+    },
+    "Meyen_reason": { "$ref": "#/$defs/nullableString" },
+    "stats_status": {
+      "anyOf": [{ "enum": ["adequate", "concern", "unclear"] }, { "type": "null" }]
+    },
+    "stats_flags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "none", "difference-not-tested", "weak-null-evidence", "multiple-comparisons",
+          "inappropriate-model", "pseudoreplication", "selective-exclusions",
+          "exploratory-critical-analysis", "other"
+        ]
+      },
+      "not": {
+        "allOf": [
+          { "contains": { "const": "none" } },
+          { "minItems": 2 }
+        ]
+      }
+    },
+    "stats_reason": { "$ref": "#/$defs/nullableString" },
+    "constraint_summary": { "$ref": "#/$defs/nullableString" },
+    "source_pages": { "$ref": "#/$defs/nullableString" },
+    "source_figures_tables": { "$ref": "#/$defs/nullableString" },
+    "current_status": { "enum": ["identified", "design-coded", "fully-evaluated", "excluded", "unresolved"] },
+    "notes": { "$ref": "#/$defs/nullableString" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "A_code": { "type": "string" } }, "required": ["A_code"] },
+      "then": { "properties": { "A_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "E_code": { "type": "string" } }, "required": ["E_code"] },
+      "then": { "properties": { "E_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "E_code": { "const": "E-matched" } }, "required": ["E_code"] },
+      "then": {
+        "properties": {
+          "E_matching_basis": { "enum": ["active-matching-or-titration", "equivalence-procedure"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "E_code": { "enum": ["E-diagnostic", "E-physical-only", "E-uncontrolled"] } }, "required": ["E_code"] },
+      "then": { "properties": { "E_matching_basis": { "enum": ["none", "unclear"] } } }
+    },
+    {
+      "if": { "properties": { "E_matching_basis": { "const": "equivalence-procedure" } }, "required": ["E_matching_basis"] },
+      "then": {
+        "properties": {
+          "E_equivalence_margin": { "type": "string", "minLength": 1 },
+          "E_equivalence_result": { "const": "supports-equivalence" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "E_equivalence_result": { "const": "supports-equivalence" } }, "required": ["E_equivalence_result"] },
+      "then": { "properties": { "E_matching_basis": { "const": "equivalence-procedure" } } }
+    },
+    {
+      "if": { "properties": { "F_code": { "type": "string" } }, "required": ["F_code"] },
+      "then": { "properties": { "F_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "outcome": { "type": "string" } }, "required": ["outcome"] },
+      "then": { "properties": { "outcome_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "Meyen_applicable": { "const": "yes" } }, "required": ["Meyen_applicable"] },
+      "then": {
+        "properties": {
+          "Meyen_status": { "enum": ["Meyen-satisfied", "Meyen-failed", "Meyen-unassessable"] },
+          "Meyen_reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "Meyen_applicable": { "const": "no" } }, "required": ["Meyen_applicable"] },
+      "then": {
+        "properties": {
+          "Meyen_status": { "type": "null" },
+          "Meyen_reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "stats_status": { "type": "string" } }, "required": ["stats_status"] },
+      "then": {
+        "properties": {
+          "stats_reason": { "type": "string", "minLength": 1 },
+          "stats_flags": { "minItems": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "null_evidence_adequacy": { "const": "not-applicable" } }, "required": ["null_evidence_adequacy"] },
+      "then": {
+        "properties": {
+          "null_evidence_strength": { "const": "not-applicable" },
+          "null_equivalence_margin": { "type": "null" },
+          "null_equivalence_result": { "const": "not-applicable" },
+          "null_BF01": { "type": "null" },
+          "null_CI_region": { "type": "null" },
+          "null_CI_entirely_within_region": { "const": "not-applicable" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "null_evidence_adequacy": { "const": "adequate" } }, "required": ["null_evidence_adequacy"] },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "null_equivalence_result": { "const": "supports-equivalence" },
+              "null_equivalence_margin": { "type": "string", "minLength": 1 }
+            },
+            "required": ["null_equivalence_result", "null_equivalence_margin"]
+          },
+          {
+            "properties": { "null_BF01": { "type": "number", "minimum": 3 } },
+            "required": ["null_BF01"]
+          },
+          {
+            "properties": {
+              "null_CI_entirely_within_region": { "const": "yes" },
+              "null_CI_region": { "type": "string", "minLength": 1 }
+            },
+            "required": ["null_CI_entirely_within_region", "null_CI_region"]
+          }
+        ]
+      }
+    },
+    {
+      "if": { "properties": { "null_evidence_strength": { "const": "nonsignificant-only" } }, "required": ["null_evidence_strength"] },
+      "then": {
+        "properties": {
+          "null_evidence_adequacy": { "const": "weak" },
+          "null_equivalence_margin": { "type": "null" },
+          "null_equivalence_result": { "const": "not-applicable" },
+          "null_BF01": { "type": "null" },
+          "null_CI_region": { "type": "null" },
+          "null_CI_entirely_within_region": { "const": "not-applicable" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "null_evidence_strength": { "const": "unclear" } }, "required": ["null_evidence_strength"] },
+      "then": { "properties": { "null_evidence_adequacy": { "const": "unclear" } } }
+    },
+    {
+      "if": { "properties": { "null_equivalence_result": { "const": "supports-equivalence" } }, "required": ["null_equivalence_result"] },
+      "then": {
+        "properties": {
+          "null_equivalence_margin": { "type": "string", "minLength": 1 },
+          "null_evidence_strength": { "enum": ["equivalence-testing", "mixed"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "null_BF01": { "type": "number" } }, "required": ["null_BF01"] },
+      "then": { "properties": { "null_evidence_strength": { "enum": ["bayesian-evidence", "mixed"] } } }
+    },
+    {
+      "if": { "properties": { "null_CI_entirely_within_region": { "const": "yes" } }, "required": ["null_CI_entirely_within_region"] },
+      "then": {
+        "properties": {
+          "null_CI_region": { "type": "string", "minLength": 1 },
+          "null_evidence_strength": { "enum": ["informative-confidence-intervals", "mixed"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "current_status": { "const": "fully-evaluated" } }, "required": ["current_status"] },
+      "then": {
+        "properties": {
+          "X_label": { "type": "string", "minLength": 1 },
+          "X_description": { "type": "string", "minLength": 1 },
+          "awareness_measure": { "type": "string", "minLength": 1 },
+          "A_code": { "type": "string" },
+          "first_order_measure": { "type": "string", "minLength": 1 },
+          "E_code": { "type": "string" },
+          "E_matching_basis": { "type": "string" },
+          "E_equivalence_result": { "type": "string" },
+          "Y_label": { "type": "string", "minLength": 1 },
+          "Y_description": { "type": "string", "minLength": 1 },
+          "F_code": { "type": "string" },
+          "Y_interpretation_clarity": { "type": "string" },
+          "critical_comparison": { "type": "string", "minLength": 1 },
+          "outcome": { "type": "string" },
+          "critical_effect": { "type": "string", "minLength": 1 },
+          "unaware_Y_evidence": { "type": "string" },
+          "difference_tested": { "type": "string" },
+          "null_evidence_strength": { "type": "string" },
+          "null_evidence_adequacy": { "type": "string" },
+          "Meyen_applicable": { "type": "string" },
+          "stats_status": { "type": "string" },
+          "constraint_summary": { "type": "string", "minLength": 1 },
+          "source_pages": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nullableString": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  }
+}

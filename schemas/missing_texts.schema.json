@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/missing_texts.schema.json",
+  "title": "Missing texts row",
+  "description": "One logical missing_texts.csv row. attempted_sources is a JSON array encoded in its CSV cell.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "paper_id", "priority", "reason", "attempted_sources", "last_attempt_date", "status",
+    "manually_requested", "manual_request_wave", "local_fulltext_path", "file_sha256",
+    "provided_at", "provided_wave", "notes"
+  ],
+  "properties": {
+    "paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" },
+    "priority": { "enum": ["ask-text-high", "ask-text-medium", "unavailable-low-priority"] },
+    "reason": { "type": "string", "minLength": 1 },
+    "attempted_sources": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "last_attempt_date": { "type": "string", "format": "date" },
+    "status": { "enum": ["pending", "manually-requested", "provided-by-user", "retrieved", "unavailable", "closed-not-needed"] },
+    "manually_requested": { "type": "boolean" },
+    "manual_request_wave": {
+      "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+    },
+    "local_fulltext_path": {
+      "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "file_sha256": {
+      "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
+    },
+    "provided_at": {
+      "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    },
+    "provided_wave": {
+      "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+    },
+    "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "manually_requested": { "const": true } }, "required": ["manually_requested"] },
+      "then": { "properties": { "manual_request_wave": { "type": "integer", "minimum": 0 } } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["provided-by-user", "retrieved"] } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "local_fulltext_path": { "type": "string", "minLength": 1 },
+          "provided_at": { "type": "string", "format": "date-time" },
+          "provided_wave": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  ]
+}

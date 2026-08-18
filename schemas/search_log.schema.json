@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/search_log.schema.json",
+  "title": "Search log row",
+  "description": "Strict schema for one logical row of search_log.csv. CSV blanks are converted to JSON null before validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "search_id",
+    "run_id",
+    "wave",
+    "event_type",
+    "discovery_route",
+    "parent_paper_id",
+    "trigger_comparison_id",
+    "query_id",
+    "query_text",
+    "source",
+    "index_direction",
+    "started_at",
+    "completed_at",
+    "results_returned",
+    "new_unique_papers",
+    "status",
+    "reason_or_notes"
+  ],
+  "properties": {
+    "search_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+_S[0-9]{6}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "minLength": 1
+    },
+    "wave": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "event_type": {
+      "enum": [
+        "query-search",
+        "backward-citation",
+        "forward-citation",
+        "review-anchor-scan",
+        "fulltext-retrieval",
+        "deduplication",
+        "manual-promotion",
+        "checkpoint",
+        "other"
+      ]
+    },
+    "discovery_route": {
+      "enum": [
+        "empirical-seed",
+        "review-anchor",
+        "backward-citation",
+        "forward-citation",
+        "independent-query",
+        "process-triggered-query",
+        "manual-suggestion",
+        "administrative",
+        "other"
+      ]
+    },
+    "parent_paper_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^P[0-9]{6}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "trigger_comparison_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "query_id": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "query_text": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "index_direction": {
+      "enum": [
+        "backward",
+        "forward",
+        "not-applicable"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "results_returned": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "new_unique_papers": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "started",
+        "complete",
+        "failed",
+        "skipped",
+        "unresolved"
+      ]
+    },
+    "reason_or_notes": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "discovery_route": {
+            "const": "process-triggered-query"
+          }
+        },
+        "required": [
+          "discovery_route"
+        ]
+      },
+      "then": {
+        "properties": {
+          "trigger_comparison_id": {
+            "type": "string",
+            "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+          },
+          "query_text": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "backward-citation",
+              "forward-citation"
+            ]
+          }
+        },
+        "required": [
+          "event_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parent_paper_id": {
+            "type": "string",
+            "pattern": "^P[0-9]{6}$"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nullableString": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}
