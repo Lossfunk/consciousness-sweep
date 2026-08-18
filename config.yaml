@@ -1,7 +1,7 @@
 # Draft configuration. Freeze and version every null/TODO before a registered run.
-protocol_version: "draft-0.5"
-package_version: "prefreeze-package-0.5"
-schema_version: "prefreeze-schema-0.5"
+protocol_version: "draft-0.6"
+package_version: "prefreeze-package-0.6"
+schema_version: "prefreeze-schema-0.6"
 registration_status: "pre-freeze"
 
 # Supplied by a registered run invocation; never set during scaffold construction.
@@ -76,3 +76,19 @@ calibration_003:
   fulltext_sample_population: "newly discovered abstract screen-in candidates"
   fulltext_sample_order: "fulltext priority high-to-low, then earliest durable discovery_id, then paper_id"
   fulltext_sample_tie_breaker_excludes_expected_outcome: true
+
+calibration_004:
+  # PREPARED ONLY. No CALIB004 run is authorized by this file.
+  independent_query_families: 6
+  independent_query_sources: ["OpenAlex", "Europe PMC"]
+  independent_query_page_size: 40
+  independent_query_max_pages_per_family_source: 1
+  independent_query_max_records: 480
+  blind_sentinel_set: "unchanged CALIB003 six-sentinel set"
+  dynamic_query_sources: ["OpenAlex", "Europe PMC"]
+  dynamic_query_page_size: 50
+  dynamic_query_max_pages_per_source: 1
+  dynamic_query_max_records: 100
+  mechanical_Meyen_role_check_records: 0
+  total_max_records: 580
+  excluded_scope: "citation calibration; F/full-text calibration; source ordering; recursive process search"

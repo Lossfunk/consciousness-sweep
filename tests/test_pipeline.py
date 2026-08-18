@@ -20,14 +20,24 @@ from derive_outputs import (  # noqa: E402
     constraint_awareness_difference,
     constraint_preserved_capacity,
     design_eligible,
+    write_rows,
 )
 from calibration_sampling import select_calibration_fulltexts  # noqa: E402
 from structured_write import (  # noqa: E402
     allocate_identifier,
     append_jsonl_record,
     doi_resolver_url,
+    dry_run_bibliographic_normalization,
     normalize_doi,
     write_csv_record,
+)
+from query_instruments import (  # noqa: E402
+    COMPACT_PROCESS_TERMS,
+    TSUSHIMA_DIAGNOSTIC_VARIANTS,
+    render_process_query,
+    render_title_abstract_query,
+    validate_process_variants,
+    validate_rendered_query,
 )
 from validate_run import dependency_errors, load_jsonl_rows  # noqa: E402
 
@@ -80,6 +90,7 @@ def experiment(**updates: object) -> dict:
         "null_BF01": None,
         "null_CI_region": None,
         "null_CI_entirely_within_region": None,
+        "Meyen_role": None,
         "Meyen_applicable": None,
         "Meyen_status": None,
         "Meyen_reason": None,
@@ -385,6 +396,35 @@ class StructuredWriteTests(unittest.TestCase):
         self.assertNotIn("<", url)
         FormatChecker().check(url, "uri")
 
+    def test_doi_url_normalization_dry_run_is_non_mutating(self) -> None:
+        records = [{
+            "doi": " https://doi.org/10.1002/A<B> ",
+            "url": " https://example.org/article path?q=a b ",
+        }]
+        before = json.loads(json.dumps(records))
+        normalized = dry_run_bibliographic_normalization(records)
+        self.assertEqual(records, before)
+        self.assertEqual(normalized[0]["doi"], "10.1002/a<b>")
+        self.assertNotIn("<", normalized[0]["doi_resolver_url"])
+        self.assertIn("%20", normalized[0]["url"])
+
+    def test_comparison_requires_preallocated_experiment_group(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            run_dir = Path(temporary)
+            (run_dir / "run_state.json").write_text(json.dumps({
+                "run_id": "TEST", "next_paper_counter": 1,
+                "next_experiment_counters": {}, "next_comparison_counters": {},
+                "next_decision_counter": 1, "next_search_counter": 1,
+                "next_discovery_counter": 1, "next_auxiliary_counter": 1,
+            }), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "experiment group"):
+                allocate_identifier(run_dir, "comparison", "P000001_E01")
+            experiment_id = allocate_identifier(run_dir, "experiment", "P000001")
+            self.assertEqual(
+                allocate_identifier(run_dir, "comparison", experiment_id),
+                "P000001_E01_C01",
+            )
+
 
 class ScreeningContractTests(unittest.TestCase):
     def test_agent_semantic_title_and_abstract_screening(self) -> None:
@@ -455,11 +495,12 @@ class CompatibilityAndDerivedTests(unittest.TestCase):
         self.assertIn("incompatible run package/schema", result.stderr)
         self.assertEqual(aggregate_hash(old_run), before)
 
-    def test_existing_derived_output_rules_are_unchanged(self) -> None:
+    def test_baseline_derived_output_routes_still_pass(self) -> None:
         awareness = {
             "A_code": "A-direct", "E_code": "E-diagnostic", "F_code": "F-meaningful",
             "outcome": "awareness-linked-difference", "stats_status": "adequate",
-            "difference_tested": "yes", "Meyen_applicable": "no", "Meyen_status": None,
+            "difference_tested": "yes", "Meyen_role": "not-applicable",
+            "Meyen_applicable": "no", "Meyen_status": None,
             "unaware_Y_evidence": "not-applicable", "null_evidence_adequacy": "not-applicable",
         }
         preserved = dict(
@@ -472,6 +513,71 @@ class CompatibilityAndDerivedTests(unittest.TestCase):
         self.assertTrue(constraint_awareness_difference(awareness))
         self.assertFalse(constraint_preserved_capacity(awareness))
         self.assertTrue(constraint_preserved_capacity(preserved))
+
+    def test_inference_critical_meyen_failure_blocks(self) -> None:
+        row = {
+            "A_code": "A-direct", "E_code": "E-matched", "F_code": "F-meaningful",
+            "outcome": "awareness-linked-difference", "stats_status": "adequate",
+            "difference_tested": "yes", "Meyen_role": "inference-critical",
+            "Meyen_applicable": "yes", "Meyen_status": "Meyen-failed",
+        }
+        self.assertFalse(constraint_awareness_difference(row))
+
+    def test_meyen_role_and_applicability_are_schema_consistent(self) -> None:
+        row = experiment(
+            Meyen_role="supplementary", Meyen_applicable="yes",
+            Meyen_status="Meyen-failed",
+            Meyen_reason="Independent A plus E support exists, but indirect-task advantage fails.",
+        )
+        validate("experiments.schema.json", row)
+        with self.assertRaises(ValidationError):
+            validate("experiments.schema.json", dict(row, Meyen_applicable="no"))
+
+    def test_supplementary_meyen_failure_does_not_block_and_remains_visible(self) -> None:
+        row = {
+            "comparison_id": "P000001_E01_C01", "A_code": "A-validated",
+            "E_code": "E-diagnostic", "F_code": "F-meaningful",
+            "outcome": "awareness-linked-difference", "stats_status": "adequate",
+            "difference_tested": "yes", "Meyen_role": "supplementary",
+            "Meyen_applicable": "yes", "Meyen_status": "Meyen-failed",
+        }
+        self.assertTrue(constraint_awareness_difference(row))
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "constraint_ready_experiments.csv"
+            write_rows(path, list(row), [row])
+            with path.open(newline="", encoding="utf-8") as handle:
+                persisted = next(csv.DictReader(handle))
+        self.assertEqual(persisted["Meyen_role"], "supplementary")
+        self.assertEqual(persisted["Meyen_status"], "Meyen-failed")
+
+
+class QueryInstrumentTests(unittest.TestCase):
+    def test_compact_queries_parse_on_both_source_renderers(self) -> None:
+        documented = (ROOT / "queries.md").read_text(encoding="utf-8")
+        for terms in COMPACT_PROCESS_TERMS.values():
+            for source in ("OpenAlex", "Europe PMC"):
+                rendered = render_title_abstract_query(source, terms)
+                validate_rendered_query(source, rendered)
+                self.assertNotIn("{{", rendered)
+                self.assertIn(rendered, documented)
+
+    def test_tsushima_lexical_expansion_is_provenance_backed(self) -> None:
+        checked = validate_process_variants(TSUSHIMA_DIAGNOSTIC_VARIANTS)
+        self.assertEqual(len(checked), 6)
+        documented = (ROOT / "queries.md").read_text(encoding="utf-8")
+        for source in ("OpenAlex", "Europe PMC"):
+            rendered = render_process_query(source, checked)
+            validate_rendered_query(source, rendered)
+            self.assertIn(rendered, documented)
+
+    def test_unrestricted_semantic_synonym_is_rejected(self) -> None:
+        variants = [*TSUSHIMA_DIAGNOSTIC_VARIANTS, {
+            "term": "executive attention",
+            "provenance_category": "llm-semantic-synonym",
+            "rationale": "Unrestricted neighboring term.",
+        }]
+        with self.assertRaisesRegex(ValueError, "unrestricted"):
+            validate_process_variants(variants)
 
 
 if __name__ == "__main__":

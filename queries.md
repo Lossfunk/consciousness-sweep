@@ -2,9 +2,49 @@
 
 **Status of every exact string below: DRAFT — TO FREEZE BEFORE REGISTERED RUN**
 
-These query families are recall checks and discovery tools, not eligibility definitions. Interpret eligibility only under `PROTOCOL.md`. Before registration, adapt and freeze each exact string for every named search source, recording source-specific syntax, fields, limits, date handling, and fallback behavior. Do not execute these drafts during repository construction.
+These query families are recall checks and discovery tools, not eligibility definitions. The principal recall instrument is empirical-seed citation expansion plus review/discovery anchors plus activated process-trigger searches. Independent database blocks are a supplementary blind-spot check, not a claim of complete enumeration; every record returned inside a frozen window must nevertheless be screened and audited. Interpret eligibility only under `PROTOCOL.md`. Before registration, adapt and freeze each exact string for every named search source, recording source-specific syntax, fields, limits, date handling, and fallback behavior. Do not execute these drafts during repository construction.
 
-## Proposed CALIB003 independent-query lane (not executed)
+## Proposed CALIB004 compact independent-query lane (prepared, not executed)
+
+These six blocks replace broad standalone process words with diagnostic phrases. Each crosses the same explicit awareness vocabulary with a small process-specific vocabulary. Neither source uses unqualified `task`, `performance`, `experiment`, `memory`, or `decision` as a process term. The canonical renderers are in `tools/query_instruments.py`.
+
+Shared draft syntax-only instrumentation: OpenAlex `/works` with `filter=title_and_abstract.search`, `sort=relevance_score:desc`, `per_page=40`, page 1 only; Europe PMC `/search` with `TITLE_ABS`, default relevance, `pageSize=40`, initial cursor only, and `synonym=false`. Screen and audit all returned records. Across six families and two sources, the hard ceiling is 480 encounters.
+
+### QCAL4-ATTN — attention/control
+
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("attentional control" OR "inhibitory control" OR "distractor interference" OR "attentional capture")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"attentional control" OR TITLE_ABS:"inhibitory control" OR TITLE_ABS:"distractor interference" OR TITLE_ABS:"attentional capture")`
+
+### QCAL4-META — metacognition/monitoring
+
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("metacognitive sensitivity" OR "confidence accuracy" OR "error monitoring" OR "metacognitive control")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"metacognitive sensitivity" OR TITLE_ABS:"confidence accuracy" OR TITLE_ABS:"error monitoring" OR TITLE_ABS:"metacognitive control")`
+
+### QCAL4-BIND — binding/integration
+
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("feature binding" OR "object integration" OR "event integration" OR "object updating")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"feature binding" OR TITLE_ABS:"object integration" OR TITLE_ABS:"event integration" OR TITLE_ABS:"object updating")`
+
+### QCAL4-MEM — memory operations
+
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("working memory maintenance" OR "working memory updating" OR "episodic encoding" OR "memory retrieval")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"working memory maintenance" OR TITLE_ABS:"working memory updating" OR TITLE_ABS:"episodic encoding" OR TITLE_ABS:"memory retrieval")`
+
+### QCAL4-DEC — action/rule-guided use
+
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("action selection" OR "response selection" OR "rule-guided behavior" OR "rule-guided behaviour" OR "flexible control")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"action selection" OR TITLE_ABS:"response selection" OR TITLE_ABS:"rule-guided behavior" OR TITLE_ABS:"rule-guided behaviour" OR TITLE_ABS:"flexible control")`
+
+### QCAL4-LEARN — learning/adaptation
+
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("error-based learning" OR "reinforcement learning" OR "evaluative conditioning" OR "adaptive updating")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"error-based learning" OR TITLE_ABS:"reinforcement learning" OR TITLE_ABS:"evaluative conditioning" OR TITLE_ABS:"adaptive updating")`
+
+### Blind sentinel check
+
+Use the six existing CALIB003 sentinels unchanged and without embedding titles, authors, or identifiers in any query. Count only natural recovery inside the 480-record windows. This is a syntax/recall diagnostic, not an inclusion test or registered stopping rule.
+
+## CALIB003 independent-query instrument — executed historical provenance
 
 CALIB002's Q001/Q002 instruments each returned 300 screened records from all eight source blocks but recovered none of the six calibration sentinels. They are retained below as failed historical calibration instruments, not as the proposed CALIB003 lane. The redesign uses six separate process families. Their union is a supplementary recall check alongside the empirical-seed citation graph, review/discovery anchors, and process-triggered searches; it is not a universal enumeration of Y.
 
@@ -222,17 +262,35 @@ AND
 
 **Activation:** Use once for a newly normalized `Y_label` only after an experiment provisionally meets the A/E/F activation conditions in `PROTOCOL.md`. Search only the observed process. Log the rendered query verbatim, its trigger experiment, source, and normalization decision.
 
-```text
-(awareness OR aware OR unaware OR conscious OR unconscious OR visibility OR seen OR unseen)
-AND
-("{{Y_LABEL}}" OR {{FROZEN_Y_SYNONYMS_IF_ANY}})
-AND
-(experiment OR task OR performance)
-AND
-(mask* OR threshold* OR discrimination OR "continuous flash suppression" OR CFS OR blindsight)
-```
+The permitted lexical universe is closed: canonical Y; morphology/grammar/spelling/hyphenation of canonical Y; terminology explicitly used for Y in the qualifying source paper; and one frozen immediate-parent functional term. Each rendered term must carry its provenance category, source or derivation, and rationale. Unrestricted language-model synonyms and neighboring functions are invalid. The source renderers in `tools/query_instruments.py` enforce these categories locally before any call.
 
-`{{FROZEN_Y_SYNONYMS_IF_ANY}}` must be restricted to synonyms frozen for the observed Y at activation time. Do not add neighbouring cognitive processes. The rendered source-specific string is the auditable query; the template alone is not sufficient.
+The source-specific query crosses explicit awareness terms directly with the validated Y variants in title/abstract fields. Generic `experiment`, `task`, and `performance` clauses and an obligatory masking-method clause are removed because CALIB003 showed that they can make an already narrow process phrase pathological.
+
+### Prepared Tsushima diagnostic query (not executed)
+
+Permitted variants, exhaustively:
+
+| Term | Provenance category | Rationale |
+|---|---|---|
+| `regulation of task-irrelevant distractor interference` | canonical-y | Conservative Y assigned from the behavioral dependent measure. |
+| `task-irrelevant distractor-interference regulation` | morphology-grammar | Nominal reordering and hyphenation only; the function is unchanged. |
+| `regulating task-irrelevant distractor interference` | morphology-grammar | Gerund form of the canonical label only. |
+| `inhibitory control` | source-paper-terminology | Explicitly used in the paper title and article, pp. 1786–1788. |
+| `attention filtering` | source-paper-terminology | Filtering terminology explicitly used for the observed interference effect, article pp. 1786–1788. |
+| `distractor interference control` | frozen-immediate-parent | Single immediate parent `Y-PARENT-DISTRACTOR-INTERFERENCE-CONTROL`; no neighboring function is added. |
+
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("regulation of task-irrelevant distractor interference" OR "task-irrelevant distractor-interference regulation" OR "regulating task-irrelevant distractor interference" OR "inhibitory control" OR "attention filtering" OR "distractor interference control")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"regulation of task-irrelevant distractor interference" OR TITLE_ABS:"task-irrelevant distractor-interference regulation" OR TITLE_ABS:"regulating task-irrelevant distractor interference" OR TITLE_ABS:"inhibitory control" OR TITLE_ABS:"attention filtering" OR TITLE_ABS:"distractor interference control")`
+
+CALIB004 syntax bound for this diagnostic: one initial result window per source, 50 records each, screen/audit all returned records, maximum 100 encounters. Report source parse success and result-universe size; do not follow results or retrieve full text.
+
+## CALIB004 bounded plan (prepared, not authorized or executed)
+
+1. **A — compact volume and blind sentinel recovery:** syntax-test the six QCAL4 blocks on OpenAlex and Europe PMC, one 40-record window per source/block, screen and audit all returns, maximum 480 encounters. Evaluate the unchanged six sentinels blindly.
+2. **B — dynamic-query syntax/universe:** syntax-test the prepared Tsushima query on both sources, one 50-record window each, maximum 100 encounters. Confirm parsing and that the returned universe is non-pathological; do not expand citations or recurse.
+3. **C — mechanical Meyen-role verification:** use synthetic rows only to verify inference-critical blocking, supplementary non-blocking, and retention of supplementary status in derived files. This phase has zero literature records.
+
+The total CALIB004 ceiling is 580 encountered literature records. It includes no citation calibration, F/full-text calibration, source-ordering calibration, scientific screening beyond the returned calibration windows, or change to frozen scientific criteria. This plan is preparation only and does not authorize a calibration run.
 
 ## Freeze checklist for queries
 

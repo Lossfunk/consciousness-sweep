@@ -140,6 +140,7 @@ def main() -> int:
         "awareness-linked-difference", "preserved-capacity", "inconclusive",
         "positive", "absent", "weak", "not-applicable",
         "Meyen-satisfied", "Meyen-failed", "Meyen-unassessable",
+        "inference-critical", "supplementary", "not-applicable",
         "active-matching-or-titration", "equivalence-procedure",
         "supports-equivalence", "does-not-support-equivalence",
         "region-not-stated",
@@ -155,7 +156,7 @@ def main() -> int:
         "critical_dependency_status", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
         "Y_evidence_role", "mechanistic_interpretation", "mechanism_clarity",
         "null_equivalence_margin", "null_equivalence_result", "null_BF01",
-        "null_CI_region", "null_CI_entirely_within_region",
+        "null_CI_region", "null_CI_entirely_within_region", "Meyen_role",
     ):
         if field not in experiment_properties:
             errors.append(f"experiments schema lacks required comparison/audit field: {field}")

@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.5
+**Version:** draft-0.6
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -113,11 +113,15 @@ Where relevant, flag multiple-comparison problems, inappropriate statistical mod
 
 ## 5. Meyen diagnostic
 
-Apply this diagnostic only when a study reasons that (1) a direct measure of X is at or near chance or nonsignificant, (2) an indirect measure shows an effect, and therefore (3) X was processed unconsciously.
+Apply this diagnostic when a study reasons that (1) a direct measure of X is at or near chance or nonsignificant, (2) an indirect measure shows an effect, and therefore (3) X was processed unconsciously. Meyen et al. require evidence for an **indirect task advantage**: the indirect measure must be shown to be more sensitive to X than the direct measure on a comparable scale.
 
-Meyen et al. require evidence for an **indirect task advantage**: the indirect measure must be shown to be more sensitive to X than the direct measure on a comparable scale.
+Record `Meyen_role` before recording status:
 
-Record `Meyen_applicable` as `yes` or `no`. When applicable, use `Meyen-satisfied`, `Meyen-failed`, or `Meyen-unassessable`, and explain why. Passing does not by itself prove unconscious processing and does not replace the A requirement.
+- `inference-critical`: the unconscious-processing inference depends on the residual-sensitivity logic above. There is no independently adequate A plus `E-matched` or `E-diagnostic` route that supports the critical awareness/evidence inference. `Meyen-failed` or `Meyen-unassessable` blocks constraint-ready status.
+- `supplementary`: the residual-sensitivity diagnostic is relevant to a claim or caveat, but adequate A plus `E-matched` or `E-diagnostic` independently supports the critical inference. Preserve the Meyen result and caveat, but failure or unassessability does not block an otherwise constraint-ready comparison.
+- `not-applicable`: the study does not make the direct-chance plus indirect-effect inference described above.
+
+`Meyen_applicable` remains as a consistency field: it is `yes` for `inference-critical` and `supplementary`, and `no` for `not-applicable`. When applicable, use `Meyen-satisfied`, `Meyen-failed`, or `Meyen-unassessable`, and explain why. Passing does not by itself prove unconscious processing and does not replace A or E.
 
 ## 6. Screening funnel
 
@@ -189,7 +193,7 @@ First enumerate the distinct X→Y comparisons within each potentially relevant 
 14. Record `unaware_Y_evidence` when relevant.
 15. Record the structured null-evidence basis, `null_evidence_strength`, and `null_evidence_adequacy` when relevant.
 16. Perform the statistical audit, including whether the critical difference was tested.
-17. Apply the Meyen diagnostic when relevant.
+17. Assign the Meyen role and apply the diagnostic when relevant.
 18. Write a one- or two-sentence empirical-constraint statement.
 19. Record page, figure, table, analysis, and auxiliary-source locations.
 
@@ -219,7 +223,9 @@ Use a frozen broad set of review, theory, method, and other discovery-anchor pap
 
 ### 9.3 Independent query search
 
-Before the registered run, freeze source-specific query families as a supplementary recall check against citation-network blind spots. This lane complements, rather than replaces, the empirical-seed graph, review/discovery anchors, and process-triggered searches. Use several conceptually motivated families that separately cross awareness terminology with broad downstream-use classes, including attention/control/inhibition/distractor control; metacognition/confidence/monitoring/error evaluation; binding/integration/object or event updating; memory/maintenance/working memory; decision/action/rule-guided or flexible use; and learning/adaptation. Unknown Y remains discoverable through review, citation, and process-trigger routes. Do not rely on relevance ranking from one multimillion-record monolithic query as the main instrument.
+The principal recall instrument is the combination of empirical-seed backward/forward citation expansion, review/discovery anchors, and activated process-triggered expansion. Before the registered run, freeze compact source-specific independent query families only as a supplementary blind-spot and recall check. This lane does not claim complete enumeration and does not replace the principal routes. Nevertheless, every record returned inside each frozen window is screened and audited under the normal provenance rules.
+
+Use several conceptually motivated families that separately cross explicit awareness terminology with diagnostic downstream-process terms, including attention/control/inhibition/distractor control; metacognition/confidence/monitoring/error evaluation; binding/integration/object or event updating; memory/maintenance/working memory; decision/action/rule-guided or flexible use; and learning/adaptation. Do not use generic `task`, `performance`, `experiment`, `memory`, or `decision` alone as a process block. Unknown Y remains discoverable through the principal routes. Do not rely on relevance ranking from one multimillion-record monolithic query as the main instrument.
 
 Every frozen source-specific query block must state its sort/ranking, page size, whether every returned record is screened, and—if not exhaustive—the exact preregistered record/page maximum. It must also specify behavior for ties, source reordering, cursor failure/API truncation, and deduplication across blocks. A registered instruction to merely “run the query” is insufficient. Pre-freeze calibration may use explicitly labeled draft bounds to determine whether exhaustive screening is feasible; those bounds do not become registered defaults by convenience.
 
@@ -238,6 +244,8 @@ A newly encountered Y triggers one targeted Y-specific search only when it first
 - F is `F-meaningful`.
 
 Search only the observed Y; do not automatically expand to semantic neighbours. Log every dynamic query verbatim. In this lane, only `screen-in` proceeds automatically; `screen-uncertain` remains in the audit unless independently rediscovered or manually promoted later.
+
+Lexical expansion is controlled and auditable. A rendered dynamic query may contain only: (1) the canonical Y label; (2) morphology, grammatical reorderings, spelling, or hyphenation variants of that label; (3) terminology explicitly used for Y by the qualifying source paper; and (4) one frozen immediate-parent functional term. Every term must be logged with one of those provenance categories, its source or derivation, and a rationale. Unrestricted language-model synonyms, neighboring functions, and unlogged semantic expansions are prohibited.
 
 A genuinely new Y found in this lane may trigger another Y-specific search only if it independently satisfies the same activation conditions. Each normalized Y label may activate this route once per run; label normalization decisions and reasons must be logged.
 

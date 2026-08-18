@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.5, pre-freeze
+**Status:** draft-0.6, pre-freeze
 
 ## 1. Authority split
 
@@ -37,6 +37,7 @@ consciousness-sweep/
 │   ├── validate_run.py
 │   ├── derive_outputs.py
 │   ├── structured_write.py
+│   ├── query_instruments.py
 │   ├── calibration_sampling.py
 │   └── bootstrap_env.py
 ├── tests/
@@ -153,7 +154,7 @@ Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependenc
 
 ## 7. Full-text sequence and revisions
 
-Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate and assign stable IDs to the experiment's distinct X→Y comparisons; for each comparison, check and record `critical_dependency_status` before final A/E/F/statistical decisions, resolve linked auxiliary evidence where reasonably possible, write design facts and A/evidence-type/F decisions, log the design-based provisional E decision, apply the protocol's result-pattern diagnostic only where required, and then write final E to `experiments_master.csv`. Do not duplicate or reinterpret the scientific definitions here.
+Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate the physical experiment groups first and reserve each experiment ID before reserving any of its comparison IDs. Then enumerate the experiment's distinct X→Y comparisons; for each comparison, check and record `critical_dependency_status` before final A/E/F/statistical decisions, resolve linked auxiliary evidence where reasonably possible, write design facts and A/evidence-type/F decisions, log the design-based provisional E decision, apply the protocol's result-pattern diagnostic only where required, and then write final E to `experiments_master.csv`. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
 
 Before changing current state:
 
@@ -175,6 +176,8 @@ Apply bibliographic deduplication deterministically:
 5. Link preprint and published versions as one logical work only when authorship, title/content, and explicit version relationship make the link sufficiently clear.
 
 Use `normalize_doi` and `doi_resolver_url` from `tools/structured_write.py` for stored DOI comparisons and resolver URLs. Percent-decode before canonical normalization, then percent-encode unsafe DOI path characters when constructing `https://doi.org/` links; never interpolate a raw DOI into a URI field.
+
+Before any bulk bibliographic persistence, run the non-mutating DOI/URL normalization dry run over the complete proposed batch. Resolve every rejected or unsafe record before allocating paper/discovery IDs or writing parent rows. A passing dry run does not replace row-level schema validation.
 
 Every deduplication or merge requires `dedup_reason`/`duplicate_reason` and a decision-log event. A confirmed duplicate points `duplicate_of` to the retained paper ID; history and discovery rows are never deleted.
 
@@ -215,11 +218,11 @@ Run `python tools/derive_outputs.py --run-id <RUN_ID>`; never classify derived f
 
 ### Constraint-ready awareness-linked difference
 
-All of: design eligible; `outcome = awareness-linked-difference`; `stats_status = adequate`; `difference_tested = yes`; and, if `Meyen_applicable = yes`, `Meyen_status = Meyen-satisfied`.
+All of: design eligible; `outcome = awareness-linked-difference`; `stats_status = adequate`; `difference_tested = yes`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A supplementary Meyen result remains in the output row but does not gate it.
 
 ### Constraint-ready preserved capacity
 
-All of: design eligible; `outcome = preserved-capacity`; `stats_status = adequate`; `unaware_Y_evidence = positive`; `difference_tested = yes`; `null_evidence_adequacy = adequate`; and, if `Meyen_applicable = yes`, `Meyen_status = Meyen-satisfied`.
+All of: design eligible; `outcome = preserved-capacity`; `stats_status = adequate`; `unaware_Y_evidence = positive`; `difference_tested = yes`; `null_evidence_adequacy = adequate`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A supplementary Meyen result remains in the output row but does not gate it.
 
 `constraint_ready_experiments.csv` is the union of exactly those two comparison routes. `awareness_linked_differences.csv` and `preserved_capacities.csv` are the corresponding comparison subsets.
 

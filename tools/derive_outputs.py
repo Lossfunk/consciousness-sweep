@@ -24,7 +24,7 @@ def design_eligible(row: dict[str, str]) -> bool:
 
 
 def meyen_passes(row: dict[str, str]) -> bool:
-    return row["Meyen_applicable"] != "yes" or row["Meyen_status"] == "Meyen-satisfied"
+    return row["Meyen_role"] != "inference-critical" or row["Meyen_status"] == "Meyen-satisfied"
 
 
 def constraint_awareness_difference(row: dict[str, str]) -> bool:

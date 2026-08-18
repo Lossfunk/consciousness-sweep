@@ -13,8 +13,8 @@ import tempfile
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
-from urllib.parse import quote, unquote
+from typing import Any, Iterable
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 try:
     from jsonschema import Draft202012Validator, FormatChecker
@@ -81,6 +81,38 @@ def doi_resolver_url(value: str | None) -> str | None:
         return None
     encoded = quote(normalized, safe="/:@!$&'()*+,;=-._~")
     return f"https://doi.org/{encoded}"
+
+
+def normalize_url(value: str | None) -> str | None:
+    """Return a trimmed, safely encoded HTTP(S) URL or reject it before persistence."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("bibliographic URL must be a string or null")
+    stripped = value.strip()
+    if not stripped:
+        return None
+    parts = urlsplit(stripped)
+    if parts.scheme.lower() not in {"http", "https"} or not parts.netloc:
+        raise ValueError("bibliographic URL must be an absolute HTTP(S) URL")
+    path = quote(parts.path, safe="/%:@!$&'()*+,;=-._~")
+    query = quote(parts.query, safe="=&?/%:@!$'()*+,;=-._~")
+    fragment = quote(parts.fragment, safe="=&?/%:@!$'()*+,;=-._~")
+    return urlunsplit((parts.scheme.lower(), parts.netloc, path, query, fragment))
+
+
+def dry_run_bibliographic_normalization(
+    records: Iterable[dict[str, Any]],
+) -> list[dict[str, str | None]]:
+    """Normalize DOI/URL fields without allocating IDs or mutating run files."""
+    normalized: list[dict[str, str | None]] = []
+    for index, record in enumerate(records, start=1):
+        if not isinstance(record, dict):
+            raise ValueError(f"bibliographic record {index} is not an object")
+        doi = normalize_doi(record.get("doi"))
+        url = normalize_url(record.get("url"))
+        normalized.append({"doi": doi, "url": url, "doi_resolver_url": doi_resolver_url(doi)})
+    return normalized
 
 
 def load_schema(root: Path, name: str) -> dict[str, Any]:
@@ -235,6 +267,12 @@ def allocate_identifier(run_dir: Path, kind: str, parent_id: str | None = None) 
         elif kind == "comparison":
             if parent_id is None or not re.fullmatch(r"P[0-9]{6}_E[0-9]{2}", parent_id):
                 raise ValueError("comparison allocation requires --parent-id P######_E##")
+            paper_id, experiment_suffix = parent_id.split("_E", 1)
+            next_experiment = state["next_experiment_counters"].get(paper_id, 1)
+            if int(experiment_suffix) >= next_experiment:
+                raise ValueError(
+                    "comparison allocation requires the experiment group to be allocated first"
+                )
             counters = state["next_comparison_counters"]
             counter = counters.get(parent_id, 1)
             if counter > 99:
@@ -250,7 +288,11 @@ def allocate_identifier(run_dir: Path, kind: str, parent_id: str | None = None) 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "operation", choices=("append-csv", "upsert-csv", "append-decision", "allocate-id")
+        "operation",
+        choices=(
+            "append-csv", "upsert-csv", "append-decision", "allocate-id",
+            "dry-run-bibliographic-normalization",
+        ),
     )
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--row-file", type=Path, help="JSON object containing typed values")
@@ -275,6 +317,12 @@ def main() -> int:
     if not args.row_file:
         raise SystemExit("--row-file is required for record writes")
     record = json.loads(args.row_file.read_text(encoding="utf-8"))
+    if args.operation == "dry-run-bibliographic-normalization":
+        if not isinstance(record, list):
+            raise SystemExit("normalization dry run row file must contain a JSON array")
+        normalized = dry_run_bibliographic_normalization(record)
+        print(f"PASS: {len(normalized)} bibliographic records normalize without persistence")
+        return 0
     if not isinstance(record, dict):
         raise SystemExit("row file must contain one JSON object")
     if args.operation == "append-decision":

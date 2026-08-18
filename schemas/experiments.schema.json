@@ -17,7 +17,7 @@
     "unaware_Y_evidence", "difference_tested", "null_evidence_strength", "null_evidence_adequacy",
     "null_equivalence_margin", "null_equivalence_result", "null_BF01",
     "null_CI_region", "null_CI_entirely_within_region",
-    "Meyen_applicable", "Meyen_status", "Meyen_reason", "stats_status", "stats_flags", "stats_reason",
+    "Meyen_role", "Meyen_applicable", "Meyen_status", "Meyen_reason", "stats_status", "stats_flags", "stats_reason",
     "constraint_summary", "source_pages", "source_figures_tables", "current_status", "notes"
   ],
   "properties": {
@@ -171,6 +171,13 @@
     "null_CI_entirely_within_region": {
       "anyOf": [
         { "enum": ["yes", "no", "region-not-stated", "unclear", "not-applicable"] },
+        { "type": "null" }
+      ]
+    },
+    "Meyen_role": {
+      "description": "Whether the indirect-task-advantage diagnostic gates the inference, is a retained supplementary caveat, or is not applicable.",
+      "anyOf": [
+        { "enum": ["inference-critical", "supplementary", "not-applicable"] },
         { "type": "null" }
       ]
     },
@@ -353,21 +360,35 @@
       "then": { "properties": { "outcome_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": { "properties": { "Meyen_applicable": { "const": "yes" } }, "required": ["Meyen_applicable"] },
+      "if": { "properties": { "Meyen_role": { "enum": ["inference-critical", "supplementary"] } }, "required": ["Meyen_role"] },
       "then": {
         "properties": {
+          "Meyen_applicable": { "const": "yes" },
           "Meyen_status": { "enum": ["Meyen-satisfied", "Meyen-failed", "Meyen-unassessable"] },
           "Meyen_reason": { "type": "string", "minLength": 1 }
         }
       }
     },
     {
-      "if": { "properties": { "Meyen_applicable": { "const": "no" } }, "required": ["Meyen_applicable"] },
+      "if": { "properties": { "Meyen_role": { "const": "not-applicable" } }, "required": ["Meyen_role"] },
       "then": {
         "properties": {
+          "Meyen_applicable": { "const": "no" },
           "Meyen_status": { "type": "null" },
           "Meyen_reason": { "type": "string", "minLength": 1 }
         }
+      }
+    },
+    {
+      "if": { "properties": { "Meyen_applicable": { "const": "yes" } }, "required": ["Meyen_applicable"] },
+      "then": {
+        "properties": { "Meyen_role": { "enum": ["inference-critical", "supplementary"] } }
+      }
+    },
+    {
+      "if": { "properties": { "Meyen_applicable": { "const": "no" } }, "required": ["Meyen_applicable"] },
+      "then": {
+        "properties": { "Meyen_role": { "const": "not-applicable" } }
       }
     },
     {
@@ -486,6 +507,7 @@
           "difference_tested": { "type": "string" },
           "null_evidence_strength": { "type": "string" },
           "null_evidence_adequacy": { "type": "string" },
+          "Meyen_role": { "type": "string" },
           "Meyen_applicable": { "type": "string" },
           "stats_status": { "type": "string" },
           "constraint_summary": { "type": "string", "minLength": 1 },
