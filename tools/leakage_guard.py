@@ -16,11 +16,16 @@ NEUTRAL_EMPIRICAL_SEED_REASON = (
     "retained as a guaranteed candidate-lot entry"
 )
 
-# This allowlist deliberately excludes diagnostics, tests, runs, outputs, and prose drafts.
+# This allowlist deliberately excludes diagnostics, tests, runs, outputs, and historical drafts.
 REGISTERED_FACING_FILES = (
     "AGENTS.md",
+    "METHODS.md",
     "PROTOCOL.md",
+    "README.md",
     "config.yaml",
+    "docs/documentation_issues.md",
+    "docs/manual_methods_review.md",
+    "docs/methods_crosswalk.yaml",
     "queries.md",
     "requirements.txt",
     "seeds_empirical.csv",
@@ -48,6 +53,7 @@ REGISTERED_FACING_FILES = (
     "tools/query_instruments.py",
     "tools/structured_write.py",
     "tools/validate_run.py",
+    "tools/validate_documentation.py",
 )
 
 ANSWER_CUE = re.compile(
