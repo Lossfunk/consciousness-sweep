@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/experiment_groups.schema.json",
+  "title": "Physical experiment group",
+  "description": "One durable row per physical experiment group, including groups that produce no qualifying X-to-Y comparison.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "experiment_id", "paper_id", "experiment_label", "source_location",
+    "physical_experiment_description", "pre_atomization_assessed",
+    "functional_structure_assessment", "functional_structure_reason",
+    "disposition", "disposition_reason", "linked_comparison_ids",
+    "support_roles", "notes"
+  ],
+  "properties": {
+    "experiment_id": { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}$" },
+    "paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" },
+    "experiment_label": { "type": "string", "minLength": 1 },
+    "source_location": { "type": "string", "minLength": 1 },
+    "physical_experiment_description": { "type": "string", "minLength": 1 },
+    "pre_atomization_assessed": { "type": "boolean" },
+    "functional_structure_assessment": {
+      "enum": ["not-assessed", "not-applicable", "scalar-justified", "factorial-functional-required"]
+    },
+    "functional_structure_reason": { "$ref": "#/$defs/nullableString" },
+    "disposition": {
+      "enum": ["not-assessed", "comparison-bearing", "support-only", "no-qualifying-comparison"]
+    },
+    "disposition_reason": { "$ref": "#/$defs/nullableString" },
+    "linked_comparison_ids": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$" }
+    },
+    "support_roles": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "notes": { "$ref": "#/$defs/nullableString" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "pre_atomization_assessed": { "const": false } }, "required": ["pre_atomization_assessed"] },
+      "then": { "properties": {
+        "functional_structure_assessment": { "const": "not-assessed" },
+        "functional_structure_reason": { "type": "null" },
+        "disposition": { "const": "not-assessed" },
+        "disposition_reason": { "type": "null" },
+        "linked_comparison_ids": { "maxItems": 0 }
+      } }
+    },
+    {
+      "if": { "properties": { "pre_atomization_assessed": { "const": true } }, "required": ["pre_atomization_assessed"] },
+      "then": { "properties": {
+        "functional_structure_assessment": { "not": { "const": "not-assessed" } },
+        "functional_structure_reason": { "type": "string", "minLength": 1 },
+        "disposition": { "not": { "const": "not-assessed" } },
+        "disposition_reason": { "type": "string", "minLength": 1 }
+      } }
+    },
+    {
+      "if": { "properties": { "disposition": { "const": "comparison-bearing" } }, "required": ["disposition"] },
+      "then": { "properties": { "linked_comparison_ids": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "disposition": { "enum": ["support-only", "no-qualifying-comparison"] } }, "required": ["disposition"] },
+      "then": { "properties": { "linked_comparison_ids": { "maxItems": 0 } } }
+    }
+  ],
+  "$defs": {
+    "nullableString": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  }
+}

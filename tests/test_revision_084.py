@@ -73,7 +73,8 @@ def a_row(**updates: object) -> dict[str, object]:
         "A_code": "A-direct",
         "awareness_measure": "two-alternative direction identification",
         "awareness_procedure_type": "direction-identification",
-        "awareness_result_status": "supportive-result-reported",
+        "awareness_result_reporting": "reported",
+        "awareness_result_support": "supports-strong-A",
         "awareness_result_procedure_type": "direction-identification",
         "awareness_result_description": "Performance at the focal regime met the stated objective-invisibility criterion.",
         "awareness_result_source_location": "Results, synthetic Figure 1",
@@ -163,18 +164,29 @@ class AwarenessResultProvenanceTests(unittest.TestCase):
         self.assertEqual(awareness_result_provenance_errors(a_row(), [], []), [])
 
     def test_procedure_without_result_prohibits_strong_a(self) -> None:
-        row = a_row(awareness_result_status="result-unavailable", awareness_result_description=None)
+        row = a_row(
+            awareness_result_reporting="not-reported", awareness_result_support="not-applicable",
+            awareness_result_procedure_type="not-applicable", awareness_result_description=None,
+            awareness_result_source_location=None, awareness_result_source_experiment_id=None,
+        )
         self.assertTrue(awareness_result_provenance_errors(row, [], []))
 
     def test_complete_transferred_result_bundle_allows_validated_a(self) -> None:
         row = a_row(
             A_code="A-validated",
-            awareness_result_source_experiment_id="P000001_E02",
+            awareness_result_reporting="not-reported", awareness_result_support="not-applicable",
+            awareness_result_procedure_type="not-applicable", awareness_result_description=None,
+            awareness_result_source_location=None, awareness_result_source_experiment_id=None,
         )
         self.assertEqual(awareness_result_provenance_errors(row, [a_bundle()], [a_link()]), [])
 
     def test_similar_stimulus_different_sample_does_not_propagate_a(self) -> None:
-        row = a_row(A_code="A-validated", awareness_result_source_experiment_id="P000001_E02")
+        row = a_row(
+            A_code="A-validated", awareness_result_reporting="not-reported",
+            awareness_result_support="not-applicable", awareness_result_procedure_type="not-applicable",
+            awareness_result_description=None, awareness_result_source_location=None,
+            awareness_result_source_experiment_id=None,
+        )
         self.assertTrue(awareness_result_provenance_errors(row, [], []))
 
     def test_mismatched_awareness_test_type_is_rejected(self) -> None:
@@ -185,19 +197,30 @@ class AwarenessResultProvenanceTests(unittest.TestCase):
         self.assertTrue(awareness_result_provenance_errors(a_row(awareness_result_source_location=None), [], []))
 
     def test_supplement_result_is_valid_when_explicitly_linked(self) -> None:
-        row = a_row(A_code="A-validated", awareness_result_source_experiment_id="P000001_E02")
+        row = a_row(
+            A_code="A-validated", awareness_result_reporting="not-reported",
+            awareness_result_support="not-applicable", awareness_result_procedure_type="not-applicable",
+            awareness_result_description=None, awareness_result_source_location=None,
+            awareness_result_source_experiment_id=None,
+        )
         link = a_link(source_type="supplementary-analysis")
         self.assertEqual(awareness_result_provenance_errors(row, [a_bundle()], [link]), [])
 
     def test_procedure_only_transfer_member_cannot_complete_a(self) -> None:
-        row = a_row(A_code="A-validated", awareness_result_source_experiment_id="P000001_E02")
+        row = a_row(
+            A_code="A-validated", awareness_result_reporting="not-reported",
+            awareness_result_support="not-applicable", awareness_result_procedure_type="not-applicable",
+            awareness_result_description=None, awareness_result_source_location=None,
+            awareness_result_source_experiment_id=None,
+        )
         self.assertTrue(awareness_result_provenance_errors(row, [a_bundle()], [a_link(content="procedure-description")]))
 
     def test_second_experiment_requires_own_result_or_transfer_bundle(self) -> None:
         first = a_row()
         second = a_row(
             comparison_id="P000001_E02_C01", experiment_id="P000001_E02",
-            awareness_result_status="result-unavailable", awareness_result_description=None,
+            awareness_result_reporting="not-reported", awareness_result_support="not-applicable",
+            awareness_result_procedure_type="not-applicable", awareness_result_description=None,
             awareness_result_source_location=None, awareness_result_source_experiment_id=None,
         )
         self.assertEqual(awareness_result_provenance_errors(first, [], []), [])

@@ -27,7 +27,8 @@ except ModuleNotFoundError as exc:
 from execution_contract import (
     alternative_control_scan_errors, awareness_result_provenance_errors,
     capacity_identity_errors, completion_errors, contrast_integrity_bundle_errors,
-    e_diagnostic_same_y_bundle_errors, factorial_e_diagnostic_bundle_errors, functional_structure_errors,
+    e_diagnostic_same_y_bundle_errors, experiment_group_errors,
+    factorial_e_diagnostic_bundle_errors, functional_structure_errors,
     ordered_result_set_sha256, route_audit_errors, search_window_key,
     validate_declared_bundle_status,
 )
@@ -41,6 +42,7 @@ def normalized_doi(value: Any) -> str:
     return DOI_PREFIX.sub("", unquote(str(value or "")).strip()).strip().casefold()
 CSV_SCHEMAS = {
     "papers_master.csv": "papers.schema.json",
+    "experiment_groups.csv": "experiment_groups.schema.json",
     "experiments_master.csv": "experiments.schema.json",
     "search_log.csv": "search_log.schema.json",
     "discoveries.csv": "discoveries.schema.json",
@@ -61,10 +63,14 @@ CSV_SCHEMAS = {
 ARRAY_FIELDS = {
     "stats_flags", "attempted_sources", "E_diagnostic_source_locations",
     "factorial_component_effects", "evidence_bundle_ids", "required_member_keys",
+    "linked_comparison_ids", "support_roles",
     "activated_normalized_y_labels", "completed_search_window_keys",
 }
 OBJECT_FIELDS = {"source_parameters"}
-BOOLEAN_FIELDS = {"manually_requested", "used_for_decision", "current_for_paper"}
+BOOLEAN_FIELDS = {
+    "manually_requested", "used_for_decision", "current_for_paper",
+    "pre_atomization_assessed",
+}
 FLOAT_FIELDS = {"null_BF01"}
 INTEGER_FIELDS = {
     "year", "first_seen_wave", "wave", "results_returned", "new_unique_papers",
@@ -267,6 +273,7 @@ def evidence_bundle_errors(
     evidence_links: list[dict[str, Any]],
     paper_ids: set[str],
     auxiliary_ids: set[str],
+    experiment_ids: set[str],
     assessment_ids: set[str] | None = None,
 ) -> list[str]:
     """Validate first-class one-premise bundles and explicit non-transitive links."""
@@ -313,6 +320,11 @@ def evidence_bundle_errors(
             errors.append(
                 f"evidence_links.csv: {link_id} supporting experiment does not belong to "
                 "supporting_paper_id"
+            )
+        elif supporting_experiment is not None and supporting_experiment not in experiment_ids:
+            errors.append(
+                f"evidence_links.csv: {link_id} references missing supporting experiment "
+                f"{supporting_experiment}"
             )
         supporting_auxiliary = link.get("supporting_auxiliary_id")
         if supporting_auxiliary is not None and supporting_auxiliary not in auxiliary_ids:
@@ -471,6 +483,7 @@ def main() -> int:
             errors.append(f"{state_path}: {exc}")
 
     papers = tables.get("papers_master.csv", [])
+    experiment_groups = tables.get("experiment_groups.csv", [])
     experiments = tables.get("experiments_master.csv", [])
     searches = tables.get("search_log.csv", [])
     discoveries = tables.get("discoveries.csv", [])
@@ -482,6 +495,7 @@ def main() -> int:
     fulltext_assets = tables.get("fulltext_assets.csv", [])
     for rows, field, label in (
         (papers, "paper_id", "papers_master.csv"),
+        (experiment_groups, "experiment_id", "experiment_groups.csv"),
         (experiments, "comparison_id", "experiments_master.csv"),
         (searches, "search_id", "search_log.csv"),
         (discoveries, "discovery_id", "discoveries.csv"),
@@ -503,7 +517,7 @@ def main() -> int:
         check_unique(tables.get(filename, []), "comparison_id", filename, errors)
 
     paper_ids = {row["paper_id"] for row in papers}
-    experiment_ids = {row["experiment_id"] for row in experiments}
+    experiment_ids = {row["experiment_id"] for row in experiment_groups}
     comparison_ids = {row["comparison_id"] for row in experiments}
     search_ids = {row["search_id"] for row in searches}
     discovery_ids = {row["discovery_id"] for row in discoveries}
@@ -518,11 +532,15 @@ def main() -> int:
                 errors.append(f"papers_master.csv: {row['paper_id']} references missing {field} {row[field]}")
         if row.get("first_search_id") is not None and row["first_search_id"] not in search_ids:
             errors.append(f"papers_master.csv: {row['paper_id']} references missing first_search_id {row['first_search_id']}")
+    for error in experiment_group_errors(experiment_groups, experiments, paper_ids):
+        errors.append(f"experiment_groups.csv: {error}")
     for row in experiments:
         if row["paper_id"] not in paper_ids:
             errors.append(f"experiments_master.csv: {row['comparison_id']} references missing paper {row['paper_id']}")
         if not row["experiment_id"].startswith(f"{row['paper_id']}_E"):
             errors.append(f"experiments_master.csv: {row['comparison_id']} experiment_id does not belong to paper_id")
+        if row["experiment_id"] not in experiment_ids:
+            errors.append(f"experiments_master.csv: {row['comparison_id']} references missing experiment group")
         if not row["comparison_id"].startswith(f"{row['experiment_id']}_C"):
             errors.append(f"experiments_master.csv: {row['comparison_id']} does not belong to experiment_id {row['experiment_id']}")
         for error in route_audit_errors(row):
@@ -701,7 +719,7 @@ def main() -> int:
     errors.extend(dependency_errors(experiments, evidence_bundles))
     errors.extend(evidence_bundle_errors(
         experiments, evidence_bundles, evidence_links, paper_ids, auxiliary_ids,
-        evidence_assessment_ids,
+        experiment_ids, evidence_assessment_ids,
     ))
 
     valid_entities = {

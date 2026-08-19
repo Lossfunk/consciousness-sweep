@@ -9,7 +9,7 @@
     "comparison_id", "experiment_id", "paper_id", "experiment_label", "X_label", "X_description",
     "awareness_measure", "awareness_procedure_type", "awareness_evidence_type", "objective_visibility_test_informative",
     "objective_visibility_test_reason", "A_code", "A_reason", "critical_dependency_status",
-    "awareness_result_status", "awareness_result_procedure_type", "awareness_result_description",
+    "awareness_result_reporting", "awareness_result_support", "awareness_result_procedure_type", "awareness_result_description",
     "awareness_result_source_location", "awareness_result_source_experiment_id",
     "critical_dependency_reason", "evidence_bundle_ids", "structural_audit_status",
     "awareness_effect_route_status", "awareness_effect_route_reason",
@@ -20,7 +20,7 @@
     "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
     "E_competing_account", "E_competing_prediction", "E_violating_pattern", "E_same_Y_reason",
     "E_diagnostic_source_locations", "alternative_control_scan_status", "alternative_control_scan_reason",
-    "Y_label", "Y_description", "functional_structure_assessment",
+    "Y_label", "Y_description", "Y_functional_status", "Y_functional_reason", "functional_structure_assessment",
     "functional_identity_basis", "functional_structure_reason", "factorial_focal_comparison_id", "Y_structure", "factorial_Y_reason",
     "factorial_component_effects", "Y_evidence_role", "F_code", "F_reason",
     "Y_interpretation_clarity", "mechanistic_interpretation", "mechanism_clarity",
@@ -29,6 +29,7 @@
     "awareness_effect", "awareness_effect_reason", "direction", "awareness_effect_critical_effect",
     "awareness_effect_estimate", "awareness_effect_estimate_interpretable",
     "awareness_effect_stats_status", "awareness_effect_stats_reason", "difference_tested",
+    "difference_source_experiment_id", "difference_source_location", "difference_statistic_or_test",
     "null_evidence_strength", "null_evidence_adequacy", "null_equivalence_margin",
     "null_equivalence_result", "null_BF01", "null_CI_region", "null_CI_entirely_within_region",
     "Meyen_role", "Meyen_applicable", "Meyen_status", "Meyen_reason", "stats_status", "stats_flags",
@@ -50,8 +51,13 @@
     "objective_visibility_test_reason": { "$ref": "#/$defs/nullableString" },
     "A_code": { "anyOf": [{ "enum": ["A-direct", "A-validated", "A-transfer-risk", "A-absent"] }, { "type": "null" }] },
     "A_reason": { "$ref": "#/$defs/nullableString" },
-    "awareness_result_status": {
-      "anyOf": [{ "enum": ["supportive-result-reported", "result-reported-not-supportive", "result-unavailable", "unclear", "not-applicable"] }, { "type": "null" }]
+    "awareness_result_reporting": {
+      "description": "Whether a critical awareness result is actually reported for the focal experiment; a described procedure is not a result.",
+      "anyOf": [{ "enum": ["reported", "not-reported", "unclear", "not-applicable"] }, { "type": "null" }]
+    },
+    "awareness_result_support": {
+      "description": "Whether the reported critical awareness result supports the stated strong-A classification; kept separate from result availability.",
+      "anyOf": [{ "enum": ["supports-strong-A", "does-not-support-strong-A", "unclear", "not-applicable"] }, { "type": "null" }]
     },
     "awareness_result_procedure_type": {
       "anyOf": [{ "enum": ["direction-identification", "presence-absence-detection", "localization", "subjective-visibility", "confidence", "mixed", "other", "not-applicable"] }, { "type": "null" }]
@@ -93,6 +99,11 @@
     "alternative_control_scan_reason": { "$ref": "#/$defs/nullableString" },
     "Y_label": { "$ref": "#/$defs/nullableString" },
     "Y_description": { "$ref": "#/$defs/nullableString" },
+    "Y_functional_status": {
+      "description": "Explicit semantic audit of whether focal Y names a downstream function/mapping rather than merely an observed effect.",
+      "anyOf": [{ "enum": ["downstream-function", "coherent-functional-mapping", "effect-only", "function-unclear", "not-assessed"] }, { "type": "null" }]
+    },
+    "Y_functional_reason": { "$ref": "#/$defs/nullableString" },
     "functional_structure_assessment": {
       "enum": ["not-assessed", "not-applicable", "scalar-justified", "factorial-functional-required"]
     },
@@ -141,6 +152,11 @@
       "description": "Whether a direct aware/unaware difference or interaction on this same focal Y was tested; this is recorded independently of E strength.",
       "anyOf": [{ "enum": ["yes", "no", "unclear", "not-applicable"] }, { "type": "null" }]
     },
+    "difference_source_experiment_id": {
+      "anyOf": [{ "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}$" }, { "type": "null" }]
+    },
+    "difference_source_location": { "$ref": "#/$defs/nullableString" },
+    "difference_statistic_or_test": { "$ref": "#/$defs/nullableString" },
     "null_evidence_strength": { "anyOf": [{ "enum": ["equivalence-testing", "bayesian-evidence", "informative-confidence-intervals", "nonsignificant-only", "mixed", "unclear", "not-applicable"] }, { "type": "null" }] },
     "null_evidence_adequacy": { "anyOf": [{ "enum": ["adequate", "weak", "unclear", "not-applicable"] }, { "type": "null" }] },
     "null_equivalence_margin": { "$ref": "#/$defs/nullableString" },
@@ -176,10 +192,49 @@
         "awareness_evidence_type": { "enum": ["subjective", "objective-invisibility", "mixed"] },
         "awareness_measure": { "type": "string", "minLength": 1 },
         "awareness_procedure_type": { "not": { "enum": ["not-applicable", null] } },
-        "awareness_result_status": { "const": "supportive-result-reported" },
+        "awareness_result_reporting": { "type": "string" },
+        "awareness_result_support": { "type": "string" }
+      } }
+    },
+    {
+      "if": { "properties": { "A_code": { "const": "A-direct" } }, "required": ["A_code"] },
+      "then": { "properties": {
+        "awareness_result_reporting": { "const": "reported" },
+        "awareness_result_support": { "const": "supports-strong-A" }
+      } }
+    },
+    {
+      "if": { "properties": { "awareness_result_reporting": { "const": "reported" } }, "required": ["awareness_result_reporting"] },
+      "then": { "properties": {
+        "awareness_result_support": { "enum": ["supports-strong-A", "does-not-support-strong-A", "unclear"] },
         "awareness_result_procedure_type": { "not": { "enum": ["not-applicable", null] } },
         "awareness_result_description": { "type": "string", "minLength": 1 },
-        "awareness_result_source_location": { "type": "string", "minLength": 1 }
+        "awareness_result_source_location": { "type": "string", "minLength": 1 },
+        "awareness_result_source_experiment_id": { "type": "string" }
+      } }
+    },
+    {
+      "if": { "properties": { "awareness_result_reporting": { "const": "not-reported" } }, "required": ["awareness_result_reporting"] },
+      "then": { "properties": {
+        "awareness_result_support": { "const": "not-applicable" },
+        "awareness_result_procedure_type": { "const": "not-applicable" },
+        "awareness_result_description": { "type": "null" },
+        "awareness_result_source_location": { "type": "null" },
+        "awareness_result_source_experiment_id": { "type": "null" }
+      } }
+    },
+    {
+      "if": { "properties": { "awareness_result_reporting": { "const": "unclear" } }, "required": ["awareness_result_reporting"] },
+      "then": { "properties": { "awareness_result_support": { "const": "unclear" } } }
+    },
+    {
+      "if": { "properties": { "awareness_result_reporting": { "const": "not-applicable" } }, "required": ["awareness_result_reporting"] },
+      "then": { "properties": {
+        "awareness_result_support": { "const": "not-applicable" },
+        "awareness_result_procedure_type": { "const": "not-applicable" },
+        "awareness_result_description": { "type": "null" },
+        "awareness_result_source_location": { "type": "null" },
+        "awareness_result_source_experiment_id": { "type": "null" }
       } }
     },
     {
@@ -253,19 +308,33 @@
     },
     {
       "if": { "properties": { "F_code": { "type": "string" } }, "required": ["F_code"] },
-      "then": { "properties": { "F_reason": { "type": "string", "minLength": 1 } } }
+      "then": { "properties": {
+        "F_reason": { "type": "string", "minLength": 1 },
+        "Y_functional_reason": { "type": "string", "minLength": 1 }
+      } }
     },
     {
       "if": { "properties": { "F_code": { "const": "F-meaningful" } }, "required": ["F_code"] },
-      "then": { "properties": { "Y_interpretation_clarity": { "const": "clear" }, "Y_evidence_role": { "const": "downstream-functional-measure" } } }
+      "then": { "properties": {
+        "Y_interpretation_clarity": { "const": "clear" },
+        "Y_evidence_role": { "const": "downstream-functional-measure" },
+        "Y_functional_status": { "enum": ["downstream-function", "coherent-functional-mapping"] }
+      } }
     },
     {
       "if": { "properties": { "F_code": { "const": "F-ambiguous" } }, "required": ["F_code"] },
-      "then": { "properties": { "Y_interpretation_clarity": { "const": "ambiguous" }, "Y_evidence_role": { "const": "function-level-unresolved" } } }
+      "then": { "properties": {
+        "Y_interpretation_clarity": { "const": "ambiguous" },
+        "Y_evidence_role": { "const": "function-level-unresolved" },
+        "Y_functional_status": { "const": "function-unclear" }
+      } }
     },
     {
       "if": { "properties": { "F_code": { "const": "F-not-meaningful" } }, "required": ["F_code"] },
-      "then": { "properties": { "Y_evidence_role": { "enum": ["mechanistic-support-only", "direct-registration-only", "not-assessed"] } } }
+      "then": { "properties": {
+        "Y_evidence_role": { "enum": ["mechanistic-support-only", "direct-registration-only", "not-assessed"] },
+        "Y_functional_status": { "enum": ["effect-only", "not-assessed"] }
+      } }
     },
     {
       "if": { "properties": { "functional_structure_assessment": { "const": "not-assessed" } }, "required": ["functional_structure_assessment"] },
@@ -329,7 +398,11 @@
     },
     {
       "if": { "properties": { "unaware_capacity": { "const": "supported" } }, "required": ["unaware_capacity"] },
-      "then": { "properties": { "unaware_capacity_evidence_scope": { "const": "whole-focal-Y" } } }
+      "then": { "properties": {
+        "unaware_capacity_evidence_scope": { "const": "whole-focal-Y" },
+        "F_code": { "const": "F-meaningful" },
+        "Y_functional_status": { "enum": ["downstream-function", "coherent-functional-mapping"] }
+      } }
     },
     {
       "if": { "properties": { "unaware_capacity": { "enum": ["supported", "not-supported", "unclear"] } }, "required": ["unaware_capacity"] },
@@ -346,11 +419,22 @@
     {
       "if": { "properties": { "difference_tested": { "const": "yes" } }, "required": ["difference_tested"] },
       "then": { "properties": {
+        "difference_source_experiment_id": { "type": "string" },
+        "difference_source_location": { "type": "string", "minLength": 1 },
+        "difference_statistic_or_test": { "type": "string", "minLength": 1 },
         "awareness_effect_critical_effect": { "type": "string", "minLength": 1 },
         "awareness_effect_estimate": { "type": "string", "minLength": 1 },
         "awareness_effect_estimate_interpretable": { "const": "yes" },
         "awareness_effect_stats_status": { "enum": ["adequate", "concern", "unclear"] },
         "awareness_effect_stats_reason": { "type": "string", "minLength": 1 }
+      } }
+    },
+    {
+      "if": { "properties": { "difference_tested": { "enum": ["no", "unclear", "not-applicable"] } }, "required": ["difference_tested"] },
+      "then": { "properties": {
+        "difference_source_experiment_id": { "type": "null" },
+        "difference_source_location": { "type": "null" },
+        "difference_statistic_or_test": { "type": "null" }
       } }
     },
     {
@@ -420,6 +504,7 @@
         "first_order_measure": { "type": "string", "minLength": 1 }, "E_code": { "type": "string" },
         "E_matching_basis": { "type": "string" }, "E_equivalence_result": { "type": "string" },
         "Y_label": { "type": "string", "minLength": 1 }, "Y_description": { "type": "string", "minLength": 1 },
+        "Y_functional_status": { "type": "string" }, "Y_functional_reason": { "type": "string", "minLength": 1 },
         "functional_structure_assessment": { "enum": ["not-applicable", "scalar-justified", "factorial-functional-required"] },
         "functional_identity_basis": { "enum": ["not-applicable-single-effect", "common-operational-mapping", "distinct-downstream-outputs", "distinct-computational-stages", "distinct-input-output-relations", "no-conservative-common-function"] },
         "functional_structure_reason": { "type": "string", "minLength": 1 },

@@ -27,6 +27,7 @@ except ModuleNotFoundError as exc:
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = (
     "papers.schema.json",
+    "experiment_groups.schema.json",
     "experiments.schema.json",
     "search_log.schema.json",
     "discoveries.schema.json",
@@ -165,7 +166,7 @@ def main() -> int:
         "awareness_effect_route_status", "unaware_capacity_route_status",
         "null_equivalence_route_status", "result_inspection_status",
         "awareness_evidence_type", "awareness_procedure_type", "objective_visibility_test_informative",
-        "awareness_result_status", "awareness_result_procedure_type",
+        "awareness_result_reporting", "awareness_result_support", "awareness_result_procedure_type",
         "awareness_result_description", "awareness_result_source_location",
         "awareness_result_source_experiment_id",
         "critical_dependency_status", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
@@ -173,15 +174,25 @@ def main() -> int:
         "E_diagnostic_source_locations", "alternative_control_scan_status",
         "alternative_control_scan_reason", "functional_structure_assessment",
         "functional_identity_basis", "functional_structure_reason", "factorial_focal_comparison_id",
-        "Y_structure", "factorial_component_effects",
+        "Y_structure", "factorial_component_effects", "Y_functional_status", "Y_functional_reason",
         "unaware_capacity_claim", "unaware_capacity_evidence_scope", "unaware_capacity", "unaware_capacity_stats_status", "awareness_effect",
         "awareness_effect_stats_status", "awareness_effect_critical_effect",
+        "difference_source_experiment_id", "difference_source_location", "difference_statistic_or_test",
         "Y_evidence_role", "mechanistic_interpretation", "mechanism_clarity",
         "null_equivalence_margin", "null_equivalence_result", "null_BF01",
         "null_CI_region", "null_CI_entirely_within_region", "Meyen_role",
     ):
         if field not in experiment_properties:
             errors.append(f"experiments schema lacks required comparison/audit field: {field}")
+    group_properties = schemas.get("experiment_groups.schema.json", {}).get("properties", {})
+    for field in (
+        "experiment_id", "paper_id", "experiment_label", "source_location",
+        "physical_experiment_description", "pre_atomization_assessed",
+        "functional_structure_assessment", "functional_structure_reason",
+        "disposition", "disposition_reason", "linked_comparison_ids", "support_roles",
+    ):
+        if field not in group_properties:
+            errors.append(f"experiment-group schema lacks {field}")
     search_properties = schemas.get("search_log.schema.json", {}).get("properties", {})
     if "trigger_comparison_id" not in search_properties:
         errors.append("search-log schema lacks trigger_comparison_id")

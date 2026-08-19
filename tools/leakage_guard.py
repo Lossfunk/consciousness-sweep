@@ -31,6 +31,7 @@ REGISTERED_FACING_FILES = (
     "schemas/evidence_assessments.schema.json",
     "schemas/evidence_bundles.schema.json",
     "schemas/evidence_links.schema.json",
+    "schemas/experiment_groups.schema.json",
     "schemas/experiments.schema.json",
     "schemas/fulltext_assets.schema.json",
     "schemas/missing_texts.schema.json",

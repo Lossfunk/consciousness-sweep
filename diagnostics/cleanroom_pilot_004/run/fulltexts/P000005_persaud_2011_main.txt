@@ -1,0 +1,698 @@
+[[PDF PAGE 1]]
+Awareness-related activity in prefrontal and parietal cortices in blindsight re ﬂects
+more than superior visual performance
+Navindra Persaud a,1, Matthew Davidson b,⁎ , 1, Brian Maniscalco b, Dean Mobbs c, d, Richard E. Passingham c, e,
+Alan Cowey c, e, Hakwan Lau b, c,e, f
+a Department of Family and Community Medicine, St. Michael's Hospital, University of Toronto, Canada
+b Department of Psychology, Columbia University, NY, USA
+c Wellcome Centre for NeuroImaging, University College, London, UK
+d Cognition and Brain Unit, University of Cambridge, UK
+e Department of Experimental Psychology, University of Oxford, UK
+f Donders Institute for Brain, Cognition and Behaviour, Radboud University Nijmegen, The Netherlands
+abstractarticle info
+Article history:
+Received 21 January 2011
+Revised 23 June 2011
+Accepted 27 June 2011
+Available online 2 July 2011
+Keywords:
+Blindsight
+Consciousness
+Visual perception
+Metacognition
+Many imaging studies report activity in the prefrontal and parietal cortices when subjects are aware as
+opposed to unaware of visual stimuli. One possibility is that this activity simply re ﬂects higher signal strength
+or the superior task performance that is associated with awareness. To ﬁnd out, we studied the hemianope GY
+who has unilateral destruction of almost all primary visual cortices. He exhibits ‘ blindsight’ , that is, he claims
+to have no conscious visual phenomenology (i.e., no visual qualia), for stationary stimuli presented to his right
+visual ﬁeld (the blind ﬁeld), although he can press keys to distinguish between different stimuli presented
+there. We presented to him a visual discrimination task, and equated performance for stimuli presented to the
+left or right visual ﬁeld by presenting low contrast stimuli to his normal (left) ﬁeld and high contrast stimuli to
+his blind (right) ﬁeld. Superior accuracy can be a serious confound, and our paradigm allows us to control for it
+and avoid this confound. Even when performance was matched, and the signal strength was lower, visual
+stimulation to the normal (conscious) ﬁeld led to higher activity in the prefrontal and parietal cortices. These
+results indicate that the activity in the prefrontal and parietal areas that has been reported in previous studies
+of awareness is not just due to a (signal strength or performance) confounds. One possibility is that it re ﬂects
+the superior ‘ metacognitive’ capacity that is associated with awareness, because GY was better able to
+distinguish between his own correct and incorrect responses for stimuli presented to his normal ﬁeld than to
+his blind ﬁeld.
+© 2011 Elsevier Inc. All rights reserved.
+Introduction
+Many brain imaging studies in healthy human participants have
+reported that visual awareness is associated with higher activity in
+the prefrontal and parietal cortices (Rees et al., 2002). Typically, when
+one compares a condition that involves consciously seen stimuli,
+against a condition where stimuli are not consciously seen, one ﬁnds
+heightened activity in these brain regions. It has been suggested that
+the activity re ﬂects the global broadcast of the signal to a cortical
+network that is the critical mechanism for awareness ( Dehaene et al.,
+2003).
+However, there are alternative, and arguably more parsimonious,
+interpretations. Previous work shows that the prefrontal cortex is
+involved in metacognition ( Fleming et al., 2010 ), and metacognition,
+though closely linked to awareness, is not identical to awareness ( Lau
+and Maniscalco, 2010 ). Therefore, activations in the prefrontal cortex
+may simply re ﬂect signal strength or superior task performance, as
+well as metacognition. Superior task performance has been shown for
+the dorsolateral prefrontal cortex (dlPFC) ( Lau, 2008; Lau and
+Passingham, 2006; Nagel et al., 2009 ), though such activations are
+generally weaker and less widespread when subjects are unaware. In
+the ‘ aware’ condition, participants typically perform visual judgments
+well above chance, whereas in the ‘ unaware’ condition they typically
+perform at a near-chance level. So the activations in the prefrontal and
+parietal cortices could just re ﬂect these confounds and not visual
+awareness.
+It might be thought that task performance capacity is a hallmark of
+awareness, or perhaps that the two are even one and the same.
+However, the neurological condition of blindsight provides a clear
+counter-example (Stoerig and Cowey, 1997, 2007; Weiskrantz, 2009).
+Patients with blindsight typically have restricted lesions to the
+primary visual cortex, which lead them to claim a lack of visual
+awareness. For static stimuli that are presented to the ‘ blind’ ﬁeld
+NeuroImage 58 (2011) 605 – 611
+⁎ Corresponding author at: Department of Psychology, Columbia University, 1190
+Amsterdam Ave, Rm 406, New York, NY 10027, USA.
+E-mail address: psymatthew@gmail.com (M. Davidson).
+1 These authors contributed equally to this work.
+1053-8119/$ – see front matter © 2011 Elsevier Inc. All rights reserved.
+doi:10.1016/j.neuroimage.2011.06.081
+Contents lists available at ScienceDirect
+NeuroImage
+journal homepage: www .elsevier.com/locate/ynimg
+
+[[PDF PAGE 2]]
+there is no conscious visual phenomenology ( Persaud and Lau, 2008 ).
+Nonetheless, these patients can perform well above chance when
+required to identify a stimulus in a forced-choice setting.
+Many of these studies have been carried out with subject GY
+(Barbur et al., 1994; Bridge et al., 2008; Kentridge et al., 1997; Persaud
+and Lau, 2008; Silvanto et al., 2009; Weiskrantz et al., 1995 ). The
+damage to GY's primary visual cortex is restricted to the left hemisphere,
+which leads to his being subjectively ‘ blind’ in his right visual ﬁeld
+except for a few degrees of macular sparing. Both functional magnetic
+brain imaging (fMRI) and magneto-encephalography (MEG) have been
+used to compare brain activity when visual stimuli are presented to the
+blind and normal ﬁelds.
+Sahraie et al. (1997) used fMRI and presented a single moving spot
+in GY's blind or normal visual ﬁeld. They reported that he could
+discriminate between two directions of motion even when the
+stimulus was presented to the blind ﬁeld, and that he could do this
+with slow motion even though he was perceptually unaware of it.
+When a moving stimulus was presented to the normal ﬁeld, there was
+activity in the lateral prefrontal cortex, and the same was true when
+fast moving stimuli of which GY was aware were presented to the
+blind ﬁeld. However, when slowly moving stimuli were presented to
+the blind ﬁeld, GY was unaware, and there was no activity in the
+lateral prefrontal cortex.
+Schurger et al. (2006, 2008) used MEG, and presented static
+stimuli. Among trials where stimuli were presented to the ‘ blind’
+ﬁeld, for which GY has no conscious visual phenomenology, there
+were trials on which GY claimed to be “aware that something was
+presented”. In blind side trials both with and without this “aware-
+ness”, GY discriminated between the stimuli above chance levels, and
+the performance was similar between these trial types. It was found
+that this “awareness” was associated with heightened oscillatory
+activity in the gamma band in the occipito-parietal areas. Taken
+together, these studies suggest that activity in the prefrontal and
+parietal cortices can re ﬂect awareness even when task performance
+does not differ.
+However, it is important to distinguish this type of secondary
+awareness from the visual awareness that has been studied in fMRI
+studies performed on healthy volunteers ( Rees et al., 2002 ). These
+have set out to address conscious visual phenomenology. Further-
+more, in the studies of GY by Schurger et al. (2006, 2008) , task
+performance typically differed depending on whether the stimuli
+were presented to the normal or blind visual ﬁeld. For this reason, in
+the present experiment we took the opportunity to further study GY,
+and to carefully match for task performance between the ﬁelds. We
+did this by titrating the contrast of the stimuli for each ﬁeld
+independently.
+As previously documented ( Barbur et al., 1994; Kentridge et al.,
+1997; Weiskrantz et al., 1995 ), GY can perform well above chance
+when stimuli are presented to his blind ﬁeld. Since his performance
+depends on the strength of the stimulus (e.g., luminance contrast or
+speed) as suggested by Weiskrantz et al. (1995) , this means that one
+can produce conditions in which performance is matched for stimuli
+that are presented to the ‘ blind’ and ‘ normal’ ﬁelds. This can be
+achieved by presenting a strong stimulus to the former and a weak
+stimulus to the latter, a method which has previously been used with
+GY to examine qualitatively different patterns of sensitivity between
+his normal and blind ﬁelds (Azzopardi and Cowey, 1997; Kentridge et
+al., 1999 ). This allowed us to ask whether, when performance was
+matched, there would still be higher activity in the prefrontal and
+parietal cortices when stimuli are presented to the normal as opposed
+to the blind ﬁeld. To anticipate, the answer is: yes, there is. The
+implication is that the difference in activation does not re ﬂect
+differences in performance, but something else, such as visual
+phenomenology or metacognitive activity, which may be closely
+linked to, but not identical to, visual awareness ( Lau and Maniscalco,
+2010).
+Methods
+Participant
+The participant was GY, a 52-year-old man who incurred a
+unilateral traumatic destruction of almost his entire left striate cortex
+at the age of 8 years. This produced a right homonymous hemianopia
+with macular sparing extending 3.5° into the otherwise blind right
+ﬁeld (Barbur et al., 1994 ). He has residual visual sensitivity within his
+scotoma that enables him to detect, localize, and discriminate certain
+transient stimuli all of which he denies seeing and for many of these
+he has no visual awareness. This is the de ﬁning characteristic of
+blindsight ( Barbur et al., 1994; Weiskrantz, 2009; Weiskrantz et al.,
+1995). GY gave informed written consent.
+Task
+The task was to report the location (upper or lower quadrant) of a
+vertical square-wave grating while ﬁxating a central cross ( Fig. 1 ).
+Visual stimuli were back-projected by a liquid crystal display video
+projector onto a screen which the subject viewed through an angled
+mirror. On each trial two isoluminant 10° square gratings made up of
+ten bars each appeared for 500 ms in either the left (normal) ﬁeld or
+the right (blind) ﬁeld with the medial edge 5° from the vertical
+meridian. The bottom of the upper grating met the top of the lower
+grating at the horizontal meridian. The bars in one pseudo-randomly
+determined and equally-balanced grating were horizontal and the
+bars in the other were vertical. The locations of the low and high
+luminance bars within each grating were pseudo-randomly jittered
+between presentations to avoid retinal adaptation. Eye-movements
+were recorded using an ASL 5000 pupillometer (Applied Science
+Laboratories, MA). As expected based on previous experiments, GY
+was excellent in maintaining ﬁxation, and therefore no rejection of
+trials was needed.
+After the gratings disappeared, GY was prompted by the words
+‘ Up/Down’ to report the location of the vertical grating. He responded
+by pressing a button with either his right index or middle ﬁnger. He
+was then prompted to make one of two ‘ meta-responses’ that were
+explained to him beforehand. In the
+ﬁrst, referred to as ‘ Coin ﬂip/
+Response’ , GY decided whether he wanted to be paid 50 p based
+either on the ﬂip of a coin (i.e. he would have a 50% chance of winning
+50 p and a 50% chance of losing 50 p) or on whether his ‘ Up/Down’
+response was correct (i.e., he would earn 50 p if his decision was
+correct or lose 50 p if his decision was incorrect). This was a variant of
+a postdecision wagering procedure ( Persaud et al., 2007 ) called “no-
+loss wagering ” (Dienes and Seth, 2010 ), which essentially tracked
+GY's con ﬁdence in his own response. In the second meta-response
+condition, referred to as ‘ Guess/Seen’ , GY had to report whether his
+‘ Up/Down’ decision was a mere guess or whether it was based on
+some awareness, and he always earned 50 p for correct visual
+discriminations, regardless of the meta-response. This ‘ Guess/Seen’
+reporting is a standard ‘ commentary key’ procedure used in numerous
+previous studies on blindsight ( Weiskrantz, 2009 ). Trials always
+ended 4 s after they began, regardless of when GY responded. The
+percentage of trials terminated due to lack of an answer was 2%; such
+trials were discarded from further analysis. Each prompt disappeared
+after GY made his response.
+Blocks were composed of 36 trials, arranged in groups of 6 during
+which the stimulus appeared to the same hemi ﬁeld. In each block,
+there were 4 blind hemi ﬁeld groups and 2 normal hemi ﬁeld groups.
+Contrast levels were independently titrated by hemi ﬁeld in order to
+match ‘ Up/Down’ discrimination accuracy between the two ﬁelds.
+Four different contrast levels were used (two for each hemi ﬁeld),
+computed with standard 1-up – 2-down and 1-up – 3-down staircase
+procedures for each hemi ﬁeld prior to the main experiment. The
+staircases compute contrasts that result in 71% and 79% accuracies
+606 N. Persaud et al. / NeuroImage 58 (2011) 605 –611
+
+[[PDF PAGE 3]]
+(Levitt, 1971), respectively, for an average accuracy of 75% (assuming
+equal numbers of stimuli for each contrast). The resulting contrasts
+were 0.0012 and 0.002 in the normal ﬁeld and 0.58 and 0.72 in the
+blind ﬁeld.
+In total, GY performed 20 blocks of 720 trials (480 blind, 240
+normal) in the ‘ Coin ﬂip/Response’ performance-matched condition
+and 8 blocks of 288 trials (192 blind, 96 normal) in the ‘ Guess/Seen’
+condition. He ﬁrst began with eight blocks of ‘ Coin ﬂip/Response’
+responses, then four blocks making ‘ Guess/Seen’ responses, eight
+blocks making ‘ Coin ﬂip/Response’ responses, four blocks making
+‘ Guess/Seen’ responses, and ﬁnally four more blocks making ‘ Coin ﬂip/
+Response’ responses. All blocks were run on the same day.
+Data acquisition
+Functional imaging was conducted with a Siemens (Erlangen,
+Germany) Allegra 3.0 T scanner to acquire gradient echo T2*-weighted
+echo-planar images (EPIs) with blood oxygenation level-dependent
+(BOLD) contrast as an index of local increases in synaptic activity.
+The image parameters were as follows: matrix size, 64× 64; in-plane
+voxel size, 3 × 3 mm; echo time, 40 ms and repetition time, 2600 ms. A
+functional image volume comprised 40 contiguous slices of 2 mm
+thickness (with a 1 mm interslice gap), which ensured that the whole
+brain was within the ﬁeld of view.
+fMRI data analysis
+All fMRI preprocessing and standard GLM analyses were done
+using SPM5. The initial 6 frames of data from each run were discarded
+to avoid equilibrium effects. Data were motion-corrected using rigid-
+body transformations. The ﬁrst frame of each run was aligned to the
+ﬁrst frame of the ﬁrst run, and all other frames were aligned to the
+ﬁrst frame of their run, using 2nd degree B-splines. Data were then
+spatially smoothed with an 8 mm FWHM Gaussian kernel.
+Task-related hemodynamic responses were estimated with a ﬁnite
+impulse response (FIR) model with 6 bins of 2.6 s. Movement
+parameters from the motion-correction step were included as
+nuisance covariates. Constant terms were included to account for
+overall session effects. Serial correlations were estimated with an AR
+(1) autoregressive model. The model included a high-pass ﬁlter at
+1/128 Hz. All contrasts were estimated using the sum of the
+appropriate FIR time bins, akin to estimating the area under the
+curve of the hemodynamic response function. The reason for choosing
+to use the FIR model was based on initial observation of the data, in
+which the canonical hemodynamic response function (HRF) showed a
+relatively poor ﬁt to GY's data. The FIR model has the advantage of
+making no strong assumption regarding the shape of GY's hemody-
+namic responses. This procedure was used in one of our previous
+studies (Lau and Passingham, 2006). Initial height thresholds were set
+at p b 0.001, uncorrected, and all the ﬁgures that show activations are
+displayed at this level.
+Results
+Behavioral results
+Overall, GY performed at 76% correct for stimuli presented to the
+normal ﬁeld and 79% correct for stimuli presented to the blind ﬁeld.
+These values were within the expected range resulting from our
+procedure of contrast titration (see Methods). These values did not
+differ signi ﬁcantly (chi-square test, p = 0.34, Fig. 2 A). Interestingly,
+the reaction times were signi ﬁcantly shorter for trials for the blind
+ﬁeld than for the normal ﬁeld (796 vs. 937 ms, t-test, p b 0.0001).
+Although accuracy was matched between the hemi ﬁelds, the level
+of visual awareness differed markedly. GY indicated that he
+consciously saw the targets in 43% of the trials in the normal ﬁeld,
+and in only 3% of the trials in the blind ﬁeld. These values differed
+signiﬁcantly (chi-square test, p b 0.0000001, Fig. 2 B). Just as surpris-
+ingly, GY was equally willing to wager on trials for both hemi ﬁelds. He
+chose to wager based on his visual judgment (rather than a coin ﬂip)
+66% of the time for the normal ﬁeld, and 69% of the time for the blind
+ﬁeld (chi-square test, p = 0.32, Fig. 2 C). Unlike his visibility judg-
+ments, this suggests that GY has fairly high con ﬁdence in his
+blindsight abilities, perhaps due to his long experience with blindsight
+and his knowledge that he can perform accurately.
+Although objective performance overall is matched, the condi-
+tional distribution of % correct differed slightly. In the normal
+hemiﬁeld, trials reported “seen” were 95% correct, trials reported
+“guess” were 64% correct. In the blind hemi ﬁeld, “seen” trials were
+83% correct, “guess” trials were 74% correct. These values were not
+signiﬁcantly different (chi-square test, p = 0.22). Still, it's possible
+that the underlying processes are different ( Lamy et al., 2009 ), so we
+Fig. 1. Task design. After a ﬁxation period, a pair of gratings appeared, one in the upper visual quadrant and one immediately to it in the lower visual quadrant, in the left or right
+hemiﬁeld for 500 ms. GY was then prompted to respond either ‘ Up’ or ‘ Down’ by pressing a button to indicate if the vertical grating was above or below the horizontal grating. In the
+‘ wagering’ blocks, immediately after this response was made he was prompted either to respond ‘ Coin ﬂip’ or ‘ Response’ . ‘ Coin ﬂip’ means he would have equal random chance to
+gain or lose 50 British pence (~ 1 US dollar). ‘ Response’ means that he would gain or lose depending on whether his visual judgment was correct. In other blocks, no monetary gains or
+losses were involved, and he simply indicated whether he saw the visual targets ( ‘ Seen’ ) or not ( ‘ Guess’ ). If both responses were not made within 4 s, a ‘ Too late’ message appeared
+on the screen.
+607N. Persaud et al. / NeuroImage 58 (2011) 605 –611
+
+[[PDF PAGE 4]]
+should compare the subjective reports between the two hemiﬁelds with
+caution. On the other hand, evidence suggests that the conscious
+experience between GY's hemiﬁelds does differ, and this could re ﬂect
+this fundamental difference that is of critical interest to the present study.
+fMRI differences between normal and blind ﬁelds
+There was signi ﬁcantly higher cortical activity for stimuli pre-
+sented to the normal ﬁeld rather than to the blind ﬁeld ( Fig. 3). And
+this was true in spite of the fact that performance and conﬁdence were
+matched as shown in the previous section.
+Table 1 shows the coordinates for the peaks of activation. When
+contrasting stimulation of the normal as opposed to the blind ﬁeld, the
+activations lay in the intra-parietal cortex and superior temporal
+sulcus posteriorly, and in the ventral prefrontal and polar cortices
+anteriorly. The peak at −58, −27, 52 lies on the borders between the
+tip of the intra-parietal sulcus and the postcentral sulcus, and is
+tentatively assigned to the former.
+When contrasting stimulation of the blind as opposed to the
+normal ﬁeld, there was an activation for the blind ﬁeld that lay
+medially in the amygdala ( Fig. 4).
+In addition, we also looked at more speci ﬁc comparisons such as
+“blind correct-unseen vs. normal correct-unseen” trials, but due to the
+restricted number of trials that involved Seen/Guess judgments, our
+power was heavily reduced, and we failed to ﬁnd anything systematic.
+This is a limitation of single-subject studies, where only so much data
+can be collected.
+Differences between hemi ﬁelds in the capacity for ‘metacognition’
+Although we succeeded in matching for accuracy between the
+hemiﬁelds, there are other cognitive processes besides awareness that
+may differ. Previous studies ( Kornell et al., 2007 ) have measured the
+correlation between conﬁdence ratings and accuracy, and used that as
+an index of metacognitive capacity. This is a measure of how well one
+can distinguish between one's own correct and incorrect trials, by
+placing con ﬁdence or wagering ratings appropriately (e.g., accurate
+answers should be associated more frequently with the ‘ Response’
+metacognitive rating) ( Fig. 5).
+In our study, we computed the correlation coef ﬁcient r between
+wagering choice and accuracy across all trials within a hemi ﬁeld, and
+found it signi ﬁcantly higher in the normal ﬁeld than in the blind ﬁeld
+(0.52 vs. 0.30, test of differences using Fisher's r-to-z transform,
+p b 0.001). Since we presented to each ﬁeld two different levels of
+stimulus contrast, we attempted to match for metacognitive perfor-
+mance by comparing only the higher contrast trials in the blindﬁeld vs.
+the lower contrast trials in the normalﬁeld. However, even in that case,
+where objective performance was higher in the blind ﬁeld than in the
+normal ﬁeld, the metacognitive capacity (correlation coefﬁcient r) was
+still higher in the normal ﬁeld (0.45 vs. 0.25, test of differences using
+Fisher's r-to-z transform, p b 0.005).
+Normal Blind0
+25
+50
+75
+100% correct
+A
+Normal Blind0
+25
+50
+75
+100
+% of trials GY said "Seen"
+rather than "Guess"
+B
+Normal Blind0
+25
+50
+75
+100
+% of trials GY wagered on
+his response over a coin flip
+C
+Fig. 2. Behavioral responses. A: Percentage correct is closely matched between hemi ﬁelds. B: GY indicated that he consciously ‘ saw’ the targets much more frequently in his normal
+ﬁeld than in his blind ﬁeld. C: After matching for performance, GY is equally willing to wager on his response in both conditions.
+Fig. 3. Activations for all stimulations in the normal ﬁeld over stimulations to the
+blind ﬁeld, thresholded at p b 0.001, uncorrected for display purposes. All clusters are
+signiﬁcant at cluster-corrected p-values b 0.05.
+Table 1
+Results of the contrasts between normal and blind hemi ﬁelds, and within the blind
+hemiﬁeld, between correct and incorrect responses.
+Contrast normal – blind
+Area Coordinates (MNI) p-value (cluster-corrected)
+R caudal intra-parietal sulcus 24, − 83, 34 b 0.000001
+L anterior intra-parietal − 58, − 27, 52 0.01
+R superior temporal sulcus 61, − 47, 19 0.005
+L parahippocampal cortex − 12, − 23, − 23 0.021
+R pre-SMA 1, 17, 61 0.013
+R ventral prefrontal cortex 58, 18, 22 b 0.00001
+R orbital prefrontal cortex 46, 37, − 3 0.049
+R frontal polar cortex 38, 61, 13 b 0.000001
+Contrast blind – normal
+Area Coordinates (MNI) p-value (uncorrected)
+L amygdala − 12, − 1, − 18 0.029
+Contrast blind correct – incorrect
+Area Coordinates (MNI) p-value (cluster-corrected)
+L parahippocampal gyrus − 15, − 17, − 24 b 0.0002
+608 N. Persaud et al. / NeuroImage 58 (2011) 605 –611
+
+[[PDF PAGE 5]]
+Discussion
+Our question was whether activation in the prefrontal and parietal
+cortices genuinely re ﬂects visual awareness per se, as suggested by
+previous studies. One alternative interpretation is that it re ﬂects
+signal strength or the superior task performance that is typically
+associated with conditions in which the stimulus leads to conscious
+visual phenomenology. Our results rule out this alternative interpre-
+tation. We found activity in these areas even with weaker stimuli and
+controlling for task performance. We equated for performance by
+titrating the luminance contrast of the stimulus such that the accuracy
+between the normal and blind ﬁelds in GY was matched. The effect
+was that GY was equally con ﬁdent of his responses in both ﬁelds, as
+shown by the fact that he was prepared to wager the same amount on
+being correct whether the stimuli were presented to his normal or
+blind ﬁeld.
+If anything, GY's reaction times were shorter for the blind ﬁeld,
+which suggests that his overall performance capacity may even be
+somewhat higher in the blind ﬁeld than in the normal ﬁeld. Yet, there
+was more activity in the prefrontal and parietal cortices associated
+with stimulations of the normal visual ﬁeld. The fact that his reaction
+times were signi ﬁcantly longer when the stimuli were presented to
+the normal ﬁeld may explain the greater activation in the pre-SMA in
+this condition and that having a real visual percept actually makes one
+slower.
+Awareness
+When the stimuli were presented to the normal, as opposed to the
+blind ﬁeld, there were also activations in the dorsal visual system and
+in the prefrontal cortex. The peaks in posterior cortex lay in the intra-
+parietal sulcus and in the superior temporal sulcus. The peaks in the
+prefrontal cortex lay in the ventrolateral and polar prefrontal cortices.
+The ventrolateral prefrontal cortex receives projections from both the
+intra-parietal (Borra et al., 2008 ) and superior temporal sulci ( Seltzer
+and Pandya, 1989 ). There were also activations in these areas in a
+study by Lumer and Rees (1999) using binocular rivalry to identify
+regions that are active when the participants report transitions from
+awareness of one stimulus to awareness of the other. In that study the
+stimuli were a slow moving grating and a face.
+In a previous fMRI study, we used metacontrast masking to create
+‘ relative blindsight’ in healthy participants. We arranged conditions in
+which performance was matched but there was a difference in the
+proportion of trials on which the subjects claimed that they had ‘ seen’
+the target. Activation in the anterior prefrontal cortex was associated
+with higher ratings of awareness. The peak at −46, 48, 14 in the study
+Fig. 4. Activations for all stimulations in the blind ﬁeld over stimulations to the normal ﬁeld, thresholded at p b 0.001, uncorrected for display. The cluster at the subcortical location
+displayed did not survive correction for multiple comparisons (p = 0.289). The coordinates were − 12, − 1, − 18 in MNI space.
+Fig. 5. Activity that distinguishes correct responses over incorrect responses for stimulations to the normal hemi ﬁeld, thresholded at p b 0.001, uncorrected for display purposes. Only
+the cluster indicated in the rightmost slide survived whole brain correction (p b 0.05). All reported coordinates are in MNI space.
+609N. Persaud et al. / NeuroImage 58 (2011) 605 –611
+
+[[PDF PAGE 6]]
+of relative blindsight lies near to, though posterior to, the peak at 38,
+61, 13 for polar cortex in the present study of GY. However, the results
+of the study on healthy participants differ from those of the study on
+GY in that there were no signi ﬁcant activations in the parietal cortex.
+Dehaene et al. (2003) have suggested that the parietal and
+prefrontal cortices act as a ‘ global workspace ’ . They suggest that
+perception is conscious when there is a ‘ global broadcast ’ through
+these areas. In a recent EEG study, those authors ( Gaillard et al., 2009)
+reported that there is temporal synchrony in the beta band across long
+cortical distances when visual masking is used to compare conditions
+in which the participant is or is not aware. However, one would expect
+that a ‘ global broadcast’ via the prefrontal and parietal cortices would
+have functional signi ﬁcance ( Lau and Rosenthal, 2011 ). In other
+words, a stimulus that triggers such widespread activity should lead
+to higher task performance. But in the present study, task perfor-
+mance was matched, and yet we still found activations throughout the
+parietal and prefrontal cortices that were related to awareness. This
+does not mean that the global workspace theory is wrong, it just
+means that the activation in the PFC probably re ﬂects more than
+solely global broadcast, which should affect task performance.
+There are, however, alternate possibilities that also need to be
+considered. One is that widespread parietal – frontal activity re ﬂects
+not awareness, but preparatory ﬂexibility, or other processes that are
+only associated with awareness, but not awareness itself. Our data
+cannot rule this out. A second possibility relates to the strength of the
+stimuli themselves. In order to match for performance, we presented
+high-contrast stimuli to the blind hemi ﬁeld, and low-contrast stimuli
+to the normal ﬁeld. One possibility is that widespread activation is due
+to the brain working harder to amplify a weak signal. However, it's
+generally the case that brain activity increases monotonically with
+contrast ( Boynton et al., 1999 ), so if anything, perhaps we should
+expect to see the opposite pattern based on stimulus contrast alone.
+Another possibility is that these activations relate to metacogni-
+tion instead of awareness per se. GY was better at monitoring his
+performance in the normal ﬁeld than the blind ﬁeld, i.e., the
+correlation between his willingness to wager his accuracy was higher
+when the stimuli were presented to his normal than to his blind ﬁeld.
+In a previous study we used transcranial magnetic stimulation to
+temporarily inactivate the prefrontal cortex in healthy participants
+(Rounis et al., 2010 ). Theta burst stimulation was applied bilaterally
+before the visual stimuli were presented. The stimulation had no
+effect on task performance, but it did decrease the correlation
+between conﬁdence ratings and accuracy. In other words, stimulation
+had the effect of lowering the metacognitive capacity. In addition, we
+found frontopolar activation in GY, which has been found to be
+associated with higher metacognitive ability ( Fleming et al., 2010). So
+while there were substantial differences in awareness between GY's
+hemiﬁelds, the possibility that widespread activity re ﬂects pure
+metacognitive capacity rather than awareness cannot be ruled out
+either.
+Blindsight
+Since GY exhibits blindsight, we were also able to assess whether,
+even when performance and wagering were matched, there were
+activations when the stimuli were presented to the blind as opposed
+to the normal ﬁeld. We found one such activation, and this lay
+medially in the left amygdala ( Table 1 ). Since wagering (and thus
+conﬁdence) was matched, it is unlikely that the activation of the
+amygdala is due to GY being anxious about judgments that are made
+when the stimuli are presented to the blind ﬁeld. Nor do the
+judgments concern fear-inducing items as in the experiments with GY
+on fearful vs. non-fearful facial expressions ( Morris et al., 1999, 2001).
+The latter authors have claimed that there is a ‘ fast’ pathway via which
+visual information from the eye to the superior colliculus reaches the
+amygdala. However, though it is true that the superior colliculus
+projects to the inferior pulvinar ( Benevento and Rezak, 1976), it is the
+medial pulvinar that is connected with the amygdala ( Jones and
+Burton, 1976 ). The alternative is to suppose that, when a stationary
+grating is presented to GY's blind ﬁeld, there is activation in the
+infero-temporal cortex, since there are abundant connections be-
+tween the infero-temporal cortex and the amygdala ( Baizer et al.,
+1993). Activations of the infero-temporal cortex could be dependent
+on cortical input from the konio-cellular rich layers of the lateral
+geniculate, since it has been shown that inactivation of the region of
+the lateral geniculate nucleus corresponding to the ﬁeld defect
+abolishes the extra-striate visual responses that survive a striate
+lesion (Schmid et al., 2010 ).
+Even if this explanation were correct, the activation of the
+amygdala does not explain GY's ability to discriminate between
+stimuli that he does not see. There is no differential activation of this
+structure when his judgments for stimuli in the blind ﬁeld are correct
+as opposed to incorrect. Instead the differential activation lies in the
+left parahippocampal gyrus ( Table 1 ). The peak at −15, − 17, −24
+lies close to the peak at − 12, −23, − 23 for the comparison of
+normal– blind. Given that GY was more con ﬁdent in his judgments
+that turned out to be correct than in his judgments that turned out to
+be wrong (as re ﬂected by the fact that accuracy and tendency to
+wager on his response were correlated), it is possible that this
+activation related to some aspect of his subjective (non-visual)
+experience (Fig. 6).
+Given that blindsight is generally accepted to be due to weaker,
+more proscribed subcortical pathways, one could argue that a lack of
+widespread activation for blind ﬁeld stimulation is to be expected.
+However, several studies have demonstrated that unconscious stimuli
+can activate widespread cortical networks. In an unconscious
+cognitive control paradigm, Lau and Passingham (2007) found greater
+left dlPFC activity. Van Gaal et al. (2010) found bilateral inferior
+frontal cortex (IFC) and pre-supplementary motor area (pre-SMA) in
+an unconscious go/no-go task. Using frequency-tagged stimuli with a
+binocular rivalry paradigm, Tononi et al. (1998) found power at the
+frequency of the nondominant stimuli for multiple parietal and frontal
+sensors. Therefore, our present ﬁnding is not trivial.
+Fig. 6. Activity that distinguishes correct responses over incorrect responses for
+stimulations to the blind hemi ﬁeld, thresholded at p b 0.001, uncorrected for display
+purposes. Cluster-corrected p-value b 0.001. All reported coordinates were in MNI
+space. ROI coordinates were normalized to MNI space: − 15, − 17, − 24.
+610 N. Persaud et al. / NeuroImage 58 (2011) 605 –611
+
+[[PDF PAGE 7]]
+Finally, given that blindsight is a rare and unusual condition, it's
+not guaranteed that our ﬁndings generalize to the population at large.
+It could be that due to his lesion or his subsequent cortical reorga-
+nization that GY has a totally unique response. GY has an abnormal
+connection from the contralesional lateral geniculate nucleus (LGN)
+to his ipsilesional V5/MT+ and hypernormal connections between
+the two V5/MT+ areas. TMS stimulation to GY's ipsilesional V5/MT+
+can in ﬂuence the appearance of V1 phosphenes on his undamaged
+side (Silvanto et al., 2009 ), so it's possible that GY is recruiting cortex
+that normal subjects or other blindsight subjects would not. In such a
+case, these recruited areas would effectively disappear in Blind vs.
+Normal contrasts, due to being more closely matched in terms of
+activity levels between the two conditions. However, GY's results do
+accord with earlier ﬁndings from Lau and Passingham (2006) , which
+used a metacontrast masking paradigm to match for performance, but
+not awareness, in normal subjects, and found a difference in activity in
+the left dlPFC.
+Conclusion
+Blindsight is a condition that is associated with destruction of the
+primary visual area. However, a lesion to one area may change activity
+in other distal brain regions. By presenting stimuli of different
+luminance contrast to the normal and blind ﬁelds of GY, we matched
+for his performance capacities between the two ﬁelds. We found that
+stimulation of the normal ﬁeld was associated with signi ﬁcant
+activations in the prefrontal and parietal areas, as compared to
+stimulations of the blind ﬁeld. These results are compatible with the
+suggestion that the mechanisms of conscious visual awareness may
+depend at least in part on activity in these regions.
+Acknowledgments
+NP is supported by a Banting Postdoctoral Research Fellowship
+from the CIHR and the Federal Government of Canada. HL is supported
+by the Templeton Foundation (grant number 21569).
+References
+Azzopardi, P., Cowey, A., 1997. Is blindsight like normal, near-threshold vision? Proc.
+Natl. Acad. Sci. U. S. A. 94 (25), 14190 – 14194.
+Baizer, J.S., Desimone, R., Ungerleider, L.G., 1993. Comparison of subcortical connections
+of inferior temporal and posterior parietal cortex in monkeys. Vis. Neurosci. 10 (1),
+59– 72.
+Barbur, J.L., Harlow, A.J., Weiskrantz, L., 1994. Spatial and temporal response properties
+of residual vision in a case of hemianopia. Philos. Trans. R. Soc. Lond. B Biol. Sci. 343
+(1304), 157 – 166. doi: 10.1098/rstb.1994.0018.
+Benevento, L.A., Rezak, M., 1976. The cortical projections of the inferior pulvinar and
+adjacent lateral pulvinar in the rhesus monkey ( Macaca mulatta ): an autoradio-
+graphic study. Brain Res. 108 (1), 1 – 24.
+Borra, E., Belmalih, A., Calzavara, R., Gerbella, M., Murata, A., Rozzi, S., Luppino, G., 2008.
+Cortical connections of the macaque anterior intraparietal (AIP) area. Cereb. Cortex
+18 (5), 1094 – 1111. doi: 10.1093/cercor/bhm146.
+Boynton, G.M., Demb, J.B., Glover, G.H., Heeger, D.J., 1999. Neuronal basis of contrast
+discrimination. Vis. Res. 39 (2), 257 – 269.
+Bridge, H., Thomas, O., Jbabdi, S., Cowey, A., 2008. Changes in connectivity after visual
+cortical brain damage underlie altered visual function. Brain 131 (Pt 6), 1433 – 1444.
+doi:10.1093/brain/awn063.
+Dehaene, S., Sergent, C., Changeux, J.-P., 2003. A neuronal network model linking
+subjective reports and objective physiological data during conscious perception.
+Proc. Natl. Acad. Sci. U. S. A. 100 (14), 8520 – 8525. doi: 10.1073/pnas.1332574100.
+Dienes, Z., Seth, A., 2010. Gambling on the unconscious: a comparison of wagering and
+conﬁdence ratings as measures of awareness in an arti ﬁcial grammar task.
+Conscious. Cogn. 19 (2), 674 – 681. doi: 10.1016/j.concog.2009.09.009.
+Fleming, S.M., Weil, R.S., Nagy, Z., Dolan, R.J., Rees, G., 2010. Relating introspective
+accuracy to individual differences in brain structure. Science 329 (5998),
+1541– 1543. doi: 10.1126/science.1191883.
+Gaillard, R., Dehaene, S., Adam, C., Clémenceau, S., Hasboun, D., Baulac, M., Cohen, L., et al.,
+2009. Converging intracranial markers of conscious access. PLoS Biol. 7 (3), e61.
+doi:10.1371/journal.pbio.1000061.
+Jones, E.G., Burton, H., 1976. A projection from the medial pulvinar to the amygdala in
+primates. Brain Res. 104 (1), 142 – 147.
+Kentridge, R.W., Heywood, C.A., Weiskrantz, L., 1997. Residual vision in multiple retinal
+locations within a scotoma: implications for blindsight. J. Cogn. Neurosci. 9 (2), 191– 202.
+Kentridge, R.W., Heywood, C.A., Weiskrantz, L., 1999. Attention without awareness in
+blindsight. Proc. Biol. Sci. 266 (1430), 1805 – 1811. doi: 10.1098/rspb.1999.0850.
+Kornell, N., Son, L.K., Terrace, H.S., 2007. Transfer of metacognitive skills and hint seeking
+in monkeys. Psychol. Sci. 18 (1), 64 – 71. doi:10.1111/j.1467-9280.2007.01850.x.
+Lamy, D., Salti, M., Bar-Haim, Y., 2009. Neural correlates of subjective awareness and
+unconscious processing: an ERP study. J. Cogn. Neurosci. 21 (7), 1435 – 1446.
+doi:10.1162/jocn.2009.21064.
+Lau, H., 2008. A higher order Bayesian decision theory of consciousness. Prog. Brain Res.
+168, 35 – 48. doi:
+10.1016/S0079-6123(07)68004-2.
+Lau, H., Maniscalco, B., 2010. Should con ﬁdence be trusted. Science 329 (5998),
+1478– 1479. doi: 10.1126/science.1195983.
+Lau, H., Passingham, R.E., 2006. Relative blindsight in normal observers and the neural
+c o r r e l a t eo fv i s u a lc o n s c i o u s n e s s .P r o c .N a t l .A c a d .S c i .U .S .A .1 0 3( 4 9 ) ,1 8 7 6 3– 18768.
+doi:10.1073/pnas.0607716103.
+Lau, H., Passingham, R.E., 2007. Unconscious activation of the cognitive control system
+in the human prefrontal cortex. J. Neurosci. 27 (21), 5805 – 5811. doi: 10.1523/
+JNEUROSCI.4335-06.2007.
+Lau, H., Rosenthal, D., 2011. Empirical support for higher-order theories of conscious
+awareness. Trends Cogn. Sci. doi: 10.1016/j.tics.2011.05.009.
+Levitt, H., 1971. Transformed up – down methods in psychoacoustics. J. Acoust. Soc. Am.
+49(2) (Suppl. 2), 467.
+Lumer, E.D., Rees, G., 1999. Covariation of activity in visual and prefrontal cortex
+associated with subjective visual perception. Proc. Natl. Acad. Sci. U. S. A. 96 (4),
+1669– 1673.
+Morris, J.S., Ohman, A., Dolan, R.J., 1999. A subcortical pathway to the right amygdala
+mediating “unseen” fear. Proc. Natl. Acad. Sci. U. S. A. 96 (4), 1680 – 1685.
+Morris, J.S., DeGelder, B., Weiskrantz, L., Dolan, R.J., 2001. Differential extragenicu-
+lostriate and amygdala responses to presentation of emotional faces in a cortically
+blind ﬁeld. Brain 124 (Pt 6), 1241 – 1252.
+Nagel, I.E., Preuschhof, C., Li, S.-C., Nyberg, L., Bäckman, L., Lindenberger, U., Heekeren,
+H.R., 2009. Performance level modulates adult age differences in brain activation
+during spatial working memory. Proc. Natl. Acad. Sci. U. S. A. 106 (52),
+22552– 22557. doi: 10.1073/pnas.0908238106.
+Persaud, N., Lau, H., 2008. Direct assessment of qualia in a blindsight participant.
+Conscious. Cogn. 17 (3), 1046 – 1049. doi: 10.1016/j.concog.2007.10.001.
+Persaud, N., McLeod, P., Cowey, A., 2007. Post-decision wagering objectively measures
+awareness. Nat. Neurosci. 10 (2), 257 – 261. doi: 10.1038/nn1840.
+Rees, G., Kreiman, G., Koch, C., 2002. Neural correlates of consciousness in humans. Nat.
+Rev. Neurosci. 3 (4), 261 – 270. doi: 10.1038/nrn783.
+Rounis, E., Maniscalco, B., Rothwell, J., Passingham, R.E., Lau, H., 2010. Theta-burst
+transcranial magnetic stimulation to the prefrontal cortex impairs metacognitive
+visual awareness. J. Cogn. Neurosci. 1 (3), 165– 175. doi:10.1080/17588921003632529.
+Sahraie, A., Weiskrantz, L., Barbur, J.L., Simmons, A., Williams, S.C., Brammer, M.J., 1997.
+Pattern of neuronal activity associated with conscious and unconscious processing
+of visual signals. Proc. Natl. Acad. Sci. U. S. A. 94 (17), 9406 – 9411.
+Schmid, M.C., Mrowka, S.W., Turchi, J., Saunders, R.C., Wilke, M., Peters, A.J., Ye, F.Q., et
+al., 2010. Blindsight depends on the lateral geniculate nucleus. Nature 466 (7304),
+373– 377. doi: 10.1038/nature09179.
+Schurger, A., Cowey, A., Tallon-Baudry, C., 2006. Induced gamma-band oscillations
+correlate with awareness in hemianopic patient GY. Neuropsychologia 44 (10),
+1796– 1803. doi: 10.1016/j.neuropsychologia.2006.03.015
+.
+Schurger, A., Cowey, A., Cohen, J.D., Treisman, A., Tallon-Baudry, C., 2008. Distinct and
+independent correlates of attention and awareness in a hemianopic patient.
+Neuropsychologia 46 (8), 2189– 2197. doi:10.1016/j.neuropsychologia.2008.02.020.
+Seltzer, B., Pandya, D.N., 1989. Frontal lobe connections of the superior temporal sulcus
+in the rhesus monkey. J. Comp. Neurol. 281 (1), 97 – 113. doi: 10.1002/cne.
+902810108.
+Silvanto, J., Walsh, V., Cowey, A., 2009. Abnormal functional connectivity between
+ipsilesional V5/MT+ and contralesional striate cortex (V1) in blindsight. Exp. Brain
+Res. 193 (4), 645 – 650. doi: 10.1007/s00221-009-1712-x.
+Stoerig, P., Cowey, A., 1997. Blindsight in man and monkey. Brain 120 (Pt 3), 535 – 559.
+Stoerig, P., Cowey, A., 2007. Blindsight. Curr. Biol. 17 (19), R822 – R824. doi: 10.1016/j.
+cub.2007.07.016.
+Tononi, G., Srinivasan, R., Russell, D.P., Edelman, G.M., 1998. Investigating neural
+correlates of conscious perception by frequency-tagged neuromagnetic responses.
+Proc. Natl. Acad. Sci. U. S. A. 95 (6), 3198 – 3203.
+van Gaal, S., Ridderinkhof, K.R., Scholte, H.S., Lamme, V.A.F., 2010. Unconscious
+activation of the prefrontal no-go network. J. Neurosci. 30 (11), 4143 – 4150.
+doi:10.1523/JNEUROSCI.2992-09.2010.
+Weiskrantz, L., 2009. Is blindsight just degraded normal vision. Exp. Brain Res. 192 (3),
+413– 416. doi: 10.1007/s00221-008-1388-7.
+Weiskrantz, L., Barbur, J.L., Sahraie, A., 1995. Parameters affecting conscious versus
+unconscious visual discrimination with damage to the visual cortex (V1). Proc.
+Natl. Acad. Sci. U. S. A. 92 (13), 6122 – 6126.
+611N. Persaud et al. / NeuroImage 58 (2011) 605 –611

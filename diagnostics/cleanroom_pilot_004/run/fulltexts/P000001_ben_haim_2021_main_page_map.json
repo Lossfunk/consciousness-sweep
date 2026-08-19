@@ -1,0 +1,47 @@
+[
+  {
+    "pdf_page": 1,
+    "start_character": 0,
+    "end_character": 7002
+  },
+  {
+    "pdf_page": 2,
+    "start_character": 7002,
+    "end_character": 15919
+  },
+  {
+    "pdf_page": 3,
+    "start_character": 15919,
+    "end_character": 19167
+  },
+  {
+    "pdf_page": 4,
+    "start_character": 19167,
+    "end_character": 22531
+  },
+  {
+    "pdf_page": 5,
+    "start_character": 22531,
+    "end_character": 30455
+  },
+  {
+    "pdf_page": 6,
+    "start_character": 30455,
+    "end_character": 34057
+  },
+  {
+    "pdf_page": 7,
+    "start_character": 34057,
+    "end_character": 38745
+  },
+  {
+    "pdf_page": 8,
+    "start_character": 38745,
+    "end_character": 47165
+  },
+  {
+    "pdf_page": 9,
+    "start_character": 47165,
+    "end_character": 54975
+  }
+]

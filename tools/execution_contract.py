@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure, network-free enforcement helpers for the draft-0.8.4 execution contract."""
+"""Pure, network-free enforcement helpers for the draft-0.8.5 execution contract."""
 
 from __future__ import annotations
 
@@ -201,6 +201,13 @@ def route_audit_errors(row: dict[str, Any]) -> list[str]:
     difference_tested = row.get("difference_tested")
     awareness_result = row.get("awareness_effect")
     if difference_tested == "yes":
+        if row.get("difference_source_experiment_id") != row.get("experiment_id"):
+            errors.append("a direct same-Y difference must be reported in the focal experiment")
+        for field in (
+            "difference_source_location", "difference_statistic_or_test",
+        ):
+            if not str(row.get(field) or "").strip():
+                errors.append(f"a direct same-Y difference requires {field}")
         if awareness_result == "not-tested":
             errors.append("a direct same-Y awareness comparison cannot be recorded as not-tested")
         if row.get("result_inspection_status") == "not-required":
@@ -324,6 +331,41 @@ def functional_structure_errors(rows: Iterable[dict[str, Any]]) -> list[str]:
     return errors
 
 
+def experiment_group_errors(
+    groups: Iterable[dict[str, Any]], comparisons: Iterable[dict[str, Any]], paper_ids: set[str],
+) -> list[str]:
+    """Reconcile first-class physical groups with comparison rows without placeholders."""
+    errors: list[str] = []
+    group_rows = list(groups)
+    comparison_rows = list(comparisons)
+    group_ids = {row.get("experiment_id") for row in group_rows}
+    comparisons_by_experiment: dict[str, set[str]] = {}
+    for row in comparison_rows:
+        experiment_id = str(row.get("experiment_id") or "")
+        comparisons_by_experiment.setdefault(experiment_id, set()).add(
+            str(row.get("comparison_id") or "")
+        )
+        if experiment_id not in group_ids:
+            errors.append(f"{row.get('comparison_id')}: references missing experiment group")
+    for group in group_rows:
+        experiment_id = str(group.get("experiment_id") or "")
+        paper_id = str(group.get("paper_id") or "")
+        if paper_id not in paper_ids:
+            errors.append(f"{experiment_id}: references missing paper {paper_id}")
+        if not experiment_id.startswith(f"{paper_id}_E"):
+            errors.append(f"{experiment_id}: does not belong to paper_id")
+        observed = comparisons_by_experiment.get(experiment_id, set())
+        declared = set(group.get("linked_comparison_ids", []))
+        if declared != observed:
+            errors.append(f"{experiment_id}: linked comparisons differ from experiments_master.csv")
+        disposition = group.get("disposition")
+        if disposition == "comparison-bearing" and not observed:
+            errors.append(f"{experiment_id}: comparison-bearing group has no comparisons")
+        if disposition in {"support-only", "no-qualifying-comparison"} and observed:
+            errors.append(f"{experiment_id}: {disposition} group has placeholder/comparison rows")
+    return errors
+
+
 def capacity_identity_errors(row: dict[str, Any]) -> list[str]:
     """Enforce one comparison = one focal Y = one possible unaware-capacity target."""
     errors: list[str] = []
@@ -337,6 +379,10 @@ def capacity_identity_errors(row: dict[str, Any]) -> list[str]:
             errors.append("unaware_capacity_claim must exactly equal Y_label; components require their own comparison")
     if capacity == "supported" and row.get("unaware_capacity_evidence_scope") != "whole-focal-Y":
         errors.append("supported unaware capacity requires evidence for the whole focal Y")
+    if capacity == "supported" and row.get("Y_functional_status") not in {
+        "downstream-function", "coherent-functional-mapping",
+    }:
+        errors.append("supported unaware capacity requires Y to be an audited downstream function")
     if capacity == "not-tested" and row.get("unaware_capacity_evidence_scope") != "not-applicable":
         errors.append("not-tested unaware capacity requires not-applicable evidence scope")
     return errors
@@ -434,28 +480,41 @@ def alternative_control_scan_errors(row: dict[str, Any]) -> list[str]:
 def awareness_result_provenance_errors(
     row: dict[str, Any], bundles: Iterable[dict[str, Any]], links: Iterable[dict[str, Any]],
 ) -> list[str]:
-    """Require strong A to point to an actual procedure-matched supportive result."""
+    """Separate focal result reporting from support and require explicit transfer evidence."""
     if row.get("A_code") not in {"A-direct", "A-validated"}:
         return []
     focal_id = row.get("comparison_id")
     errors: list[str] = []
-    if row.get("awareness_result_status") != "supportive-result-reported":
-        errors.append(f"{focal_id}: strong A requires a supportive critical awareness result")
-    for field in (
-        "awareness_measure", "awareness_procedure_type", "awareness_result_procedure_type",
-        "awareness_result_description", "awareness_result_source_location",
-    ):
+    for field in ("awareness_measure", "awareness_procedure_type"):
         if not str(row.get(field) or "").strip() or row.get(field) == "not-applicable":
             errors.append(f"{focal_id}: strong A lacks {field}")
-    if (
-        row.get("awareness_procedure_type")
-        and row.get("awareness_result_procedure_type")
-        and row.get("awareness_procedure_type") != row.get("awareness_result_procedure_type")
-    ):
-        errors.append(f"{focal_id}: awareness result type does not match the recorded procedure")
-    if row.get("A_code") == "A-direct":
+    focal_result_supports = (
+        row.get("awareness_result_reporting") == "reported"
+        and row.get("awareness_result_support") == "supports-strong-A"
+    )
+    if focal_result_supports:
+        for field in (
+            "awareness_result_procedure_type", "awareness_result_description",
+            "awareness_result_source_location",
+        ):
+            if not str(row.get(field) or "").strip() or row.get(field) == "not-applicable":
+                errors.append(f"{focal_id}: reported supportive awareness result lacks {field}")
         if row.get("awareness_result_source_experiment_id") != row.get("experiment_id"):
-            errors.append(f"{focal_id}: A-direct result must come from the focal experiment")
+            errors.append(f"{focal_id}: focal awareness result must come from the focal experiment")
+        if (
+            row.get("awareness_procedure_type")
+            and row.get("awareness_result_procedure_type")
+            and row.get("awareness_procedure_type") != row.get("awareness_result_procedure_type")
+        ):
+            errors.append(f"{focal_id}: awareness result type does not match the recorded procedure")
+    if row.get("A_code") == "A-direct":
+        if not focal_result_supports:
+            errors.append(
+                f"{focal_id}: A-direct requires a reported focal critical result that supports strong A"
+            )
+        return errors
+
+    if focal_result_supports:
         return errors
 
     complete_bundle_ids = {
@@ -477,21 +536,15 @@ def awareness_result_provenance_errors(
         and str(link.get("transfer_reason") or "").strip()
         and str(link.get("transfer_limitation") or "").strip()
         and (
-            (
-                row.get("awareness_result_source_experiment_id") is not None
-                and link.get("supporting_experiment_id")
-                == row.get("awareness_result_source_experiment_id")
-            )
-            or (
-                row.get("awareness_result_source_experiment_id") is None
-                and link.get("supporting_auxiliary_id") is not None
-            )
+            link.get("supporting_experiment_id") is not None
+            or link.get("supporting_auxiliary_id") is not None
         )
     ]
     if not result_links:
         errors.append(
-            f"{focal_id}: A-validated requires a complete awareness-A bundle with a required, "
-            "decision-used, result-bearing member and explicit transfer assessment"
+            f"{focal_id}: A-validated without a supportive focal result requires a complete "
+            "transferred awareness-A bundle with a required, decision-used, result-bearing "
+            "member and explicit transfer assessment"
         )
     return errors
 

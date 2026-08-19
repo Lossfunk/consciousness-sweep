@@ -1,0 +1,22 @@
+[
+  {
+    "pdf_page": 1,
+    "start_character": 0,
+    "end_character": 1907
+  },
+  {
+    "pdf_page": 2,
+    "start_character": 1907,
+    "end_character": 10078
+  },
+  {
+    "pdf_page": 3,
+    "start_character": 10078,
+    "end_character": 16222
+  },
+  {
+    "pdf_page": 4,
+    "start_character": 16222,
+    "end_character": 24729
+  }
+]

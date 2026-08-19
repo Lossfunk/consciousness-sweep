@@ -1,0 +1,588 @@
+[[PDF PAGE 1]]
+BRIEF REPORT
+Consciousness is not necessary for visual feature binding
+André W . Keizer& Bernhard Hommel &
+Victor A.F . Lamme
+Published online: 19 August 2014
+# Psychonomic Society, Inc. 2014
+Abstract When visual information enters the brain, it is
+relayed to different specialized regions, processing features
+such as shape, color, or motion. And yet, in our conscious
+experience of a colored, moving shape, all the different fea-
+tures seem to be integrated into one unified percept. Therefore,
+it has been hypothesized that consciousness and feature bind-
+ing share an intimate relationship. To study this relationship,
+we used a paradigm in which the behavioral effects of feature
+binding can be measured. Using masks, we investigated
+whether spontaneous binding between the orientation and
+location of a Gabor patch takes place when the Gabor patch
+is processed consciously or unconsciously. The results of our
+study suggest that orientation and location of a visually pre-
+sented object are automatically integrated, even when subjects
+are unaware of that object. We conclude that binding
+and consciousness share a less intimate relationship than
+previously hypothesized, since consciousness is not a
+necessary condition for binding to occur.
+Keywords Feature binding . Integration . Awareness .
+Consciousness
+Introduction
+One of the most intriguing problems that scientific studies of
+the human mind face today is how the brain creates conscious
+experiences. One salient feature of consciousness is that it is
+unified; when we perceive the face of a loved one, say, the
+different features belonging to that face, his/her tint, shape,
+movement, and so forth are integrated into one coherent
+percept. The fact that consciousness seems unified is remark-
+able, since the brain consists of a large number of specialized
+modules (coding, e.g., for faces, Kanwisher, McDermott, &
+Chun, 1997;c o l o r ,Z e k ie ta l . ,1991; or motion, Zeki, 1980).
+This modular representation seems to call for a binding mech-
+anism that integrates the information represented in spatially
+segregated brain areas in a fast and flexible manner.
+Research focusing on this so-called binding problem
+(Treisman & Gelade, 1980) has shown that binding can occur
+between arbitrary feature conjunctions, even when this is
+irrelevant to the current task: Spontaneous binding has been
+demonstrated within the visual modality (Kahneman,
+Treisman, & Gibbs, 1992), but also across different modali-
+ties, such as between visual features and auditory features
+(Zmigrod & Hommel, 2009) and between visual features
+and action features (Hommel, 1998).
+There is currently much debate about the relationship be-
+tween binding and the unity of consciousness (e.g., Revonsuo,
+1999), which boils down to two opposing hypotheses. The
+first hypothesis states that binding processes are independent
+from consciousness. Unified conscious experiences may de-
+pend on the product of binding processes, but these binding
+processes can in themselves proceed unconsciously. This
+would also raise the possibility that the “product” of binding
+processes does not necessarily have to be conscious.
+The second hypothesis states that binding and conscious-
+ness share an intimate relationship. In this view, the contents
+of consciousness are always unified because, in order for the
+features of an object to be integrated, there needs to be a
+conscious representation of that object. It may turn out that
+whenever features are bound together, this automatically re-
+sults in a phenomenological experience of that unified
+A. W . Keizer: V . Lamme (*)
+Brain and Cognition, Department of Psychology, University of
+Amsterdam & Amsterdam Brain and Cognition Institute,
+Weesperplein 4, 1018 XA Amsterdam, The Netherlands
+e-mail: victorlamme@gmail.com
+B. Hommel
+Institute for Psychological Research & Leiden Institute for Brain and
+Cognition, Leiden University, Leiden, The Netherlands
+Psychon Bull Rev (2015) 22:453–460
+DOI 10.3758/s13423-014-0706-2
+
+[[PDF PAGE 2]]
+representation (Crick & Koch, 1990; Engel, Fries, Konig,
+Brecht, & Singer, 1999), or vice versa; Whenever individual
+features enter consciousness, they are automatically bound.
+The latter could also imply that binding is the function of
+consciousness (Desmedt & Tomberg, 1994).
+The hypothesis that is tested in the present study is whether
+binding two features of a visual stimulus (location and orienta-
+tion) is possible even though the stimulus is masked to prevent
+conscious report. We used a paradigm with which it is possible
+to assess the behavioral effects of spontaneous binding between
+the visual features of an object (Hommel,1998). This paradigm
+was combined with effective and ineffective masking.
+In the effective masking condition (as opposed to the
+ineffective masking condition), subjects were unable to report
+whether a Gabor patch was presented or not, and we assume
+that the Gabor patch is processed unconsciously in that con-
+dition. Our predictions were clear-cut: If consciousness is
+necessary for the binding between the location and orientation
+of the Gabor patch, the behavioral effects of this binding
+should be absent when Gabor patches are effectively masked,
+but if consciousness plays no functional role in the binding
+between the location and orientation of the Gabor patch,
+the behavioral effects should be equal for effectively
+and ineffectively masked Gabor patches.
+Method
+Participants
+F o r t y - o n er i g h t - h a n d e dv o l u n t e e r s( 1 3m a l e ;m e a na g e :2 2 . 4
+years) participated in the experiment for course credits or a
+fee. Informed consent was obtained before the start of the
+experiment.
+Task 1: Mask configuration
+In the mask configuration task (see Fig. 1a), subjects were
+instructed to discriminate between the absence and presence
+of a target (Gabor patch, white lines on a black background; 4°
+diameter; spatial frequency: 12 cycles/°), by responding with a
+left or right buttonpress (counterbalanced across subjects).
+The target could occur either above or below the fixation cross
+(distance to center Gabor patch: 4°) and had either a horizontal
+or a vertical orientation. On 50% of the trials, a target was
+present. The target screen lasted 17 ms and was preceded and
+followed by a screen lasting 100 ms, which contained two
+masks. These masks consisted of a two overlapping Gabor
+patches (horizontal+vertical orientation, black lines on a light
+background) and appeared above and below the fixation cross.
+After a response interval lasting between 1,000 and 1,200 ms,
+feedback was presented ( “correct,”“ incorrect,” or “respond
+faster”)f o r3 0 0m s .
+The strength of the masks was varied by changing the
+maximum luminosity values of the Gabor patch and the
+corresponding luminosity values of its surroundings
+(see Fig. 1a). The luminosity was adjusted according
+to a staircase procedure. On trials where a target was pres-
+ent, the luminosity of either the top or the bottom mask was
+raised when subjects detected the target and lowered when
+they missed the target (in 1% steps), depending on the location
+of the target. The task consisted of 200 trials. Using this
+procedure, subjects were driven to perform at chance level,
+indicating that they were no longer able to discriminate be-
+tween the absence or presence of a target.
+Task 2: Binding
+The binding task (see Fig. 1b) was a modified version of the
+task developed by Hommel ( 1998). A trial started with a
+dimming of the fixation cross to indicate the start of a new
+trial. Two Gabor patches (identical to the Gabor patch used in
+the first task) were presented in sequential order. The first (S1)
+and second (S2) Gabor patches were preceded and followed by
+masks. The strength of the masks was equal to the average
+strength of the last 10 trials of the mask configuration task,
+increased with 10%. On 50% of the trials, the masks that
+preceded and followed S1 were separated from S1 by blank
+screens, lasting 100 ms. In other words, half of the trials
+contained an S1 that was effectively masked, while on the other
+half of the trials, S1 was ineffectively masked. Between the
+second mask screen (following S1) and the third mask screen
+(preceding S2), a blank interval was presented. This screen had
+a duration of 500 ms on the effectively masked trials. On the
+ineffectively masked trials, this screen lasted 400 ms in order to
+ensure that the interval between S1 and S2 was identical on
+both the effectively and ineffect ively masked trials. Subjects
+were instructed to respond with a left or right buttonpress
+(counterbalanced across subjects) to the orientation of S2.
+The masks that preceded and followed S2 were separated from
+S2 by blank screens, lasting 100 ms, rendering S2 visible for
+the orientation discrimination task. The task consisted of 384
+trials, with an equal number of trials per condition.
+Task 3: Mask evaluation
+The mask evaluation task was similar to the mask configura-
+tion task in the sense that subjects again had to discriminate
+between the absence and presence of a target. However,
+in the mask evaluation task, mask strength was identical
+to the mask strength used in binding task and remained
+the same throughout the task. Subjects did not receive
+feedback about their responses.
+The goal of this task was to test whether subjects ’ perfor-
+mance was still at chance level after completing the binding
+454 Psychon Bull Rev (2015) 22:453–460
+
+[[PDF PAGE 3]]
+task, which may have led to some form of perceptual learning
+of the Gabor patch.
+Results
+Performance on the mask evaluation task served as a selection
+criterion for the inclusion of subjects in the statistical analysis
+of the binding task. In order to minimize the risk of false
+positives due to multiple comparisons, two binominal tests
+were performed on each subject. The first binominal test was
+done on half of the trials of all subjects (odd/even split). The
+results showed that 5 subjects deviated significantly from
+chance performance ( ps < .05, two-sided). The second
+binominal test was performed on the remaining half of the
+trials of these 5 subjects. Two of these 5 subjects showed
+significant above-chance performance on the second
+binominal test ( ps < .005, two-sided), which indicates that
+the masked Gabor patches may not have been fully masked in
+the preceding binding task for these subjects. Therefore, these
+subjects were excluded from further analyses. Reaction times
+below 200 ms and above 1,000 ms were considered as outliers
+and were discarded. For the analyses of the reaction times,
+only correct responses were included. Using these criteria,
+subjects were included in the analyses only if no more than
+40% of the trials were discarded. This resulted in the exclusion
+of 10 subjects. These subjects seemed to be unable to execute
+the task at an acceptable level of performance (mean accuracy
+=60%, SE = 3.7; mean RT outliers = 15%,SE = 3.1). Including
+these subjects in the analyses rendered the binding costs in
+reaction times reported below nonsignificant, when S1 was
+both effectively and ineffectively masked, (ps > .08).
+The behavioral results of the binding task are summarized
+in Table 1. To assess the binding costs for trials on which S1
+was effectively versus ineffectively masked, we performed a
+Fig. 1 Time sequence of an example trial in the a mask configuration task and b binding task
+Psychon Bull Rev (2015) 22:453–460 455
+
+[[PDF PAGE 4]]
+repeated measures ANOV A, with S1 masking (effective/inef-
+fective), orientation (repetit ion/alternation), and location
+(repetition/alternation) as two-level factors.
+For reaction times, a significant main effect of S1 masking,
+F(1, 27) =22.1, p < .0001, indicated that responses were faster
+with an ineffectively masked (M = 642 ms, SE = 15) than with
+an effectively masked (M = 675 ms, SE = 15) S1. Second, and
+a prerequisite for answering the question posed here, there was
+also a significant interaction between the repetition and alter-
+nation of orientation and location, F(1, 27) = 10.8, p <. 0 0 5
+(see Fig. 2a, b). This is a replication of earlier findings illus-
+trating the behavioral effects of binding between the features
+presented on S1 (Hommel, 2004). Repeating the location
+resulted in faster responses when the orientation was repeated
+versus alternated ( M =6 5 6m s , SE =1 4v s . M =6 6 4m s ,
+SE = 15), while alternating the location resulted in slower
+responses when the orientation was repeated versus alternated
+(M = 661 ms, SE =1 4v s . M =6 5 5 ,SE =1 5 ) .
+Most important, and directly addressing the question about
+the presence or absence of unconscious binding, there was no
+sign of any three-way interaction between S1 masking, orien-
+tation, and location,F(1, 27) = 0.25, p > .6. This indicates that
+binding costs were not significantly different when S1 was
+effectively or ineffectively masked. Planned comparisons
+showed that the binding costs were significant when S1 was
+ineffectively masked (8.6 ms), t(27) = 2.3, p = .02, (one-
+tailed) and when it was effectively masked (5.8 ms),
+t(27) = 1.8, p = .04, (one-tailed) (see Fig. 2c).
+For the accuracy data, a significant main effect of S1
+masking, F(1, 27) = 4.6, p < .05, indicated that accuracy
+was slightly lower for ineffectively masked than for effective-
+ly masked S1 (M =8 9 . 1 % ,SE = 1.2 vs. M =9 0 . 6 % ,SE =1 . 0 ) .
+S1 masking interacted with location, F(1, 27) = 8.8, p <. 0 1 ,
+and with orientation, F(1, 27) = 18.9, p < .005. Repeating
+versus alternating the location resulted in lower accuracy if S1
+was ineffectively masked ( M = 88.3%, SE
+= 1.3 vs. M =
+Ta bl e 1 Behavioral data as a function of S1-masking (effective/ineffective), orientation (repetition/alternation), and location (repetition/alternation)
+Mean RTs (ms) SE Accuracy (% correct) SE
+S1-masking = ineffective
+Orientation repetition/location repetition 638 14.1 91 1.1
+Orientation repetition/location alternation 640 14.3 92 0.9
+Orientation alternation/location repetition 653 15.3 86 2.0
+Orientation alternation/location alternation 637 17.1 88 1.8
+S1-masking = ineffective
+Orientation repetition/location repetition 674 16.0 90 1.3
+Orientation repetition/location alternation 682 15.4 89 1.3
+Orientation alternation/location repetition 675 15.9 93 1.1
+Orientation alternation/location alternation 673 14.7 91 1.1
+Fig. 2 a Behavioral data (reaction times and accuracy) of the binding
+task as a function of S1 (effective/ineffective), orientation (repetition/
+alternation), and location (repetition/alternation). b Binding costs were
+highly comparable when S1 was either consciously or unconsciously
+processed. Error bars represent standard errors; asterisks indicate signif-
+icance level of p <. 0 5
+456 Psychon Bull Rev (2015) 22:453–460
+
+[[PDF PAGE 5]]
+89.9%, SE = 1.2) than if it was effectively masked (M = 91.1%,
+SE =1 . 0v s .M =9 0 . 0 % ,SE = 1.0). Repeating versus alternat-
+ing the orientation resulted in the opposite effect; Accuracy
+was higher if S1 was ineffectively masked (M = 91.5%, SE =
+0.9 vs. M = 86.7%, SE = 1.8) than if it was effectively masked
+(M = 89.2%, SE = 1.1 vs. M = 92.0%, SE =0 . 9 ) .
+More important for present purposes, however, was the
+absence of any hint to a three-way interaction between S1
+masking, orientation, and location, F(1, 27) = 0.13, p >. 7 .I n
+other words, the interaction between orientation and location
+was in no way influenced by the way S1 was masked
+(effectively or ineffectively).
+It can be argued that the presence of a binding effect in the
+ineffective mask condition has limited generalizability, since
+almost a quarter of our subjects needed to be excluded from
+the analyses because of their poor performance of the task. We
+therefore reran the analyses without the response time exclu-
+sion criteria (>200 ms and <1000 ms in the previous analyses).
+Except for this adjustment the second data analyses proce-
+dures were identical to the first data analyses procedures.
+Results 2
+The results of the second data analyses procedure are highly
+similar to the results of the first data analyses procedures.
+Again, performance on the mask evaluation task served as a
+selection criterion for the inclusion of subjects in the statistical
+analysis of the binding task, resulting in the exclusion of 2
+subjects. For the analyses of the reaction times, only correct
+responses were included. Using these criteria, subjects were
+included in the analyses only if no more than 40% of the trials
+were discarded. This resulted in the exclusion of 4 subjects.
+These subjects seemed to be unable to execute the task at an
+acceptable level of performance (more than 60% discarded
+trials). Including these subjects in the analyses resulted in
+highly similar binding costs and binding costs × mask condi-
+tion in reaction times.
+The behavioral results of the binding task are summarized
+in Table 2. To assess the binding costs for trials on which S1
+was effectively versus ineffectively masked, we performed a
+repeated measures ANOV A, with S1 masking (effective/inef-
+fective), orientation (repetition/alternation), and location
+(repetition/alternation) as two-level factors.
+The main effects were very similar to those of the first
+analyses. Again, for reaction times, there was significant main
+effect of S1-masking, F(1, 33) = 27.2, p < .00005, indicating
+that responses were faster with an ineffectively masked
+(M =6 7 4m s , SE = 16) than with an effectively masked
+(M =7 2 8m s , SE = 19) S1. Second, there was also a
+significant interaction between the repetition and alternation
+of orientation and location, F(1, 33) = 4.7, p <. 0 5( s e e
+Fig. 3a, b). Repeating the location resulted in faster responses
+when the orientation was repeated versus alternated (M =6 9 6
+ms, SE =1 7v s . M = 700 ms, SE = 18), while alternating the
+location resulted in slower responses when the orientation was
+repeated versus alternated (M = 701 ms, SE =1 6v s .M =7 0 7 ,
+SE =1 7 ) .F i g u r e3c shows the binding costs for both mask
+conditions.
+Most important, and directly addressing the question about
+the presence or absence of unconscious binding, there was no
+sign of any three-way interaction between S1 masking, orien-
+tation, and location, F(1, 33) = 0.31, p > .55. This indicates
+that binding costs were not significantly different when S1
+was effectively or ineffectively masked. Planned comparisons
+did not show significant binding costs for the ineffectively
+masked or the effectively masked condition (see Fig. 3c).
+For the accuracy data, a significant main effect of S1
+masking, F(1, 33) = 5.1, p < .05, indicated that accuracy
+was slightly lower for ineffectively masked than for effective-
+ly masked S1 (M =8 5 . 8 % ,SE = 1.6 vs. M =8 8 . 0 % ,SE =1 . 3 ) .
+S1 masking interacted with location, F(1, 33) = 8.8, p <. 0 1 ,
+and with orientation, F(1, 27) = 16.9, p <. 0 0 0 5 .
+More important for present purposes, however, was the
+absence of any hint to a three-way interaction between S1
+masking, orientation, and location, F(1, 33) = 0.33, p >. 5 .I n
+other words, the interaction between orientation and location
+was in no way influenced by the way S1 was masked
+(effectively or ineffectively).
+Discussion
+Replicating earlier findings (Hommel,2004), the results of our
+experiment showed a significant increase of reaction times
+when the features of the first presentation of a Gabor patch
+(S1) were partially repeated on the second presentation of a
+Gabor patch (S2). These “binding costs” can be attributed to
+the integration of the features of S1 and the automatic retrieval
+of this association when a feature is repeated on S2 (Keizer
+et al., 2008). Importantly, the present experiment showed that
+this effect was present not only when S1 was consciously
+processed, but also when it was unconsciously processed.
+Therefore, it can be concluded that consciousness is not nec-
+essary for visual feature binding between the location and the
+orientation of a visual stimulus. Interestingly, in order for
+binding costs to occur in the present paradigm, not only did
+the visual features need to be integrated on S1, but also this
+association had to be implicitly stored for a short duration
+(500 ms) and automatically retrieved on S2. Apparently, all
+these binding-related processes were unaffected by the absence
+of awareness of S1. This is remarkable, since the effects of
+unconsciously processed stimuli tend to be rather short-lived
+(e.g., Fazio, 2001; Greenwald, Draine, & Abrams, 1996).
+Previous research has shown that feature binding can occur
+without attention (Mordkoff & Halterman, 2008). In short,
+Psychon Bull Rev (2015) 22:453–460 457
+
+[[PDF PAGE 6]]
+Mordkoff and Halterman showed that irrelevant visual feature
+combinations can be conditioned to be associated with a
+particular response, which may than affect the response times
+of the relevant target stimulus. It is important to realize that the
+irrelevant visual feature combinations that were used in the
+study of Mordkoff and Halterman were presented for a dura-
+tion that was long enough for the subjects to have a conscious
+experience of the visual feature combinations. Thus, the con-
+clusions of Mordkoff and Halterman are limited to attention
+and cannot be generalized to conscious versus unconscious
+processing. Even though consciousness and attention may
+have often been used interchangeably in the literature, they
+reflect different cognitive and neurobiological processes
+(e.g., Lamme, 2003).
+It is also known that rather complex stimuli can be proc-
+essed unconsciously, such as faces (e.g., Morris, Pelphrey, &
+McCarthy, 2007) and words (e.g., Dehaene et al., 1998).
+Although these stimuli consist of specific configurations of
+more low-level visual features, it is not clear whether
+processing them requires the binding of these features. The
+brain has specialized areas for processing complex stimuli and
+for acquiring representations of complex configurations,
+which may rely more on hierarchical feed-forward processing
+than on flexible feature binding. Indeed, binding studies have
+provided evidence for two parallel and largely independent
+pathways—one binding features according to purely bottom-
+up criteria and another, more interactive pathway that is in-
+formed by previous learning of complex configurations
+(Colzato, Raffone, & Hommel, 2006; Hommel & Colzato,
+2009). In our study, the combinations of location and orienta-
+tion of the Gabor patch were completely random for each trial,
+which seems to require a more flexible integration process
+than the processing of complex stimuli for which the combi-
+nation of features is less random.
+Our findings raise a number of interesting questions. First,
+since the products of feature-binding processes can be repre-
+sented unconsciously, unified conscious experiences must
+require more than (the creation of) unison alone. Thus, in
+Ta bl e 2 Behavioral data as a function of S1-masking (effective/ineffective), orientation (repetition/alternation), and location (repetition/alternation)
+Mean RTs (ms) SE Accuracy (% correct) SE
+S1-masking = ineffective
+Orientation repetition/location repetition 667 15.6 89 1.4
+Orientation repetition/location alternation 668 15.6 90 1.3
+Orientation alternation/location repetition 687 17.1 82 2.5
+Orientation alternation/location alternation 674 18.4 83 2.7
+S1-masking = ineffective
+Orientation repetition/location repetition 725 19.7 87 1.6
+Orientation repetition/location alternation 734 18.3 87 1.3
+Orientation alternation/location repetition 726 18.3 90 1.5
+Orientation alternation/location alternation 727 19.6 89 1.5
+Fig. 3 a , b Behavioral data (reaction times and accuracy) of the binding
+task as a function of S1 (effective/ineffective), orientation (repetition/
+alternation), and location (repetition/alternation). c Binding costs were
+not significantly different when S1 was either consciously or uncon-
+sciously processed. Error bars represent standard errors
+458 Psychon Bull Rev (2015) 22:453–460
+
+[[PDF PAGE 7]]
+contrast with influential theories that do suggest that binding
+results in consciousness (Crick & Koch, 1990; Engel et al.,
+1999), there seem to be additional processes necessary for
+conscious experiences. The question that future research
+needs to address is what these processes are.
+Second, why are our conscious experiences always uni-
+fied? In other words, why is binding necessary for conscious-
+ness? One explanation could be that visual processing is
+hierarchically organized in such a way that the products of
+binding processes provide the building blocks for conscious
+experiences, but a conscious experience does not automatical-
+ly need to follow after binding processes are completed.
+Third, in the present study, we have shown that conscious-
+ness is not necessary for binding between the location and
+orientation of a Gabor patch. However, this does not rule out
+the possibility that consciousness is required for binding be-
+tween other visual features. It has been proposed that there
+may be two forms of feature binding (Roelfsema, 2006). One
+type of binding may be performed by dedicated neurons that
+code for combinations of simple visual features such as ori-
+entation and color or location and motion direction. This so-
+called base-grouping can occur in a rapid but inflexible man-
+ner, since it relies on feedforward connections. However,
+feature combinations that cannot be represented by single
+neurons require a more flexible mechanism, which relies on
+horizontal and feedback connections. It is conceivable that the
+former base-grouping can occur unconsciously, while the
+later, so-called incremental grouping does require conscious-
+ness. Other examples of such base groupings would be the
+fully automatic recognition of words versus nonwords, where
+it has been shown that the assembly of letters into words
+occurs in a feedforward sequence of processing steps located
+in the occipito-temporal pathway (Dehaene et al., 2004). This
+progression from letter to letter-combination to word coding
+does not depend on consciousness, since it occurs also for
+fully masked and invisible words. It is hypothesized that these
+“base-groupings” depend on highly dedicated pathways and,
+hence, occur only for highly relevant or overtrained stimuli
+(words, faces, etc.). Related to this issue is the demonstration
+that different visual features may lead to different sequential
+effects in priming experiments independently of their task
+relevance (Kristjánson, 2006, 2009). It should therefore be
+made clear that our study demonstrates a proof of principle: It
+is possible that unconsciously perceived visual features are
+integrated. Whether this effect can be generalized to other
+feature combinations should be determined by future research.
+Finally, we note that there has been ample debate
+concerning the methodology of studying consciousness in
+psychophysiological experiments (e.g., Crick, 1996;K i m&
+Blake, 2005;L a m m e ,2010). There are many methods besides
+masking that are used in the study of consciousness, such as
+inattentional blindness, change blindness, attentional blink, or
+binocular rivalry. All these methods assume that if a subject is
+not able to report the presence of a stimulus, the subject is not
+conscious of that stimulus. This is an assumption that has been
+questioned in the literature (e.g., Lamme, 2010). Therefore, a
+fruitful approach would be to use different methodologies for
+testing hypotheses on consciousness that either do or do not
+depend on the subject ’s behavior. Accordingly, it will be
+important to provide converging evidence in support of our
+conclusions by using different methodologies as well.
+To conclude, even though research on visual feature bind-
+ing (and its neural correlates) has often been deemed relevant
+for the scientific study of consciousness, the present findings
+suggest that this belief is unjustified. In our view, the problem
+of how the brain produces unified conscious experiences
+should be split up into two independent problems, the problem
+of how the brain produces unison and the problem of how the
+brain produces conscious experiences.
+Acknowledgments Victor A. F. Lamme is supported by an advanced
+investigator grant from the European Research Council. We would like to
+thank Simon van Gaal for his comments on the design of the experiment.
+References
+Colzato, L. S., Raffone, A., & Hommel, B. (2006). What do we learn
+from binding features? Evidence for multilevel feature integration.
+Journal of Experimental Psychology: Human Perception and
+Performance, 32, 705–716.
+Crick, F. (1996). Visual perception: Rivalry and consciousness. Nature,
+397, 485–486.
+Crick, F., & Koch, C. (1990). Towards a neurobiological theory of
+consciousness. Seminars in Neuroscience, 2, 263–275.
+Dehaene, S., Naccache, L., Le Clec'H, G., Koechlin, E., Mueller, M.,
+Dehaene-Lambertz, G., ... Le Bihan, D. (1998). Imaging uncon-
+scious semantic priming. Nature, 395, 597–600.
+Dehaene, S., Jobert, A., Naccache, L., Ciuciu, P ., Poline, J. B., Le Bihan,
+D., & Cohen, L. (2004). Letter binding and invariant recognition of
+masked words - Behavioral and neuroimaging evidence.
+Psychological Science, 15(5), 307–313.
+Desmedt, J. E., & Tomberg, C. (1994). Transient phase-locking of 40 Hz
+electrical oscillations in prefrontal and parietal human cortex reflects
+the process of conscious somatic perception. Neuroscience Letters,
+168(1–2), 126–129.
+Engel, A. K., Fries, P ., Konig, P ., Brecht, M., & Singer, W. (1999).
+Temporal binding, binocular rivalry, and consciousness.
+Consciousness and Cognition, 8(2), 128–151.
+Fazio, R. H. (2001). On the automa tic activation of associated
+evaluations: An overview. Cognition & Emotion, 15 (2),
+115–141.
+Greenwald, A. G., Draine, S. C., & Abrams, R. L. (1996). Three cognitive
+markers of unconscious semantic activation. Science, 273(5282),
+1699–1702.
+Hommel, B. (1998). Event files: Ev idence for automatic integra-
+tion of stimulus-response episodes. Visual Cognition, 5,
+183–216.
+Hommel, B. (2004). Event files: Feature binding in and across perception
+and action. Trends in Cognitive Sciences, 8(11), 494–500.
+Hommel, B., & Colzato, L. S. (2009). When an object is more than a
+binding of its features: Evidence for two mechanisms of visual
+feature integration. Visual Cognition, 17, 120–140.
+Psychon Bull Rev (2015) 22:453–460 459
+
+[[PDF PAGE 8]]
+Kahneman, D., Treisman, A., & Gibbs, B. J. (1992). The reviewing of
+object files: Object-specific integration of information. Cognitive
+Psychology, 24(2), 175–219.
+Kanwisher, N. G., McDermott, J., & Chun, M. M. (1997). The
+fusiform face area: A module in human extrastriate cortex
+specialized for face perception. The Journal of Neuroscience,
+17(11), 4302 –4311.
+Kim, C.-Y ., & Blake, R. (2005). Psychophysical magic: Rendering the
+visible ‘invisible’. Trends in Cognitive Sciences, 9(8), 381–388.
+Keizer, A. W., Nieuwenhuis, S., Colzato, L. S., Teeuwisse, W.,
+Rombouts, S. A. R. B., & Hommel, B. (2008). When moving faces
+activate the house area: an fMRI study of object-file retrieval.
+Behavioral and Brain Functions, 4.
+Kristjánson, Á. (2006). Simultaneous priming along multiple feature
+dimensions in a visual search task.Vision Research, 46,2554–2570.
+Kristjánson, Á. (2009). Independent and additive repetition priming of
+motion direction and color in visual search.Psychological Research,
+73, 158–166.
+L a m m e ,V .A .F .( 2 0 0 3 ) .W h yv i s u a la t t e n t i o na n da w a r e n e s sa r e
+different. Trends in Cognitive Sciences, 7 (1), 12 –18.
+Lamme, V . A. F. (2010). How neuroscience will change our view on
+consciousness. Cognitive Neuroscience, 1(3), 204–240.
+Mordkoff, J. T., & Halterman, R. (2008). Feature integration without
+visual attention: Evidence from the correlated flankers task.
+Psychonomic Bulletin & Review, 15(2), 385–389.
+Morris, J. P ., Pelphrey, K. A., & McCarthy, G. (2007). Face processing
+without awareness in the right fusiform gyrus. Neuropsychologia,
+45, 3087–3091.
+Revonsuo, A. (1999). Binding and the phenomenal unity of conscious-
+ness. Consciousness and Cognition, 8(2), 173–185.
+Roelfsema, P . R. (2006). Cortical algorithms for perceptual grouping.
+Annual Review of Neuroscience, 29, 203–227.
+Treisman, A. M., & Gelade, G. (1980). A feature-integration theory of
+attention. Cognitive Psychology, 12,97–136.
+Zeki, S. (1980). Response properties of cells in the middle temporal area
+(area Mt) of owl monkey visual-cortex. Proceedings Of The Royal
+Society Of London Series B-Biological Sciences, 207(1167), 239–248.
+Zeki, S., Watson, J. D. G., Lueck, C. J., Friston, K. J., Kennard, C., &
+Frackowiak, R. S. J. (1991). A direct demonstration of functional
+specialization in human visual cortex.The Journal of Neuroscience,
+11(3), 641–649.
+Zmigrod, S., & Hommel, B. (2009). Auditory event files: Integrating
+auditory perception and action planning. Attention, Perception, &
+Psychophysics, 71(2), 352–362.
+460 Psychon Bull Rev (2015) 22:453–460

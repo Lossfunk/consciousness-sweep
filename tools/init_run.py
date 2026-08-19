@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 CSV_TO_SCHEMA = {
     "papers_master.csv": "papers.schema.json",
+    "experiment_groups.csv": "experiment_groups.schema.json",
     "experiments_master.csv": "experiments.schema.json",
     "search_log.csv": "search_log.schema.json",
     "discoveries.csv": "discoveries.schema.json",
@@ -210,7 +211,7 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
         raise SystemExit("completed run requires --reopen-reason")
 
     paper_ids = read_ids(run_dir / "papers_master.csv", "paper_id")
-    experiment_ids = sorted(set(read_ids(run_dir / "experiments_master.csv", "experiment_id")))
+    experiment_ids = read_ids(run_dir / "experiment_groups.csv", "experiment_id")
     comparison_ids = read_ids(run_dir / "experiments_master.csv", "comparison_id")
     search_ids = read_ids(run_dir / "search_log.csv", "search_id")
     discovery_ids = read_ids(run_dir / "discoveries.csv", "discovery_id")

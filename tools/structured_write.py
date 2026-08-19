@@ -32,6 +32,7 @@ from validate_run import load_csv_rows, load_jsonl_rows
 ROOT = Path(__file__).resolve().parents[1]
 TABLE_SCHEMAS = {
     "papers_master.csv": "papers.schema.json",
+    "experiment_groups.csv": "experiment_groups.schema.json",
     "experiments_master.csv": "experiments.schema.json",
     "search_log.csv": "search_log.schema.json",
     "discoveries.csv": "discoveries.schema.json",
@@ -44,6 +45,7 @@ TABLE_SCHEMAS = {
 }
 PRIMARY_KEYS = {
     "papers_master.csv": "paper_id",
+    "experiment_groups.csv": "experiment_id",
     "experiments_master.csv": "comparison_id",
     "search_log.csv": "search_id",
     "discoveries.csv": "discovery_id",
@@ -57,6 +59,7 @@ PRIMARY_KEYS = {
 ARRAY_FIELDS = {
     "stats_flags", "attempted_sources", "E_diagnostic_source_locations",
     "factorial_component_effects", "evidence_bundle_ids", "required_member_keys",
+    "linked_comparison_ids", "support_roles",
 }
 OBJECT_FIELDS = {"source_parameters"}
 DOI_PREFIX = re.compile(
@@ -283,11 +286,23 @@ def allocate_identifier(run_dir: Path, kind: str, parent_id: str | None = None) 
         elif kind == "comparison":
             if parent_id is None or not re.fullmatch(r"P[0-9]{6}_E[0-9]{2}", parent_id):
                 raise ValueError("comparison allocation requires --parent-id P######_E##")
-            paper_id, experiment_suffix = parent_id.split("_E", 1)
-            next_experiment = state["next_experiment_counters"].get(paper_id, 1)
-            if int(experiment_suffix) >= next_experiment:
+            group_path = run_dir / "experiment_groups.csv"
+            group_schema = load_schema(ROOT, "experiment_groups.schema.json")
+            group_errors: list[str] = []
+            groups = load_csv_rows(group_path, group_schema, group_errors) if group_path.exists() else []
+            if group_errors:
+                raise ValueError("experiment_groups.csv is invalid; refusing allocation: " + "; ".join(group_errors))
+            matching_groups = [group for group in groups if group.get("experiment_id") == parent_id]
+            if not matching_groups:
                 raise ValueError(
-                    "comparison allocation requires the experiment group to be allocated first"
+                    "comparison allocation requires a durable experiment-group row first"
+                )
+            if matching_groups[0].get("disposition") in {
+                "support-only", "no-qualifying-comparison",
+            }:
+                raise ValueError(
+                    "comparison allocation prohibited for an experiment group whose final "
+                    "disposition has no qualifying comparison"
                 )
             counters = state["next_comparison_counters"]
             counter = counters.get(parent_id, 1)

@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.8.4, pre-freeze
+**Status:** draft-0.8.5, pre-freeze
 
 ## 1. Authority split
 
@@ -24,6 +24,7 @@ consciousness-sweep/
 ├── requirements.txt
 ├── schemas/
 │   ├── papers.schema.json
+│   ├── experiment_groups.schema.json
 │   ├── experiments.schema.json
 │   ├── search_log.schema.json
 │   ├── discoveries.schema.json
@@ -56,6 +57,7 @@ Each independent run writes only to `runs/<RUN_ID>/` and contains:
 ```text
 runs/<RUN_ID>/
 ├── papers_master.csv
+├── experiment_groups.csv
 ├── experiments_master.csv
 ├── search_log.csv
 ├── discoveries.csv
@@ -78,7 +80,7 @@ runs/<RUN_ID>/
 └── fulltexts/
 ```
 
-The experiment-named CSV filenames are retained to avoid unnecessary churn, but every row in `experiments_master.csv` and its derived views is one paper × experiment × X→Y comparison. `comparison_id` is the unique scientific row identifier; `experiment_id` may therefore repeat across rows.
+`experiment_groups.csv` contains one durable row per enumerated physical experiment, including `support-only` and `no-qualifying-comparison` groups. The experiment-named comparison CSV filenames are retained to avoid unnecessary churn, but every row in `experiments_master.csv` and its derived views is one paper × experiment × X→Y comparison. `comparison_id` is the unique scientific row identifier; `experiment_id` may therefore repeat across comparison rows. Support-only groups never receive placeholder comparison rows.
 
 Agents must not inspect another run or write to `outputs/consolidated/`. Paths stored in run files are repository-relative unless a schema states otherwise.
 
@@ -161,6 +163,7 @@ Write continuously:
 - Every reusable execution-only factual assessment → `evidence_assessments.csv`.
 - Every scientific premise assembled from borrowed support → `evidence_bundles.csv`.
 - Every explicit scientific use of within-paper, supplementary, same-experiment, or external support → `evidence_links.csv`.
+- Every enumerated physical experiment and its pre-atomization disposition → `experiment_groups.csv`.
 - Full-text X→Y comparison → `experiments_master.csv`.
 - Every decision, revision, merge, status transition, and uncertainty → `decision_log.jsonl`.
 - Wave/counter/status checkpoint → `run_state.json`.
@@ -175,9 +178,9 @@ Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependenc
 
 ## 7. Full-text sequence and revisions
 
-Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate physical experiment groups first and reserve each experiment ID before reserving any comparison IDs. For every experiment, perform the pre-atomization functional-structure and operational functional-identity checks before finalizing the comparison decomposition and append an experiment-level decision event recording the assessment and why. Determine identity from the input→output mapping rather than effect names, signs, or mechanism labels. If the check requires a factorial-functional focal relation, reserve and instantiate that focal comparison before optional scalar/component comparisons; every component row must link to the already instantiated focal comparison. If scalar decomposition is justified, record a positive `functional_identity_basis` and scientific reason. A completed row must carry a non-temporary `functional_structure_assessment`, `functional_identity_basis`, and `functional_structure_reason`; `structural_audit_status = complete` cannot substitute for this specific check.
+Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate physical experiment groups first, reserve each experiment ID, and immediately create its durable `experiment_groups.csv` row before reserving any comparison IDs. For every experiment, perform the pre-atomization functional-structure and operational functional-identity checks before finalizing the comparison decomposition, append an experiment-level decision event recording the assessment and why, and upsert the group's final disposition and linked comparison IDs. A support-only or no-qualifying group retains its row with no linked comparisons; never invent a comparison to make its audit target resolvable. Determine identity from the input→output mapping rather than effect names, signs, or mechanism labels. If the check requires a factorial-functional focal relation, reserve and instantiate that focal comparison before optional scalar/component comparisons; every component row must link to the already instantiated focal comparison. If scalar decomposition is justified, record a positive `functional_identity_basis` and scientific reason. A completed comparison row must carry a non-temporary `functional_structure_assessment`, `functional_identity_basis`, and `functional_structure_reason`; `structural_audit_status = complete` cannot substitute for this specific check.
 
-Then enumerate scalar or coherent factorial X→Y comparisons. For each comparison: complete the structural audit; record A and F; record the actual critical awareness result and source for every strong A; log provisional E; perform and record the bounded within-paper alternative-control scan before final unmatched E; create one evidence-bundle row per borrowed premise; create every direct member link before relying on the bundle; derive and record each bundle status; set `unaware_capacity_claim` to the exact focal `Y_label`; record whether capacity evidence covers the whole focal Y; assess the unaware-capacity route whenever A/F permit it; record whether a direct same-Y aware/unaware comparison was performed and audit it regardless of E; reserve strong awareness-effect classification for strong A/E/F; assess descriptive null/equivalence whenever a direct null-oriented comparison warrants it; and record the result-inspection disposition. Every `E-diagnostic` bundle records the bounded task-state contrast-integrity disposition and its direct evidential/design anchor; unanchored latent-state speculation cannot gate E, while any anchored viable unresolved alternative prohibits `E-diagnostic`. A factorial-functional `E-diagnostic` bundle must also explicitly identify the direct member that addresses the stated first-order-evidence alternative; an interaction alone is insufficient. Any A evidence beyond a direct focal result requires a complete `awareness-A` bundle with a required result-bearing member and explicit transfer assessment; procedure-only evidence cannot complete it. A supporting experiment receives an experiment pointer in a link but no comparison row unless it independently answers an X→Y question. Weak or unusable E closes the constraint-ready awareness-effect route but does not erase a direct descriptive comparison and does not by itself close the unaware-capacity route. A component capacity requires its own linked comparison. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
+Then enumerate scalar or coherent factorial X→Y comparisons. For each comparison: complete the structural audit; record A and F; record critical awareness-result reporting separately from whether it supports strong A, using a complete transfer bundle instead of copying another experiment's result into focal fields; semantically audit whether Y is a downstream function rather than an effect label; log provisional E; perform and record the bounded within-paper alternative-control scan before final unmatched E; create one evidence-bundle row per borrowed premise; create every direct member link before relying on the bundle; derive and record each bundle status; set `unaware_capacity_claim` to the exact focal `Y_label`; record whether capacity evidence covers the whole focal Y; assess the unaware-capacity route whenever A/F permit it; record whether a direct same-Y aware/unaware comparison was performed and, when yes, record its focal experiment, exact source location, and reported statistic/test and audit it regardless of E; reserve strong awareness-effect classification for strong A/E/F; assess descriptive null/equivalence whenever a direct null-oriented comparison warrants it; and record the result-inspection disposition. Every `E-diagnostic` bundle records the bounded task-state contrast-integrity disposition and its direct evidential/design anchor; unanchored latent-state speculation cannot gate E, while any anchored viable unresolved alternative prohibits `E-diagnostic`. A factorial-functional `E-diagnostic` bundle must also explicitly identify the direct member that addresses the stated first-order-evidence alternative; an interaction alone is insufficient. Any A evidence beyond a direct focal result requires a complete `awareness-A` bundle with a required result-bearing member and explicit transfer assessment; procedure-only evidence cannot complete it. A supporting experiment receives an experiment pointer in a link but no comparison row unless it independently answers an X→Y question. Weak or unusable E closes the constraint-ready awareness-effect route but does not erase a direct descriptive comparison and does not by itself close the unaware-capacity route. A component capacity requires its own linked comparison. The allocator must reject a comparison whose experiment group does not already have a durable row. Do not duplicate or reinterpret the scientific definitions here.
 
 Before changing current state:
 
@@ -280,15 +283,15 @@ Run `python tools/derive_outputs.py --run-id <RUN_ID>`; never classify derived f
 
 ### Constraint-ready awareness-linked difference
 
-All of: awareness-effect design eligible; `awareness_effect = difference-supported`; `awareness_effect_stats_status = adequate`; `difference_tested = yes`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A supplementary Meyen result remains visible but does not gate.
+All of: awareness-effect design eligible; `awareness_effect = difference-supported`; `awareness_effect_stats_status = adequate`; `difference_tested = yes` with same-experiment provenance; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A supplementary Meyen result remains visible but does not gate.
 
 ### Constraint-ready unaware capacity
 
-All of: `A_code` in `{A-direct, A-validated}`; `F_code = F-meaningful`; `unaware_capacity_claim` exactly equals `Y_label`; `unaware_capacity_evidence_scope = whole-focal-Y`; `unaware_capacity = supported` for that same function; `unaware_capacity_stats_status = adequate`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A nonzero effect of X on another consequence or one component of a factorial parent does not pass. E does not gate this route.
+All of: `A_code` in `{A-direct, A-validated}`; `F_code = F-meaningful`; `Y_functional_status` is an audited downstream function or coherent functional mapping; `unaware_capacity_claim` exactly equals `Y_label`; `unaware_capacity_evidence_scope = whole-focal-Y`; `unaware_capacity = supported` for that same function; `unaware_capacity_stats_status = adequate`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A nonzero effect of X on another consequence or one component of a factorial parent does not pass. E does not gate this route.
 
 ### Strongest equivalence-supported invariance
 
-All of: awareness-effect design eligible; exact identity between `unaware_capacity_claim` and `Y_label`; `unaware_capacity_evidence_scope = whole-focal-Y`; `unaware_capacity = supported` for that named function; `unaware_capacity_stats_status = adequate`; `awareness_effect = equivalence-supported`; `awareness_effect_stats_status = adequate`; `difference_tested = yes`; `null_evidence_adequacy = adequate`; and the inference-critical Meyen gate.
+All of: awareness-effect design eligible; `Y_functional_status` is an audited downstream function or coherent functional mapping; exact identity between `unaware_capacity_claim` and `Y_label`; `unaware_capacity_evidence_scope = whole-focal-Y`; `unaware_capacity = supported` for that named function; `unaware_capacity_stats_status = adequate`; `awareness_effect = equivalence-supported`; `awareness_effect_stats_status = adequate`; `difference_tested = yes` with same-experiment provenance; `null_evidence_adequacy = adequate`; and the inference-critical Meyen gate.
 
 `constraint_ready_experiments.csv` is the deduplicated union of the awareness-linked-difference, unaware-capacity, and equivalence-supported routes. `no_detectable_awareness_differences.csv` contains every fully evaluated comparison assigned that descriptive category, without upgrading it to equivalence. `unresolved_comparisons.csv` contains fully evaluated comparisons with `unaware_capacity = unclear` or `awareness_effect = unresolved`. A comparison may appear in multiple compatible views.
 

@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.8.4
+**Version:** draft-0.8.5
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -13,7 +13,7 @@ The sweep asks:
 
 The search is result-neutral. A useful experiment may show that Y operates while X is unaware, that awareness changes Y, that no awareness-linked difference was detected, that equivalence is positively supported, or that one or both questions remain unresolved. A study is not a hit because awareness helps; it is useful because its design can inform the X → Y question.
 
-The atomic scientific unit is a **paper × experiment × X→Y comparison**, not a paper or experiment as a whole. One experiment may contain multiple comparison records. Y may be a scalar function or a coherent factorial functional relation. Multiple component simple effects may remain in one comparison when they jointly operationalize the same conservative functional mapping and the critical inference is an interaction or structured pattern over them. Genuinely different downstream functions receive separate comparisons. Assign A and F for each comparison from the methods/design. Assess design-based E next; when evidence is not matched, inspect the result pattern only for the frozen `E-diagnostic` test and then finalize E. Classify unaware capacity and the effect of awareness independently after A, F, and final E are established.
+The atomic scientific unit is a **paper × experiment × X→Y comparison**, not a paper or experiment as a whole. The physical experiment group is nevertheless a first-class representation unit: enumerate every physical experiment before atomization, including support-only experiments and experiments yielding no qualifying comparison. Such groups receive no placeholder comparison. One experiment may contain multiple comparison records. Y may be a scalar function or a coherent factorial functional relation. Multiple component simple effects may remain in one comparison when they jointly operationalize the same conservative functional mapping and the critical inference is an interaction or structured pattern over them. Genuinely different downstream functions receive separate comparisons. Assign A and F for each comparison from the methods/design. Assess design-based E next; when evidence is not matched, inspect the result pattern only for the frozen `E-diagnostic` test and then finalize E. Classify unaware capacity and the effect of awareness independently after A, F, and final E are established.
 
 ## 2. Design classification
 
@@ -23,7 +23,7 @@ Code awareness independently of E and F.
 
 Unawareness of X may be supported by subjective awareness evidence, sufficiently informative objective invisibility evidence, or both. Record the orthogonal `awareness_evidence_type` as `subjective`, `objective-invisibility`, `mixed`, or `none`.
 
-A described awareness procedure is not itself an awareness result. Every `A-direct` or `A-validated` classification requires an explicitly reported critical result that supports the classification, the actual procedure/test type, how the result bears on the focal X/regime, and an exact source location. Record `awareness_result_status`; strong A requires `supportive-result-reported`. The result's recorded procedure type must match the procedure actually used. A Methods-only statement that participants completed a test, without its critical result, cannot support strong A.
+A described awareness procedure is not itself an awareness result. Record critical-result availability in `awareness_result_reporting` and its evidential bearing in the separate `awareness_result_support` field. A focal reported result supports strong A only when reporting is `reported`, support is `supports-strong-A`, the actual procedure/test type matches, the result bears on the focal X/regime, and an exact source location is present. A Methods-only statement that participants completed a test is `not-reported` for the critical result and cannot support strong A. `A-direct` always requires this focal result. `A-validated` requires it unless a separate complete premise-specific transferred-`awareness-A` bundle supplies the critical result and explicit transfer assessment; do not copy a result from another experiment into the focal result fields.
 
 - `A-direct`: qualifying subjective or objective-invisibility evidence is obtained in the relevant experiment, trial, block, condition, or stimulus regime. Subjective examples include seen/unseen judgments, graded visibility, and PAS-like ratings; the response need not be verbal.
 - `A-validated`: qualifying subjective or objective-invisibility evidence is obtained in a separate validation procedure whose conditions plausibly transfer to the main experiment. Assess transfer using at least stimulus parameters, masking or suppression, timing, attentional allocation, task demands, and participant population. A validation regime must not plausibly make awareness lower than in the main experiment while being used to establish unawareness there.
@@ -92,9 +92,11 @@ Assign Y at the most specific functional level justified by the dependent measur
 
 For every comparison, record `Y_label`, `Y_description`, `Y_evidence_role`, and `Y_interpretation_clarity` separately from `mechanistic_interpretation` and `mechanism_clarity`. `mechanism_clarity` is never part of the F gate. Neural evidence may support a proposed mechanism for a behavioral Y, but a generic neural difference is not itself a qualifying Y merely because it is compatible with that mechanism. `F-ambiguous` supports discovery recall but does not pass the strongest empirical-lot filter, which continues to require `F-meaningful`.
 
+Also record `Y_functional_status` and a semantic reason. `F-meaningful` requires Y to be an audited `downstream-function` or `coherent-functional-mapping`; `F-ambiguous` uses `function-unclear`; an observed modulation, interference score, priming effect, or other effect label without a defensible downstream function is `effect-only` and cannot become `F-meaningful` merely because it is nonzero. Evidence that X causes an effect on Y is not automatically evidence that the effect itself is a capacity. This is a semantic audit, not a lexical rule: use the operational input→output relation and explain the judgment.
+
 ### 2.5 Mandatory pre-atomization functional-structure check
 
-Perform this check after enumerating the physical experiment and **before** final comparison decomposition or scalar-row finalization. For every experiment containing multiple relevant factors, cells, or simple effects, ask:
+Perform this check after enumerating the physical experiment and **before** final comparison decomposition or scalar-row finalization. Persist one physical-experiment-group record even when its final disposition is `support-only` or `no-qualifying-comparison`; those dispositions must not generate placeholder X→Y rows. For every experiment containing multiple relevant factors, cells, or simple effects, ask:
 
 1. Is the critical scientific hypothesis or inferential statistic testing whether X changes one coherent downstream functional mapping across conditions?
 2. Do the component cells or simple effects jointly operationalize that same conservative function-level Y?
@@ -183,7 +185,7 @@ Use `awareness_effect`:
 
 `no-detectable-difference` does not mean equivalence. A bare, uninformative `p > .05` normally remains `unresolved`.
 
-Record whether a direct aware/unaware difference or interaction on the same focal Y was actually performed in `difference_tested` independently of E. Every such direct comparison requires a descriptive result audit. Weak E blocks a constraint-ready awareness interpretation but cannot convert a performed test into `not-tested`.
+Record whether a direct aware/unaware difference or interaction on the same focal Y was actually performed in `difference_tested` independently of E. `difference_tested = yes` requires the focal `difference_source_experiment_id`, exact `difference_source_location`, and reported `difference_statistic_or_test`; the source experiment must equal the comparison's own `experiment_id`. A cross-experiment pattern may support E through an explicit bundle but cannot be represented as a direct focal awareness difference. Every direct comparison requires a descriptive result audit. Weak E blocks a constraint-ready awareness interpretation but cannot convert a performed test into `not-tested`.
 
 When a direct difference is statistically supported but A/E/F do not make the strong awareness-effect route viable, record the observed test and statistics but use `awareness_effect = unresolved`. When a direct test detects no credible difference and the descriptive requirements in Section 4.2 are met, `no-detectable-difference` remains available even with weak E. Positive equivalence evidence may likewise be recorded under Section 4.2, but the strongest constraint-ready invariance route still requires strong A, strong E, and meaningful F. Use `not-tested` only when no relevant direct same-Y comparison was tested or reported.
 
@@ -426,6 +428,7 @@ The master record contains every encountered paper, including exclusions. Every 
 - CSV master tables hold current state.
 - JSONL holds the append-only, complete decision history.
 - `discoveries.csv` holds one row for every paper result encountered through every logged search or citation event, including rediscoveries.
+- `experiment_groups.csv` holds one row for every enumerated physical experiment, including support-only and no-qualifying-comparison groups.
 - Each `experiments_master.csv` row is one paper × experiment × X→Y comparison, identified by `comparison_id`.
 - Clean qualifying files are deterministic comparison-level views of master records, never independently classified datasets.
 

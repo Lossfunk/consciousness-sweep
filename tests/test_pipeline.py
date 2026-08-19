@@ -91,7 +91,8 @@ def experiment(**updates: object) -> dict:
         "objective_visibility_test_reason": None,
         "A_code": None,
         "A_reason": None,
-        "awareness_result_status": None,
+        "awareness_result_reporting": None,
+        "awareness_result_support": None,
         "awareness_result_procedure_type": None,
         "awareness_result_description": None,
         "awareness_result_source_location": None,
@@ -123,6 +124,8 @@ def experiment(**updates: object) -> dict:
         "alternative_control_scan_reason": None,
         "Y_label": None,
         "Y_description": None,
+        "Y_functional_status": None,
+        "Y_functional_reason": None,
         "functional_structure_assessment": "not-assessed",
         "functional_identity_basis": "not-assessed",
         "functional_structure_reason": None,
@@ -153,6 +156,9 @@ def experiment(**updates: object) -> dict:
         "awareness_effect_stats_status": None,
         "awareness_effect_stats_reason": None,
         "difference_tested": None,
+        "difference_source_experiment_id": None,
+        "difference_source_location": None,
+        "difference_statistic_or_test": None,
         "null_evidence_strength": None,
         "null_evidence_adequacy": None,
         "null_equivalence_margin": None,
@@ -180,25 +186,58 @@ def experiment(**updates: object) -> dict:
     elif row["E_code"] == "E-matched" and "alternative_control_scan_status" not in updates:
         row["alternative_control_scan_status"] = "not-required"
         row["alternative_control_scan_reason"] = "First-order evidence is matched by design."
-    if row["A_code"] in {"A-direct", "A-validated"} and "awareness_result_status" not in updates:
+    if row["A_code"] in {"A-direct", "A-validated"} and "awareness_result_reporting" not in updates:
         row["awareness_procedure_type"] = "other"
-        row["awareness_result_status"] = "supportive-result-reported"
+        row["awareness_result_reporting"] = "reported"
+        row["awareness_result_support"] = "supports-strong-A"
         row["awareness_result_procedure_type"] = "other"
         row["awareness_result_description"] = "The reported synthetic result supports the recorded awareness classification."
         row["awareness_result_source_location"] = "synthetic result"
         row["awareness_result_source_experiment_id"] = row["experiment_id"]
+    if row["F_code"] is not None and "Y_functional_reason" not in updates:
+        row["Y_functional_reason"] = "The synthetic record explicitly audits whether Y is a function rather than an effect label."
+        row["Y_functional_status"] = {
+            "F-meaningful": "downstream-function",
+            "F-ambiguous": "function-unclear",
+            "F-not-meaningful": "effect-only",
+        }[row["F_code"]]
+    return row
+
+
+def experiment_group(**updates: object) -> dict:
+    row = {
+        "experiment_id": "P000001_E01",
+        "paper_id": "P000001",
+        "experiment_label": "Synthetic experiment",
+        "source_location": "Synthetic article, Experiment 1",
+        "physical_experiment_description": "One bounded synthetic physical experiment group.",
+        "pre_atomization_assessed": True,
+        "functional_structure_assessment": "not-applicable",
+        "functional_structure_reason": "The group contains one candidate focal relation.",
+        "disposition": "comparison-bearing",
+        "disposition_reason": "The group yields one qualifying comparison.",
+        "linked_comparison_ids": ["P000001_E01_C01"],
+        "support_roles": [],
+        "notes": None,
+    }
+    row.update(updates)
     return row
 
 
 def route_row(**updates: object) -> dict:
     row = {
+        "experiment_id": "P000001_E01",
         "A_code": "A-direct", "E_code": "E-diagnostic", "F_code": "F-meaningful",
         "Y_label": "synthetic downstream use of X",
+        "Y_functional_status": "downstream-function",
         "unaware_capacity_claim": "synthetic downstream use of X",
         "unaware_capacity_evidence_scope": "whole-focal-Y",
         "unaware_capacity": "supported", "unaware_capacity_stats_status": "adequate",
         "awareness_effect": "difference-supported", "awareness_effect_stats_status": "adequate",
         "difference_tested": "yes", "null_evidence_adequacy": "not-applicable",
+        "difference_source_experiment_id": "P000001_E01",
+        "difference_source_location": "Synthetic results",
+        "difference_statistic_or_test": "Synthetic direct contrast",
         "Meyen_role": "not-applicable", "Meyen_applicable": "no", "Meyen_status": None,
         "current_status": "fully-evaluated",
     }
@@ -525,6 +564,20 @@ class StructuredWriteTests(unittest.TestCase):
                     lambda _: allocate_identifier(run_dir, "experiment", "P000001"), range(20)
                 ))
             self.assertEqual(sorted(experiments), [f"P000001_E{value:02d}" for value in range(1, 21)])
+            group_schema = schema("experiment_groups.schema.json")
+            group_path = run_dir / "experiment_groups.csv"
+            with group_path.open("w", newline="", encoding="utf-8") as handle:
+                csv.writer(handle, lineterminator="\n").writerow(group_schema["properties"])
+            write_csv_record(
+                group_path, group_schema,
+                experiment_group(
+                    pre_atomization_assessed=False,
+                    functional_structure_assessment="not-assessed",
+                    functional_structure_reason=None,
+                    disposition="not-assessed", disposition_reason=None,
+                    linked_comparison_ids=[],
+                ),
+            )
             with ThreadPoolExecutor(max_workers=8) as pool:
                 comparisons = list(pool.map(
                     lambda _: allocate_identifier(run_dir, "comparison", "P000001_E01"), range(20)
@@ -571,7 +624,7 @@ class StructuredWriteTests(unittest.TestCase):
         self.assertNotIn("<", normalized[0]["doi_resolver_url"])
         self.assertIn("%20", normalized[0]["url"])
 
-    def test_comparison_requires_preallocated_experiment_group(self) -> None:
+    def test_comparison_requires_durable_experiment_group(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             run_dir = Path(temporary)
             (run_dir / "run_state.json").write_text(json.dumps({
@@ -582,9 +635,24 @@ class StructuredWriteTests(unittest.TestCase):
                 "next_evidence_link_counter": 1, "next_evidence_bundle_counter": 1,
                 "next_evidence_assessment_counter": 1, "next_fulltext_asset_counter": 1,
             }), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "experiment group"):
+            with self.assertRaisesRegex(ValueError, "experiment-group"):
                 allocate_identifier(run_dir, "comparison", "P000001_E01")
             experiment_id = allocate_identifier(run_dir, "experiment", "P000001")
+            group_schema = schema("experiment_groups.schema.json")
+            group_path = run_dir / "experiment_groups.csv"
+            with group_path.open("w", newline="", encoding="utf-8") as handle:
+                csv.writer(handle, lineterminator="\n").writerow(group_schema["properties"])
+            write_csv_record(
+                group_path, group_schema,
+                experiment_group(
+                    experiment_id=experiment_id,
+                    pre_atomization_assessed=False,
+                    functional_structure_assessment="not-assessed",
+                    functional_structure_reason=None,
+                    disposition="not-assessed", disposition_reason=None,
+                    linked_comparison_ids=[],
+                ),
+            )
             self.assertEqual(
                 allocate_identifier(run_dir, "comparison", experiment_id),
                 "P000001_E01_C01",
@@ -709,6 +777,9 @@ class ScientificRevisionSyntheticTests(unittest.TestCase):
             awareness_effect_estimate_interpretable="yes",
             awareness_effect_stats_status="adequate",
             awareness_effect_stats_reason="Synthetic claim.", difference_tested="yes",
+            difference_source_experiment_id="P000001_E01",
+            difference_source_location="Synthetic results",
+            difference_statistic_or_test="Synthetic interaction test",
             null_evidence_strength="nonsignificant-only", null_evidence_adequacy="weak",
             null_equivalence_result="not-applicable", null_CI_entirely_within_region="not-applicable",
         )
@@ -786,7 +857,7 @@ class ScientificRevisionSyntheticTests(unittest.TestCase):
         validate("evidence_bundles.schema.json", scientific_bundle)
         validate("evidence_links.schema.json", link)
         self.assertEqual(
-            evidence_bundle_errors([focal], [scientific_bundle], [link], {"P000001"}, set()),
+            evidence_bundle_errors([focal], [scientific_bundle], [link], {"P000001"}, set(), {"P000001_E01", "P000001_E02"}),
             [],
         )
 
@@ -801,7 +872,7 @@ class ScientificRevisionSyntheticTests(unittest.TestCase):
             transfer_limitation="Not a candidate X-to-Y comparison.",
         )
         self.assertEqual(
-            evidence_bundle_errors([focal], [scientific_bundle], [link], {"P000001"}, set()),
+            evidence_bundle_errors([focal], [scientific_bundle], [link], {"P000001"}, set(), {"P000001_E01", "P000001_E99"}),
             [],
         )
         self.assertEqual({row["experiment_id"] for row in [focal]}, {"P000001_E01"})
@@ -1205,7 +1276,7 @@ class StrictEvidenceBundleTests(unittest.TestCase):
             supported_claim="The measure is a downstream functional outcome.",
         )]
         self.assertEqual(
-            evidence_bundle_errors([focal], bundles, links, {"P000001"}, set()),
+            evidence_bundle_errors([focal], bundles, links, {"P000001"}, set(), {"P000001_E01", "P000001_E02"}),
             [],
         )
 
@@ -1404,6 +1475,33 @@ class SyntheticLifecycleTests(unittest.TestCase):
                       first_discovery_query_id=None, first_search_id=None),
                 key_field="paper_id",
             )
+            experiment_id = allocate_identifier(run_dir, "experiment", allocated)
+            self.assertEqual(experiment_id, "P000001_E01")
+            write_csv_record(
+                run_dir / "experiment_groups.csv", schema("experiment_groups.schema.json"),
+                experiment_group(
+                    experiment_id=experiment_id,
+                    disposition="support-only",
+                    disposition_reason="This synthetic control supports another comparison only.",
+                    linked_comparison_ids=[], support_roles=["robustness"],
+                ),
+                key_field="experiment_id",
+            )
+            decision_id = allocate_identifier(run_dir, "decision")
+            append_jsonl_record(
+                run_dir / "decision_log.jsonl", schema("decision_log.schema.json"),
+                {
+                    "decision_id": decision_id, "run_id": run_id,
+                    "timestamp": "2026-08-20T00:00:00Z", "entity_type": "experiment",
+                    "entity_id": experiment_id, "decision_type": "structural-audit",
+                    "field": "disposition", "old_value": "not-assessed",
+                    "new_value": "support-only",
+                    "reason": "The physical experiment has a durable audit but no independent X-to-Y comparison.",
+                    "source_location": "Synthetic article, Experiment 1", "agent": "unit-test",
+                },
+            )
+            with self.assertRaisesRegex(ValueError, "no qualifying comparison"):
+                allocate_identifier(run_dir, "comparison", experiment_id)
             retired = allocate_identifier(run_dir, "paper")
             self.assertEqual(retired, "P000002")
             derive = subprocess.run([

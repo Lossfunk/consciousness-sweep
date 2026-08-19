@@ -27,12 +27,27 @@ def meyen_passes(row: dict[str, str]) -> bool:
     return row["Meyen_role"] != "inference-critical" or row["Meyen_status"] == "Meyen-satisfied"
 
 
+def audited_functional_y(row: dict[str, str]) -> bool:
+    return row.get("Y_functional_status") in {
+        "downstream-function", "coherent-functional-mapping",
+    }
+
+
+def focal_difference_provenance(row: dict[str, str]) -> bool:
+    return (
+        row.get("difference_source_experiment_id") == row.get("experiment_id")
+        and bool(row.get("difference_source_location", "").strip())
+        and bool(row.get("difference_statistic_or_test", "").strip())
+    )
+
+
 def constraint_awareness_difference(row: dict[str, str]) -> bool:
     return (
         awareness_design_eligible(row)
         and row["awareness_effect"] == "difference-supported"
         and row["awareness_effect_stats_status"] == "adequate"
         and row["difference_tested"] == "yes"
+        and focal_difference_provenance(row)
         and meyen_passes(row)
     )
 
@@ -41,6 +56,7 @@ def constraint_unaware_capacity(row: dict[str, str]) -> bool:
     return (
         row["A_code"] in {"A-direct", "A-validated"}
         and row["F_code"] == "F-meaningful"
+        and audited_functional_y(row)
         and bool(row.get("unaware_capacity_claim", "").strip())
         and row.get("unaware_capacity_claim") == row.get("Y_label")
         and row.get("unaware_capacity_evidence_scope") == "whole-focal-Y"
@@ -53,6 +69,7 @@ def constraint_unaware_capacity(row: dict[str, str]) -> bool:
 def constraint_equivalence_supported(row: dict[str, str]) -> bool:
     return (
         awareness_design_eligible(row)
+        and audited_functional_y(row)
         and bool(row.get("unaware_capacity_claim", "").strip())
         and row.get("unaware_capacity_claim") == row.get("Y_label")
         and row.get("unaware_capacity_evidence_scope") == "whole-focal-Y"
@@ -61,6 +78,7 @@ def constraint_equivalence_supported(row: dict[str, str]) -> bool:
         and row["awareness_effect"] == "equivalence-supported"
         and row["awareness_effect_stats_status"] == "adequate"
         and row["difference_tested"] == "yes"
+        and focal_difference_provenance(row)
         and row["null_evidence_adequacy"] == "adequate"
         and meyen_passes(row)
     )
