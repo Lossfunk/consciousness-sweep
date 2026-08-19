@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.6, pre-freeze
+**Status:** draft-0.7.1, pre-freeze
 
 ## 1. Authority split
 
@@ -29,6 +29,7 @@ consciousness-sweep/
 │   ├── discoveries.schema.json
 │   ├── missing_texts.schema.json
 │   ├── auxiliary_sources.schema.json
+│   ├── evidence_links.schema.json
 │   ├── decision_log.schema.json
 │   └── run_state.schema.json
 ├── tools/
@@ -56,13 +57,16 @@ runs/<RUN_ID>/
 ├── discoveries.csv
 ├── missing_texts.csv
 ├── auxiliary_sources.csv
+├── evidence_links.csv
 ├── decision_log.jsonl
 ├── run_state.json
 ├── design_eligible_experiments.csv
 ├── constraint_ready_experiments.csv
 ├── awareness_linked_differences.csv
-├── preserved_capacities.csv
-├── inconclusive_experiments.csv
+├── unaware_capacities.csv
+├── no_detectable_awareness_differences.csv
+├── equivalence_supported_no_difference.csv
+├── unresolved_comparisons.csv
 ├── run_summary.md
 └── fulltexts/
 ```
@@ -126,6 +130,8 @@ Every new run records `protocol_version`, `package_version`, `schema_version`, t
 - Search: `<RUN_ID>_S000001`.
 - Discovery result: `<RUN_ID>_R000001`.
 - Auxiliary source: `<RUN_ID>_AUX000001`.
+- Evidence link: `<RUN_ID>_EL000001`.
+- Evidence bundle: `<RUN_ID>_EB000001`.
 
 Assign each ID once; never recycle or renumber it. Allocate every post-initialization ID through the locked allocator in `tools/structured_write.py`; workers must not infer a next identifier by reading a table or `run_state.json`. Allocation atomically advances durable state before returning the reserved ID, so a crash may retire an unused ID but may never permit reuse. On resume, each next counter must exceed the greatest durable identifier already present. Per-paper experiment counters and per-experiment comparison counters are stored as mappings or recovered equivalently from durable IDs. Multiple rows may share an `experiment_id`, but `comparison_id` must be unique.
 
@@ -140,6 +146,7 @@ Write continuously:
 - Every result encountered in that event → `discoveries.csv`.
 - Missing-text or manual-ingestion state → `missing_texts.csv`.
 - Classification-critical external evidence → `auxiliary_sources.csv`.
+- Every borrowed within-paper, supplementary, same-experiment, or external premise → `evidence_links.csv`.
 - Full-text X→Y comparison → `experiments_master.csv`.
 - Every decision, revision, merge, status transition, and uncertainty → `decision_log.jsonl`.
 - Wave/counter/status checkpoint → `run_state.json`.
@@ -148,13 +155,13 @@ Do not reconstruct records from memory at the end. Write a parent record before 
 
 Registered agents must not construct CSV rows by shell concatenation or raw delimiter joining. Use `tools/structured_write.py` (or its imported schema-aware writer functions) for ID allocation, master-row append/upsert, and decision-log append. One per-run lock serializes counter allocation and all read-modify-write operations. The tool derives field order from the schema, performs typed JSON Schema validation before mutation, applies CSV quoting automatically, and atomically replaces CSV/JSONL files. Its JSONL writer ASCII-escapes embedded Unicode separators and writes exactly one physical LF-terminated record per event. A decision event must still be appended before a current-state upsert.
 
-Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependency, citation-expansion, deduplication, comparison split, A/evidence-type/F/provisional-E/final-E, result, statistics, preserved-capacity component, Meyen, exclusion, revision, uncertainty, and run-state decision requires a short why. Comparison-level scientific decisions use `entity_type = comparison` and the stable `comparison_id`. Auxiliary evidence uses `entity_type = auxiliary_source`. Experiment-level bookkeeping may use `entity_type = experiment`. Full-text decisions should include page, figure, table, analysis, or auxiliary pointers where possible. Validate every decision event against `schemas/decision_log.schema.json`.
+Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependency, evidence link, citation-expansion, deduplication, comparison structure, A/evidence-type/F/provisional-E/final-E, specifically named unaware-capacity claim, awareness-effect, statistics, Meyen, exclusion, revision, uncertainty, and run-state decision requires a short why. Comparison-level scientific decisions use `entity_type = comparison` and the stable `comparison_id`. Auxiliary evidence uses `entity_type = auxiliary_source`; evidence links use `entity_type = evidence_link`. Experiment-level bookkeeping may use `entity_type = experiment`. Full-text decisions should include page, figure, table, analysis, auxiliary, or evidence-link pointers where possible. Validate every decision event against `schemas/decision_log.schema.json`.
 
 `source_location` may be empty only when no source pointer exists; when that matters, explain the absence in `reason`.
 
 ## 7. Full-text sequence and revisions
 
-Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate the physical experiment groups first and reserve each experiment ID before reserving any of its comparison IDs. Then enumerate the experiment's distinct X→Y comparisons; for each comparison, check and record `critical_dependency_status` before final A/E/F/statistical decisions, resolve linked auxiliary evidence where reasonably possible, write design facts and A/evidence-type/F decisions, log the design-based provisional E decision, apply the protocol's result-pattern diagnostic only where required, and then write final E to `experiments_master.csv`. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
+Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate the physical experiment groups first and reserve each experiment ID before reserving any comparison IDs. Then enumerate scalar or coherent factorial X→Y comparisons. For each comparison, check `critical_dependency_status`, reserve an evidence bundle when support is borrowed, record every evidence link before relying on it, write design facts and A/F decisions, log provisional E, record the complete structured E-diagnostic rationale where applicable, name the exact focal or component function in `unaware_capacity_claim`, and only then write independent unaware-capacity and awareness-effect decisions. A supporting experiment receives an experiment pointer in an evidence link but no comparison row unless it independently answers an X→Y question. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
 
 Before changing current state:
 
@@ -208,25 +215,31 @@ Title and abstract screening are paper-specific semantic decisions under `PROTOC
 
 Record each explicit classification-critical dependency in `auxiliary_sources.csv` before finalizing the affected comparison. The row must identify its purpose, target paper/comparison, source pointer in the target article, retrieval/acquisition provenance, transfer assessment where applicable, and whether it was used. A resolved dependency requires a retrieved linked auxiliary row used for the decision. An unresolved dependency requires a linked row documenting why it could not be resolved. Auxiliary rows do not create `papers_master.csv` or `discoveries.csv` records unless the work is independently encountered through an ordinary discovery event.
 
+### 9.4 Evidence bundles
+
+Reserve an `evidence_bundle_id` once per focal comparison when it borrows support. Each row in `evidence_links.csv` receives its own stable `evidence_link_id` and records exactly one supported claim, role, transfer reason, limitation, and source location. A link to an external auxiliary source must reference the corresponding `auxiliary_id`. A within-paper supporting experiment may be referenced without creating a comparison row. Validators require every non-null comparison `evidence_bundle_id` to have at least one matching link and every link to target an existing focal comparison.
+
 ## 10. Deterministic derived files
 
 Run `python tools/derive_outputs.py --run-id <RUN_ID>`; never classify derived files separately. The utility applies only these filters and sorts by `paper_id`, then `experiment_id`, then `comparison_id`.
 
-### Design eligible
+### Awareness-effect design eligible
 
 `A_code` in `{A-direct, A-validated}` AND `E_code` in `{E-matched, E-diagnostic}` AND `F_code = F-meaningful`.
 
 ### Constraint-ready awareness-linked difference
 
-All of: design eligible; `outcome = awareness-linked-difference`; `stats_status = adequate`; `difference_tested = yes`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A supplementary Meyen result remains in the output row but does not gate it.
+All of: awareness-effect design eligible; `awareness_effect = difference-supported`; `awareness_effect_stats_status = adequate`; `difference_tested = yes`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A supplementary Meyen result remains visible but does not gate.
 
-### Constraint-ready preserved capacity
+### Constraint-ready unaware capacity
 
-All of: design eligible; `outcome = preserved-capacity`; `stats_status = adequate`; `unaware_Y_evidence = positive`; `difference_tested = yes`; `null_evidence_adequacy = adequate`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A supplementary Meyen result remains in the output row but does not gate it.
+All of: `A_code` in `{A-direct, A-validated}`; `F_code = F-meaningful`; non-empty `unaware_capacity_claim` names the exact focal or component function positively demonstrated under unawareness; `unaware_capacity = supported` for that same function; `unaware_capacity_stats_status = adequate`; and, if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`. A nonzero effect of X on some other downstream consequence does not pass. E does not gate this route.
 
-`constraint_ready_experiments.csv` is the union of exactly those two comparison routes. `awareness_linked_differences.csv` and `preserved_capacities.csv` are the corresponding comparison subsets.
+### Strongest equivalence-supported invariance
 
-`inconclusive_experiments.csv` contains design-eligible comparisons with `outcome = inconclusive`; it is not a constraint-ready view. Nominal awareness-linked or preserved results with inadequate statistics remain in the master and design-eligible files only.
+All of: awareness-effect design eligible; non-empty `unaware_capacity_claim`; `unaware_capacity = supported` for that named function; `unaware_capacity_stats_status = adequate`; `awareness_effect = equivalence-supported`; `awareness_effect_stats_status = adequate`; `difference_tested = yes`; `null_evidence_adequacy = adequate`; and the inference-critical Meyen gate.
+
+`constraint_ready_experiments.csv` is the deduplicated union of the awareness-linked-difference, unaware-capacity, and equivalence-supported routes. `no_detectable_awareness_differences.csv` contains every fully evaluated comparison assigned that descriptive category, without upgrading it to equivalence. `unresolved_comparisons.csv` contains fully evaluated comparisons with `unaware_capacity = unclear` or `awareness_effect = unresolved`. A comparison may appear in multiple compatible views.
 
 ## 11. Validation checkpoints
 
@@ -236,7 +249,7 @@ At the end of every search wave:
 2. run `python tools/derive_outputs.py --run-id <RUN_ID>`;
 3. run `python tools/validate_run.py --run-id <RUN_ID>`;
 4. check IDs, counters, cross-file references, schema conditionals, file hashes, and every required why;
-5. check that every resolved/unresolved classification-critical dependency has the required linked auxiliary record and that no auxiliary record silently entered the candidate pool;
+5. check that every resolved/unresolved dependency and non-null evidence bundle has the required linked records, that external links resolve to auxiliary rows, and that no support-only source silently entered the candidate pool;
 6. prepare the bounded ask-text batch;
 7. update `run_summary.md` with route/wave progress, counts, unresolved cases, missing texts, validation outcome, and remaining stopping conditions;
 8. update `run_state.json` checkpoint timestamp, counters, wave, status, and reason.

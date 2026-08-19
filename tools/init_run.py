@@ -37,11 +37,14 @@ CSV_TO_SCHEMA = {
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
     "auxiliary_sources.csv": "auxiliary_sources.schema.json",
+    "evidence_links.csv": "evidence_links.schema.json",
     "design_eligible_experiments.csv": "experiments.schema.json",
     "constraint_ready_experiments.csv": "experiments.schema.json",
     "awareness_linked_differences.csv": "experiments.schema.json",
-    "preserved_capacities.csv": "experiments.schema.json",
-    "inconclusive_experiments.csv": "experiments.schema.json",
+    "unaware_capacities.csv": "experiments.schema.json",
+    "no_detectable_awareness_differences.csv": "experiments.schema.json",
+    "equivalence_supported_no_difference.csv": "experiments.schema.json",
+    "unresolved_comparisons.csv": "experiments.schema.json",
 }
 
 
@@ -124,6 +127,8 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
         "next_search_counter": 1,
         "next_discovery_counter": 1,
         "next_auxiliary_counter": 1,
+        "next_evidence_link_counter": 1,
+        "next_evidence_bundle_counter": 1,
         "started_at": timestamp,
         "last_checkpoint_at": timestamp,
         "model": args.model,
@@ -196,6 +201,11 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
     search_ids = read_ids(run_dir / "search_log.csv", "search_id")
     discovery_ids = read_ids(run_dir / "discoveries.csv", "discovery_id")
     auxiliary_ids = read_ids(run_dir / "auxiliary_sources.csv", "auxiliary_id")
+    evidence_link_ids = read_ids(run_dir / "evidence_links.csv", "evidence_link_id")
+    evidence_bundle_ids = [
+        *read_ids(run_dir / "evidence_links.csv", "evidence_bundle_id"),
+        *read_ids(run_dir / "experiments_master.csv", "evidence_bundle_id"),
+    ]
     decision_errors: list[str] = []
     decision_rows = load_jsonl_rows(
         run_dir / "decision_log.jsonl",
@@ -206,30 +216,39 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
         raise SystemExit("cannot reconcile decision log: " + "; ".join(decision_errors))
     decision_ids = [row["decision_id"] for row in decision_rows]
     next_decision = suffix_max(decision_ids, "_D") + 1
-    experiment_counters = {
-        paper_id: max(
-            [int(value.split("_E")[1]) for value in experiment_ids if value.startswith(f"{paper_id}_E")],
-            default=0,
-        ) + 1
-        for paper_id in paper_ids
-    }
-    comparison_counters = {
-        experiment_id: max(
-            [int(value.rsplit("_C", 1)[1]) for value in comparison_ids if value.startswith(f"{experiment_id}_C")],
-            default=0,
-        ) + 1
-        for experiment_id in experiment_ids
-    }
+    experiment_counters = dict(state.get("next_experiment_counters", {}))
+    for paper_id in paper_ids:
+        experiment_counters[paper_id] = max(
+            experiment_counters.get(paper_id, 1),
+            max(
+                [int(value.split("_E")[1]) for value in experiment_ids if value.startswith(f"{paper_id}_E")],
+                default=0,
+            ) + 1,
+        )
+    comparison_counters = dict(state.get("next_comparison_counters", {}))
+    for experiment_id in experiment_ids:
+        comparison_counters[experiment_id] = max(
+            comparison_counters.get(experiment_id, 1),
+            max(
+                [int(value.rsplit("_C", 1)[1]) for value in comparison_ids if value.startswith(f"{experiment_id}_C")],
+                default=0,
+            ) + 1,
+        )
     timestamp = now()
     reason = args.reopen_reason or "Resumed an existing validated run without resetting prior state."
     state.update({
-        "next_paper_counter": max([int(value[1:]) for value in paper_ids], default=0) + 1,
+        "next_paper_counter": max(
+            state.get("next_paper_counter", 1),
+            max([int(value[1:]) for value in paper_ids], default=0) + 1,
+        ),
         "next_experiment_counters": experiment_counters,
         "next_comparison_counters": comparison_counters,
-        "next_decision_counter": next_decision,
-        "next_search_counter": suffix_max(search_ids, "_S") + 1,
-        "next_discovery_counter": suffix_max(discovery_ids, "_R") + 1,
-        "next_auxiliary_counter": suffix_max(auxiliary_ids, "_AUX") + 1,
+        "next_decision_counter": max(state.get("next_decision_counter", 1), next_decision),
+        "next_search_counter": max(state.get("next_search_counter", 1), suffix_max(search_ids, "_S") + 1),
+        "next_discovery_counter": max(state.get("next_discovery_counter", 1), suffix_max(discovery_ids, "_R") + 1),
+        "next_auxiliary_counter": max(state.get("next_auxiliary_counter", 1), suffix_max(auxiliary_ids, "_AUX") + 1),
+        "next_evidence_link_counter": max(state.get("next_evidence_link_counter", 1), suffix_max(evidence_link_ids, "_EL") + 1),
+        "next_evidence_bundle_counter": max(state.get("next_evidence_bundle_counter", 1), suffix_max(evidence_bundle_ids, "_EB") + 1),
     })
     write_json(state_path, state)
     resume_decision_id = allocate_identifier(run_dir, "decision")

@@ -15,7 +15,7 @@ from validate_run import load_csv_rows
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def design_eligible(row: dict[str, str]) -> bool:
+def awareness_design_eligible(row: dict[str, str]) -> bool:
     return (
         row["A_code"] in {"A-direct", "A-validated"}
         and row["E_code"] in {"E-matched", "E-diagnostic"}
@@ -29,24 +29,54 @@ def meyen_passes(row: dict[str, str]) -> bool:
 
 def constraint_awareness_difference(row: dict[str, str]) -> bool:
     return (
-        design_eligible(row)
-        and row["outcome"] == "awareness-linked-difference"
-        and row["stats_status"] == "adequate"
+        awareness_design_eligible(row)
+        and row["awareness_effect"] == "difference-supported"
+        and row["awareness_effect_stats_status"] == "adequate"
         and row["difference_tested"] == "yes"
         and meyen_passes(row)
     )
 
 
-def constraint_preserved_capacity(row: dict[str, str]) -> bool:
+def constraint_unaware_capacity(row: dict[str, str]) -> bool:
     return (
-        design_eligible(row)
-        and row["outcome"] == "preserved-capacity"
-        and row["stats_status"] == "adequate"
-        and row["unaware_Y_evidence"] == "positive"
+        row["A_code"] in {"A-direct", "A-validated"}
+        and row["F_code"] == "F-meaningful"
+        and bool(row.get("unaware_capacity_claim", "").strip())
+        and row["unaware_capacity"] == "supported"
+        and row["unaware_capacity_stats_status"] == "adequate"
+        and meyen_passes(row)
+    )
+
+
+def constraint_equivalence_supported(row: dict[str, str]) -> bool:
+    return (
+        awareness_design_eligible(row)
+        and bool(row.get("unaware_capacity_claim", "").strip())
+        and row["unaware_capacity"] == "supported"
+        and row["unaware_capacity_stats_status"] == "adequate"
+        and row["awareness_effect"] == "equivalence-supported"
+        and row["awareness_effect_stats_status"] == "adequate"
         and row["difference_tested"] == "yes"
         and row["null_evidence_adequacy"] == "adequate"
         and meyen_passes(row)
     )
+
+
+def no_detectable_awareness_difference(row: dict[str, str]) -> bool:
+    return (
+        row.get("current_status") == "fully-evaluated"
+        and row["awareness_effect"] == "no-detectable-difference"
+    )
+
+
+def unresolved_comparison(row: dict[str, str]) -> bool:
+    return row.get("current_status") == "fully-evaluated" and (
+        row["unaware_capacity"] == "unclear" or row["awareness_effect"] == "unresolved"
+    )
+
+
+# Compatibility alias for callers that used the old name for the E-dependent route.
+design_eligible = awareness_design_eligible
 
 
 def write_rows(path: Path, headers: list[str], rows: list[dict[str, str]]) -> None:
@@ -82,24 +112,34 @@ def main() -> int:
             return 1
         rows = sorted(reader, key=lambda row: (row["paper_id"], row["experiment_id"], row["comparison_id"]))
 
-    design = [row for row in rows if design_eligible(row)]
-    awareness = [row for row in design if constraint_awareness_difference(row)]
-    preserved = [row for row in design if constraint_preserved_capacity(row)]
-    constraint = [row for row in design if constraint_awareness_difference(row) or constraint_preserved_capacity(row)]
-    inconclusive = [row for row in design if row["outcome"] == "inconclusive"]
+    design = [row for row in rows if awareness_design_eligible(row)]
+    awareness = [row for row in rows if constraint_awareness_difference(row)]
+    capacity = [row for row in rows if constraint_unaware_capacity(row)]
+    no_detectable = [row for row in rows if no_detectable_awareness_difference(row)]
+    equivalence = [row for row in rows if constraint_equivalence_supported(row)]
+    unresolved = [row for row in rows if unresolved_comparison(row)]
+    constraint = [
+        row for row in rows
+        if constraint_awareness_difference(row)
+        or constraint_unaware_capacity(row)
+        or constraint_equivalence_supported(row)
+    ]
     outputs = {
         "design_eligible_experiments.csv": design,
         "constraint_ready_experiments.csv": constraint,
         "awareness_linked_differences.csv": awareness,
-        "preserved_capacities.csv": preserved,
-        "inconclusive_experiments.csv": inconclusive,
+        "unaware_capacities.csv": capacity,
+        "no_detectable_awareness_differences.csv": no_detectable,
+        "equivalence_supported_no_difference.csv": equivalence,
+        "unresolved_comparisons.csv": unresolved,
     }
     for filename, selected in outputs.items():
         write_rows(run_dir / filename, headers, selected)
     print(
         "PASS: comparison-level derived outputs regenerated "
         f"(design={len(design)}, constraint={len(constraint)}, awareness={len(awareness)}, "
-        f"preserved={len(preserved)}, inconclusive={len(inconclusive)})."
+        f"capacity={len(capacity)}, no-detectable={len(no_detectable)}, "
+        f"equivalence={len(equivalence)}, unresolved={len(unresolved)})."
     )
     return 0
 

@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.6
+**Version:** draft-0.7.1
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -11,9 +11,9 @@ The sweep asks:
 
 > For a particular entity or content X and cognitive process Y, does awareness of X change whether, or how well, Y can use X?
 
-The search is outcome-neutral. A useful experiment may report an awareness-linked difference, a capacity preserved without awareness, or an inconclusive result. A study is not a hit because awareness helps; it is useful because its design can inform the X → Y question.
+The search is result-neutral. A useful experiment may show that Y operates while X is unaware, that awareness changes Y, that no awareness-linked difference was detected, that equivalence is positively supported, or that one or both questions remain unresolved. A study is not a hit because awareness helps; it is useful because its design can inform the X → Y question.
 
-The atomic scientific unit is a **paper × experiment × X→Y comparison**, not a paper or experiment as a whole. One experiment may contain multiple comparison records. Multiple dependent measures that jointly operationalize the same Y and support the same critical inference may remain in one comparison. Genuinely different Y processes receive separate comparisons, as do distinct critical awareness contrasts that support different inferences. Assign A and F for each comparison from the methods/design. Assess design-based E next; when evidence is not matched, inspect the result pattern only for the frozen `E-diagnostic` test and then finalize E. Classify the empirical outcome only after A, F, and final E are established.
+The atomic scientific unit is a **paper × experiment × X→Y comparison**, not a paper or experiment as a whole. One experiment may contain multiple comparison records. Y may be a scalar function or a coherent factorial functional relation. Multiple component simple effects may remain in one comparison when they jointly operationalize the same conservative functional mapping and the critical inference is an interaction or structured pattern over them. Genuinely different downstream functions receive separate comparisons. Assign A and F for each comparison from the methods/design. Assess design-based E next; when evidence is not matched, inspect the result pattern only for the frozen `E-diagnostic` test and then finalize E. Classify unaware capacity and the effect of awareness independently after A, F, and final E are established.
 
 ## 2. Design classification
 
@@ -44,7 +44,7 @@ The relationship between A and E is asymmetric. Above-chance objective detection
 Physical identity of X does not guarantee matched internal evidence.
 
 - `E-matched`: aware and unaware conditions are matched on the relevant direct first-order measure of X. This requires either (1) active matching or titration by experimental design on that measure, or (2) a successful explicit equivalence procedure using a stated equivalence margin. A merely nonsignificant aware/unaware comparison (`p > .05`) does not establish matching. An apparently narrow confidence interval without a predefined or explicitly stated equivalence criterion also does not establish matching.
-- `E-diagnostic`: first-order evidence is not matched, but the whole result pattern rules out the relevant simple explanation in which more first-order evidence about X monotonically produces more or stronger Y. Always state the diagnostic reason explicitly.
+- `E-diagnostic`: first-order evidence is not matched, but the structured result pattern rules out the relevant simple scalar explanation in which more first-order evidence about X merely strengthens the same downstream functional relation Y. Valid structures include threshold-linked nonmonotonicity, an experimentally shifted threshold accompanied by a shifted downstream effect, crossover/sign reversal, and a coherent factorial/process-selective interaction that changes the mapping from X/task relation to Y. It is not enough that unrelated Y1 and Y2 have different effects.
 - `E-physical-only`: the physical stimulus or event is nominally matched, but direct first-order evidence is unequal or inadequately assessed.
 - `E-uncontrolled`: outside the nominally identical-physical-X case, first-order evidence differs or is inadequately controlled or known, so a simple first-order-evidence account of Y remains viable.
 
@@ -54,7 +54,15 @@ Physical identity of X does not guarantee matched internal evidence.
 
 First assess E from the methods. Assign `E-matched` only when its positive matching requirements are met. Otherwise record the provisional non-diagnostic status—`E-physical-only` when physical X is nominally identical, and `E-uncontrolled` otherwise. Then inspect the full result pattern specifically to decide whether the frozen `E-diagnostic` criterion is satisfied. If it is, finalize E as `E-diagnostic`; if not, retain the provisional status.
 
-This limited use of results does not make study selection depend on whether an outcome is theoretically attractive. The `E-diagnostic` criterion is frozen in advance, is applied to every eligible unmatched case, and is evaluated before outcome classification.
+This limited use of results does not make study selection depend on whether a result is theoretically attractive. The `E-diagnostic` criterion is frozen in advance, is applied to every eligible unmatched case, and is evaluated before unaware-capacity or awareness-effect classification.
+
+Every `E-diagnostic` decision must record all of:
+
+1. the competing simple evidence-strength account;
+2. that account's prediction for the same focal Y;
+3. the observed pattern that violates the prediction;
+4. every experiment or analysis required for the inference, through source pointers and evidence links; and
+5. why the evidence concerns one coherent focal Y rather than an opportunistic cross-Y dissociation.
 
 Tsushima, Sasaki, and Watanabe (2006) motivate `E-diagnostic`: interference is non-monotonic with motion coherence, is maximal around the awareness threshold, and the interference dip shifts when the perceptual threshold is experimentally shifted. The diagnostic value comes from the whole pattern, not from non-monotonicity alone. Charles et al. (2013) motivate the distinction between identical physical stimuli and identical internal evidence.
 
@@ -70,24 +78,73 @@ Assign Y at the most specific functional level justified by the dependent measur
 
 For every comparison, record `Y_label`, `Y_description`, `Y_evidence_role`, and `Y_interpretation_clarity` separately from `mechanistic_interpretation` and `mechanism_clarity`. `mechanism_clarity` is never part of the F gate. Neural evidence may support a proposed mechanism for a behavioral Y, but a generic neural difference is not itself a qualifying Y merely because it is compatible with that mechanism. `F-ambiguous` supports discovery recall but does not pass the strongest empirical-lot filter, which continues to require `F-meaningful`.
 
-## 3. Result classification
+### 2.5 Scalar and factorial-functional Y
 
-Determine A, E, and F before classifying results.
+Record `Y_structure = scalar` when the downstream function is operationalized by one simple effect or a set of interchangeable measures. Record `Y_structure = factorial-functional` when the focal Y is a functional mapping across experimentally defined relations or task states.
 
-- `awareness-linked-difference`: Y uses X differently between aware and unaware conditions.
-- `preserved-capacity`: requires both (1) positive evidence that Y uses X in the X-unaware condition and (2) an analysis that does not support a meaningful awareness-linked difference in that use under the tested conditions.
-- `inconclusive`: the comparison is relevant, but the result or analysis does not cleanly support either conclusion.
+A factorial functional relation remains one comparison only when:
 
-> Evidence that Y operates without awareness and evidence that awareness does not materially change Y are evaluated separately. A null aware–unaware difference alone does not establish preserved capacity.
+1. the design explicitly treats its component conditions as parts of one functional question;
+2. the simple effects jointly operationalize how the same downstream system uses X under different task relations or states;
+3. the critical inference is an interaction or structured pattern over those components; and
+4. a conservative common function-level Y can be stated without asserting an unsupported finer mechanism.
 
-Use one direction label where applicable: `aware>unaware`, `unaware>aware`, `qualitative-change`, `no-detectable-difference`, or `other`.
+Record each component simple effect in `factorial_component_effects`. Do not split a coherent relation merely because its interaction has multiple cells. Conversely, do not merge genuinely different downstream functions to obtain a desirable classification.
 
-Record the two preserved-capacity components separately:
+## 3. Independent scientific inferences
 
-- `unaware_Y_evidence = positive` means the comparison provides positive statistical evidence that Y actually uses X in the unaware condition. Other values are `absent`, `unclear`, and `not-applicable`.
-- `null_evidence_adequacy = adequate` means the comparison satisfies at least one of the three criteria in Section 4.2. Other values are `weak`, `unclear`, and `not-applicable`.
+Determine A, E, and F before assigning either inference below. The two fields are independent rather than mutually exclusive.
 
-These fields remain separate from `null_evidence_strength`, which records the form of the null evidence.
+### 3.1 Unaware capacity
+
+An unaware-capacity judgment asks whether one **specified downstream function** demonstrably operates on X while X is unaware. It does not ask merely whether unaware X has any measurable downstream consequence. Record `unaware_capacity_claim` as a concise name for the exact function whose operation under unawareness is being assessed, and record `unaware_capacity_reason` separately. The claim may equal the focal Y or identify a meaningful component function within a factorial-functional Y.
+
+Use `unaware_capacity`:
+
+- `supported`: positive evidence shows that Y actually uses X in the X-unaware condition;
+- `not-supported`: the tested unaware condition provides affirmative evidence against the specified capacity or lacks the required positive Y effect under an adequate test;
+- `unclear`: the capacity was relevant and tested, but evidence or reporting is insufficient for either conclusion; or
+- `not-tested`: the comparison does not test Y in an X-unaware condition.
+
+`supported` does not assert that awareness makes no difference. A comparison may simultaneously have `unaware_capacity = supported` and `awareness_effect = difference-supported`. However, a nonzero downstream effect is insufficient by itself: the positive effect must instantiate the function named in `unaware_capacity_claim`. Evidence for interference, automatic bias, or another consequence cannot establish control, strategic rule use, or a different capacity.
+
+For a factorial-functional comparison, do not infer unaware capacity for the focal awareness-linked function merely because one component is nonzero under unawareness. A component capacity may be recorded when the component function is explicitly named, is meaningful under the existing F rule, is positively demonstrated under unawareness with adequate statistics, and passes the applicable Meyen gate. The reason must distinguish that component from any awareness-dependent component. Do not create a component capacity solely because a dependent variable differs from zero.
+
+The strong unaware-capacity route requires:
+
+1. `A_code` in `{A-direct, A-validated}` for unawareness of X;
+2. `F_code = F-meaningful`;
+3. a non-empty `unaware_capacity_claim` naming the function positively demonstrated under unawareness;
+4. `unaware_capacity = supported` for that same named function;
+5. `unaware_capacity_stats_status = adequate`; and
+6. if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`.
+
+E remains recorded but is not a gate for this route. E addresses whether an aware–unaware difference can be attributed to awareness rather than first-order evidence; it is not logically required to show that Y operates in a validated unaware condition.
+
+### 3.2 Effect of awareness
+
+Use `awareness_effect`:
+
+- `difference-supported`: a directly tested aware–unaware difference or interaction supports a change in Y;
+- `no-detectable-difference`: the relevant difference or interaction was directly tested, effect estimates are interpretable, no credible awareness-linked difference was detected, the conclusion is not based on separate significance tests, and robustness/sensitivity limitations are recorded;
+- `equivalence-supported`: positive null evidence rules out a scientifically meaningful difference under Section 4.2;
+- `unresolved`: the awareness comparison is relevant but does not meet another category; or
+- `not-tested`: no aware–unaware comparison relevant to Y was tested.
+
+`no-detectable-difference` does not mean equivalence. A bare, uninformative `p > .05` normally remains `unresolved`.
+
+The strong awareness-linked-difference route requires:
+
+1. `A_code` in `{A-direct, A-validated}`;
+2. `E_code` in `{E-matched, E-diagnostic}`;
+3. `F_code = F-meaningful`;
+4. `awareness_effect = difference-supported`;
+5. `difference_tested = yes` and `awareness_effect_stats_status = adequate`; and
+6. if `Meyen_role = inference-critical`, `Meyen_status = Meyen-satisfied`.
+
+The stronger invariance/equivalence route requires strong A, strong E, `F-meaningful`, `awareness_effect = equivalence-supported`, adequate awareness-effect statistics, adequate positive null evidence, positive Y evidence where the stated invariance claim requires it, and the same inference-critical Meyen gate. Any required positive Y evidence must instantiate the function named in `unaware_capacity_claim`, not a different downstream consequence.
+
+Use one direction label where applicable: `aware>unaware`, `unaware>aware`, `qualitative-change`, `no-detectable-difference`, `equivalent-within-region`, or `other`.
 
 ## 4. Statistical audit
 
@@ -97,15 +154,17 @@ Every full-text comparison receives a separate audit with overall status `adequa
 
 When awareness is claimed to change Y, determine whether the aware-versus-unaware difference or interaction was itself tested. Do not accept “significant in aware + nonsignificant in unaware” as evidence that the two conditions differ.
 
-### 4.2 Null and preserved-capacity evidence
+### 4.2 No detectable difference and equivalence
 
-Assign `null_evidence_adequacy = adequate` only when the study provides at least one of:
+`no-detectable-difference` may be assigned without modern equivalence evidence only when the critical interaction/difference was directly tested, the estimates are scientifically interpretable, no credible modulation was detected, and sensitivity/robustness limitations are explicit. Separate within-condition significance tests are insufficient. A bare uninformative nonsignificant result remains `unresolved`.
+
+`equivalence-supported` requires positive null evidence. Assign `null_evidence_adequacy = adequate` only when the study provides at least one of:
 
 1. a successful equivalence test using an explicitly stated or justified equivalence margin;
 2. `BF01 >= 3` in favour of the null; or
 3. a confidence interval entirely contained within an explicitly stated smallest-effect or equivalence region.
 
-A merely nonsignificant aware/unaware difference or interaction receives `weak`. Insufficient reporting to assess the strength of the null receives `unclear`. Do not invent an equivalence margin for a study that did not state or justify one. Retain `null_evidence_strength` to describe whether the evidence came from equivalence testing, Bayes factors, confidence intervals, nonsignificance alone, mixed evidence, or unclear reporting.
+A merely nonsignificant aware/unaware difference or interaction receives `weak` null evidence even when the more modest `no-detectable-difference` category is warranted. Insufficient reporting receives `unclear`. Do not invent an equivalence margin for a legacy study. Retain `null_evidence_strength` to describe the evidence form.
 
 ### 4.3 General concerns
 
@@ -117,11 +176,11 @@ Apply this diagnostic when a study reasons that (1) a direct measure of X is at 
 
 Record `Meyen_role` before recording status:
 
-- `inference-critical`: the unconscious-processing inference depends on the residual-sensitivity logic above. There is no independently adequate A plus `E-matched` or `E-diagnostic` route that supports the critical awareness/evidence inference. `Meyen-failed` or `Meyen-unassessable` blocks constraint-ready status.
-- `supplementary`: the residual-sensitivity diagnostic is relevant to a claim or caveat, but adequate A plus `E-matched` or `E-diagnostic` independently supports the critical inference. Preserve the Meyen result and caveat, but failure or unassessability does not block an otherwise constraint-ready comparison.
+- `inference-critical`: the unconscious-processing claim materially rests on a direct task being at/near chance or nonsignificant plus a positive indirect Y effect, with the indirect effect serving as the evidence that X-information survived, and without an independently adequate protocol-approved basis for the awareness classification. `Meyen-failed` or `Meyen-unassessable` blocks constraint-ready status.
+- `supplementary`: residual-information concerns remain relevant, but unawareness is already established through a dedicated, sufficiently informative validation whose adequacy and transfer are independently justified. Relevant support may include participant/regime-specific staircasing, dedicated validation blocks, post-task revalidation, sensitivity controls, and appropriate transfer. Preserve failure or unassessability prominently, but it does not gate an otherwise valid constraint.
 - `not-applicable`: the study does not make the direct-chance plus indirect-effect inference described above.
 
-`Meyen_applicable` remains as a consistency field: it is `yes` for `inference-critical` and `supplementary`, and `no` for `not-applicable`. When applicable, use `Meyen-satisfied`, `Meyen-failed`, or `Meyen-unassessable`, and explain why. Passing does not by itself prove unconscious processing and does not replace A or E.
+`Meyen_applicable` remains as a consistency field: it is `yes` for `inference-critical` and `supplementary`, and `no` for `not-applicable`. When applicable, use `Meyen-satisfied`, `Meyen-failed`, or `Meyen-unassessable`, and explain why. Do not automatically make objective-invisibility cases supplementary; state what dedicated validation independently establishes awareness status. Passing does not itself prove unconscious processing and does not replace A.
 
 ## 6. Screening funnel
 
@@ -173,29 +232,36 @@ If the source cannot be obtained, record an unresolved auxiliary dependency and 
 
 Auxiliary sources do not need to pass the X→Y title/abstract screen merely to be consulted. Consultation does not add them to the candidate-paper pool, make them citation-network nodes, or trigger expansion. They may enter the ordinary pipeline only if independently encountered under the registered discovery rules.
 
+### 7.2 Structured evidence bundles
+
+A focal comparison may borrow a classification-critical premise from another experiment, a supplementary or same-experiment analysis, or an external auxiliary source. Record every borrowed premise in `evidence_links.csv`. Links sharing one `evidence_bundle_id` form the auditable evidence bundle for the focal comparison.
+
+Each link records the focal comparison, supporting source type and identifiers where applicable, support role, exact supported claim, transfer reason, transfer limitation, and source location. Permitted roles include awareness validation, first-order-evidence control, E-diagnostic support, alternative-explanation control, replication, statistical support, mechanistic support, and robustness support.
+
+A supporting experiment does not become a candidate X→Y comparison merely because it supports a focal inference. Give it a comparison row only when it independently answers an X→Y question. Evidence links never substitute for A/E/F/statistical coding of the focal comparison, and borrowing never silently erases transfer limitations.
+
 ## 8. Full-text comparison evaluation order
 
-First enumerate the distinct X→Y comparisons within each potentially relevant experiment. Assign a separate comparison when Y is genuinely different or when a distinct critical awareness contrast supports a different inference. Measures that jointly operationalize the same Y and critical inference may remain together. Then, for each comparison:
+First enumerate the distinct X→Y comparisons within each potentially relevant experiment. Keep a coherent factorial functional relation together under Section 2.5; assign a separate comparison when the conservative downstream function is genuinely different. Unaware capacity and awareness effect are separate fields and do not require duplicate comparison rows merely because both inferences apply. Then, for each comparison:
 
 1. Identify X and the aware/unaware contrast.
 2. Identify the awareness measure or validation.
 3. Identify the direct first-order evidence measure.
-4. Identify Y at the most specific conservative functional level justified by its dependent measure; record finer mechanistic interpretation separately.
-5. Check the article and supplement for explicit classification-critical external dependencies; resolve and record each auxiliary source where reasonably possible.
+4. Identify Y at the most specific conservative functional level justified by the dependent measure; assign scalar versus factorial-functional structure, record component simple effects for a factorial Y, and record finer mechanistic interpretation separately.
+5. Check the article and supplement for classification-critical dependencies or supporting analyses. Resolve external auxiliary sources where reasonably possible and create structured evidence links for every borrowed premise.
 6. Assign A from the qualifying awareness evidence, record `awareness_evidence_type`, and explain objective-test informativeness where applicable.
 7. Assign F from the downstream-use design and explain why.
 8. Record the Y evidence role and function-level interpretation clarity separately from the proposed mechanism and mechanism clarity; do not use mechanism ambiguity as the F gate.
 9. Assess design-based E: assign `E-matched` if its positive requirements are met; otherwise record provisional `E-physical-only` or `E-uncontrolled`.
-10. If evidence is not matched, inspect the full pattern only to test the frozen `E-diagnostic` criterion.
+10. If evidence is not matched, inspect the structured pattern only to test the frozen `E-diagnostic` criterion; record the competing account, its prediction, the violating pattern, same-Y justification, source locations, and required evidence links.
 11. Finalize E and explain why.
-12. Only now classify the empirical outcome and explain why.
-13. Identify the critical aware/unaware comparison.
-14. Record `unaware_Y_evidence` when relevant.
-15. Record the structured null-evidence basis, `null_evidence_strength`, and `null_evidence_adequacy` when relevant.
-16. Perform the statistical audit, including whether the critical difference was tested.
-17. Assign the Meyen role and apply the diagnostic when relevant.
-18. Write a one- or two-sentence empirical-constraint statement.
-19. Record page, figure, table, analysis, and auxiliary-source locations.
+12. Name the exact function in `unaware_capacity_claim`, classify `unaware_capacity` only for that function, and record its positive or contradictory evidence and route-specific statistical audit.
+13. Independently classify `awareness_effect`, identify the critical aware/unaware comparison, record the effect estimate and interpretability, and audit its statistics.
+14. Record the structured null-evidence basis, `null_evidence_strength`, and `null_evidence_adequacy` when relevant; never conflate no-detectable-difference with equivalence.
+15. Perform the overall statistical audit and record relevant robustness concerns.
+16. Assign the Meyen role and apply the diagnostic when relevant, explicitly stating whether dedicated awareness validation makes it supplementary.
+17. Write a one- or two-sentence empirical-constraint statement that keeps the two inference axes distinct.
+18. Record page, figure, table, analysis, auxiliary-source, and evidence-link locations.
 
 ## 9. Discovery routes and stopping rules
 

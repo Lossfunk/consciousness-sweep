@@ -1,7 +1,7 @@
 # Draft configuration. Freeze and version every null/TODO before a registered run.
-protocol_version: "draft-0.6"
-package_version: "prefreeze-package-0.6"
-schema_version: "prefreeze-schema-0.6"
+protocol_version: "draft-0.7.1"
+package_version: "prefreeze-package-0.7.1"
+schema_version: "prefreeze-schema-0.7.1"
 registration_status: "pre-freeze"
 
 # Supplied by a registered run invocation; never set during scaffold construction.
@@ -38,6 +38,8 @@ identifiers:
   search_separator: "_S"
   discovery_separator: "_R"
   auxiliary_separator: "_AUX"
+  evidence_link_separator: "_EL"
+  evidence_bundle_separator: "_EB"
 
 search:
   # TODO before freeze: name the permitted search/citation sources in fixed order.

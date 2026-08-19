@@ -17,10 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from derive_outputs import (  # noqa: E402
+    awareness_design_eligible,
     constraint_awareness_difference,
-    constraint_preserved_capacity,
-    design_eligible,
-    write_rows,
+    constraint_equivalence_supported,
+    constraint_unaware_capacity,
+    no_detectable_awareness_difference,
+    unresolved_comparison,
 )
 from calibration_sampling import select_calibration_fulltexts  # noqa: E402
 from structured_write import (  # noqa: E402
@@ -39,7 +41,7 @@ from query_instruments import (  # noqa: E402
     validate_process_variants,
     validate_rendered_query,
 )
-from validate_run import dependency_errors, load_jsonl_rows  # noqa: E402
+from validate_run import dependency_errors, evidence_bundle_errors, load_jsonl_rows  # noqa: E402
 
 
 def schema(name: str) -> dict:
@@ -62,14 +64,23 @@ def experiment(**updates: object) -> dict:
         "A_reason": None,
         "critical_dependency_status": None,
         "critical_dependency_reason": None,
+        "evidence_bundle_id": None,
         "first_order_measure": None,
         "E_code": None,
         "E_reason": None,
         "E_matching_basis": None,
         "E_equivalence_margin": None,
         "E_equivalence_result": None,
+        "E_competing_account": None,
+        "E_competing_prediction": None,
+        "E_violating_pattern": None,
+        "E_same_Y_reason": None,
+        "E_diagnostic_source_locations": [],
         "Y_label": None,
         "Y_description": None,
+        "Y_structure": None,
+        "factorial_Y_reason": None,
+        "factorial_component_effects": [],
         "Y_evidence_role": None,
         "F_code": None,
         "F_reason": None,
@@ -77,11 +88,20 @@ def experiment(**updates: object) -> dict:
         "mechanistic_interpretation": None,
         "mechanism_clarity": None,
         "critical_comparison": None,
-        "outcome": None,
-        "outcome_reason": None,
+        "unaware_capacity_claim": None,
+        "unaware_capacity": None,
+        "unaware_capacity_reason": None,
+        "unaware_capacity_critical_effect": None,
+        "unaware_capacity_stats_status": None,
+        "unaware_capacity_stats_reason": None,
+        "awareness_effect": None,
+        "awareness_effect_reason": None,
         "direction": None,
-        "critical_effect": None,
-        "unaware_Y_evidence": None,
+        "awareness_effect_critical_effect": None,
+        "awareness_effect_estimate": None,
+        "awareness_effect_estimate_interpretable": None,
+        "awareness_effect_stats_status": None,
+        "awareness_effect_stats_reason": None,
         "difference_tested": None,
         "null_evidence_strength": None,
         "null_evidence_adequacy": None,
@@ -105,6 +125,35 @@ def experiment(**updates: object) -> dict:
     }
     row.update(updates)
     return row
+
+
+def route_row(**updates: object) -> dict:
+    row = {
+        "A_code": "A-direct", "E_code": "E-diagnostic", "F_code": "F-meaningful",
+        "unaware_capacity_claim": "synthetic downstream use of X",
+        "unaware_capacity": "supported", "unaware_capacity_stats_status": "adequate",
+        "awareness_effect": "difference-supported", "awareness_effect_stats_status": "adequate",
+        "difference_tested": "yes", "null_evidence_adequacy": "not-applicable",
+        "Meyen_role": "not-applicable", "Meyen_applicable": "no", "Meyen_status": None,
+        "current_status": "fully-evaluated",
+    }
+    row.update(updates)
+    return row
+
+
+def diagnostic_e(**updates: object) -> dict:
+    values = {
+        "E_code": "E-diagnostic",
+        "E_reason": "A prespecified pattern contradicts the named first-order evidence account.",
+        "E_matching_basis": "none",
+        "E_competing_account": "Uniform degradation of first-order evidence.",
+        "E_competing_prediction": "All components of the same Y weaken monotonically.",
+        "E_violating_pattern": "The focal component reverses or dissociates instead of weakening uniformly.",
+        "E_same_Y_reason": "All components instantiate the same downstream functional relation.",
+        "E_diagnostic_source_locations": ["synthetic factorial result"],
+    }
+    values.update(updates)
+    return values
 
 
 def validate(name: str, row: dict) -> None:
@@ -352,6 +401,7 @@ class StructuredWriteTests(unittest.TestCase):
                 "next_experiment_counters": {}, "next_comparison_counters": {},
                 "next_decision_counter": 1, "next_search_counter": 1,
                 "next_discovery_counter": 1, "next_auxiliary_counter": 1,
+                "next_evidence_link_counter": 1, "next_evidence_bundle_counter": 1,
             }), encoding="utf-8")
             with ThreadPoolExecutor(max_workers=12) as pool:
                 identifiers = list(pool.map(lambda _: allocate_identifier(run_dir, "paper"), range(60)))
@@ -416,6 +466,7 @@ class StructuredWriteTests(unittest.TestCase):
                 "next_experiment_counters": {}, "next_comparison_counters": {},
                 "next_decision_counter": 1, "next_search_counter": 1,
                 "next_discovery_counter": 1, "next_auxiliary_counter": 1,
+                "next_evidence_link_counter": 1, "next_evidence_bundle_counter": 1,
             }), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "experiment group"):
                 allocate_identifier(run_dir, "comparison", "P000001_E01")
@@ -495,34 +546,6 @@ class CompatibilityAndDerivedTests(unittest.TestCase):
         self.assertIn("incompatible run package/schema", result.stderr)
         self.assertEqual(aggregate_hash(old_run), before)
 
-    def test_baseline_derived_output_routes_still_pass(self) -> None:
-        awareness = {
-            "A_code": "A-direct", "E_code": "E-diagnostic", "F_code": "F-meaningful",
-            "outcome": "awareness-linked-difference", "stats_status": "adequate",
-            "difference_tested": "yes", "Meyen_role": "not-applicable",
-            "Meyen_applicable": "no", "Meyen_status": None,
-            "unaware_Y_evidence": "not-applicable", "null_evidence_adequacy": "not-applicable",
-        }
-        preserved = dict(
-            awareness,
-            outcome="preserved-capacity",
-            unaware_Y_evidence="positive",
-            null_evidence_adequacy="adequate",
-        )
-        self.assertTrue(design_eligible(awareness))
-        self.assertTrue(constraint_awareness_difference(awareness))
-        self.assertFalse(constraint_preserved_capacity(awareness))
-        self.assertTrue(constraint_preserved_capacity(preserved))
-
-    def test_inference_critical_meyen_failure_blocks(self) -> None:
-        row = {
-            "A_code": "A-direct", "E_code": "E-matched", "F_code": "F-meaningful",
-            "outcome": "awareness-linked-difference", "stats_status": "adequate",
-            "difference_tested": "yes", "Meyen_role": "inference-critical",
-            "Meyen_applicable": "yes", "Meyen_status": "Meyen-failed",
-        }
-        self.assertFalse(constraint_awareness_difference(row))
-
     def test_meyen_role_and_applicability_are_schema_consistent(self) -> None:
         row = experiment(
             Meyen_role="supplementary", Meyen_applicable="yes",
@@ -533,22 +556,206 @@ class CompatibilityAndDerivedTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate("experiments.schema.json", dict(row, Meyen_applicable="no"))
 
-    def test_supplementary_meyen_failure_does_not_block_and_remains_visible(self) -> None:
-        row = {
-            "comparison_id": "P000001_E01_C01", "A_code": "A-validated",
-            "E_code": "E-diagnostic", "F_code": "F-meaningful",
-            "outcome": "awareness-linked-difference", "stats_status": "adequate",
-            "difference_tested": "yes", "Meyen_role": "supplementary",
-            "Meyen_applicable": "yes", "Meyen_status": "Meyen-failed",
-        }
+class ScientificRevisionSyntheticTests(unittest.TestCase):
+    """The 18 bounded regression cases required for the draft-0.7 revision."""
+
+    def test_01_capacity_supported_effect_unresolved(self) -> None:
+        row = route_row(awareness_effect="unresolved", awareness_effect_stats_status="unclear")
+        self.assertTrue(constraint_unaware_capacity(row))
+        self.assertFalse(constraint_awareness_difference(row))
+        self.assertTrue(unresolved_comparison(row))
+
+    def test_02_capacity_and_difference_overlap(self) -> None:
+        row = route_row()
+        self.assertTrue(constraint_unaware_capacity(row))
         self.assertTrue(constraint_awareness_difference(row))
-        with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "constraint_ready_experiments.csv"
-            write_rows(path, list(row), [row])
-            with path.open(newline="", encoding="utf-8") as handle:
-                persisted = next(csv.DictReader(handle))
-        self.assertEqual(persisted["Meyen_role"], "supplementary")
-        self.assertEqual(persisted["Meyen_status"], "Meyen-failed")
+
+    def test_03_capacity_and_no_detectable_difference_overlap(self) -> None:
+        row = route_row(
+            awareness_effect="no-detectable-difference",
+            awareness_effect_stats_status="adequate",
+        )
+        self.assertTrue(constraint_unaware_capacity(row))
+        self.assertTrue(no_detectable_awareness_difference(row))
+        self.assertFalse(constraint_equivalence_supported(row))
+
+    def test_04_equivalence_requires_positive_null_evidence(self) -> None:
+        row = route_row(
+            awareness_effect="equivalence-supported", null_evidence_adequacy="adequate"
+        )
+        self.assertTrue(constraint_equivalence_supported(row))
+        self.assertFalse(constraint_equivalence_supported(dict(row, null_evidence_adequacy="weak")))
+
+    def test_05_bare_nonsignificant_p_cannot_be_equivalence(self) -> None:
+        row = experiment(
+            awareness_effect="equivalence-supported",
+            awareness_effect_reason="No practically important difference is supported.",
+            awareness_effect_critical_effect="awareness by function interaction",
+            awareness_effect_estimate="interaction p=.60",
+            awareness_effect_estimate_interpretable="yes",
+            awareness_effect_stats_status="adequate",
+            awareness_effect_stats_reason="Synthetic claim.", difference_tested="yes",
+            null_evidence_strength="nonsignificant-only", null_evidence_adequacy="weak",
+            null_equivalence_result="not-applicable", null_CI_entirely_within_region="not-applicable",
+        )
+        with self.assertRaises(ValidationError):
+            validate("experiments.schema.json", row)
+
+    def test_06_e_not_required_for_capacity_route(self) -> None:
+        row = route_row(E_code="E-physical-only", awareness_effect="not-tested")
+        self.assertTrue(constraint_unaware_capacity(row))
+
+    def test_07_e_required_for_awareness_difference_route(self) -> None:
+        row = route_row(E_code="E-physical-only")
+        self.assertFalse(awareness_design_eligible(row))
+        self.assertFalse(constraint_awareness_difference(row))
+
+    def test_08_factorial_y_is_one_coherent_comparison(self) -> None:
+        components = [
+            {"component_id": "relevant-unaware", "X_task_relation": "relevant", "awareness_condition": "unaware", "effect_description": "capture", "statistical_result": "positive", "source_location": "cell 1"},
+            {"component_id": "irrelevant-unaware", "X_task_relation": "irrelevant", "awareness_condition": "unaware", "effect_description": "no cost", "statistical_result": "near zero", "source_location": "cell 2"},
+        ]
+        row = experiment(
+            Y_structure="factorial-functional",
+            factorial_Y_reason="Task relation changes components of one spatial-control mapping.",
+            factorial_component_effects=components,
+        )
+        validate("experiments.schema.json", row)
+        self.assertEqual(row["comparison_id"], "P000001_E01_C01")
+
+    def test_09_distinct_y_relations_require_separate_scalar_rows(self) -> None:
+        invalid = experiment(
+            Y_structure="scalar",
+            factorial_component_effects=[
+                {"component_id": "other-y", "X_task_relation": "none", "awareness_condition": "unaware", "effect_description": "different function", "statistical_result": None, "source_location": "cell"}
+            ],
+        )
+        with self.assertRaises(ValidationError):
+            validate("experiments.schema.json", invalid)
+        first = experiment(Y_structure="scalar", Y_label="response priming")
+        second = experiment(
+            comparison_id="P000001_E01_C02", Y_structure="scalar", Y_label="memory updating"
+        )
+        validate("experiments.schema.json", first)
+        validate("experiments.schema.json", second)
+        self.assertNotEqual(first["comparison_id"], second["comparison_id"])
+
+    def test_10_threshold_relation_can_document_e_diagnostic(self) -> None:
+        row = experiment(**diagnostic_e(
+            E_competing_account="A monotonic evidence-strength account.",
+            E_competing_prediction="The downstream effect shrinks with weaker visibility.",
+            E_violating_pattern="The effect appears below the awareness threshold and disappears above it.",
+        ))
+        validate("experiments.schema.json", row)
+
+    def test_11_sign_reversal_can_document_e_diagnostic(self) -> None:
+        row = experiment(**diagnostic_e(
+            E_violating_pattern="The same cue relation reverses sign across awareness states."
+        ))
+        validate("experiments.schema.json", row)
+
+    def test_12_factorial_pattern_can_document_e_diagnostic(self) -> None:
+        row = experiment(**diagnostic_e(
+            E_violating_pattern="Relevant and irrelevant components cross over across awareness states."
+        ))
+        validate("experiments.schema.json", row)
+
+    def test_13_unrelated_cross_y_pattern_is_not_documented_e_diagnostic(self) -> None:
+        row = experiment(**diagnostic_e(E_same_Y_reason=None))
+        with self.assertRaises(ValidationError):
+            validate("experiments.schema.json", row)
+
+    def test_14_evidence_bundle_supports_focal_comparison(self) -> None:
+        focal = experiment(evidence_bundle_id="TEST_EB000001")
+        link = {
+            "evidence_link_id": "TEST_EL000001", "evidence_bundle_id": "TEST_EB000001",
+            "focal_comparison_id": focal["comparison_id"], "supporting_paper_id": "P000001",
+            "supporting_experiment_id": "P000001_E02", "supporting_auxiliary_id": None,
+            "supporting_source_type": "within-paper-experiment", "support_role": "awareness-validation",
+            "supported_claim": "The masking regime supports the focal A decision.",
+            "transfer_reason": "Same population, stimuli, timing, and task.", "transfer_limitation": None,
+            "source_location": "Experiment 2", "used_for_decision": True, "notes": None,
+        }
+        validate("evidence_links.schema.json", link)
+        self.assertEqual(evidence_bundle_errors([focal], [link], {"P000001"}, set()), [])
+
+    def test_15_support_only_experiment_does_not_become_candidate(self) -> None:
+        focal = experiment(evidence_bundle_id="TEST_EB000001")
+        link = {
+            "evidence_link_id": "TEST_EL000001", "evidence_bundle_id": "TEST_EB000001",
+            "focal_comparison_id": focal["comparison_id"], "supporting_paper_id": "P000001",
+            "supporting_experiment_id": "P000001_E99", "supporting_auxiliary_id": None,
+            "supporting_source_type": "within-paper-experiment", "support_role": "robustness-support",
+            "supported_claim": "A support-only manipulation checks robustness.",
+            "transfer_reason": "Same operational relation.", "transfer_limitation": "Not a candidate X-to-Y comparison.",
+            "source_location": "Experiment 99", "used_for_decision": True, "notes": None,
+        }
+        self.assertEqual(evidence_bundle_errors([focal], [link], {"P000001"}, set()), [])
+        self.assertEqual({row["experiment_id"] for row in [focal]}, {"P000001_E01"})
+
+    def test_16_inference_critical_meyen_failure_gates_both_routes(self) -> None:
+        row = route_row(Meyen_role="inference-critical", Meyen_applicable="yes", Meyen_status="Meyen-failed")
+        self.assertFalse(constraint_unaware_capacity(row))
+        self.assertFalse(constraint_awareness_difference(row))
+
+    def test_17_supplementary_meyen_failure_does_not_gate_routes(self) -> None:
+        row = route_row(Meyen_role="supplementary", Meyen_applicable="yes", Meyen_status="Meyen-failed")
+        self.assertTrue(constraint_unaware_capacity(row))
+        self.assertTrue(constraint_awareness_difference(row))
+
+    def test_18_no_detectable_and_equivalence_are_distinct_outputs(self) -> None:
+        no_detect = route_row(awareness_effect="no-detectable-difference")
+        equivalent = route_row(
+            awareness_effect="equivalence-supported", null_evidence_adequacy="adequate"
+        )
+        self.assertTrue(no_detectable_awareness_difference(no_detect))
+        self.assertFalse(constraint_equivalence_supported(no_detect))
+        self.assertFalse(no_detectable_awareness_difference(equivalent))
+        self.assertTrue(constraint_equivalence_supported(equivalent))
+
+
+class CapacityIdentityCorrectionTests(unittest.TestCase):
+    def test_a_unaware_behavioral_effect_does_not_establish_focal_control(self) -> None:
+        row = route_row(
+            unaware_capacity_claim="regulation of task-irrelevant distractor interference",
+            unaware_capacity="not-supported",
+            unaware_capacity_stats_status="adequate",
+        )
+        self.assertFalse(constraint_unaware_capacity(row))
+        self.assertTrue(constraint_awareness_difference(row))
+
+    def test_b_factorial_component_capacity_does_not_transfer_to_awareness_component(self) -> None:
+        automatic = route_row(
+            unaware_capacity_claim="automatic cue-guided behavioral bias",
+            unaware_capacity="supported",
+        )
+        strategic = dict(
+            automatic,
+            unaware_capacity_claim="strategic use of the instructed opposite-location rule",
+            unaware_capacity="not-supported",
+        )
+        self.assertTrue(constraint_unaware_capacity(automatic))
+        self.assertFalse(constraint_unaware_capacity(strategic))
+
+    def test_c_identical_focal_y_under_unawareness_supports_capacity(self) -> None:
+        row = route_row(
+            unaware_capacity_claim="orientation-location binding and retrieval"
+        )
+        self.assertTrue(constraint_unaware_capacity(row))
+
+    def test_d_nonzero_effect_without_named_capacity_is_insufficient(self) -> None:
+        row = route_row(unaware_capacity_claim="")
+        self.assertFalse(constraint_unaware_capacity(row))
+        invalid = experiment(
+            unaware_capacity_claim=None,
+            unaware_capacity="supported",
+            unaware_capacity_reason="A nonzero dependent variable was observed.",
+            unaware_capacity_critical_effect="nonzero downstream effect",
+            unaware_capacity_stats_status="adequate",
+            unaware_capacity_stats_reason="The effect differs from zero.",
+        )
+        with self.assertRaises(ValidationError):
+            validate("experiments.schema.json", invalid)
 
 
 class QueryInstrumentTests(unittest.TestCase):

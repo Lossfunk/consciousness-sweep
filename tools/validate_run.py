@@ -32,13 +32,19 @@ CSV_SCHEMAS = {
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
     "auxiliary_sources.csv": "auxiliary_sources.schema.json",
+    "evidence_links.csv": "evidence_links.schema.json",
     "design_eligible_experiments.csv": "experiments.schema.json",
     "constraint_ready_experiments.csv": "experiments.schema.json",
     "awareness_linked_differences.csv": "experiments.schema.json",
-    "preserved_capacities.csv": "experiments.schema.json",
-    "inconclusive_experiments.csv": "experiments.schema.json",
+    "unaware_capacities.csv": "experiments.schema.json",
+    "no_detectable_awareness_differences.csv": "experiments.schema.json",
+    "equivalence_supported_no_difference.csv": "experiments.schema.json",
+    "unresolved_comparisons.csv": "experiments.schema.json",
 }
-ARRAY_FIELDS = {"stats_flags", "attempted_sources"}
+ARRAY_FIELDS = {
+    "stats_flags", "attempted_sources", "E_diagnostic_source_locations",
+    "factorial_component_effects",
+}
 BOOLEAN_FIELDS = {"manually_requested", "used_for_decision"}
 FLOAT_FIELDS = {"null_BF01"}
 INTEGER_FIELDS = {
@@ -214,6 +220,78 @@ def dependency_errors(
     return errors
 
 
+def evidence_bundle_errors(
+    experiments: list[dict[str, Any]],
+    evidence_links: list[dict[str, Any]],
+    paper_ids: set[str],
+    auxiliary_ids: set[str],
+) -> list[str]:
+    """Validate focal bundle membership while permitting support-only experiments."""
+    errors: list[str] = []
+    comparisons = {row["comparison_id"]: row for row in experiments}
+    bundle_focals: dict[str, set[str]] = {}
+    for link in evidence_links:
+        link_id = link["evidence_link_id"]
+        focal_id = link["focal_comparison_id"]
+        bundle_focals.setdefault(link["evidence_bundle_id"], set()).add(focal_id)
+        focal = comparisons.get(focal_id)
+        if focal is None:
+            errors.append(f"evidence_links.csv: {link_id} references missing focal comparison {focal_id}")
+            continue
+        if focal.get("evidence_bundle_id") != link["evidence_bundle_id"]:
+            errors.append(
+                f"evidence_links.csv: {link_id} bundle does not match focal comparison "
+                f"{focal_id}"
+            )
+        supporting_paper = link.get("supporting_paper_id")
+        if supporting_paper is not None and supporting_paper not in paper_ids:
+            errors.append(
+                f"evidence_links.csv: {link_id} references missing supporting paper "
+                f"{supporting_paper}"
+            )
+        supporting_experiment = link.get("supporting_experiment_id")
+        if supporting_experiment is not None and not supporting_experiment.startswith(
+            f"{supporting_paper}_E"
+        ):
+            errors.append(
+                f"evidence_links.csv: {link_id} supporting experiment does not belong to "
+                "supporting_paper_id"
+            )
+        supporting_auxiliary = link.get("supporting_auxiliary_id")
+        if supporting_auxiliary is not None and supporting_auxiliary not in auxiliary_ids:
+            errors.append(
+                f"evidence_links.csv: {link_id} references missing auxiliary source "
+                f"{supporting_auxiliary}"
+            )
+    links_by_bundle = {
+        (link["focal_comparison_id"], link["evidence_bundle_id"])
+        for link in evidence_links
+    }
+    for bundle_id, focal_ids in bundle_focals.items():
+        if len(focal_ids) > 1:
+            errors.append(
+                f"evidence_links.csv: evidence bundle {bundle_id} is shared by multiple focal "
+                f"comparisons: {', '.join(sorted(focal_ids))}"
+            )
+    declared_bundle_focals: dict[str, set[str]] = {}
+    for row in experiments:
+        bundle_id = row.get("evidence_bundle_id")
+        if bundle_id is not None:
+            declared_bundle_focals.setdefault(bundle_id, set()).add(row["comparison_id"])
+        if bundle_id is not None and (row["comparison_id"], bundle_id) not in links_by_bundle:
+            errors.append(
+                f"experiments_master.csv: {row['comparison_id']} declares evidence bundle "
+                f"{bundle_id} without a matching evidence link"
+            )
+    for bundle_id, focal_ids in declared_bundle_focals.items():
+        if len(focal_ids) > 1:
+            errors.append(
+                f"experiments_master.csv: evidence bundle {bundle_id} is declared by multiple "
+                f"comparisons: {', '.join(sorted(focal_ids))}"
+            )
+    return errors
+
+
 def read_compatibility_state(run_dir: Path) -> tuple[dict[str, Any] | None, str | None]:
     try:
         value = json.loads((run_dir / "run_state.json").read_text(encoding="utf-8"))
@@ -305,6 +383,7 @@ def main() -> int:
     discoveries = tables.get("discoveries.csv", [])
     missing = tables.get("missing_texts.csv", [])
     auxiliary = tables.get("auxiliary_sources.csv", [])
+    evidence_links = tables.get("evidence_links.csv", [])
     for rows, field, label in (
         (papers, "paper_id", "papers_master.csv"),
         (experiments, "comparison_id", "experiments_master.csv"),
@@ -312,13 +391,15 @@ def main() -> int:
         (discoveries, "discovery_id", "discoveries.csv"),
         (missing, "paper_id", "missing_texts.csv"),
         (auxiliary, "auxiliary_id", "auxiliary_sources.csv"),
+        (evidence_links, "evidence_link_id", "evidence_links.csv"),
         (decisions, "decision_id", "decision_log.jsonl"),
     ):
         check_unique(rows, field, label, errors)
     for filename in (
         "design_eligible_experiments.csv", "constraint_ready_experiments.csv",
-        "awareness_linked_differences.csv", "preserved_capacities.csv",
-        "inconclusive_experiments.csv",
+        "awareness_linked_differences.csv", "unaware_capacities.csv",
+        "no_detectable_awareness_differences.csv",
+        "equivalence_supported_no_difference.csv", "unresolved_comparisons.csv",
     ):
         check_unique(tables.get(filename, []), "comparison_id", filename, errors)
 
@@ -328,6 +409,8 @@ def main() -> int:
     search_ids = {row["search_id"] for row in searches}
     discovery_ids = {row["discovery_id"] for row in discoveries}
     auxiliary_ids = {row["auxiliary_id"] for row in auxiliary}
+    evidence_link_ids = {row["evidence_link_id"] for row in evidence_links}
+    evidence_bundle_ids = {row["evidence_bundle_id"] for row in evidence_links}
     for row in papers:
         for field in ("first_discovery_parent", "duplicate_of"):
             if row.get(field) is not None and row[field] not in paper_ids:
@@ -385,6 +468,7 @@ def main() -> int:
                 if digest != row["file_sha256"]:
                     errors.append(f"auxiliary_sources.csv: SHA-256 mismatch for {local_path}")
     errors.extend(dependency_errors(experiments, auxiliary))
+    errors.extend(evidence_bundle_errors(experiments, evidence_links, paper_ids, auxiliary_ids))
 
     valid_entities = {
         "paper": paper_ids,
@@ -394,6 +478,7 @@ def main() -> int:
         "discovery": discovery_ids,
         "missing_text": paper_ids,
         "auxiliary_source": auxiliary_ids,
+        "evidence_link": evidence_link_ids,
         "run": {args.run_id},
     }
     for event in decisions:
@@ -437,6 +522,8 @@ def main() -> int:
                 ("next_search_counter", max_suffix(list(search_ids), "_S")),
                 ("next_discovery_counter", max_suffix(list(discovery_ids), "_R")),
                 ("next_auxiliary_counter", max_suffix(list(auxiliary_ids), "_AUX")),
+                ("next_evidence_link_counter", max_suffix(list(evidence_link_ids), "_EL")),
+                ("next_evidence_bundle_counter", max_suffix(list(evidence_bundle_ids), "_EB")),
             )
             for field, maximum in counter_checks:
                 if state.get(field, 0) <= maximum:

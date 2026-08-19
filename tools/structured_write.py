@@ -37,6 +37,7 @@ TABLE_SCHEMAS = {
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
     "auxiliary_sources.csv": "auxiliary_sources.schema.json",
+    "evidence_links.csv": "evidence_links.schema.json",
 }
 PRIMARY_KEYS = {
     "papers_master.csv": "paper_id",
@@ -45,8 +46,12 @@ PRIMARY_KEYS = {
     "discoveries.csv": "discovery_id",
     "missing_texts.csv": "paper_id",
     "auxiliary_sources.csv": "auxiliary_id",
+    "evidence_links.csv": "evidence_link_id",
 }
-ARRAY_FIELDS = {"stats_flags", "attempted_sources"}
+ARRAY_FIELDS = {
+    "stats_flags", "attempted_sources", "E_diagnostic_source_locations",
+    "factorial_component_effects",
+}
 DOI_PREFIX = re.compile(
     r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*|doi\.org/)", re.IGNORECASE
 )
@@ -242,6 +247,8 @@ def allocate_identifier(run_dir: Path, kind: str, parent_id: str | None = None) 
         "search": ("next_search_counter", "_S", 6),
         "discovery": ("next_discovery_counter", "_R", 6),
         "auxiliary": ("next_auxiliary_counter", "_AUX", 6),
+        "evidence_link": ("next_evidence_link_counter", "_EL", 6),
+        "evidence_bundle": ("next_evidence_bundle_counter", "_EB", 6),
     }
     with run_write_lock(run_dir):
         state_path = run_dir / "run_state.json"
@@ -300,7 +307,10 @@ def main() -> int:
     parser.add_argument("--key-field")
     parser.add_argument(
         "--id-kind",
-        choices=("paper", "experiment", "comparison", "decision", "search", "discovery", "auxiliary"),
+        choices=(
+            "paper", "experiment", "comparison", "decision", "search", "discovery",
+            "auxiliary", "evidence_link", "evidence_bundle",
+        ),
     )
     parser.add_argument("--parent-id")
     parser.add_argument("--root", type=Path, default=ROOT)

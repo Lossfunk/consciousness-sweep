@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/evidence_links.schema.json",
+  "title": "Structured evidence-bundle link",
+  "description": "One evidence_links.csv row links a focal comparison to one supporting experiment, analysis, or auxiliary source without turning support-only evidence into a candidate comparison.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_link_id", "evidence_bundle_id", "focal_comparison_id",
+    "supporting_paper_id", "supporting_experiment_id", "supporting_auxiliary_id",
+    "supporting_source_type", "support_role", "supported_claim", "transfer_reason",
+    "transfer_limitation", "source_location", "used_for_decision", "notes"
+  ],
+  "properties": {
+    "evidence_link_id": {
+      "type": "string", "pattern": "^[A-Za-z0-9._-]+_EL[0-9]{6}$"
+    },
+    "evidence_bundle_id": {
+      "type": "string", "pattern": "^[A-Za-z0-9._-]+_EB[0-9]{6}$"
+    },
+    "focal_comparison_id": {
+      "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+    },
+    "supporting_paper_id": {
+      "anyOf": [{ "type": "string", "pattern": "^P[0-9]{6}$" }, { "type": "null" }]
+    },
+    "supporting_experiment_id": {
+      "anyOf": [{ "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}$" }, { "type": "null" }]
+    },
+    "supporting_auxiliary_id": {
+      "anyOf": [{ "type": "string", "pattern": "^[A-Za-z0-9._-]+_AUX[0-9]{6}$" }, { "type": "null" }]
+    },
+    "supporting_source_type": {
+      "enum": [
+        "within-paper-experiment", "supplementary-analysis",
+        "external-auxiliary-source", "same-experiment-analysis"
+      ]
+    },
+    "support_role": {
+      "enum": [
+        "awareness-validation", "first-order-evidence-control", "E-diagnostic-support",
+        "alternative-explanation-control", "replication", "statistical-support",
+        "mechanistic-support", "robustness-support", "other"
+      ]
+    },
+    "supported_claim": { "type": "string", "minLength": 1 },
+    "transfer_reason": { "type": "string", "minLength": 1 },
+    "transfer_limitation": {
+      "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "source_location": { "type": "string", "minLength": 1 },
+    "used_for_decision": { "type": "boolean" },
+    "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "supporting_experiment_id": { "type": "string" } }, "required": ["supporting_experiment_id"] },
+      "then": { "properties": { "supporting_paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" } } }
+    },
+    {
+      "if": { "properties": { "supporting_source_type": { "const": "external-auxiliary-source" } }, "required": ["supporting_source_type"] },
+      "then": { "properties": { "supporting_auxiliary_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+_AUX[0-9]{6}$" } } }
+    }
+  ]
+}

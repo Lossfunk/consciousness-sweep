@@ -2,23 +2,28 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/consciousness-sweep/experiments.schema.json",
   "title": "X-to-Y comparison master row",
-  "description": "One experiments_master.csv row represents one paper x experiment x X-to-Y comparison. comparison_id is unique while experiment_id may repeat. CSV blanks become JSON null only where permitted; stats_flags is a JSON array encoded in its CSV cell.",
+  "description": "One experiments_master.csv row represents one paper x experiment x X-to-Y comparison. Unaware capacity and awareness effect are independent inference axes. JSON arrays are encoded in their CSV cells.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "comparison_id", "experiment_id", "paper_id", "experiment_label", "X_label", "X_description",
     "awareness_measure", "awareness_evidence_type", "objective_visibility_test_informative",
     "objective_visibility_test_reason", "A_code", "A_reason", "critical_dependency_status",
-    "critical_dependency_reason", "first_order_measure", "E_code", "E_reason",
+    "critical_dependency_reason", "evidence_bundle_id", "first_order_measure", "E_code", "E_reason",
     "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
-    "Y_label", "Y_description", "Y_evidence_role", "F_code", "F_reason",
+    "E_competing_account", "E_competing_prediction", "E_violating_pattern", "E_same_Y_reason",
+    "E_diagnostic_source_locations", "Y_label", "Y_description", "Y_structure", "factorial_Y_reason",
+    "factorial_component_effects", "Y_evidence_role", "F_code", "F_reason",
     "Y_interpretation_clarity", "mechanistic_interpretation", "mechanism_clarity",
-    "critical_comparison", "outcome", "outcome_reason", "direction", "critical_effect",
-    "unaware_Y_evidence", "difference_tested", "null_evidence_strength", "null_evidence_adequacy",
-    "null_equivalence_margin", "null_equivalence_result", "null_BF01",
-    "null_CI_region", "null_CI_entirely_within_region",
-    "Meyen_role", "Meyen_applicable", "Meyen_status", "Meyen_reason", "stats_status", "stats_flags", "stats_reason",
-    "constraint_summary", "source_pages", "source_figures_tables", "current_status", "notes"
+    "critical_comparison", "unaware_capacity_claim", "unaware_capacity", "unaware_capacity_reason",
+    "unaware_capacity_critical_effect", "unaware_capacity_stats_status", "unaware_capacity_stats_reason",
+    "awareness_effect", "awareness_effect_reason", "direction", "awareness_effect_critical_effect",
+    "awareness_effect_estimate", "awareness_effect_estimate_interpretable",
+    "awareness_effect_stats_status", "awareness_effect_stats_reason", "difference_tested",
+    "null_evidence_strength", "null_evidence_adequacy", "null_equivalence_margin",
+    "null_equivalence_result", "null_BF01", "null_CI_region", "null_CI_entirely_within_region",
+    "Meyen_role", "Meyen_applicable", "Meyen_status", "Meyen_reason", "stats_status", "stats_flags",
+    "stats_reason", "constraint_summary", "source_pages", "source_figures_tables", "current_status", "notes"
   ],
   "properties": {
     "comparison_id": { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$" },
@@ -28,188 +33,68 @@
     "X_label": { "$ref": "#/$defs/nullableString" },
     "X_description": { "$ref": "#/$defs/nullableString" },
     "awareness_measure": { "$ref": "#/$defs/nullableString" },
-    "awareness_evidence_type": {
-      "anyOf": [
-        { "enum": ["subjective", "objective-invisibility", "mixed", "none"] },
-        { "type": "null" }
-      ]
-    },
-    "objective_visibility_test_informative": {
-      "anyOf": [
-        { "enum": ["yes", "no", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
+    "awareness_evidence_type": { "anyOf": [{ "enum": ["subjective", "objective-invisibility", "mixed", "none"] }, { "type": "null" }] },
+    "objective_visibility_test_informative": { "anyOf": [{ "enum": ["yes", "no", "unclear", "not-applicable"] }, { "type": "null" }] },
     "objective_visibility_test_reason": { "$ref": "#/$defs/nullableString" },
-    "A_code": {
-      "anyOf": [
-        { "enum": ["A-direct", "A-validated", "A-transfer-risk", "A-absent"] },
-        { "type": "null" }
-      ]
-    },
+    "A_code": { "anyOf": [{ "enum": ["A-direct", "A-validated", "A-transfer-risk", "A-absent"] }, { "type": "null" }] },
     "A_reason": { "$ref": "#/$defs/nullableString" },
-    "critical_dependency_status": {
-      "anyOf": [
-        { "enum": ["checked-none", "resolved", "unresolved"] },
-        { "type": "null" }
-      ]
-    },
+    "critical_dependency_status": { "anyOf": [{ "enum": ["checked-none", "resolved", "unresolved"] }, { "type": "null" }] },
     "critical_dependency_reason": { "$ref": "#/$defs/nullableString" },
+    "evidence_bundle_id": { "anyOf": [{ "type": "string", "pattern": "^[A-Za-z0-9._-]+_EB[0-9]{6}$" }, { "type": "null" }] },
     "first_order_measure": { "$ref": "#/$defs/nullableString" },
-    "E_code": {
-      "anyOf": [
-        { "enum": ["E-matched", "E-diagnostic", "E-physical-only", "E-uncontrolled"] },
-        { "type": "null" }
-      ]
-    },
+    "E_code": { "anyOf": [{ "enum": ["E-matched", "E-diagnostic", "E-physical-only", "E-uncontrolled"] }, { "type": "null" }] },
     "E_reason": { "$ref": "#/$defs/nullableString" },
-    "E_matching_basis": {
-      "description": "Positive basis for E-matched. A nonsignificant difference or an unanchored narrow confidence interval is represented as none/unclear, not as a matching route.",
-      "anyOf": [
-        { "enum": ["active-matching-or-titration", "equivalence-procedure", "none", "unclear"] },
-        { "type": "null" }
-      ]
-    },
-    "E_equivalence_margin": {
-      "description": "The stated first-order equivalence margin when E_matching_basis is equivalence-procedure.",
-      "$ref": "#/$defs/nullableString"
-    },
-    "E_equivalence_result": {
-      "description": "Whether the stated-margin first-order equivalence procedure supported equivalence.",
-      "anyOf": [
-        { "enum": ["supports-equivalence", "does-not-support-equivalence", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
+    "E_matching_basis": { "anyOf": [{ "enum": ["active-matching-or-titration", "equivalence-procedure", "none", "unclear"] }, { "type": "null" }] },
+    "E_equivalence_margin": { "$ref": "#/$defs/nullableString" },
+    "E_equivalence_result": { "anyOf": [{ "enum": ["supports-equivalence", "does-not-support-equivalence", "unclear", "not-applicable"] }, { "type": "null" }] },
+    "E_competing_account": { "$ref": "#/$defs/nullableString" },
+    "E_competing_prediction": { "$ref": "#/$defs/nullableString" },
+    "E_violating_pattern": { "$ref": "#/$defs/nullableString" },
+    "E_same_Y_reason": { "$ref": "#/$defs/nullableString" },
+    "E_diagnostic_source_locations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
     "Y_label": { "$ref": "#/$defs/nullableString" },
     "Y_description": { "$ref": "#/$defs/nullableString" },
-    "Y_evidence_role": {
-      "description": "Whether the dependent evidence operationalizes a downstream function, leaves the function unresolved, or only supports a mechanism/direct registration.",
-      "anyOf": [
-        {
-          "enum": [
-            "downstream-functional-measure", "function-level-unresolved",
-            "mechanistic-support-only", "direct-registration-only", "not-assessed"
-          ]
-        },
-        { "type": "null" }
-      ]
-    },
-    "F_code": {
-      "description": "F-ambiguous is discovery-supporting only: even a conservative function-level Y cannot be chosen without selecting among substantively different downstream uses. Mechanism ambiguity alone does not imply F-ambiguous.",
-      "anyOf": [
-        { "enum": ["F-meaningful", "F-ambiguous", "F-not-meaningful"] },
-        { "type": "null" }
-      ]
-    },
+    "Y_structure": { "anyOf": [{ "enum": ["scalar", "factorial-functional"] }, { "type": "null" }] },
+    "factorial_Y_reason": { "$ref": "#/$defs/nullableString" },
+    "factorial_component_effects": { "type": "array", "items": { "$ref": "#/$defs/factorialComponent" } },
+    "Y_evidence_role": { "anyOf": [{ "enum": ["downstream-functional-measure", "function-level-unresolved", "mechanistic-support-only", "direct-registration-only", "not-assessed"] }, { "type": "null" }] },
+    "F_code": { "anyOf": [{ "enum": ["F-meaningful", "F-ambiguous", "F-not-meaningful"] }, { "type": "null" }] },
     "F_reason": { "$ref": "#/$defs/nullableString" },
-    "Y_interpretation_clarity": {
-      "anyOf": [
-        { "enum": ["clear", "ambiguous", "unclear"] },
-        { "type": "null" }
-      ]
-    },
+    "Y_interpretation_clarity": { "anyOf": [{ "enum": ["clear", "ambiguous", "unclear"] }, { "type": "null" }] },
     "mechanistic_interpretation": { "$ref": "#/$defs/nullableString" },
-    "mechanism_clarity": {
-      "description": "Clarity of the finer cognitive/neural implementation; this field is not part of the F gate.",
-      "anyOf": [
-        { "enum": ["clear", "ambiguous", "not-assessed"] },
-        { "type": "null" }
-      ]
-    },
+    "mechanism_clarity": { "anyOf": [{ "enum": ["clear", "ambiguous", "not-assessed"] }, { "type": "null" }] },
     "critical_comparison": { "$ref": "#/$defs/nullableString" },
-    "outcome": {
-      "anyOf": [
-        { "enum": ["awareness-linked-difference", "preserved-capacity", "inconclusive"] },
-        { "type": "null" }
-      ]
-    },
-    "outcome_reason": { "$ref": "#/$defs/nullableString" },
-    "direction": {
-      "anyOf": [
-        { "enum": ["aware>unaware", "unaware>aware", "qualitative-change", "no-detectable-difference", "other"] },
-        { "type": "null" }
-      ]
-    },
-    "critical_effect": { "$ref": "#/$defs/nullableString" },
-    "unaware_Y_evidence": {
-      "anyOf": [
-        { "enum": ["positive", "absent", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
-    "difference_tested": {
-      "anyOf": [
-        { "enum": ["yes", "no", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
-    "null_evidence_strength": {
-      "anyOf": [
-        { "enum": ["equivalence-testing", "bayesian-evidence", "informative-confidence-intervals", "nonsignificant-only", "mixed", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
-    "null_evidence_adequacy": {
-      "description": "Adequate only for a successful stated-margin equivalence test, null_BF01 >= 3, or a CI entirely inside a stated smallest-effect/equivalence region.",
-      "anyOf": [
-        { "enum": ["adequate", "weak", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
+    "unaware_capacity_claim": { "$ref": "#/$defs/nullableString" },
+    "unaware_capacity": { "anyOf": [{ "enum": ["supported", "not-supported", "unclear", "not-tested"] }, { "type": "null" }] },
+    "unaware_capacity_reason": { "$ref": "#/$defs/nullableString" },
+    "unaware_capacity_critical_effect": { "$ref": "#/$defs/nullableString" },
+    "unaware_capacity_stats_status": { "anyOf": [{ "$ref": "#/$defs/routeStatsStatus" }, { "type": "null" }] },
+    "unaware_capacity_stats_reason": { "$ref": "#/$defs/nullableString" },
+    "awareness_effect": { "anyOf": [{ "enum": ["difference-supported", "no-detectable-difference", "equivalence-supported", "unresolved", "not-tested"] }, { "type": "null" }] },
+    "awareness_effect_reason": { "$ref": "#/$defs/nullableString" },
+    "direction": { "anyOf": [{ "enum": ["aware>unaware", "unaware>aware", "qualitative-change", "no-detectable-difference", "equivalent-within-region", "other"] }, { "type": "null" }] },
+    "awareness_effect_critical_effect": { "$ref": "#/$defs/nullableString" },
+    "awareness_effect_estimate": { "$ref": "#/$defs/nullableString" },
+    "awareness_effect_estimate_interpretable": { "anyOf": [{ "enum": ["yes", "no", "unclear", "not-applicable"] }, { "type": "null" }] },
+    "awareness_effect_stats_status": { "anyOf": [{ "$ref": "#/$defs/routeStatsStatus" }, { "type": "null" }] },
+    "awareness_effect_stats_reason": { "$ref": "#/$defs/nullableString" },
+    "difference_tested": { "anyOf": [{ "enum": ["yes", "no", "unclear", "not-applicable"] }, { "type": "null" }] },
+    "null_evidence_strength": { "anyOf": [{ "enum": ["equivalence-testing", "bayesian-evidence", "informative-confidence-intervals", "nonsignificant-only", "mixed", "unclear", "not-applicable"] }, { "type": "null" }] },
+    "null_evidence_adequacy": { "anyOf": [{ "enum": ["adequate", "weak", "unclear", "not-applicable"] }, { "type": "null" }] },
     "null_equivalence_margin": { "$ref": "#/$defs/nullableString" },
-    "null_equivalence_result": {
-      "anyOf": [
-        { "enum": ["supports-equivalence", "does-not-support-equivalence", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
-    "null_BF01": {
-      "anyOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }]
-    },
+    "null_equivalence_result": { "anyOf": [{ "enum": ["supports-equivalence", "does-not-support-equivalence", "unclear", "not-applicable"] }, { "type": "null" }] },
+    "null_BF01": { "anyOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }] },
     "null_CI_region": { "$ref": "#/$defs/nullableString" },
-    "null_CI_entirely_within_region": {
-      "anyOf": [
-        { "enum": ["yes", "no", "region-not-stated", "unclear", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
-    "Meyen_role": {
-      "description": "Whether the indirect-task-advantage diagnostic gates the inference, is a retained supplementary caveat, or is not applicable.",
-      "anyOf": [
-        { "enum": ["inference-critical", "supplementary", "not-applicable"] },
-        { "type": "null" }
-      ]
-    },
-    "Meyen_applicable": {
-      "anyOf": [{ "enum": ["yes", "no"] }, { "type": "null" }]
-    },
-    "Meyen_status": {
-      "anyOf": [
-        { "enum": ["Meyen-satisfied", "Meyen-failed", "Meyen-unassessable"] },
-        { "type": "null" }
-      ]
-    },
+    "null_CI_entirely_within_region": { "anyOf": [{ "enum": ["yes", "no", "region-not-stated", "unclear", "not-applicable"] }, { "type": "null" }] },
+    "Meyen_role": { "anyOf": [{ "enum": ["inference-critical", "supplementary", "not-applicable"] }, { "type": "null" }] },
+    "Meyen_applicable": { "anyOf": [{ "enum": ["yes", "no"] }, { "type": "null" }] },
+    "Meyen_status": { "anyOf": [{ "enum": ["Meyen-satisfied", "Meyen-failed", "Meyen-unassessable"] }, { "type": "null" }] },
     "Meyen_reason": { "$ref": "#/$defs/nullableString" },
-    "stats_status": {
-      "anyOf": [{ "enum": ["adequate", "concern", "unclear"] }, { "type": "null" }]
-    },
+    "stats_status": { "anyOf": [{ "enum": ["adequate", "concern", "unclear"] }, { "type": "null" }] },
     "stats_flags": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "enum": [
-          "none", "difference-not-tested", "weak-null-evidence", "multiple-comparisons",
-          "inappropriate-model", "pseudoreplication", "selective-exclusions",
-          "exploratory-critical-analysis", "other"
-        ]
-      },
-      "not": {
-        "allOf": [
-          { "contains": { "const": "none" } },
-          { "minItems": 2 }
-        ]
-      }
+      "type": "array", "uniqueItems": true,
+      "items": { "enum": ["none", "difference-not-tested", "weak-null-evidence", "multiple-comparisons", "inappropriate-model", "pseudoreplication", "selective-exclusions", "exploratory-critical-analysis", "other"] },
+      "not": { "allOf": [{ "contains": { "const": "none" } }, { "minItems": 2 }] }
     },
     "stats_reason": { "$ref": "#/$defs/nullableString" },
     "constraint_summary": { "$ref": "#/$defs/nullableString" },
@@ -224,75 +109,24 @@
       "then": { "properties": { "A_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": {
-        "properties": { "A_code": { "enum": ["A-direct", "A-validated"] } },
-        "required": ["A_code"]
-      },
-      "then": {
-        "properties": {
-          "awareness_evidence_type": { "enum": ["subjective", "objective-invisibility", "mixed"] }
-        }
-      }
+      "if": { "properties": { "A_code": { "enum": ["A-direct", "A-validated"] } }, "required": ["A_code"] },
+      "then": { "properties": { "awareness_evidence_type": { "enum": ["subjective", "objective-invisibility", "mixed"] } } }
     },
     {
-      "if": {
-        "properties": { "awareness_evidence_type": { "const": "objective-invisibility" } },
-        "required": ["awareness_evidence_type"]
-      },
-      "then": {
-        "properties": {
-          "objective_visibility_test_reason": { "type": "string", "minLength": 1 }
-        }
-      }
+      "if": { "properties": { "awareness_evidence_type": { "const": "objective-invisibility" } }, "required": ["awareness_evidence_type"] },
+      "then": { "properties": { "objective_visibility_test_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": {
-        "properties": {
-          "awareness_evidence_type": { "const": "objective-invisibility" },
-          "A_code": { "enum": ["A-direct", "A-validated"] }
-        },
-        "required": ["awareness_evidence_type", "A_code"]
-      },
-      "then": {
-        "properties": { "objective_visibility_test_informative": { "const": "yes" } }
-      }
+      "if": { "properties": { "awareness_evidence_type": { "const": "objective-invisibility" }, "A_code": { "enum": ["A-direct", "A-validated"] } }, "required": ["awareness_evidence_type", "A_code"] },
+      "then": { "properties": { "objective_visibility_test_informative": { "const": "yes" } } }
     },
     {
-      "if": {
-        "properties": { "awareness_evidence_type": { "const": "none" } },
-        "required": ["awareness_evidence_type"]
-      },
-      "then": {
-        "properties": {
-          "objective_visibility_test_informative": { "const": "not-applicable" },
-          "objective_visibility_test_reason": { "type": "null" }
-        }
-      }
+      "if": { "properties": { "awareness_evidence_type": { "const": "none" } }, "required": ["awareness_evidence_type"] },
+      "then": { "properties": { "objective_visibility_test_informative": { "const": "not-applicable" }, "objective_visibility_test_reason": { "type": "null" } } }
     },
     {
-      "if": {
-        "properties": { "critical_dependency_status": { "type": "string" } },
-        "required": ["critical_dependency_status"]
-      },
-      "then": {
-        "properties": { "critical_dependency_reason": { "type": "string", "minLength": 1 } }
-      }
-    },
-    {
-      "if": {
-        "anyOf": [
-          { "properties": { "A_code": { "type": "string" } }, "required": ["A_code"] },
-          { "properties": { "E_code": { "type": "string" } }, "required": ["E_code"] },
-          { "properties": { "F_code": { "type": "string" } }, "required": ["F_code"] },
-          { "properties": { "stats_status": { "type": "string" } }, "required": ["stats_status"] }
-        ]
-      },
-      "then": {
-        "properties": {
-          "critical_dependency_status": { "type": "string" },
-          "critical_dependency_reason": { "type": "string", "minLength": 1 }
-        }
-      }
+      "if": { "properties": { "critical_dependency_status": { "type": "string" } }, "required": ["critical_dependency_status"] },
+      "then": { "properties": { "critical_dependency_reason": { "type": "string", "minLength": 1 } } }
     },
     {
       "if": { "properties": { "E_code": { "type": "string" } }, "required": ["E_code"] },
@@ -300,28 +134,25 @@
     },
     {
       "if": { "properties": { "E_code": { "const": "E-matched" } }, "required": ["E_code"] },
-      "then": {
-        "properties": {
-          "E_matching_basis": { "enum": ["active-matching-or-titration", "equivalence-procedure"] }
-        }
-      }
+      "then": { "properties": { "E_matching_basis": { "enum": ["active-matching-or-titration", "equivalence-procedure"] } } }
     },
     {
       "if": { "properties": { "E_code": { "enum": ["E-diagnostic", "E-physical-only", "E-uncontrolled"] } }, "required": ["E_code"] },
       "then": { "properties": { "E_matching_basis": { "enum": ["none", "unclear"] } } }
     },
     {
-      "if": { "properties": { "E_matching_basis": { "const": "equivalence-procedure" } }, "required": ["E_matching_basis"] },
-      "then": {
-        "properties": {
-          "E_equivalence_margin": { "type": "string", "minLength": 1 },
-          "E_equivalence_result": { "const": "supports-equivalence" }
-        }
-      }
+      "if": { "properties": { "E_code": { "const": "E-diagnostic" } }, "required": ["E_code"] },
+      "then": { "properties": {
+        "E_competing_account": { "type": "string", "minLength": 1 },
+        "E_competing_prediction": { "type": "string", "minLength": 1 },
+        "E_violating_pattern": { "type": "string", "minLength": 1 },
+        "E_same_Y_reason": { "type": "string", "minLength": 1 },
+        "E_diagnostic_source_locations": { "minItems": 1 }
+      } }
     },
     {
-      "if": { "properties": { "E_equivalence_result": { "const": "supports-equivalence" } }, "required": ["E_equivalence_result"] },
-      "then": { "properties": { "E_matching_basis": { "const": "equivalence-procedure" } } }
+      "if": { "properties": { "E_matching_basis": { "const": "equivalence-procedure" } }, "required": ["E_matching_basis"] },
+      "then": { "properties": { "E_equivalence_margin": { "type": "string", "minLength": 1 }, "E_equivalence_result": { "const": "supports-equivalence" } } }
     },
     {
       "if": { "properties": { "F_code": { "type": "string" } }, "required": ["F_code"] },
@@ -329,194 +160,124 @@
     },
     {
       "if": { "properties": { "F_code": { "const": "F-meaningful" } }, "required": ["F_code"] },
-      "then": {
-        "properties": {
-          "Y_interpretation_clarity": { "const": "clear" },
-          "Y_evidence_role": { "const": "downstream-functional-measure" }
-        }
-      }
+      "then": { "properties": { "Y_interpretation_clarity": { "const": "clear" }, "Y_evidence_role": { "const": "downstream-functional-measure" } } }
     },
     {
       "if": { "properties": { "F_code": { "const": "F-ambiguous" } }, "required": ["F_code"] },
-      "then": {
-        "properties": {
-          "Y_interpretation_clarity": { "const": "ambiguous" },
-          "Y_evidence_role": { "const": "function-level-unresolved" }
-        }
-      }
+      "then": { "properties": { "Y_interpretation_clarity": { "const": "ambiguous" }, "Y_evidence_role": { "const": "function-level-unresolved" } } }
     },
     {
       "if": { "properties": { "F_code": { "const": "F-not-meaningful" } }, "required": ["F_code"] },
-      "then": {
-        "properties": {
-          "Y_evidence_role": {
-            "enum": ["mechanistic-support-only", "direct-registration-only", "not-assessed"]
-          }
-        }
-      }
+      "then": { "properties": { "Y_evidence_role": { "enum": ["mechanistic-support-only", "direct-registration-only", "not-assessed"] } } }
     },
     {
-      "if": { "properties": { "outcome": { "type": "string" } }, "required": ["outcome"] },
-      "then": { "properties": { "outcome_reason": { "type": "string", "minLength": 1 } } }
+      "if": { "properties": { "Y_structure": { "const": "scalar" } }, "required": ["Y_structure"] },
+      "then": { "properties": { "factorial_Y_reason": { "type": "null" }, "factorial_component_effects": { "maxItems": 0 } } }
     },
     {
-      "if": { "properties": { "Meyen_role": { "enum": ["inference-critical", "supplementary"] } }, "required": ["Meyen_role"] },
-      "then": {
-        "properties": {
-          "Meyen_applicable": { "const": "yes" },
-          "Meyen_status": { "enum": ["Meyen-satisfied", "Meyen-failed", "Meyen-unassessable"] },
-          "Meyen_reason": { "type": "string", "minLength": 1 }
-        }
-      }
+      "if": { "properties": { "Y_structure": { "const": "factorial-functional" } }, "required": ["Y_structure"] },
+      "then": { "properties": { "factorial_Y_reason": { "type": "string", "minLength": 1 }, "factorial_component_effects": { "minItems": 2 } } }
     },
     {
-      "if": { "properties": { "Meyen_role": { "const": "not-applicable" } }, "required": ["Meyen_role"] },
-      "then": {
-        "properties": {
-          "Meyen_applicable": { "const": "no" },
-          "Meyen_status": { "type": "null" },
-          "Meyen_reason": { "type": "string", "minLength": 1 }
-        }
-      }
+      "if": { "properties": { "unaware_capacity": { "type": "string" } }, "required": ["unaware_capacity"] },
+      "then": { "properties": { "unaware_capacity_claim": { "type": "string", "minLength": 1 }, "unaware_capacity_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": { "properties": { "Meyen_applicable": { "const": "yes" } }, "required": ["Meyen_applicable"] },
-      "then": {
-        "properties": { "Meyen_role": { "enum": ["inference-critical", "supplementary"] } }
-      }
+      "if": { "properties": { "unaware_capacity": { "enum": ["supported", "not-supported", "unclear"] } }, "required": ["unaware_capacity"] },
+      "then": { "properties": { "unaware_capacity_critical_effect": { "type": "string", "minLength": 1 }, "unaware_capacity_stats_status": { "enum": ["adequate", "concern", "unclear"] }, "unaware_capacity_stats_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": { "properties": { "Meyen_applicable": { "const": "no" } }, "required": ["Meyen_applicable"] },
-      "then": {
-        "properties": { "Meyen_role": { "const": "not-applicable" } }
-      }
+      "if": { "properties": { "unaware_capacity": { "const": "not-tested" } }, "required": ["unaware_capacity"] },
+      "then": { "properties": { "unaware_capacity_critical_effect": { "type": "null" }, "unaware_capacity_stats_status": { "const": "not-applicable" }, "unaware_capacity_stats_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": { "properties": { "stats_status": { "type": "string" } }, "required": ["stats_status"] },
-      "then": {
-        "properties": {
-          "stats_reason": { "type": "string", "minLength": 1 },
-          "stats_flags": { "minItems": 1 }
-        }
-      }
+      "if": { "properties": { "awareness_effect": { "type": "string" } }, "required": ["awareness_effect"] },
+      "then": { "properties": { "awareness_effect_reason": { "type": "string", "minLength": 1 }, "awareness_effect_stats_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "awareness_effect": { "const": "difference-supported" } }, "required": ["awareness_effect"] },
+      "then": { "properties": { "difference_tested": { "const": "yes" }, "awareness_effect_critical_effect": { "type": "string", "minLength": 1 }, "awareness_effect_estimate": { "type": "string", "minLength": 1 }, "awareness_effect_estimate_interpretable": { "const": "yes" }, "awareness_effect_stats_status": { "const": "adequate" } } }
+    },
+    {
+      "if": { "properties": { "awareness_effect": { "const": "no-detectable-difference" } }, "required": ["awareness_effect"] },
+      "then": { "properties": { "difference_tested": { "const": "yes" }, "awareness_effect_critical_effect": { "type": "string", "minLength": 1 }, "awareness_effect_estimate": { "type": "string", "minLength": 1 }, "awareness_effect_estimate_interpretable": { "const": "yes" }, "awareness_effect_stats_status": { "enum": ["adequate", "concern"] } } }
+    },
+    {
+      "if": { "properties": { "awareness_effect": { "const": "equivalence-supported" } }, "required": ["awareness_effect"] },
+      "then": { "properties": { "difference_tested": { "const": "yes" }, "awareness_effect_critical_effect": { "type": "string", "minLength": 1 }, "awareness_effect_estimate": { "type": "string", "minLength": 1 }, "awareness_effect_estimate_interpretable": { "const": "yes" }, "awareness_effect_stats_status": { "const": "adequate" }, "null_evidence_adequacy": { "const": "adequate" } } }
+    },
+    {
+      "if": { "properties": { "awareness_effect": { "const": "not-tested" } }, "required": ["awareness_effect"] },
+      "then": { "properties": { "difference_tested": { "const": "not-applicable" }, "awareness_effect_critical_effect": { "type": "null" }, "awareness_effect_estimate": { "type": "null" }, "awareness_effect_estimate_interpretable": { "const": "not-applicable" }, "awareness_effect_stats_status": { "const": "not-applicable" }, "null_evidence_adequacy": { "const": "not-applicable" } } }
     },
     {
       "if": { "properties": { "null_evidence_adequacy": { "const": "not-applicable" } }, "required": ["null_evidence_adequacy"] },
-      "then": {
-        "properties": {
-          "null_evidence_strength": { "const": "not-applicable" },
-          "null_equivalence_margin": { "type": "null" },
-          "null_equivalence_result": { "const": "not-applicable" },
-          "null_BF01": { "type": "null" },
-          "null_CI_region": { "type": "null" },
-          "null_CI_entirely_within_region": { "const": "not-applicable" }
-        }
-      }
+      "then": { "properties": { "null_evidence_strength": { "const": "not-applicable" }, "null_equivalence_margin": { "type": "null" }, "null_equivalence_result": { "const": "not-applicable" }, "null_BF01": { "type": "null" }, "null_CI_region": { "type": "null" }, "null_CI_entirely_within_region": { "const": "not-applicable" } } }
     },
     {
       "if": { "properties": { "null_evidence_adequacy": { "const": "adequate" } }, "required": ["null_evidence_adequacy"] },
-      "then": {
-        "anyOf": [
-          {
-            "properties": {
-              "null_equivalence_result": { "const": "supports-equivalence" },
-              "null_equivalence_margin": { "type": "string", "minLength": 1 }
-            },
-            "required": ["null_equivalence_result", "null_equivalence_margin"]
-          },
-          {
-            "properties": { "null_BF01": { "type": "number", "minimum": 3 } },
-            "required": ["null_BF01"]
-          },
-          {
-            "properties": {
-              "null_CI_entirely_within_region": { "const": "yes" },
-              "null_CI_region": { "type": "string", "minLength": 1 }
-            },
-            "required": ["null_CI_entirely_within_region", "null_CI_region"]
-          }
-        ]
-      }
+      "then": { "anyOf": [
+        { "properties": { "null_equivalence_result": { "const": "supports-equivalence" }, "null_equivalence_margin": { "type": "string", "minLength": 1 } }, "required": ["null_equivalence_result", "null_equivalence_margin"] },
+        { "properties": { "null_BF01": { "type": "number", "minimum": 3 } }, "required": ["null_BF01"] },
+        { "properties": { "null_CI_entirely_within_region": { "const": "yes" }, "null_CI_region": { "type": "string", "minLength": 1 } }, "required": ["null_CI_entirely_within_region", "null_CI_region"] }
+      ] }
     },
     {
       "if": { "properties": { "null_evidence_strength": { "const": "nonsignificant-only" } }, "required": ["null_evidence_strength"] },
-      "then": {
-        "properties": {
-          "null_evidence_adequacy": { "const": "weak" },
-          "null_equivalence_margin": { "type": "null" },
-          "null_equivalence_result": { "const": "not-applicable" },
-          "null_BF01": { "type": "null" },
-          "null_CI_region": { "type": "null" },
-          "null_CI_entirely_within_region": { "const": "not-applicable" }
-        }
-      }
+      "then": { "properties": { "null_evidence_adequacy": { "const": "weak" }, "null_equivalence_margin": { "type": "null" }, "null_equivalence_result": { "const": "not-applicable" }, "null_BF01": { "type": "null" }, "null_CI_region": { "type": "null" }, "null_CI_entirely_within_region": { "const": "not-applicable" } } }
     },
     {
       "if": { "properties": { "null_evidence_strength": { "const": "unclear" } }, "required": ["null_evidence_strength"] },
       "then": { "properties": { "null_evidence_adequacy": { "const": "unclear" } } }
     },
     {
-      "if": { "properties": { "null_equivalence_result": { "const": "supports-equivalence" } }, "required": ["null_equivalence_result"] },
-      "then": {
-        "properties": {
-          "null_equivalence_margin": { "type": "string", "minLength": 1 },
-          "null_evidence_strength": { "enum": ["equivalence-testing", "mixed"] }
-        }
-      }
+      "if": { "properties": { "Meyen_role": { "enum": ["inference-critical", "supplementary"] } }, "required": ["Meyen_role"] },
+      "then": { "properties": { "Meyen_applicable": { "const": "yes" }, "Meyen_status": { "enum": ["Meyen-satisfied", "Meyen-failed", "Meyen-unassessable"] }, "Meyen_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": { "properties": { "null_BF01": { "type": "number" } }, "required": ["null_BF01"] },
-      "then": { "properties": { "null_evidence_strength": { "enum": ["bayesian-evidence", "mixed"] } } }
+      "if": { "properties": { "Meyen_role": { "const": "not-applicable" } }, "required": ["Meyen_role"] },
+      "then": { "properties": { "Meyen_applicable": { "const": "no" }, "Meyen_status": { "type": "null" }, "Meyen_reason": { "type": "string", "minLength": 1 } } }
     },
     {
-      "if": { "properties": { "null_CI_entirely_within_region": { "const": "yes" } }, "required": ["null_CI_entirely_within_region"] },
-      "then": {
-        "properties": {
-          "null_CI_region": { "type": "string", "minLength": 1 },
-          "null_evidence_strength": { "enum": ["informative-confidence-intervals", "mixed"] }
-        }
-      }
+      "if": { "properties": { "stats_status": { "type": "string" } }, "required": ["stats_status"] },
+      "then": { "properties": { "stats_reason": { "type": "string", "minLength": 1 }, "stats_flags": { "minItems": 1 } } }
     },
     {
       "if": { "properties": { "current_status": { "const": "fully-evaluated" } }, "required": ["current_status"] },
-      "then": {
-        "properties": {
-          "X_label": { "type": "string", "minLength": 1 },
-          "X_description": { "type": "string", "minLength": 1 },
-          "awareness_measure": { "type": "string", "minLength": 1 },
-          "awareness_evidence_type": { "type": "string" },
-          "objective_visibility_test_informative": { "type": "string" },
-          "A_code": { "type": "string" },
-          "critical_dependency_status": { "type": "string" },
-          "critical_dependency_reason": { "type": "string", "minLength": 1 },
-          "first_order_measure": { "type": "string", "minLength": 1 },
-          "E_code": { "type": "string" },
-          "E_matching_basis": { "type": "string" },
-          "E_equivalence_result": { "type": "string" },
-          "Y_label": { "type": "string", "minLength": 1 },
-          "Y_description": { "type": "string", "minLength": 1 },
-          "Y_evidence_role": { "type": "string" },
-          "F_code": { "type": "string" },
-          "Y_interpretation_clarity": { "type": "string" },
-          "mechanistic_interpretation": { "type": "string", "minLength": 1 },
-          "mechanism_clarity": { "type": "string" },
-          "critical_comparison": { "type": "string", "minLength": 1 },
-          "outcome": { "type": "string" },
-          "critical_effect": { "type": "string", "minLength": 1 },
-          "unaware_Y_evidence": { "type": "string" },
-          "difference_tested": { "type": "string" },
-          "null_evidence_strength": { "type": "string" },
-          "null_evidence_adequacy": { "type": "string" },
-          "Meyen_role": { "type": "string" },
-          "Meyen_applicable": { "type": "string" },
-          "stats_status": { "type": "string" },
-          "constraint_summary": { "type": "string", "minLength": 1 },
-          "source_pages": { "type": "string", "minLength": 1 }
-        }
-      }
+      "then": { "properties": {
+        "X_label": { "type": "string", "minLength": 1 }, "X_description": { "type": "string", "minLength": 1 },
+        "awareness_measure": { "type": "string", "minLength": 1 }, "awareness_evidence_type": { "type": "string" },
+        "objective_visibility_test_informative": { "type": "string" }, "A_code": { "type": "string" },
+        "critical_dependency_status": { "type": "string" }, "critical_dependency_reason": { "type": "string", "minLength": 1 },
+        "first_order_measure": { "type": "string", "minLength": 1 }, "E_code": { "type": "string" },
+        "E_matching_basis": { "type": "string" }, "E_equivalence_result": { "type": "string" },
+        "Y_label": { "type": "string", "minLength": 1 }, "Y_description": { "type": "string", "minLength": 1 },
+        "Y_structure": { "type": "string" }, "Y_evidence_role": { "type": "string" }, "F_code": { "type": "string" },
+        "Y_interpretation_clarity": { "type": "string" }, "mechanistic_interpretation": { "type": "string", "minLength": 1 },
+        "mechanism_clarity": { "type": "string" }, "critical_comparison": { "type": "string", "minLength": 1 },
+        "unaware_capacity_claim": { "type": "string", "minLength": 1 }, "unaware_capacity": { "type": "string" }, "unaware_capacity_stats_status": { "type": "string" },
+        "awareness_effect": { "type": "string" }, "awareness_effect_stats_status": { "type": "string" },
+        "difference_tested": { "type": "string" }, "null_evidence_strength": { "type": "string" },
+        "null_evidence_adequacy": { "type": "string" }, "Meyen_role": { "type": "string" },
+        "Meyen_applicable": { "type": "string" }, "stats_status": { "type": "string" },
+        "constraint_summary": { "type": "string", "minLength": 1 }, "source_pages": { "type": "string", "minLength": 1 }
+      } }
     }
   ],
   "$defs": {
-    "nullableString": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+    "nullableString": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "routeStatsStatus": { "enum": ["adequate", "concern", "unclear", "not-applicable"] },
+    "factorialComponent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["component_id", "X_task_relation", "awareness_condition", "effect_description", "statistical_result", "source_location"],
+      "properties": {
+        "component_id": { "type": "string", "minLength": 1 },
+        "X_task_relation": { "type": "string", "minLength": 1 },
+        "awareness_condition": { "enum": ["aware", "unaware", "mixed", "not-applicable"] },
+        "effect_description": { "type": "string", "minLength": 1 },
+        "statistical_result": { "$ref": "#/$defs/nullableString" },
+        "source_location": { "type": "string", "minLength": 1 }
+      }
+    }
   }
 }

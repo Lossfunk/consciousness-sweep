@@ -30,6 +30,7 @@ SCHEMAS = (
     "discoveries.schema.json",
     "missing_texts.schema.json",
     "auxiliary_sources.schema.json",
+    "evidence_links.schema.json",
     "decision_log.schema.json",
     "run_state.schema.json",
 )
@@ -137,8 +138,9 @@ def main() -> int:
         "subjective", "objective-invisibility", "mixed", "none",
         "E-matched", "E-diagnostic", "E-physical-only", "E-uncontrolled",
         "F-meaningful", "F-ambiguous", "F-not-meaningful",
-        "awareness-linked-difference", "preserved-capacity", "inconclusive",
-        "positive", "absent", "weak", "not-applicable",
+        "supported", "not-supported", "unclear", "not-tested",
+        "difference-supported", "no-detectable-difference", "equivalence-supported", "unresolved",
+        "scalar", "factorial-functional",
         "Meyen-satisfied", "Meyen-failed", "Meyen-unassessable",
         "inference-critical", "supplementary", "not-applicable",
         "active-matching-or-titration", "equivalence-procedure",
@@ -152,8 +154,12 @@ def main() -> int:
 
     experiment_properties = schemas.get("experiments.schema.json", {}).get("properties", {})
     for field in (
-        "comparison_id", "awareness_evidence_type", "objective_visibility_test_informative",
+        "comparison_id", "evidence_bundle_id", "awareness_evidence_type", "objective_visibility_test_informative",
         "critical_dependency_status", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
+        "E_competing_account", "E_competing_prediction", "E_violating_pattern", "E_same_Y_reason",
+        "E_diagnostic_source_locations", "Y_structure", "factorial_component_effects",
+        "unaware_capacity_claim", "unaware_capacity", "unaware_capacity_stats_status", "awareness_effect",
+        "awareness_effect_stats_status", "awareness_effect_critical_effect",
         "Y_evidence_role", "mechanistic_interpretation", "mechanism_clarity",
         "null_equivalence_margin", "null_equivalence_result", "null_BF01",
         "null_CI_region", "null_CI_entirely_within_region", "Meyen_role",
@@ -166,7 +172,10 @@ def main() -> int:
     state_properties = schemas.get("run_state.schema.json", {}).get("properties", {})
     if "next_comparison_counters" not in state_properties:
         errors.append("run-state schema lacks next_comparison_counters")
-    for field in ("package_version", "schema_version", "next_auxiliary_counter"):
+    for field in (
+        "package_version", "schema_version", "next_auxiliary_counter",
+        "next_evidence_link_counter", "next_evidence_bundle_counter",
+    ):
         if field not in state_properties:
             errors.append(f"run-state schema lacks {field}")
     paper_properties = schemas.get("papers.schema.json", {}).get("properties", {})
@@ -184,10 +193,22 @@ def main() -> int:
     for field in ("auxiliary_id", "target_paper_id", "target_comparison_id", "purpose", "used_for_decision"):
         if field not in auxiliary_properties:
             errors.append(f"auxiliary-source schema lacks {field}")
+    evidence_properties = schemas.get("evidence_links.schema.json", {}).get("properties", {})
+    for field in (
+        "evidence_link_id", "evidence_bundle_id", "focal_comparison_id",
+        "supporting_experiment_id", "supporting_auxiliary_id", "support_role",
+        "supported_claim", "transfer_reason", "transfer_limitation", "source_location",
+    ):
+        if field not in evidence_properties:
+            errors.append(f"evidence-link schema lacks {field}")
     if (config.get("identifiers") or {}).get("comparison_separator") != "_C":
         errors.append("config identifiers.comparison_separator must be '_C'")
     if (config.get("identifiers") or {}).get("auxiliary_separator") != "_AUX":
         errors.append("config identifiers.auxiliary_separator must be '_AUX'")
+    if (config.get("identifiers") or {}).get("evidence_link_separator") != "_EL":
+        errors.append("config identifiers.evidence_link_separator must be '_EL'")
+    if (config.get("identifiers") or {}).get("evidence_bundle_separator") != "_EB":
+        errors.append("config identifiers.evidence_bundle_separator must be '_EB'")
 
     for key, relative in (config.get("paths") or {}).items():
         if not (root / str(relative)).exists():
