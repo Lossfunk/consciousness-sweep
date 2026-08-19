@@ -32,11 +32,20 @@ COMPACT_PROCESS_TERMS = {
         "action selection", "response selection", "rule-guided behavior",
         "rule-guided behaviour", "flexible control",
     ),
+}
+
+# Retained only as explicit historical/pre-freeze provenance. This pathological
+# rendering is not part of the active conservative blind-spot instrument.
+RETIRED_COMPACT_PROCESS_TERMS = {
     "QCAL4-LEARN": (
         "error-based learning", "reinforcement learning", "evaluative conditioning",
         "adaptive updating",
     ),
 }
+
+ACTIVE_QCAL_SOURCES = ("OpenAlex", "Europe PMC")
+QCAL_MAX_RESULTS_PER_SOURCE_FAMILY = 40
+PROCESS_MAX_RESULTS_PER_SOURCE_Y = 50
 
 PROHIBITED_BARE_PROCESS_TERMS = {"task", "performance", "experiment", "memory", "decision"}
 ALLOWED_VARIANT_PROVENANCE = {
@@ -171,3 +180,18 @@ def render_process_query(source: str, variants: Iterable[dict[str, Any]]) -> str
     query = render_title_abstract_query(source, [item["term"] for item in checked])
     validate_rendered_query(source, query)
     return query
+
+
+def conservative_instrument_contract() -> dict[str, Any]:
+    """Return the locally enforceable, network-free conservative bounds."""
+    return {
+        "active_families": tuple(COMPACT_PROCESS_TERMS),
+        "retired_families": tuple(RETIRED_COMPACT_PROCESS_TERMS),
+        "sources": ACTIVE_QCAL_SOURCES,
+        "qcal_max_results_per_source_family": QCAL_MAX_RESULTS_PER_SOURCE_FAMILY,
+        "qcal_max_windows_per_source_family": 1,
+        "process_max_results_per_source_y": PROCESS_MAX_RESULTS_PER_SOURCE_Y,
+        "process_max_windows_per_source_y": 1,
+        "redistribute_unused_quota": False,
+        "blind_lane_mandatory": True,
+    }

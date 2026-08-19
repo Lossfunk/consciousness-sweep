@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/evidence_assessments.schema.json",
+  "title": "Execution-only factual evidence assessment",
+  "description": "A reusable factual assessment cache. It cannot contain or propagate comparison-level A/E/F or outcome classifications.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_assessment_id", "source_paper_id", "source_auxiliary_id",
+    "supporting_experiment_id", "factual_premise", "assessment",
+    "regime_fingerprint", "source_asset_sha256", "source_location",
+    "assessed_at", "assessor", "notes"
+  ],
+  "properties": {
+    "evidence_assessment_id": {
+      "type": "string", "pattern": "^[A-Za-z0-9._-]+_EA[0-9]{6}$"
+    },
+    "source_paper_id": {
+      "anyOf": [{ "type": "string", "pattern": "^P[0-9]{6}$" }, { "type": "null" }]
+    },
+    "source_auxiliary_id": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[A-Za-z0-9._-]+_AUX[0-9]{6}$" },
+        { "type": "null" }
+      ]
+    },
+    "supporting_experiment_id": {
+      "anyOf": [{ "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}$" }, { "type": "null" }]
+    },
+    "factual_premise": { "type": "string", "minLength": 1 },
+    "assessment": { "type": "string", "minLength": 1 },
+    "regime_fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "source_asset_sha256": {
+      "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
+    },
+    "source_location": { "type": "string", "minLength": 1 },
+    "assessed_at": { "type": "string", "format": "date-time" },
+    "assessor": { "type": "string", "minLength": 1 },
+    "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  },
+  "oneOf": [
+    { "required": ["source_paper_id"], "properties": { "source_paper_id": { "type": "string" }, "source_auxiliary_id": { "type": "null" } } },
+    { "required": ["source_auxiliary_id"], "properties": { "source_auxiliary_id": { "type": "string" }, "source_paper_id": { "type": "null" } } }
+  ]
+}

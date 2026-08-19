@@ -10,6 +10,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import yaml
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 
@@ -35,11 +36,30 @@ from structured_write import (  # noqa: E402
 )
 from query_instruments import (  # noqa: E402
     COMPACT_PROCESS_TERMS,
+    RETIRED_COMPACT_PROCESS_TERMS,
+    QCAL_MAX_RESULTS_PER_SOURCE_FAMILY,
+    PROCESS_MAX_RESULTS_PER_SOURCE_Y,
+    ACTIVE_QCAL_SOURCES,
     TSUSHIMA_DIAGNOSTIC_VARIANTS,
+    conservative_instrument_contract,
     render_process_query,
     render_title_abstract_query,
     validate_process_variants,
     validate_rendered_query,
+)
+from execution_contract import (  # noqa: E402
+    completion_errors,
+    derived_bundle_status,
+    ordered_result_set_sha256,
+    reopen_for_blind_discovery,
+    reusable_completed_window,
+    reusable_evidence_assessment,
+    reusable_fulltext_asset,
+    route_audit_errors,
+    search_window_key,
+    semantic_screen_action,
+    validate_declared_bundle_status,
+    validate_semantic_batch,
 )
 from validate_run import dependency_errors, evidence_bundle_errors, load_jsonl_rows  # noqa: E402
 
@@ -64,7 +84,16 @@ def experiment(**updates: object) -> dict:
         "A_reason": None,
         "critical_dependency_status": None,
         "critical_dependency_reason": None,
-        "evidence_bundle_id": None,
+        "evidence_bundle_ids": [],
+        "structural_audit_status": "not-started",
+        "awareness_effect_route_status": "not-assessed",
+        "awareness_effect_route_reason": None,
+        "unaware_capacity_route_status": "not-assessed",
+        "unaware_capacity_route_reason": None,
+        "null_equivalence_route_status": "not-assessed",
+        "null_equivalence_route_reason": None,
+        "result_inspection_status": "not-started",
+        "result_inspection_reason": None,
         "first_order_measure": None,
         "E_code": None,
         "E_reason": None,
@@ -200,6 +229,47 @@ def decision(decision_id: str, reason: str) -> dict:
     }
 
 
+def bundle(**updates: object) -> dict:
+    row = {
+        "evidence_bundle_id": "TEST_EB000001",
+        "focal_comparison_id": "P000001_E01_C01",
+        "supported_premise": "awareness-A",
+        "premise_description": "The focal masking regime supports the stated A premise.",
+        "route_label": "awareness-effect",
+        "required_member_keys": ["validation"],
+        "bundle_status": "complete",
+        "bundle_reason": "Every required direct member supports the premise.",
+        "notes": None,
+    }
+    row.update(updates)
+    return row
+
+
+def evidence_link(**updates: object) -> dict:
+    row = {
+        "evidence_link_id": "TEST_EL000001",
+        "evidence_bundle_id": "TEST_EB000001",
+        "member_key": "validation",
+        "focal_comparison_id": "P000001_E01_C01",
+        "supporting_paper_id": "P000001",
+        "supporting_experiment_id": "P000001_E02",
+        "supporting_auxiliary_id": None,
+        "evidence_assessment_id": None,
+        "supporting_source_type": "within-paper-experiment",
+        "support_role": "awareness-validation",
+        "dependency_role": "required",
+        "member_status": "supports",
+        "supported_claim": "The masking regime supports the focal A decision.",
+        "transfer_reason": "Same population, manipulation, measure, analysis, and article version.",
+        "transfer_limitation": None,
+        "source_location": "Experiment 2",
+        "used_for_decision": True,
+        "notes": None,
+    }
+    row.update(updates)
+    return row
+
+
 class AwarenessRulesTests(unittest.TestCase):
     def test_objective_invisibility_supports_a_direct(self) -> None:
         row = experiment(
@@ -227,12 +297,8 @@ class AwarenessRulesTests(unittest.TestCase):
         )
         validate("experiments.schema.json", row)
         self.assertTrue(dependency_errors([row], []))
-        auxiliary = {
-            "target_comparison_id": row["comparison_id"],
-            "used_for_decision": True,
-            "retrieval_status": "retrieved",
-        }
-        self.assertEqual(dependency_errors([row], [auxiliary]), [])
+        resolved_bundle = bundle(focal_comparison_id=row["comparison_id"])
+        self.assertEqual(dependency_errors([row], [resolved_bundle]), [])
 
     def test_above_chance_objective_performance_does_not_force_awareness(self) -> None:
         row = experiment(
@@ -315,13 +381,13 @@ class ProvenanceSchemaTests(unittest.TestCase):
     def test_auxiliary_source_does_not_create_candidate_paper(self) -> None:
         candidates = [{"paper_id": "P000001", "doi": "10.1/candidate"}]
         auxiliary = {
-            "auxiliary_id": "TEST_AUX000001", "target_paper_id": "P000001",
-            "target_comparison_id": "P000001_E01_C01", "purpose": "awareness-validation",
+            "auxiliary_id": "TEST_AUX000001",
             "citation": "Validation source", "doi": "10.1/auxiliary", "url": None,
+            "identity_reason": "DOI and citation identify one logical published work.",
+            "article_version": "version-of-record",
             "retrieval_status": "unavailable", "local_fulltext_path": None, "file_sha256": None,
             "obtained_at": None, "obtained_by": None, "acquisition_route": None,
-            "source_location": "candidate p. 2", "transfer_assessment": "unresolved",
-            "transfer_reason": "The source could not be obtained.", "used_for_decision": False,
+            "verification_reason": "Identity verified from the cited DOI; full text unavailable.",
             "notes": None,
         }
         validate("auxiliary_sources.schema.json", auxiliary)
@@ -402,6 +468,7 @@ class StructuredWriteTests(unittest.TestCase):
                 "next_decision_counter": 1, "next_search_counter": 1,
                 "next_discovery_counter": 1, "next_auxiliary_counter": 1,
                 "next_evidence_link_counter": 1, "next_evidence_bundle_counter": 1,
+                "next_evidence_assessment_counter": 1, "next_fulltext_asset_counter": 1,
             }), encoding="utf-8")
             with ThreadPoolExecutor(max_workers=12) as pool:
                 identifiers = list(pool.map(lambda _: allocate_identifier(run_dir, "paper"), range(60)))
@@ -467,6 +534,7 @@ class StructuredWriteTests(unittest.TestCase):
                 "next_decision_counter": 1, "next_search_counter": 1,
                 "next_discovery_counter": 1, "next_auxiliary_counter": 1,
                 "next_evidence_link_counter": 1, "next_evidence_bundle_counter": 1,
+                "next_evidence_assessment_counter": 1, "next_fulltext_asset_counter": 1,
             }), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "experiment group"):
                 allocate_identifier(run_dir, "comparison", "P000001_E01")
@@ -666,31 +734,30 @@ class ScientificRevisionSyntheticTests(unittest.TestCase):
             validate("experiments.schema.json", row)
 
     def test_14_evidence_bundle_supports_focal_comparison(self) -> None:
-        focal = experiment(evidence_bundle_id="TEST_EB000001")
-        link = {
-            "evidence_link_id": "TEST_EL000001", "evidence_bundle_id": "TEST_EB000001",
-            "focal_comparison_id": focal["comparison_id"], "supporting_paper_id": "P000001",
-            "supporting_experiment_id": "P000001_E02", "supporting_auxiliary_id": None,
-            "supporting_source_type": "within-paper-experiment", "support_role": "awareness-validation",
-            "supported_claim": "The masking regime supports the focal A decision.",
-            "transfer_reason": "Same population, stimuli, timing, and task.", "transfer_limitation": None,
-            "source_location": "Experiment 2", "used_for_decision": True, "notes": None,
-        }
+        focal = experiment(evidence_bundle_ids=["TEST_EB000001"])
+        scientific_bundle = bundle()
+        link = evidence_link()
+        validate("evidence_bundles.schema.json", scientific_bundle)
         validate("evidence_links.schema.json", link)
-        self.assertEqual(evidence_bundle_errors([focal], [link], {"P000001"}, set()), [])
+        self.assertEqual(
+            evidence_bundle_errors([focal], [scientific_bundle], [link], {"P000001"}, set()),
+            [],
+        )
 
     def test_15_support_only_experiment_does_not_become_candidate(self) -> None:
-        focal = experiment(evidence_bundle_id="TEST_EB000001")
-        link = {
-            "evidence_link_id": "TEST_EL000001", "evidence_bundle_id": "TEST_EB000001",
-            "focal_comparison_id": focal["comparison_id"], "supporting_paper_id": "P000001",
-            "supporting_experiment_id": "P000001_E99", "supporting_auxiliary_id": None,
-            "supporting_source_type": "within-paper-experiment", "support_role": "robustness-support",
-            "supported_claim": "A support-only manipulation checks robustness.",
-            "transfer_reason": "Same operational relation.", "transfer_limitation": "Not a candidate X-to-Y comparison.",
-            "source_location": "Experiment 99", "used_for_decision": True, "notes": None,
-        }
-        self.assertEqual(evidence_bundle_errors([focal], [link], {"P000001"}, set()), [])
+        focal = experiment(evidence_bundle_ids=["TEST_EB000001"])
+        scientific_bundle = bundle()
+        link = evidence_link(
+            supporting_experiment_id="P000001_E99",
+            support_role="robustness-support",
+            supported_claim="A support-only manipulation checks robustness.",
+            transfer_reason="Same operational relation and article version.",
+            transfer_limitation="Not a candidate X-to-Y comparison.",
+        )
+        self.assertEqual(
+            evidence_bundle_errors([focal], [scientific_bundle], [link], {"P000001"}, set()),
+            [],
+        )
         self.assertEqual({row["experiment_id"] for row in [focal]}, {"P000001_E01"})
 
     def test_16_inference_critical_meyen_failure_gates_both_routes(self) -> None:
@@ -785,6 +852,441 @@ class QueryInstrumentTests(unittest.TestCase):
         }]
         with self.assertRaisesRegex(ValueError, "unrestricted"):
             validate_process_variants(variants)
+
+
+class ConservativeExecutionTests(unittest.TestCase):
+    def test_exact_qcal_and_process_bounds(self) -> None:
+        contract = conservative_instrument_contract()
+        self.assertEqual(
+            contract["active_families"],
+            ("QCAL4-ATTN", "QCAL4-META", "QCAL4-BIND", "QCAL4-MEM", "QCAL4-DEC"),
+        )
+        self.assertEqual(contract["sources"], ("OpenAlex", "Europe PMC"))
+        self.assertEqual(ACTIVE_QCAL_SOURCES, ("OpenAlex", "Europe PMC"))
+        self.assertEqual(QCAL_MAX_RESULTS_PER_SOURCE_FAMILY, 40)
+        self.assertEqual(PROCESS_MAX_RESULTS_PER_SOURCE_Y, 50)
+        self.assertEqual(contract["qcal_max_windows_per_source_family"], 1)
+        self.assertEqual(contract["process_max_windows_per_source_y"], 1)
+        self.assertFalse(contract["redistribute_unused_quota"])
+        self.assertTrue(contract["blind_lane_mandatory"])
+
+    def test_pathological_learning_family_is_retired_not_silently_deleted(self) -> None:
+        self.assertNotIn("QCAL4-LEARN", COMPACT_PROCESS_TERMS)
+        self.assertIn("QCAL4-LEARN", RETIRED_COMPACT_PROCESS_TERMS)
+        documented = (ROOT / "queries.md").read_text(encoding="utf-8")
+        self.assertIn("QCAL4-LEARN", documented)
+        self.assertIn("PRE-FREEZE TODO", documented)
+
+    def test_config_matches_executable_contract(self) -> None:
+        config = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
+        blind = config["search"]["conservative_execution"]["supplementary_blind_lane"]
+        process = config["search"]["conservative_execution"]["process_trigger"]
+        self.assertEqual(blind["active_families"], list(COMPACT_PROCESS_TERMS))
+        self.assertEqual(blind["sources"], list(ACTIVE_QCAL_SOURCES))
+        self.assertEqual(blind["max_results_per_source_family"], 40)
+        self.assertEqual(blind["disabled_families"], ["QCAL4-LEARN"])
+        self.assertEqual(process["sources"], list(ACTIVE_QCAL_SOURCES))
+        self.assertEqual(process["max_results_per_source_y"], 50)
+        self.assertFalse(process["same_normalized_y_retrigger"])
+        self.assertTrue(process["genuinely_new_y_recursion_only"])
+
+
+class WorkflowStateTests(unittest.TestCase):
+    @staticmethod
+    def state(**updates: object) -> dict:
+        value = {
+            "workflow_phase": "blind-lane",
+            "blind_lane_status": "in-progress",
+            "citation_frontier_status": "satisfied",
+            "process_frontier_status": "satisfied",
+            "activated_normalized_y_labels": [],
+        }
+        value.update(updates)
+        return value
+
+    def test_blind_lane_cannot_be_skipped(self) -> None:
+        errors = completion_errors(self.state(workflow_phase="final-validation"))
+        self.assertIn("mandatory supplementary blind lane is incomplete", errors)
+
+    def test_blind_new_node_reopens_citation_frontier(self) -> None:
+        updated = reopen_for_blind_discovery(self.state(), citation_node=True)
+        self.assertEqual(updated["workflow_phase"], "reopened-frontiers")
+        self.assertEqual(updated["citation_frontier_status"], "reopened")
+
+    def test_blind_new_y_reopens_process_once(self) -> None:
+        updated = reopen_for_blind_discovery(self.state(), genuinely_new_y="distractor control")
+        self.assertEqual(updated["process_frontier_status"], "reopened")
+        self.assertEqual(updated["activated_normalized_y_labels"], ["distractor control"])
+        unchanged = reopen_for_blind_discovery(
+            self.state(activated_normalized_y_labels=["distractor control"]),
+            genuinely_new_y="distractor control",
+        )
+        self.assertEqual(unchanged["workflow_phase"], "blind-lane")
+
+    def test_completion_is_blocked_while_a_reopened_frontier_is_open(self) -> None:
+        errors = completion_errors(self.state(
+            workflow_phase="final-validation", blind_lane_status="complete",
+            citation_frontier_status="reopened",
+        ))
+        self.assertIn("citation frontier is not satisfied", errors)
+
+    def test_complete_state_passes(self) -> None:
+        self.assertEqual(completion_errors(self.state(
+            workflow_phase="final-validation", blind_lane_status="complete",
+        )), [])
+
+
+class SearchSnapshotTests(unittest.TestCase):
+    def test_completed_window_is_reused_by_exact_immutable_key(self) -> None:
+        key = search_window_key(
+            execution_phase="blind-lane", source="OpenAlex", query_id="QCAL4-ATTN",
+            normalized_y_label=None, canonical_query="filter=synthetic",
+            source_parameters={"sort": "relevance", "page": 1},
+            publication_cutoff="2026-08-19", requested_max_n=40,
+        )
+        results = [
+            {"result_rank": 1, "source_stable_id": "W1", "raw_doi": None,
+             "raw_title": "One", "raw_url": "https://example.test/1"},
+            {"result_rank": 2, "source_stable_id": "W2", "raw_doi": "10.1/two",
+             "raw_title": "Two", "raw_url": "https://example.test/2"},
+        ]
+        digest = ordered_result_set_sha256(results)
+        completed = {"window_key": key, "window_status": "complete", "result_set_sha256": digest}
+        self.assertIs(reusable_completed_window([completed], key), completed)
+        changed = search_window_key(
+            execution_phase="blind-lane", source="OpenAlex", query_id="QCAL4-ATTN",
+            normalized_y_label=None, canonical_query="filter=synthetic",
+            source_parameters={"sort": "relevance", "page": 1},
+            publication_cutoff="2026-08-19", requested_max_n=39,
+        )
+        self.assertIsNone(reusable_completed_window([completed], changed))
+
+    def test_contradictory_completed_snapshot_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "contradictory"):
+            reusable_completed_window([
+                {"window_key": "k", "window_status": "complete", "result_set_sha256": "a" * 64},
+                {"window_key": "k", "window_status": "complete", "result_set_sha256": "b" * 64},
+            ], "k")
+
+
+class SemanticReuseAndBatchTests(unittest.TestCase):
+    def test_rediscovery_reuses_paper_decision_without_rescreen(self) -> None:
+        decided = paper(
+            title_screen="retain", title_screen_reason="Semantically plausible.",
+            title_screen_method="agent-semantic",
+        )
+        self.assertEqual(semantic_screen_action(decided), "reuse-existing-decision")
+        self.assertEqual(
+            semantic_screen_action(decided, genuinely_new_evidence=True),
+            "revise-with-decision-log",
+        )
+
+    def test_title_and_abstract_batches_preserve_individual_decisions_and_whys(self) -> None:
+        titles = [paper(
+            paper_id=f"P{index:06d}", title_screen="retain",
+            title_screen_reason=f"Individual title reason {index}.",
+            title_screen_method="agent-semantic",
+        ) for index in range(1, 26)]
+        validate_semantic_batch("title", titles)
+        abstracts = [paper(
+            paper_id=f"P{index:06d}", abstract_status="available",
+            abstract_screen="screen-in", abstract_screen_reason=f"Individual abstract reason {index}.",
+            abstract_screen_method="agent-semantic",
+        ) for index in range(1, 11)]
+        validate_semantic_batch("abstract", abstracts)
+        with self.assertRaisesRegex(ValueError, "1..25"):
+            validate_semantic_batch("title", [*titles, paper(paper_id="P000026")])
+        with self.assertRaisesRegex(ValueError, "own decision and why"):
+            validate_semantic_batch("abstract", [dict(abstracts[0], abstract_screen_reason=None)])
+
+    def test_genuine_revision_remains_append_only_and_logged(self) -> None:
+        event = decision("TEST_D000001", "New full-text evidence changes the paper-level screen.")
+        event.update({
+            "entity_type": "paper", "entity_id": "P000001", "decision_type": "revision",
+            "field": "abstract_screen", "old_value": "screen-uncertain", "new_value": "screen-in",
+            "source_location": "new full text p. 3",
+        })
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "decision_log.jsonl"
+            append_jsonl_record(path, schema("decision_log.schema.json"), event)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["old_value"], "screen-uncertain")
+
+
+class StrictEvidenceBundleTests(unittest.TestCase):
+    def test_a_complete_bundle_has_every_required_direct_member(self) -> None:
+        links = [evidence_link()]
+        self.assertEqual(derived_bundle_status(links, ["validation"]), "complete")
+        validate_declared_bundle_status(bundle(), links)
+
+    def test_b_missing_required_manifest_member_is_incomplete(self) -> None:
+        links = [evidence_link(member_key="threshold-effect")]
+        self.assertEqual(
+            derived_bundle_status(links, ["threshold-effect", "threshold-shift"]),
+            "incomplete",
+        )
+
+    def test_c_unresolved_contradiction_is_conflicted_not_averaged(self) -> None:
+        links = [
+            evidence_link(member_key="threshold-effect"),
+            evidence_link(
+                evidence_link_id="TEST_EL000002", member_key="threshold-shift",
+                member_status="contradicts",
+            ),
+        ]
+        self.assertEqual(
+            derived_bundle_status(links, ["threshold-effect", "threshold-shift"]),
+            "conflicted",
+        )
+
+    def test_d_e_nonrequired_roles_may_be_absent_or_unavailable(self) -> None:
+        required = evidence_link()
+        self.assertEqual(derived_bundle_status([required], ["validation"]), "complete")
+        for role in ("strengthening", "robustness", "generalization", "mechanistic"):
+            optional = evidence_link(
+                evidence_link_id=f"TEST_EL{len(role):06d}", member_key=role,
+                dependency_role=role, member_status="unavailable", used_for_decision=False,
+            )
+            self.assertEqual(derived_bundle_status([required, optional], ["validation"]), "complete")
+
+    def test_f_no_transitive_propagation_substitutes_for_a_missing_direct_member(self) -> None:
+        direct_first = evidence_link(member_key="exp2-direct")
+        chain_only = evidence_link(
+            evidence_link_id="TEST_EL000002", member_key="exp3-supports-exp2",
+            supporting_experiment_id="P000001_E03", dependency_role="strengthening",
+        )
+        self.assertEqual(
+            derived_bundle_status([direct_first, chain_only], ["exp2-direct", "exp3-direct"]),
+            "incomplete",
+        )
+
+    def test_g_same_source_two_premises_requires_two_bundles_and_links(self) -> None:
+        focal = experiment(evidence_bundle_ids=["TEST_EB000001", "TEST_EB000002"])
+        bundles = [bundle(), bundle(
+            evidence_bundle_id="TEST_EB000002", supported_premise="meaningful-Y/F",
+            premise_description="The same source supports a distinct F premise.",
+            required_member_keys=["meaningful-y"],
+        )]
+        links = [evidence_link(), evidence_link(
+            evidence_link_id="TEST_EL000002", evidence_bundle_id="TEST_EB000002",
+            member_key="meaningful-y", support_role="other",
+            supported_claim="The measure is a downstream functional outcome.",
+        )]
+        self.assertEqual(
+            evidence_bundle_errors([focal], bundles, links, {"P000001"}, set()),
+            [],
+        )
+
+    def test_i_within_paper_transfer_requires_an_explicit_rationale(self) -> None:
+        with self.assertRaises(ValidationError):
+            validate("evidence_links.schema.json", evidence_link(transfer_reason=""))
+
+    def test_k_threshold_shift_joint_argument_and_typed_optional_members(self) -> None:
+        strongest = bundle(
+            supported_premise="E-diagnostic", route_label="awareness-effect",
+            required_member_keys=["threshold-linked-effect", "manipulated-threshold-shift"],
+            premise_description="A non-monotonic effect follows a manipulated detectability threshold.",
+        )
+        threshold = evidence_link(
+            member_key="threshold-linked-effect", support_role="E-diagnostic-support",
+            supported_claim="The interference extremum occurs near the detectability threshold.",
+        )
+        self.assertEqual(
+            derived_bundle_status([threshold], strongest["required_member_keys"]), "incomplete"
+        )
+        shift = evidence_link(
+            evidence_link_id="TEST_EL000002", member_key="manipulated-threshold-shift",
+            supporting_experiment_id="P000001_E03", support_role="E-diagnostic-support",
+            supported_claim="Changing the visibility regime shifts both threshold and interference extremum.",
+        )
+        optional = [
+            evidence_link(evidence_link_id="TEST_EL000003", member_key="eye-control",
+                          supporting_experiment_id="P000001_E04", dependency_role="robustness",
+                          support_role="alternative-explanation-control"),
+            evidence_link(evidence_link_id="TEST_EL000004", member_key="motion-replication",
+                          supporting_experiment_id="P000001_E05", dependency_role="generalization",
+                          support_role="generalization-support"),
+            evidence_link(evidence_link_id="TEST_EL000005", member_key="neural-mechanism",
+                          supporting_experiment_id="P000001_E06", dependency_role="mechanistic",
+                          support_role="mechanistic-support"),
+        ]
+        all_links = [threshold, shift, *optional]
+        self.assertEqual(derived_bundle_status(all_links, strongest["required_member_keys"]), "complete")
+        validate_declared_bundle_status(strongest, all_links)
+
+
+class EvidenceAndRetrievalCacheTests(unittest.TestCase):
+    def test_j_cached_fact_does_not_propagate_scientific_codes(self) -> None:
+        assessment = {
+            "evidence_assessment_id": "TEST_EA000001", "source_paper_id": "P000001",
+            "source_auxiliary_id": None, "supporting_experiment_id": "P000001_E02",
+            "factual_premise": "The visibility test used a four-alternative response.",
+            "assessment": "The method reports four response alternatives.",
+            "regime_fingerprint": "a" * 64, "source_asset_sha256": "b" * 64,
+            "source_location": "Methods p. 2", "assessed_at": "2026-08-19T12:00:00Z",
+            "assessor": "test", "notes": None,
+        }
+        validate("evidence_assessments.schema.json", assessment)
+        found = reusable_evidence_assessment(
+            [assessment], source_paper_id="P000001", source_auxiliary_id=None,
+            factual_premise=assessment["factual_premise"], regime_fingerprint="a" * 64,
+            source_asset_sha256="b" * 64, source_location="Methods p. 2",
+        )
+        self.assertEqual(found, assessment)
+        self.assertIsNone(reusable_evidence_assessment(
+            [assessment], source_paper_id="P000001", source_auxiliary_id=None,
+            factual_premise=assessment["factual_premise"], regime_fingerprint="c" * 64,
+            source_asset_sha256="b" * 64, source_location="Methods p. 2",
+        ))
+        with self.assertRaisesRegex(ValueError, "scientific classifications"):
+            reusable_evidence_assessment(
+                [dict(assessment, E_code="E-diagnostic")], source_paper_id="P000001",
+                source_auxiliary_id=None, factual_premise=assessment["factual_premise"],
+                regime_fingerprint="a" * 64, source_asset_sha256="b" * 64,
+                source_location="Methods p. 2",
+            )
+
+    def test_one_verified_text_and_extraction_serves_multiple_comparisons(self) -> None:
+        asset = {
+            "fulltext_asset_id": "TEST_FT000001", "paper_id": "P000001",
+            "article_version": "version-of-record", "source_identity": "doi:10.1/example",
+            "local_fulltext_path": "runs/TEST/fulltexts/P000001.pdf", "file_sha256": "a" * 64,
+            "verified_at": "2026-08-19T12:00:00Z", "verification_reason": "Title, DOI, and pagination match.",
+            "acquisition_route": "publisher-open-access", "extraction_tool": "pdftotext",
+            "extraction_version": "24.02", "extracted_text_path": "runs/TEST/fulltexts/P000001.txt",
+            "extracted_text_sha256": "b" * 64, "page_map_path": "runs/TEST/fulltexts/P000001-pages.json",
+            "page_map_sha256": "c" * 64, "current_for_paper": True, "notes": None,
+        }
+        validate("fulltext_assets.schema.json", asset)
+        first = reusable_fulltext_asset(
+            [asset], paper_id="P000001", article_version="version-of-record",
+            extraction_tool="pdftotext", extraction_version="24.02",
+        )
+        second = reusable_fulltext_asset(
+            [asset], paper_id="P000001", article_version="version-of-record",
+            extraction_tool="pdftotext", extraction_version="24.02",
+        )
+        self.assertEqual(first["fulltext_asset_id"], second["fulltext_asset_id"])
+        self.assertTrue(first["reuse_extraction"])
+        self.assertIsNone(reusable_fulltext_asset(
+            [asset], paper_id="P000001", article_version="accepted-manuscript",
+        ))
+
+    def test_auxiliary_acquisition_is_reused_but_scientific_links_remain_separate(self) -> None:
+        auxiliary = {
+            "auxiliary_id": "TEST_AUX000001", "citation": "Reusable source",
+            "doi": "10.1/aux", "url": None, "identity_reason": "DOI identity.",
+            "article_version": "version-of-record", "retrieval_status": "retrieved",
+            "local_fulltext_path": "runs/TEST/fulltexts/AUX.pdf", "file_sha256": "d" * 64,
+            "obtained_at": "2026-08-19T12:00:00Z", "obtained_by": "agent",
+            "acquisition_route": "repository", "verification_reason": "DOI and title match.",
+            "notes": None,
+        }
+        validate("auxiliary_sources.schema.json", auxiliary)
+        links = [evidence_link(
+            supporting_paper_id=None, supporting_experiment_id=None,
+            supporting_auxiliary_id="TEST_AUX000001", supporting_source_type="external-auxiliary-source",
+        ), evidence_link(
+            evidence_link_id="TEST_EL000002", evidence_bundle_id="TEST_EB000002",
+            member_key="validation-2", focal_comparison_id="P000001_E01_C02",
+            supporting_paper_id=None, supporting_experiment_id=None,
+            supporting_auxiliary_id="TEST_AUX000001", supporting_source_type="external-auxiliary-source",
+        )]
+        for link in links:
+            validate("evidence_links.schema.json", link)
+        self.assertEqual({link["supporting_auxiliary_id"] for link in links}, {"TEST_AUX000001"})
+        self.assertEqual(len(links), 2)
+
+
+class RouteAwareExecutionTests(unittest.TestCase):
+    def test_weak_e_closes_effect_route_but_preserves_capacity_inspection(self) -> None:
+        row = {
+            "A_code": "A-direct", "E_code": "E-physical-only", "F_code": "F-meaningful",
+            "structural_audit_status": "complete", "awareness_effect_route_status": "not-viable",
+            "unaware_capacity_route_status": "viable", "null_equivalence_route_status": "not-required",
+            "unaware_capacity": "supported", "awareness_effect": "not-tested",
+            "result_inspection_status": "completed-viable-routes",
+        }
+        self.assertEqual(route_audit_errors(row), [])
+
+    def test_weak_a_or_f_closes_both_routes_with_explicit_disposition(self) -> None:
+        for field, value in (("A_code", "A-absent"), ("F_code", "F-not-meaningful")):
+            row = {
+                "A_code": "A-direct", "E_code": "E-matched", "F_code": "F-meaningful",
+                "structural_audit_status": "complete", "awareness_effect_route_status": "not-viable",
+                "unaware_capacity_route_status": "not-viable", "null_equivalence_route_status": "not-required",
+                "unaware_capacity": "not-tested", "awareness_effect": "not-tested",
+                "result_inspection_status": "not-required",
+            }
+            row[field] = value
+            self.assertEqual(route_audit_errors(row), [])
+
+    def test_irrelevant_null_audit_is_not_required(self) -> None:
+        row = {
+            "A_code": "A-direct", "E_code": "E-physical-only", "F_code": "F-meaningful",
+            "structural_audit_status": "complete", "awareness_effect_route_status": "not-viable",
+            "unaware_capacity_route_status": "viable", "null_equivalence_route_status": "not-required",
+            "unaware_capacity": "not-supported", "awareness_effect": "not-tested",
+            "result_inspection_status": "completed-viable-routes",
+        }
+        self.assertEqual(route_audit_errors(row), [])
+
+    def test_weak_e_descriptive_no_detectable_result_still_gets_null_audit(self) -> None:
+        row = {
+            "A_code": "A-validated", "E_code": "E-physical-only", "F_code": "F-meaningful",
+            "structural_audit_status": "complete", "awareness_effect_route_status": "not-viable",
+            "unaware_capacity_route_status": "viable", "null_equivalence_route_status": "required",
+            "unaware_capacity": "supported", "awareness_effect": "no-detectable-difference",
+            "result_inspection_status": "completed-viable-routes",
+        }
+        self.assertEqual(route_audit_errors(row), [])
+
+    def test_route_metadata_does_not_change_derived_output_for_viable_comparison(self) -> None:
+        original = route_row()
+        audited = dict(original, structural_audit_status="complete",
+                       awareness_effect_route_status="viable", unaware_capacity_route_status="viable",
+                       null_equivalence_route_status="not-required",
+                       result_inspection_status="completed-viable-routes")
+        self.assertEqual(constraint_awareness_difference(original), constraint_awareness_difference(audited))
+        self.assertEqual(constraint_unaware_capacity(original), constraint_unaware_capacity(audited))
+        self.assertEqual(constraint_equivalence_supported(original), constraint_equivalence_supported(audited))
+
+
+class SyntheticLifecycleTests(unittest.TestCase):
+    def test_clean_init_write_derive_validate_resume_and_retired_id_recovery(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            runs_root = Path(temporary) / "runs"
+            run_id = "SYNTH_DRAFT08"
+            common = ["--root", str(ROOT), "--runs-root", str(runs_root)]
+            start = subprocess.run([
+                sys.executable, str(ROOT / "tools" / "init_run.py"), "--run-id", run_id,
+                "--run-mode", "start", "--agent-harness", "unit-test", "--allow-pre-freeze", *common,
+            ], text=True, capture_output=True, check=False)
+            self.assertEqual(start.returncode, 0, start.stderr)
+            run_dir = runs_root / run_id
+            allocated = allocate_identifier(run_dir, "paper")
+            self.assertEqual(allocated, "P000001")
+            write_csv_record(
+                run_dir / "papers_master.csv", schema("papers.schema.json"),
+                paper(paper_id=allocated, first_discovery_route="empirical-seed",
+                      first_discovery_query_id=None, first_search_id=None),
+                key_field="paper_id",
+            )
+            retired = allocate_identifier(run_dir, "paper")
+            self.assertEqual(retired, "P000002")
+            derive = subprocess.run([
+                sys.executable, str(ROOT / "tools" / "derive_outputs.py"), "--run-id", run_id, *common,
+            ], text=True, capture_output=True, check=False)
+            self.assertEqual(derive.returncode, 0, derive.stderr)
+            checked = subprocess.run([
+                sys.executable, str(ROOT / "tools" / "validate_run.py"), "--run-id", run_id, *common,
+            ], text=True, capture_output=True, check=False)
+            self.assertEqual(checked.returncode, 0, checked.stderr)
+            resume = subprocess.run([
+                sys.executable, str(ROOT / "tools" / "init_run.py"), "--run-id", run_id,
+                "--run-mode", "resume", "--agent-harness", "unit-test", "--allow-pre-freeze", *common,
+            ], text=True, capture_output=True, check=False)
+            self.assertEqual(resume.returncode, 0, resume.stderr)
+            self.assertEqual(allocate_identifier(run_dir, "paper"), "P000003")
 
 
 if __name__ == "__main__":

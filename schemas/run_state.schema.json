@@ -11,6 +11,10 @@
     "repository_commit", "immutable_inputs_sha256", "current_wave", "next_paper_counter", "next_experiment_counters", "next_comparison_counters",
     "next_decision_counter", "next_search_counter", "next_discovery_counter", "next_auxiliary_counter",
     "next_evidence_link_counter", "next_evidence_bundle_counter",
+    "next_evidence_assessment_counter", "next_fulltext_asset_counter",
+    "workflow_phase", "blind_lane_status", "citation_frontier_status",
+    "process_frontier_status", "activated_normalized_y_labels",
+    "completed_search_window_keys", "title_screen_batch_size", "abstract_screen_batch_size",
     "started_at", "last_checkpoint_at", "model", "model_version", "agent_harness"
   ],
   "properties": {
@@ -47,6 +51,25 @@
     "next_auxiliary_counter": { "type": "integer", "minimum": 1 },
     "next_evidence_link_counter": { "type": "integer", "minimum": 1 },
     "next_evidence_bundle_counter": { "type": "integer", "minimum": 1 },
+    "next_evidence_assessment_counter": { "type": "integer", "minimum": 1 },
+    "next_fulltext_asset_counter": { "type": "integer", "minimum": 1 },
+    "workflow_phase": {
+      "enum": [
+        "initialized", "principal-discovery", "principal-provisionally-satisfied",
+        "blind-lane", "reopened-frontiers", "final-validation", "complete"
+      ]
+    },
+    "blind_lane_status": { "enum": ["pending", "in-progress", "complete"] },
+    "citation_frontier_status": { "enum": ["open", "provisionally-satisfied", "reopened", "satisfied"] },
+    "process_frontier_status": { "enum": ["open", "provisionally-satisfied", "reopened", "satisfied"] },
+    "activated_normalized_y_labels": {
+      "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }
+    },
+    "completed_search_window_keys": {
+      "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }
+    },
+    "title_screen_batch_size": { "type": "integer", "minimum": 1, "maximum": 25 },
+    "abstract_screen_batch_size": { "type": "integer", "minimum": 1, "maximum": 10 },
     "started_at": { "type": "string", "format": "date-time" },
     "last_checkpoint_at": {
       "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]

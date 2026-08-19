@@ -11,6 +11,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 try:
     import yaml
@@ -23,8 +24,18 @@ except ModuleNotFoundError as exc:
     )
     raise SystemExit(3) from None
 
-
+from execution_contract import (
+    completion_errors, ordered_result_set_sha256, route_audit_errors,
+    search_window_key, validate_declared_bundle_status,
+)
 ROOT = Path(__file__).resolve().parents[1]
+DOI_PREFIX = re.compile(
+    r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*|doi\.org/)", re.IGNORECASE
+)
+
+
+def normalized_doi(value: Any) -> str:
+    return DOI_PREFIX.sub("", unquote(str(value or "")).strip()).strip().casefold()
 CSV_SCHEMAS = {
     "papers_master.csv": "papers.schema.json",
     "experiments_master.csv": "experiments.schema.json",
@@ -32,7 +43,10 @@ CSV_SCHEMAS = {
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
     "auxiliary_sources.csv": "auxiliary_sources.schema.json",
+    "evidence_bundles.csv": "evidence_bundles.schema.json",
     "evidence_links.csv": "evidence_links.schema.json",
+    "evidence_assessments.csv": "evidence_assessments.schema.json",
+    "fulltext_assets.csv": "fulltext_assets.schema.json",
     "design_eligible_experiments.csv": "experiments.schema.json",
     "constraint_ready_experiments.csv": "experiments.schema.json",
     "awareness_linked_differences.csv": "experiments.schema.json",
@@ -43,13 +57,16 @@ CSV_SCHEMAS = {
 }
 ARRAY_FIELDS = {
     "stats_flags", "attempted_sources", "E_diagnostic_source_locations",
-    "factorial_component_effects",
+    "factorial_component_effects", "evidence_bundle_ids", "required_member_keys",
+    "activated_normalized_y_labels", "completed_search_window_keys",
 }
-BOOLEAN_FIELDS = {"manually_requested", "used_for_decision"}
+OBJECT_FIELDS = {"source_parameters"}
+BOOLEAN_FIELDS = {"manually_requested", "used_for_decision", "current_for_paper"}
 FLOAT_FIELDS = {"null_BF01"}
 INTEGER_FIELDS = {
     "year", "first_seen_wave", "wave", "results_returned", "new_unique_papers",
-    "result_rank", "manual_request_wave", "obtained_wave",
+    "result_rank", "manual_request_wave", "obtained_wave", "requested_max_n",
+    "actual_returned_n", "title_screen_batch_size", "abstract_screen_batch_size",
 }
 
 
@@ -90,12 +107,15 @@ def allows_null(node: Any, schema: dict[str, Any]) -> bool:
 
 def convert_cell(field: str, value: str | None, property_schema: dict[str, Any], schema: dict[str, Any]) -> Any:
     text = "" if value is None else value.strip()
-    if field in ARRAY_FIELDS:
+    if field in ARRAY_FIELDS or field in OBJECT_FIELDS:
         if not text:
-            return None if allows_null(property_schema, schema) else []
+            if allows_null(property_schema, schema):
+                return None
+            return [] if field in ARRAY_FIELDS else {}
         parsed = json.loads(text)
-        if not isinstance(parsed, list):
-            raise ValueError("must encode a JSON array")
+        expected = list if field in ARRAY_FIELDS else dict
+        if not isinstance(parsed, expected):
+            raise ValueError(f"must encode a JSON {expected.__name__}")
         return parsed
     if not text and allows_null(property_schema, schema):
         return None
@@ -192,53 +212,87 @@ def max_suffix(values: list[str], marker: str, width: int = 6) -> int:
 
 
 def dependency_errors(
-    experiments: list[dict[str, Any]], auxiliary: list[dict[str, Any]]
+    experiments: list[dict[str, Any]], bundles: list[dict[str, Any]]
 ) -> list[str]:
-    """Return comparison-level errors for classification-critical auxiliary dependencies."""
+    """Return comparison-level errors for explicit classification-critical bundles."""
     errors: list[str] = []
     by_comparison: dict[str, list[dict[str, Any]]] = {}
-    for source in auxiliary:
-        target = source.get("target_comparison_id")
-        if target:
-            by_comparison.setdefault(target, []).append(source)
+    for bundle in bundles:
+        by_comparison.setdefault(bundle["focal_comparison_id"], []).append(bundle)
     for row in experiments:
         comparison_id = row.get("comparison_id")
         status = row.get("critical_dependency_status")
         linked = by_comparison.get(comparison_id, [])
-        if status == "resolved" and not any(source.get("used_for_decision") for source in linked):
+        if status == "resolved" and not any(bundle.get("bundle_status") == "complete" for bundle in linked):
             errors.append(
                 f"experiments_master.csv: {comparison_id} has resolved critical dependency "
-                "without a linked auxiliary source used for the decision"
+                "without a complete scientific evidence bundle"
             )
-        if status == "unresolved" and not any(
-            source.get("retrieval_status") in {"unavailable", "unresolved"} for source in linked
-        ):
+        if status == "unresolved" and not any(bundle.get("bundle_status") in {"incomplete", "conflicted"} for bundle in linked):
             errors.append(
                 f"experiments_master.csv: {comparison_id} has unresolved critical dependency "
-                "without a linked unavailable/unresolved auxiliary source"
+                "without an incomplete/conflicted scientific evidence bundle"
             )
     return errors
 
 
+def _premise_is_established(row: dict[str, Any], premise: str) -> bool:
+    if premise == "awareness-A":
+        return row.get("A_code") in {"A-direct", "A-validated"}
+    if premise in {"first-order-evidence-E", "E-diagnostic"}:
+        return row.get("E_code") in {"E-matched", "E-diagnostic"}
+    if premise == "meaningful-Y/F":
+        return row.get("F_code") == "F-meaningful"
+    if premise == "unaware-capacity":
+        return row.get("unaware_capacity") == "supported"
+    if premise == "awareness-effect":
+        return row.get("awareness_effect") in {"difference-supported", "no-detectable-difference", "equivalence-supported"}
+    if premise == "null/no-detectable-difference":
+        return row.get("awareness_effect") == "no-detectable-difference"
+    if premise == "equivalence":
+        return row.get("awareness_effect") == "equivalence-supported"
+    if premise == "statistical-inference":
+        return row.get("stats_status") == "adequate"
+    if premise == "Meyen-role":
+        return row.get("Meyen_role") in {"inference-critical", "supplementary"}
+    return False
+
+
 def evidence_bundle_errors(
     experiments: list[dict[str, Any]],
+    evidence_bundles: list[dict[str, Any]],
     evidence_links: list[dict[str, Any]],
     paper_ids: set[str],
     auxiliary_ids: set[str],
+    assessment_ids: set[str] | None = None,
 ) -> list[str]:
-    """Validate focal bundle membership while permitting support-only experiments."""
+    """Validate first-class one-premise bundles and explicit non-transitive links."""
     errors: list[str] = []
+    assessment_ids = assessment_ids or set()
     comparisons = {row["comparison_id"]: row for row in experiments}
-    bundle_focals: dict[str, set[str]] = {}
+    bundles = {row["evidence_bundle_id"]: row for row in evidence_bundles}
+    links_by_bundle: dict[str, list[dict[str, Any]]] = {}
     for link in evidence_links:
         link_id = link["evidence_link_id"]
         focal_id = link["focal_comparison_id"]
-        bundle_focals.setdefault(link["evidence_bundle_id"], set()).add(focal_id)
+        bundle_id = link["evidence_bundle_id"]
+        links_by_bundle.setdefault(bundle_id, []).append(link)
+        bundle = bundles.get(bundle_id)
+        if bundle is None:
+            errors.append(f"evidence_links.csv: {link_id} references missing bundle {bundle_id}")
+        elif bundle["focal_comparison_id"] != focal_id:
+            errors.append(f"evidence_links.csv: {link_id} focal differs from its bundle focal")
+        elif (link.get("member_key") in set(bundle.get("required_member_keys", []))) != (
+            link.get("dependency_role") == "required"
+        ):
+            errors.append(
+                f"evidence_links.csv: {link_id} required membership disagrees with bundle manifest"
+            )
         focal = comparisons.get(focal_id)
         if focal is None:
             errors.append(f"evidence_links.csv: {link_id} references missing focal comparison {focal_id}")
             continue
-        if focal.get("evidence_bundle_id") != link["evidence_bundle_id"]:
+        if bundle_id not in focal.get("evidence_bundle_ids", []):
             errors.append(
                 f"evidence_links.csv: {link_id} bundle does not match focal comparison "
                 f"{focal_id}"
@@ -263,31 +317,57 @@ def evidence_bundle_errors(
                 f"evidence_links.csv: {link_id} references missing auxiliary source "
                 f"{supporting_auxiliary}"
             )
-    links_by_bundle = {
-        (link["focal_comparison_id"], link["evidence_bundle_id"])
-        for link in evidence_links
-    }
-    for bundle_id, focal_ids in bundle_focals.items():
-        if len(focal_ids) > 1:
-            errors.append(
-                f"evidence_links.csv: evidence bundle {bundle_id} is shared by multiple focal "
-                f"comparisons: {', '.join(sorted(focal_ids))}"
-            )
-    declared_bundle_focals: dict[str, set[str]] = {}
+        assessment_id = link.get("evidence_assessment_id")
+        if assessment_id is not None and assessment_id not in assessment_ids:
+            errors.append(f"evidence_links.csv: {link_id} references missing assessment {assessment_id}")
+
+    bundles_by_focal_premise: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for bundle in evidence_bundles:
+        bundle_id = bundle["evidence_bundle_id"]
+        focal_id = bundle["focal_comparison_id"]
+        focal = comparisons.get(focal_id)
+        if focal is None:
+            errors.append(f"evidence_bundles.csv: {bundle_id} references missing focal {focal_id}")
+            continue
+        if bundle_id not in focal.get("evidence_bundle_ids", []):
+            errors.append(f"evidence_bundles.csv: {bundle_id} is not declared by focal {focal_id}")
+        member_links = links_by_bundle.get(bundle_id, [])
+        member_keys = [link.get("member_key") for link in member_links]
+        if len(member_keys) != len(set(member_keys)):
+            errors.append(f"evidence_bundles.csv: {bundle_id} has duplicate member_key values")
+        if not member_links:
+            errors.append(f"evidence_bundles.csv: {bundle_id} has no explicit evidence links")
+        else:
+            try:
+                validate_declared_bundle_status(bundle, member_links)
+            except ValueError as exc:
+                errors.append(f"evidence_bundles.csv: {exc}")
+        bundles_by_focal_premise.setdefault((focal_id, bundle["supported_premise"]), []).append(bundle)
+
     for row in experiments:
-        bundle_id = row.get("evidence_bundle_id")
-        if bundle_id is not None:
-            declared_bundle_focals.setdefault(bundle_id, set()).add(row["comparison_id"])
-        if bundle_id is not None and (row["comparison_id"], bundle_id) not in links_by_bundle:
+        focal_id = row["comparison_id"]
+        for bundle_id in row.get("evidence_bundle_ids", []):
+            if bundle_id not in bundles:
+                errors.append(f"experiments_master.csv: {focal_id} declares missing bundle {bundle_id}")
+        premises = {
+            bundle["supported_premise"] for bundle in evidence_bundles
+            if bundle["focal_comparison_id"] == focal_id
+        }
+        for premise in premises:
+            if _premise_is_established(row, premise) and not any(
+                bundle["bundle_status"] == "complete"
+                for bundle in bundles_by_focal_premise[(focal_id, premise)]
+            ):
+                errors.append(
+                    f"experiments_master.csv: {focal_id} treats {premise} as established "
+                    "without a complete independent bundle"
+                )
+        if row.get("E_code") == "E-diagnostic" and not any(
+            bundle["bundle_status"] == "complete"
+            for bundle in bundles_by_focal_premise.get((focal_id, "E-diagnostic"), [])
+        ):
             errors.append(
-                f"experiments_master.csv: {row['comparison_id']} declares evidence bundle "
-                f"{bundle_id} without a matching evidence link"
-            )
-    for bundle_id, focal_ids in declared_bundle_focals.items():
-        if len(focal_ids) > 1:
-            errors.append(
-                f"experiments_master.csv: evidence bundle {bundle_id} is declared by multiple "
-                f"comparisons: {', '.join(sorted(focal_ids))}"
+                f"experiments_master.csv: {focal_id} assigns E-diagnostic without a complete E-diagnostic bundle"
             )
     return errors
 
@@ -383,7 +463,10 @@ def main() -> int:
     discoveries = tables.get("discoveries.csv", [])
     missing = tables.get("missing_texts.csv", [])
     auxiliary = tables.get("auxiliary_sources.csv", [])
+    evidence_bundles = tables.get("evidence_bundles.csv", [])
     evidence_links = tables.get("evidence_links.csv", [])
+    evidence_assessments = tables.get("evidence_assessments.csv", [])
+    fulltext_assets = tables.get("fulltext_assets.csv", [])
     for rows, field, label in (
         (papers, "paper_id", "papers_master.csv"),
         (experiments, "comparison_id", "experiments_master.csv"),
@@ -391,7 +474,10 @@ def main() -> int:
         (discoveries, "discovery_id", "discoveries.csv"),
         (missing, "paper_id", "missing_texts.csv"),
         (auxiliary, "auxiliary_id", "auxiliary_sources.csv"),
+        (evidence_bundles, "evidence_bundle_id", "evidence_bundles.csv"),
         (evidence_links, "evidence_link_id", "evidence_links.csv"),
+        (evidence_assessments, "evidence_assessment_id", "evidence_assessments.csv"),
+        (fulltext_assets, "fulltext_asset_id", "fulltext_assets.csv"),
         (decisions, "decision_id", "decision_log.jsonl"),
     ):
         check_unique(rows, field, label, errors)
@@ -409,8 +495,10 @@ def main() -> int:
     search_ids = {row["search_id"] for row in searches}
     discovery_ids = {row["discovery_id"] for row in discoveries}
     auxiliary_ids = {row["auxiliary_id"] for row in auxiliary}
+    evidence_bundle_ids = {row["evidence_bundle_id"] for row in evidence_bundles}
     evidence_link_ids = {row["evidence_link_id"] for row in evidence_links}
-    evidence_bundle_ids = {row["evidence_bundle_id"] for row in evidence_links}
+    evidence_assessment_ids = {row["evidence_assessment_id"] for row in evidence_assessments}
+    fulltext_asset_ids = {row["fulltext_asset_id"] for row in fulltext_assets}
     for row in papers:
         for field in ("first_discovery_parent", "duplicate_of"):
             if row.get(field) is not None and row[field] not in paper_ids:
@@ -424,7 +512,18 @@ def main() -> int:
             errors.append(f"experiments_master.csv: {row['comparison_id']} experiment_id does not belong to paper_id")
         if not row["comparison_id"].startswith(f"{row['experiment_id']}_C"):
             errors.append(f"experiments_master.csv: {row['comparison_id']} does not belong to experiment_id {row['experiment_id']}")
+        for error in route_audit_errors(row):
+            errors.append(f"experiments_master.csv: {row['comparison_id']}: {error}")
     for row in searches:
+        if row.get("discovery_route") in {"independent-query", "process-triggered-query"}:
+            expected_key = search_window_key(
+                execution_phase=row["execution_phase"], source=row["source"],
+                query_id=row.get("query_id"), normalized_y_label=row.get("normalized_y_label"),
+                canonical_query=row["canonical_query"], source_parameters=row["source_parameters"],
+                publication_cutoff=row.get("publication_cutoff"), requested_max_n=row["requested_max_n"],
+            )
+            if row.get("window_key") != expected_key:
+                errors.append(f"search_log.csv: {row['search_id']} window_key does not match immutable parameters")
         if row.get("parent_paper_id") is not None and row["parent_paper_id"] not in paper_ids:
             errors.append(f"search_log.csv: {row['search_id']} references missing parent paper")
         if row.get("trigger_comparison_id") is not None and row["trigger_comparison_id"] not in comparison_ids:
@@ -447,16 +546,14 @@ def main() -> int:
                 digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
                 if digest != row["file_sha256"]:
                     errors.append(f"missing_texts.csv: SHA-256 mismatch for {local_path}")
+    auxiliary_version_keys: set[tuple[str, str]] = set()
     for row in auxiliary:
-        if row["target_paper_id"] not in paper_ids:
-            errors.append(
-                f"auxiliary_sources.csv: {row['auxiliary_id']} references missing paper {row['target_paper_id']}"
-            )
-        if row.get("target_comparison_id") is not None and row["target_comparison_id"] not in comparison_ids:
-            errors.append(
-                f"auxiliary_sources.csv: {row['auxiliary_id']} references missing comparison "
-                f"{row['target_comparison_id']}"
-            )
+        normalized_auxiliary_doi = normalized_doi(row.get("doi"))
+        if normalized_auxiliary_doi:
+            key = (normalized_auxiliary_doi, row["article_version"])
+            if key in auxiliary_version_keys:
+                errors.append(f"auxiliary_sources.csv: duplicate logical DOI/version {key}")
+            auxiliary_version_keys.add(key)
         local_path = row.get("local_fulltext_path")
         if local_path:
             candidate = Path(local_path)
@@ -467,8 +564,128 @@ def main() -> int:
                 digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
                 if digest != row["file_sha256"]:
                     errors.append(f"auxiliary_sources.csv: SHA-256 mismatch for {local_path}")
-    errors.extend(dependency_errors(experiments, auxiliary))
-    errors.extend(evidence_bundle_errors(experiments, evidence_links, paper_ids, auxiliary_ids))
+    for row in evidence_assessments:
+        if row.get("source_paper_id") is not None and row["source_paper_id"] not in paper_ids:
+            errors.append(f"evidence_assessments.csv: {row['evidence_assessment_id']} references missing paper")
+        if row.get("source_auxiliary_id") is not None and row["source_auxiliary_id"] not in auxiliary_ids:
+            errors.append(f"evidence_assessments.csv: {row['evidence_assessment_id']} references missing auxiliary source")
+        asset_hash = row.get("source_asset_sha256")
+        if asset_hash and row.get("source_paper_id") is not None and not any(
+            asset["paper_id"] == row["source_paper_id"] and asset["file_sha256"] == asset_hash
+            for asset in fulltext_assets
+        ):
+            errors.append(f"evidence_assessments.csv: {row['evidence_assessment_id']} source asset hash is not verified for its paper")
+        if asset_hash and row.get("source_auxiliary_id") is not None and not any(
+            source["auxiliary_id"] == row["source_auxiliary_id"] and source.get("file_sha256") == asset_hash
+            for source in auxiliary
+        ):
+            errors.append(f"evidence_assessments.csv: {row['evidence_assessment_id']} source asset hash is not verified for its auxiliary")
+    current_asset_keys: set[tuple[str, str]] = set()
+    current_asset_papers: set[str] = set()
+    for row in fulltext_assets:
+        if row["paper_id"] not in paper_ids:
+            errors.append(f"fulltext_assets.csv: {row['fulltext_asset_id']} references missing paper")
+        key = (row["paper_id"], row["article_version"])
+        if key in current_asset_keys:
+            errors.append(f"fulltext_assets.csv: duplicate verified paper/version {key}")
+        current_asset_keys.add(key)
+        if row.get("current_for_paper"):
+            if row["paper_id"] in current_asset_papers:
+                errors.append(f"fulltext_assets.csv: multiple current article versions for {row['paper_id']}")
+            current_asset_papers.add(row["paper_id"])
+        for path_field, hash_field in (
+            ("local_fulltext_path", "file_sha256"),
+            ("extracted_text_path", "extracted_text_sha256"),
+            ("page_map_path", "page_map_sha256"),
+        ):
+            local_path = row.get(path_field)
+            if local_path:
+                candidate = Path(local_path)
+                candidate = candidate if candidate.is_absolute() else root / candidate
+                if not candidate.exists():
+                    errors.append(f"fulltext_assets.csv: {path_field} does not exist: {local_path}")
+                elif row.get(hash_field):
+                    digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+                    if digest != row[hash_field]:
+                        errors.append(f"fulltext_assets.csv: {hash_field} mismatch for {local_path}")
+    for row in papers:
+        if row.get("fulltext_status") in {"retrieved-published", "retrieved-repository", "retrieved-preprint"}:
+            if not any(asset["paper_id"] == row["paper_id"] and asset["current_for_paper"] for asset in fulltext_assets):
+                errors.append(f"papers_master.csv: {row['paper_id']} has retrieved full text without a verified asset")
+
+    searches_by_id = {row["search_id"]: row for row in searches}
+    discoveries_by_search: dict[str, list[dict[str, Any]]] = {}
+    for row in discoveries:
+        discoveries_by_search.setdefault(row["search_id"], []).append(row)
+    completed_window_hashes: dict[str, set[str]] = {}
+    completed_blind_counts: dict[tuple[str, str], int] = {}
+    completed_process_counts: dict[tuple[str, str], int] = {}
+    for row in searches:
+        if (
+            row.get("requested_max_n") is not None
+            and row.get("actual_returned_n") is not None
+            and row["actual_returned_n"] > row["requested_max_n"]
+        ):
+            errors.append(f"search_log.csv: {row['search_id']} returned more than its frozen maximum")
+        if row.get("window_status") == "complete":
+            if row.get("discovery_route") == "independent-query":
+                pair = (row.get("query_id"), row.get("source"))
+                completed_blind_counts[pair] = completed_blind_counts.get(pair, 0) + 1
+            elif row.get("discovery_route") == "process-triggered-query":
+                pair = (row.get("normalized_y_label"), row.get("source"))
+                completed_process_counts[pair] = completed_process_counts.get(pair, 0) + 1
+            results = sorted(discoveries_by_search.get(row["search_id"], []), key=lambda item: item["result_rank"] or 0)
+            if row.get("actual_returned_n") != len(results) or row.get("results_returned") != len(results):
+                errors.append(f"search_log.csv: {row['search_id']} completed window count differs from discoveries")
+            try:
+                digest = ordered_result_set_sha256(results)
+                if digest != row.get("result_set_sha256"):
+                    errors.append(f"search_log.csv: {row['search_id']} result-set hash mismatch")
+            except ValueError as exc:
+                errors.append(f"search_log.csv: {row['search_id']}: {exc}")
+            completed_window_hashes.setdefault(row["window_key"], set()).add(row["result_set_sha256"])
+        elif row.get("window_status") == "reused":
+            original = searches_by_id.get(row.get("reused_search_id"))
+            if original is None or original.get("window_status") != "complete":
+                errors.append(f"search_log.csv: {row['search_id']} reuses a missing/incomplete window")
+            elif original.get("result_set_sha256") != row.get("result_set_sha256"):
+                errors.append(f"search_log.csv: {row['search_id']} reused hash differs from original")
+            if discoveries_by_search.get(row["search_id"]):
+                errors.append(f"search_log.csv: {row['search_id']} reran a reused completed window")
+    for key, hashes in completed_window_hashes.items():
+        if len(hashes) > 1:
+            errors.append(f"search_log.csv: completed window {key} has contradictory snapshots")
+    for pair, count in completed_blind_counts.items():
+        if count > 1:
+            errors.append(f"search_log.csv: blind source/family window reran instead of reusing snapshot: {pair}")
+    for pair, count in completed_process_counts.items():
+        if count > 1:
+            errors.append(f"search_log.csv: process source/Y window retriggered: {pair}")
+
+    conservative = ((config.get("search") or {}).get("conservative_execution") or {})
+    blind_contract = conservative.get("supplementary_blind_lane") or {}
+    active_families = set(blind_contract.get("active_families", []))
+    blind_sources = set(blind_contract.get("sources", []))
+    complete_blind_pairs: set[tuple[str, str]] = set()
+    for row in searches:
+        if row.get("discovery_route") == "independent-query":
+            if row.get("query_id") not in active_families:
+                errors.append(f"search_log.csv: {row['search_id']} uses inactive/unknown blind family")
+            if row.get("source") not in blind_sources or row.get("requested_max_n") != 40:
+                errors.append(f"search_log.csv: {row['search_id']} violates conservative QCAL source/N=40")
+            if row.get("window_status") in {"complete", "reused"}:
+                complete_blind_pairs.add((row["query_id"], row["source"]))
+        if row.get("discovery_route") == "process-triggered-query":
+            process_contract = conservative.get("process_trigger") or {}
+            if row.get("source") not in set(process_contract.get("sources", [])) or row.get("requested_max_n") != 50:
+                errors.append(f"search_log.csv: {row['search_id']} violates conservative process source/N=50")
+    expected_blind_pairs = {(family, source) for family in active_families for source in blind_sources}
+
+    errors.extend(dependency_errors(experiments, evidence_bundles))
+    errors.extend(evidence_bundle_errors(
+        experiments, evidence_bundles, evidence_links, paper_ids, auxiliary_ids,
+        evidence_assessment_ids,
+    ))
 
     valid_entities = {
         "paper": paper_ids,
@@ -478,7 +695,10 @@ def main() -> int:
         "discovery": discovery_ids,
         "missing_text": paper_ids,
         "auxiliary_source": auxiliary_ids,
+        "evidence_bundle": evidence_bundle_ids,
         "evidence_link": evidence_link_ids,
+        "evidence_assessment": evidence_assessment_ids,
+        "fulltext_asset": fulltext_asset_ids,
         "run": {args.run_id},
     }
     for event in decisions:
@@ -487,6 +707,20 @@ def main() -> int:
         entity_type = event.get("entity_type")
         if entity_type in valid_entities and event.get("entity_id") not in valid_entities[entity_type]:
             errors.append(f"decision_log.jsonl: {event.get('decision_id')} references missing {entity_type} {event.get('entity_id')}")
+
+    blind_searches = [row for row in searches if row.get("discovery_route") == "independent-query"]
+    if blind_searches:
+        provisional_events = [
+            event for event in decisions
+            if event.get("entity_type") == "run"
+            and event.get("field") == "workflow_phase"
+            and event.get("new_value") == "principal-provisionally-satisfied"
+        ]
+        first_blind_started = min(row["started_at"] for row in blind_searches)
+        if not provisional_events or min(event["timestamp"] for event in provisional_events) > first_blind_started:
+            errors.append(
+                "decision_log.jsonl: blind lane began before a durable principal-provisionally-satisfied transition"
+            )
 
     if state:
         if state.get("run_id") != args.run_id:
@@ -524,10 +758,40 @@ def main() -> int:
                 ("next_auxiliary_counter", max_suffix(list(auxiliary_ids), "_AUX")),
                 ("next_evidence_link_counter", max_suffix(list(evidence_link_ids), "_EL")),
                 ("next_evidence_bundle_counter", max_suffix(list(evidence_bundle_ids), "_EB")),
+                ("next_evidence_assessment_counter", max_suffix(list(evidence_assessment_ids), "_EA")),
+                ("next_fulltext_asset_counter", max_suffix(list(fulltext_asset_ids), "_FT")),
             )
             for field, maximum in counter_checks:
                 if state.get(field, 0) <= maximum:
                     errors.append(f"run_state.json: {field} is stale")
+        if state.get("status") == "complete":
+            for error in completion_errors(state):
+                errors.append(f"run_state.json: {error}")
+        if state.get("blind_lane_status") == "complete" and complete_blind_pairs != expected_blind_pairs:
+            missing_pairs = sorted(expected_blind_pairs - complete_blind_pairs)
+            extra_pairs = sorted(complete_blind_pairs - expected_blind_pairs)
+            errors.append(
+                "run_state.json: blind lane marked complete without exactly the mandatory windows; "
+                f"missing={missing_pairs}, extra={extra_pairs}"
+            )
+        process_complete = {
+            (row.get("normalized_y_label"), row.get("source"))
+            for row in searches
+            if row.get("discovery_route") == "process-triggered-query"
+            and row.get("window_status") in {"complete", "reused"}
+        }
+        process_sources = set(((conservative.get("process_trigger") or {}).get("sources", [])))
+        if state.get("process_frontier_status") == "satisfied":
+            for label in state.get("activated_normalized_y_labels", []):
+                missing_sources = process_sources - {source for y, source in process_complete if y == label}
+                if missing_sources:
+                    errors.append(
+                        f"run_state.json: process frontier satisfied but Y {label!r} lacks sources {sorted(missing_sources)}"
+                    )
+        completed_keys = set(state.get("completed_search_window_keys", []))
+        durable_keys = set(completed_window_hashes)
+        if not completed_keys.issubset(durable_keys):
+            errors.append("run_state.json: completed_search_window_keys includes no durable complete snapshot")
 
     if errors:
         for error in errors:

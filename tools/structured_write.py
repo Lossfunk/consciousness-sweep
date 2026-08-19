@@ -37,7 +37,10 @@ TABLE_SCHEMAS = {
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
     "auxiliary_sources.csv": "auxiliary_sources.schema.json",
+    "evidence_bundles.csv": "evidence_bundles.schema.json",
     "evidence_links.csv": "evidence_links.schema.json",
+    "evidence_assessments.csv": "evidence_assessments.schema.json",
+    "fulltext_assets.csv": "fulltext_assets.schema.json",
 }
 PRIMARY_KEYS = {
     "papers_master.csv": "paper_id",
@@ -46,12 +49,16 @@ PRIMARY_KEYS = {
     "discoveries.csv": "discovery_id",
     "missing_texts.csv": "paper_id",
     "auxiliary_sources.csv": "auxiliary_id",
+    "evidence_bundles.csv": "evidence_bundle_id",
     "evidence_links.csv": "evidence_link_id",
+    "evidence_assessments.csv": "evidence_assessment_id",
+    "fulltext_assets.csv": "fulltext_asset_id",
 }
 ARRAY_FIELDS = {
     "stats_flags", "attempted_sources", "E_diagnostic_source_locations",
-    "factorial_component_effects",
+    "factorial_component_effects", "evidence_bundle_ids", "required_member_keys",
 }
+OBJECT_FIELDS = {"source_parameters"}
 DOI_PREFIX = re.compile(
     r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*|doi\.org/)", re.IGNORECASE
 )
@@ -133,7 +140,7 @@ def validate_record(record: dict[str, Any], schema: dict[str, Any]) -> None:
 def encode_cell(field: str, value: Any) -> str:
     if value is None:
         return ""
-    if field in ARRAY_FIELDS:
+    if field in ARRAY_FIELDS or field in OBJECT_FIELDS:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -249,6 +256,8 @@ def allocate_identifier(run_dir: Path, kind: str, parent_id: str | None = None) 
         "auxiliary": ("next_auxiliary_counter", "_AUX", 6),
         "evidence_link": ("next_evidence_link_counter", "_EL", 6),
         "evidence_bundle": ("next_evidence_bundle_counter", "_EB", 6),
+        "evidence_assessment": ("next_evidence_assessment_counter", "_EA", 6),
+        "fulltext_asset": ("next_fulltext_asset_counter", "_FT", 6),
     }
     with run_write_lock(run_dir):
         state_path = run_dir / "run_state.json"
@@ -309,7 +318,8 @@ def main() -> int:
         "--id-kind",
         choices=(
             "paper", "experiment", "comparison", "decision", "search", "discovery",
-            "auxiliary", "evidence_link", "evidence_bundle",
+            "auxiliary", "evidence_link", "evidence_bundle", "evidence_assessment",
+            "fulltext_asset",
         ),
     )
     parser.add_argument("--parent-id")

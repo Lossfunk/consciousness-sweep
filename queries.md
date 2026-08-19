@@ -4,11 +4,11 @@
 
 These query families are recall checks and discovery tools, not eligibility definitions. The principal recall instrument is empirical-seed citation expansion plus review/discovery anchors plus activated process-trigger searches. Independent database blocks are a supplementary blind-spot check, not a claim of complete enumeration; every record returned inside a frozen window must nevertheless be screened and audited. Interpret eligibility only under `PROTOCOL.md`. Before registration, adapt and freeze each exact string for every named search source, recording source-specific syntax, fields, limits, date handling, and fallback behavior. Do not execute these drafts during repository construction.
 
-## Proposed CALIB004 compact independent-query lane (prepared, not executed)
+## Conservative pre-freeze supplementary blind-spot lane
 
-These six blocks replace broad standalone process words with diagnostic phrases. Each crosses the same explicit awareness vocabulary with a small process-specific vocabulary. Neither source uses unqualified `task`, `performance`, `experiment`, `memory`, or `decision` as a process term. The canonical renderers are in `tools/query_instruments.py`.
+CALIB004 tested the six compact blocks below. The conservative pre-freeze execution candidate activates exactly five: ATTN, META, BIND, MEM, and DEC. Each crosses the same explicit awareness vocabulary with a small process-specific vocabulary. Neither source uses unqualified `task`, `performance`, `experiment`, `memory`, or `decision` as a process term. The canonical active renderers are in `tools/query_instruments.py`.
 
-Shared draft syntax-only instrumentation: OpenAlex `/works` with `filter=title_and_abstract.search`, `sort=relevance_score:desc`, `per_page=40`, page 1 only; Europe PMC `/search` with `TITLE_ABS`, default relevance, `pageSize=40`, initial cursor only, and `synonym=false`. Screen and audit all returned records. Across six families and two sources, the hard ceiling is 480 encounters.
+Use both OpenAlex and Europe PMC. OpenAlex uses `/works` with `filter=title_and_abstract.search`, `sort=relevance_score:desc`, `per_page=40`, page 1 only. Europe PMC uses `/search` with `TITLE_ABS`, default relevance, `pageSize=40`, the initial cursor only, and `synonym=false`. Screen and audit every returned record. Do not request a second page/cursor and do not redistribute unused quota. Across five active families and two sources, the hard ceiling is 400 encounters. This lane is mandatory and runs only after the principal frontier is provisionally satisfied; running it last does not make it optional.
 
 ### QCAL4-ATTN — attention/control
 
@@ -35,14 +35,16 @@ Shared draft syntax-only instrumentation: OpenAlex `/works` with `filter=title_a
 - OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("action selection" OR "response selection" OR "rule-guided behavior" OR "rule-guided behaviour" OR "flexible control")`
 - Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"action selection" OR TITLE_ABS:"response selection" OR TITLE_ABS:"rule-guided behavior" OR TITLE_ABS:"rule-guided behaviour" OR TITLE_ABS:"flexible control")`
 
-### QCAL4-LEARN — learning/adaptation
+### QCAL4-LEARN — learning/adaptation — disabled/retired pre-freeze
+
+CALIB004 diagnosed this rendering as pathological. It is retained verbatim below for provenance but is **not active** in the conservative instrument. Learning/adaptation remains scientifically eligible and discoverable through empirical seeds, review/discovery anchors, citation expansion, and an independently earned process-trigger search. **PRE-FREEZE TODO:** before v1, either redesign this generic blind-query block or deliberately document that v1 omits a generic LEARN blind-spot block. Do not silently reactivate or delete it.
 
 - OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("error-based learning" OR "reinforcement learning" OR "evaluative conditioning" OR "adaptive updating")`
 - Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"error-based learning" OR TITLE_ABS:"reinforcement learning" OR TITLE_ABS:"evaluative conditioning" OR TITLE_ABS:"adaptive updating")`
 
 ### Blind sentinel check
 
-Use the six existing CALIB003 sentinels unchanged and without embedding titles, authors, or identifiers in any query. Count only natural recovery inside the 480-record windows. This is a syntax/recall diagnostic, not an inclusion test or registered stopping rule.
+The historical CALIB004 sentinel check used the six existing CALIB003 sentinels without embedding titles, authors, or identifiers in any query. Future registered entry of empirical anchors must come from frozen seeds, never from the supplementary lane. Sentinel recovery remains a calibration diagnostic, not an inclusion or stopping rule.
 
 ## CALIB003 independent-query instrument — executed historical provenance
 
@@ -266,7 +268,7 @@ The permitted lexical universe is closed: canonical Y; morphology/grammar/spelli
 
 The source-specific query crosses explicit awareness terms directly with the validated Y variants in title/abstract fields. Generic `experiment`, `task`, and `performance` clauses and an obligatory masking-method clause are removed because CALIB003 showed that they can make an already narrow process phrase pathological.
 
-### Prepared Tsushima diagnostic query (not executed)
+### Historical Tsushima diagnostic query (executed only in CALIB004; not rerun here)
 
 Permitted variants, exhaustively:
 
@@ -282,15 +284,15 @@ Permitted variants, exhaustively:
 - OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("regulation of task-irrelevant distractor interference" OR "task-irrelevant distractor-interference regulation" OR "regulating task-irrelevant distractor interference" OR "inhibitory control" OR "attention filtering" OR "distractor interference control")`
 - Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"regulation of task-irrelevant distractor interference" OR TITLE_ABS:"task-irrelevant distractor-interference regulation" OR TITLE_ABS:"regulating task-irrelevant distractor interference" OR TITLE_ABS:"inhibitory control" OR TITLE_ABS:"attention filtering" OR TITLE_ABS:"distractor interference control")`
 
-CALIB004 syntax bound for this diagnostic: one initial result window per source, 50 records each, screen/audit all returned records, maximum 100 encounters. Report source parse success and result-universe size; do not follow results or retrieve full text.
+Conservative process-search bound: both sources, one initial result window per source, maximum 50 records each, screen/audit every returned record, and do not redistribute unused quota. Each normalized Y can activate once per run. Only a genuinely new Y that independently satisfies the unchanged activation rule may recurse.
 
-## CALIB004 bounded plan (prepared, not authorized or executed)
+## CALIB004 bounded plan — historical completed calibration provenance
 
-1. **A — compact volume and blind sentinel recovery:** syntax-test the six QCAL4 blocks on OpenAlex and Europe PMC, one 40-record window per source/block, screen and audit all returns, maximum 480 encounters. Evaluate the unchanged six sentinels blindly.
-2. **B — dynamic-query syntax/universe:** syntax-test the prepared Tsushima query on both sources, one 50-record window each, maximum 100 encounters. Confirm parsing and that the returned universe is non-pathological; do not expand citations or recurse.
-3. **C — mechanical Meyen-role verification:** use synthetic rows only to verify inference-critical blocking, supplementary non-blocking, and retention of supplementary status in derived files. This phase has zero literature records.
+1. **A — compact volume and blind sentinel recovery:** CALIB004 syntax-tested the then-six QCAL4 blocks on OpenAlex and Europe PMC, one 40-record window per source/block, with a maximum of 480 encounters.
+2. **B — dynamic-query syntax/universe:** CALIB004 syntax-tested the prepared diagnostic query on both sources, one 50-record window each, with a maximum of 100 encounters; it did not expand citations or recurse.
+3. **C — mechanical Meyen-role verification:** synthetic rows checked inference-critical blocking, supplementary non-blocking, and retention of supplementary status in derived files, with zero literature records.
 
-The total CALIB004 ceiling is 580 encountered literature records. It includes no citation calibration, F/full-text calibration, source-ordering calibration, scientific screening beyond the returned calibration windows, or change to frozen scientific criteria. This plan is preparation only and does not authorize a calibration run.
+The historical CALIB004 ceiling was 580 encountered literature records. It included no citation calibration, F/full-text calibration, source-ordering calibration, scientific screening beyond the returned calibration windows, or change to scientific criteria. These values document that completed calibration only and do not authorize another calibration run. Its pathological LEARN result is why the current conservative candidate activates five, not six, generic families.
 
 ## Freeze checklist for queries
 

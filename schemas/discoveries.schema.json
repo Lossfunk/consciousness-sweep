@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "required": [
     "discovery_id", "search_id", "paper_id", "result_rank", "raw_title", "raw_doi",
-    "raw_url", "discovered_at", "dedup_status", "dedup_reason", "notes"
+    "raw_url", "source_stable_id", "discovered_at", "dedup_status", "dedup_reason", "notes"
   ],
   "properties": {
     "discovery_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+_R[0-9]{6}$" },
@@ -21,6 +21,7 @@
     "raw_url": {
       "anyOf": [{ "type": "string", "format": "uri" }, { "type": "null" }]
     },
+    "source_stable_id": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
     "discovered_at": { "type": "string", "format": "date-time" },
     "dedup_status": { "enum": ["new-paper", "existing-paper", "confirmed-duplicate", "possible-duplicate"] },
     "dedup_reason": { "type": "string", "minLength": 1 },

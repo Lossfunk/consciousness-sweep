@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/fulltext_assets.schema.json",
+  "title": "Verified full-text asset and extraction cache",
+  "description": "One verified article version for one logical paper. Multiple material versions require separate rows and never overwrite one another.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fulltext_asset_id", "paper_id", "article_version", "source_identity",
+    "local_fulltext_path", "file_sha256", "verified_at", "verification_reason",
+    "acquisition_route", "extraction_tool", "extraction_version", "extracted_text_path",
+    "extracted_text_sha256", "page_map_path", "page_map_sha256", "current_for_paper", "notes"
+  ],
+  "properties": {
+    "fulltext_asset_id": {
+      "type": "string", "pattern": "^[A-Za-z0-9._-]+_FT[0-9]{6}$"
+    },
+    "paper_id": { "type": "string", "pattern": "^P[0-9]{6}$" },
+    "article_version": { "type": "string", "minLength": 1 },
+    "source_identity": { "type": "string", "minLength": 1 },
+    "local_fulltext_path": { "type": "string", "minLength": 1 },
+    "file_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "verified_at": { "type": "string", "format": "date-time" },
+    "verification_reason": { "type": "string", "minLength": 1 },
+    "acquisition_route": { "type": "string", "minLength": 1 },
+    "extraction_tool": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "extraction_version": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "extracted_text_path": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "extracted_text_sha256": {
+      "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
+    },
+    "page_map_path": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "page_map_sha256": {
+      "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
+    },
+    "current_for_paper": { "type": "boolean" },
+    "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "extracted_text_path": { "type": "string" } }, "required": ["extracted_text_path"] },
+      "then": {
+        "properties": {
+          "extraction_tool": { "type": "string", "minLength": 1 },
+          "extraction_version": { "type": "string", "minLength": 1 },
+          "extracted_text_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "page_map_path": { "type": "string" } }, "required": ["page_map_path"] },
+      "then": { "properties": { "page_map_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" } } }
+    }
+  ]
+}

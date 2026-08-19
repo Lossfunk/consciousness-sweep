@@ -9,7 +9,12 @@
     "comparison_id", "experiment_id", "paper_id", "experiment_label", "X_label", "X_description",
     "awareness_measure", "awareness_evidence_type", "objective_visibility_test_informative",
     "objective_visibility_test_reason", "A_code", "A_reason", "critical_dependency_status",
-    "critical_dependency_reason", "evidence_bundle_id", "first_order_measure", "E_code", "E_reason",
+    "critical_dependency_reason", "evidence_bundle_ids", "structural_audit_status",
+    "awareness_effect_route_status", "awareness_effect_route_reason",
+    "unaware_capacity_route_status", "unaware_capacity_route_reason",
+    "null_equivalence_route_status", "null_equivalence_route_reason",
+    "result_inspection_status", "result_inspection_reason",
+    "first_order_measure", "E_code", "E_reason",
     "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
     "E_competing_account", "E_competing_prediction", "E_violating_pattern", "E_same_Y_reason",
     "E_diagnostic_source_locations", "Y_label", "Y_description", "Y_structure", "factorial_Y_reason",
@@ -40,7 +45,19 @@
     "A_reason": { "$ref": "#/$defs/nullableString" },
     "critical_dependency_status": { "anyOf": [{ "enum": ["checked-none", "resolved", "unresolved"] }, { "type": "null" }] },
     "critical_dependency_reason": { "$ref": "#/$defs/nullableString" },
-    "evidence_bundle_id": { "anyOf": [{ "type": "string", "pattern": "^[A-Za-z0-9._-]+_EB[0-9]{6}$" }, { "type": "null" }] },
+    "evidence_bundle_ids": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9._-]+_EB[0-9]{6}$" }
+    },
+    "structural_audit_status": { "enum": ["not-started", "complete", "incomplete"] },
+    "awareness_effect_route_status": { "enum": ["not-assessed", "viable", "not-viable"] },
+    "awareness_effect_route_reason": { "$ref": "#/$defs/nullableString" },
+    "unaware_capacity_route_status": { "enum": ["not-assessed", "viable", "not-viable"] },
+    "unaware_capacity_route_reason": { "$ref": "#/$defs/nullableString" },
+    "null_equivalence_route_status": { "enum": ["not-assessed", "required", "not-required"] },
+    "null_equivalence_route_reason": { "$ref": "#/$defs/nullableString" },
+    "result_inspection_status": { "enum": ["not-started", "completed-viable-routes", "not-required"] },
+    "result_inspection_reason": { "$ref": "#/$defs/nullableString" },
     "first_order_measure": { "$ref": "#/$defs/nullableString" },
     "E_code": { "anyOf": [{ "enum": ["E-matched", "E-diagnostic", "E-physical-only", "E-uncontrolled"] }, { "type": "null" }] },
     "E_reason": { "$ref": "#/$defs/nullableString" },
@@ -127,6 +144,22 @@
     {
       "if": { "properties": { "critical_dependency_status": { "type": "string" } }, "required": ["critical_dependency_status"] },
       "then": { "properties": { "critical_dependency_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "awareness_effect_route_status": { "enum": ["viable", "not-viable"] } }, "required": ["awareness_effect_route_status"] },
+      "then": { "properties": { "awareness_effect_route_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "unaware_capacity_route_status": { "enum": ["viable", "not-viable"] } }, "required": ["unaware_capacity_route_status"] },
+      "then": { "properties": { "unaware_capacity_route_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "null_equivalence_route_status": { "enum": ["required", "not-required"] } }, "required": ["null_equivalence_route_status"] },
+      "then": { "properties": { "null_equivalence_route_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "result_inspection_status": { "enum": ["completed-viable-routes", "not-required"] } }, "required": ["result_inspection_status"] },
+      "then": { "properties": { "result_inspection_reason": { "type": "string", "minLength": 1 } } }
     },
     {
       "if": { "properties": { "E_code": { "type": "string" } }, "required": ["E_code"] },
@@ -249,6 +282,15 @@
         "awareness_measure": { "type": "string", "minLength": 1 }, "awareness_evidence_type": { "type": "string" },
         "objective_visibility_test_informative": { "type": "string" }, "A_code": { "type": "string" },
         "critical_dependency_status": { "type": "string" }, "critical_dependency_reason": { "type": "string", "minLength": 1 },
+        "structural_audit_status": { "const": "complete" },
+        "awareness_effect_route_status": { "enum": ["viable", "not-viable"] },
+        "awareness_effect_route_reason": { "type": "string", "minLength": 1 },
+        "unaware_capacity_route_status": { "enum": ["viable", "not-viable"] },
+        "unaware_capacity_route_reason": { "type": "string", "minLength": 1 },
+        "null_equivalence_route_status": { "enum": ["required", "not-required"] },
+        "null_equivalence_route_reason": { "type": "string", "minLength": 1 },
+        "result_inspection_status": { "enum": ["completed-viable-routes", "not-required"] },
+        "result_inspection_reason": { "type": "string", "minLength": 1 },
         "first_order_measure": { "type": "string", "minLength": 1 }, "E_code": { "type": "string" },
         "E_matching_basis": { "type": "string" }, "E_equivalence_result": { "type": "string" },
         "Y_label": { "type": "string", "minLength": 1 }, "Y_description": { "type": "string", "minLength": 1 },

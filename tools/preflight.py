@@ -30,7 +30,10 @@ SCHEMAS = (
     "discoveries.schema.json",
     "missing_texts.schema.json",
     "auxiliary_sources.schema.json",
+    "evidence_bundles.schema.json",
     "evidence_links.schema.json",
+    "evidence_assessments.schema.json",
+    "fulltext_assets.schema.json",
     "decision_log.schema.json",
     "run_state.schema.json",
 )
@@ -154,7 +157,10 @@ def main() -> int:
 
     experiment_properties = schemas.get("experiments.schema.json", {}).get("properties", {})
     for field in (
-        "comparison_id", "evidence_bundle_id", "awareness_evidence_type", "objective_visibility_test_informative",
+        "comparison_id", "evidence_bundle_ids", "structural_audit_status",
+        "awareness_effect_route_status", "unaware_capacity_route_status",
+        "null_equivalence_route_status", "result_inspection_status",
+        "awareness_evidence_type", "objective_visibility_test_informative",
         "critical_dependency_status", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
         "E_competing_account", "E_competing_prediction", "E_violating_pattern", "E_same_Y_reason",
         "E_diagnostic_source_locations", "Y_structure", "factorial_component_effects",
@@ -175,6 +181,10 @@ def main() -> int:
     for field in (
         "package_version", "schema_version", "next_auxiliary_counter",
         "next_evidence_link_counter", "next_evidence_bundle_counter",
+        "next_evidence_assessment_counter", "next_fulltext_asset_counter",
+        "workflow_phase", "blind_lane_status", "citation_frontier_status",
+        "process_frontier_status", "activated_normalized_y_labels",
+        "completed_search_window_keys",
     ):
         if field not in state_properties:
             errors.append(f"run-state schema lacks {field}")
@@ -190,13 +200,21 @@ def main() -> int:
         if field not in missing_properties:
             errors.append(f"missing-text schema lacks source-neutral field {field}")
     auxiliary_properties = schemas.get("auxiliary_sources.schema.json", {}).get("properties", {})
-    for field in ("auxiliary_id", "target_paper_id", "target_comparison_id", "purpose", "used_for_decision"):
+    for field in ("auxiliary_id", "citation", "identity_reason", "article_version", "retrieval_status"):
         if field not in auxiliary_properties:
             errors.append(f"auxiliary-source schema lacks {field}")
+    bundle_properties = schemas.get("evidence_bundles.schema.json", {}).get("properties", {})
+    for field in (
+        "evidence_bundle_id", "focal_comparison_id", "supported_premise",
+        "premise_description", "required_member_keys", "bundle_status", "bundle_reason",
+    ):
+        if field not in bundle_properties:
+            errors.append(f"evidence-bundle schema lacks {field}")
     evidence_properties = schemas.get("evidence_links.schema.json", {}).get("properties", {})
     for field in (
         "evidence_link_id", "evidence_bundle_id", "focal_comparison_id",
-        "supporting_experiment_id", "supporting_auxiliary_id", "support_role",
+        "member_key", "supporting_experiment_id", "supporting_auxiliary_id", "evidence_assessment_id",
+        "support_role", "dependency_role", "member_status",
         "supported_claim", "transfer_reason", "transfer_limitation", "source_location",
     ):
         if field not in evidence_properties:
@@ -209,6 +227,25 @@ def main() -> int:
         errors.append("config identifiers.evidence_link_separator must be '_EL'")
     if (config.get("identifiers") or {}).get("evidence_bundle_separator") != "_EB":
         errors.append("config identifiers.evidence_bundle_separator must be '_EB'")
+    if (config.get("identifiers") or {}).get("evidence_assessment_separator") != "_EA":
+        errors.append("config identifiers.evidence_assessment_separator must be '_EA'")
+    if (config.get("identifiers") or {}).get("fulltext_asset_separator") != "_FT":
+        errors.append("config identifiers.fulltext_asset_separator must be '_FT'")
+
+    conservative = ((config.get("search") or {}).get("conservative_execution") or {})
+    blind = conservative.get("supplementary_blind_lane") or {}
+    expected_families = ["QCAL4-ATTN", "QCAL4-META", "QCAL4-BIND", "QCAL4-MEM", "QCAL4-DEC"]
+    if blind.get("active_families") != expected_families:
+        errors.append("conservative blind lane must activate exactly ATTN/META/BIND/MEM/DEC")
+    if blind.get("sources") != ["OpenAlex", "Europe PMC"]:
+        errors.append("conservative blind lane must retain OpenAlex and Europe PMC")
+    if blind.get("max_results_per_source_family") != 40 or blind.get("max_windows_per_source_family") != 1:
+        errors.append("conservative blind lane must use one N=40 window per source/family")
+    if "QCAL4-LEARN" not in blind.get("disabled_families", []):
+        errors.append("pathological QCAL4-LEARN rendering must remain disabled")
+    process = conservative.get("process_trigger") or {}
+    if process.get("sources") != ["OpenAlex", "Europe PMC"] or process.get("max_results_per_source_y") != 50:
+        errors.append("process trigger must use OpenAlex and Europe PMC at N=50/source/Y")
 
     for key, relative in (config.get("paths") or {}).items():
         if not (root / str(relative)).exists():

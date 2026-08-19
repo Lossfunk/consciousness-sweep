@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.7.1, pre-freeze
+**Status:** draft-0.8, pre-freeze
 
 ## 1. Authority split
 
@@ -29,6 +29,9 @@ consciousness-sweep/
 │   ├── discoveries.schema.json
 │   ├── missing_texts.schema.json
 │   ├── auxiliary_sources.schema.json
+│   ├── fulltext_assets.schema.json
+│   ├── evidence_assessments.schema.json
+│   ├── evidence_bundles.schema.json
 │   ├── evidence_links.schema.json
 │   ├── decision_log.schema.json
 │   └── run_state.schema.json
@@ -57,6 +60,9 @@ runs/<RUN_ID>/
 ├── discoveries.csv
 ├── missing_texts.csv
 ├── auxiliary_sources.csv
+├── fulltext_assets.csv
+├── evidence_assessments.csv
+├── evidence_bundles.csv
 ├── evidence_links.csv
 ├── decision_log.jsonl
 ├── run_state.json
@@ -132,6 +138,8 @@ Every new run records `protocol_version`, `package_version`, `schema_version`, t
 - Auxiliary source: `<RUN_ID>_AUX000001`.
 - Evidence link: `<RUN_ID>_EL000001`.
 - Evidence bundle: `<RUN_ID>_EB000001`.
+- Evidence assessment: `<RUN_ID>_EA000001`.
+- Full-text asset: `<RUN_ID>_FT000001`.
 
 Assign each ID once; never recycle or renumber it. Allocate every post-initialization ID through the locked allocator in `tools/structured_write.py`; workers must not infer a next identifier by reading a table or `run_state.json`. Allocation atomically advances durable state before returning the reserved ID, so a crash may retire an unused ID but may never permit reuse. On resume, each next counter must exceed the greatest durable identifier already present. Per-paper experiment counters and per-experiment comparison counters are stored as mappings or recovered equivalently from durable IDs. Multiple rows may share an `experiment_id`, but `comparison_id` must be unique.
 
@@ -146,7 +154,10 @@ Write continuously:
 - Every result encountered in that event → `discoveries.csv`.
 - Missing-text or manual-ingestion state → `missing_texts.csv`.
 - Classification-critical external evidence → `auxiliary_sources.csv`.
-- Every borrowed within-paper, supplementary, same-experiment, or external premise → `evidence_links.csv`.
+- Every verified paper/version and extraction → `fulltext_assets.csv`.
+- Every reusable execution-only factual assessment → `evidence_assessments.csv`.
+- Every scientific premise assembled from borrowed support → `evidence_bundles.csv`.
+- Every explicit scientific use of within-paper, supplementary, same-experiment, or external support → `evidence_links.csv`.
 - Full-text X→Y comparison → `experiments_master.csv`.
 - Every decision, revision, merge, status transition, and uncertainty → `decision_log.jsonl`.
 - Wave/counter/status checkpoint → `run_state.json`.
@@ -155,13 +166,13 @@ Do not reconstruct records from memory at the end. Write a parent record before 
 
 Registered agents must not construct CSV rows by shell concatenation or raw delimiter joining. Use `tools/structured_write.py` (or its imported schema-aware writer functions) for ID allocation, master-row append/upsert, and decision-log append. One per-run lock serializes counter allocation and all read-modify-write operations. The tool derives field order from the schema, performs typed JSON Schema validation before mutation, applies CSV quoting automatically, and atomically replaces CSV/JSONL files. Its JSONL writer ASCII-escapes embedded Unicode separators and writes exactly one physical LF-terminated record per event. A decision event must still be appended before a current-state upsert.
 
-Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependency, evidence link, citation-expansion, deduplication, comparison structure, A/evidence-type/F/provisional-E/final-E, specifically named unaware-capacity claim, awareness-effect, statistics, Meyen, exclusion, revision, uncertainty, and run-state decision requires a short why. Comparison-level scientific decisions use `entity_type = comparison` and the stable `comparison_id`. Auxiliary evidence uses `entity_type = auxiliary_source`; evidence links use `entity_type = evidence_link`. Experiment-level bookkeeping may use `entity_type = experiment`. Full-text decisions should include page, figure, table, analysis, auxiliary, or evidence-link pointers where possible. Validate every decision event against `schemas/decision_log.schema.json`.
+Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependency, full-text asset, factual assessment, evidence bundle/link, citation-expansion, deduplication, comparison structure, A/evidence-type/F/provisional-E/final-E, specifically named unaware-capacity claim, awareness-effect, statistics, Meyen, exclusion, revision, uncertainty, and run-state decision requires a short why. Comparison-level scientific decisions use `entity_type = comparison` and the stable `comparison_id`. Auxiliary evidence, full-text assets, factual assessments, evidence bundles, and evidence links use their corresponding entity types. Experiment-level bookkeeping may use `entity_type = experiment`. Full-text decisions should include page, figure, table, analysis, auxiliary, bundle, link, or asset pointers where possible. Validate every decision event against `schemas/decision_log.schema.json`.
 
 `source_location` may be empty only when no source pointer exists; when that matters, explain the absence in `reason`.
 
 ## 7. Full-text sequence and revisions
 
-Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate the physical experiment groups first and reserve each experiment ID before reserving any comparison IDs. Then enumerate scalar or coherent factorial X→Y comparisons. For each comparison, check `critical_dependency_status`, reserve an evidence bundle when support is borrowed, record every evidence link before relying on it, write design facts and A/F decisions, log provisional E, record the complete structured E-diagnostic rationale where applicable, name the exact focal or component function in `unaware_capacity_claim`, and only then write independent unaware-capacity and awareness-effect decisions. A supporting experiment receives an experiment pointer in an evidence link but no comparison row unless it independently answers an X→Y question. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
+Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate physical experiment groups first and reserve each experiment ID before reserving any comparison IDs. Then enumerate scalar or coherent factorial X→Y comparisons. For each comparison: complete the structural audit; record A and F; log provisional E and the full E-diagnostic rationale where applicable; create one evidence-bundle row per borrowed premise; create every direct member link before relying on the bundle; derive and record each bundle status; name the exact focal or component function in `unaware_capacity_claim`; assess the unaware-capacity route whenever A/F permit it; assess the awareness-effect route only when strong A/E/F permit it; assess null/equivalence only when the awareness-effect route and its statistics permit it; and record the result-inspection disposition. A supporting experiment receives an experiment pointer in a link but no comparison row unless it independently answers an X→Y question. Weak or unusable E closes the awareness-effect and null/equivalence routes but does not by itself close the unaware-capacity route. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
 
 Before changing current state:
 
@@ -173,6 +184,31 @@ Never silently overwrite, including clerical corrections.
 ## 8. Search-result provenance and deduplication
 
 Each `search_log.csv` row identifies an event. A process-triggered event links to its activating `comparison_id` through `trigger_comparison_id`. Each encountered result receives a separate `discoveries.csv` row linked by `search_id`, even when it resolves to an existing paper.
+
+Execute the workflow as this durable principal-first, blind-last state machine:
+
+1. initialize frozen empirical seeds;
+2. initialize frozen review/discovery anchors;
+3. screen and index candidate literature from those principal inputs;
+4. perform backward/forward citation expansion in frozen waves;
+5. obtain and evaluate full texts as appropriate;
+6. activate process searches only when qualifying Ys are independently earned;
+7. citation-expand relevant newly discovered nodes;
+8. continue until every principal frontier is provisionally satisfied;
+9. only then enter the mandatory supplementary blind lane and execute every frozen source/family window;
+10. deduplicate blind results against the complete logical-paper index before semantic screening;
+11. add rediscovery provenance for known works without repeating their current paper-level semantic decisions;
+12. individually screen genuinely new logical works, using bounded batches only for context amortization;
+13. reopen citation expansion for every blind-discovered independently citation-eligible node;
+14. reopen or activate the process frontier for every genuinely new Y that independently qualifies;
+15. recursively handle new nodes under the unchanged bounded rules; and
+16. finish only after every reopened citation and process frontier again satisfies its frozen stopping criterion.
+
+The blind lane may not be skipped because the principal routes appear productive or saturated, known anchors were recovered, or available time/token budget seems sufficient. A blind-lane discovery that is independently citation-eligible reopens the citation frontier; a genuinely new independently qualifying Y activates or reopens its bounded process search. Record every transition and do not mark the run complete while any reopened frontier remains open.
+
+Every independent or process query window is an immutable retrieval snapshot identified by its execution phase, source, family or normalized Y label, canonical query, source parameters, publication cutoff, requested N, and deterministic window key. A completed window records the ordered result-set hash and retrieval time. Resume reuses a completed snapshot only when the entire key and ordered hash still match durable discoveries; it never silently reruns, extends, reranks, or substitutes a window. A missing, partial, or inconsistent snapshot remains incomplete and must be explicitly resolved.
+
+The blind lane uses the five active QCAL families `ATTN`, `META`, `BIND`, `MEM`, and `DEC`, on both OpenAlex and Europe PMC, with one window of at most 40 results for every source/family pair. It requests no second page and never reallocates unused quota. `LEARN` is disabled/retired as a generic blind-query family but remains scientifically eligible through every other route. Each activated QDYN search uses both sources, one window of at most 50 results per source for that normalized Y, the frozen lexical rendering rules, no retrigger for the same normalized Y/source window, and only bounded recursion from a genuinely new independently qualifying Y.
 
 Apply bibliographic deduplication deterministically:
 
@@ -209,15 +245,25 @@ For every title-retained paper whose abstract cannot reasonably be obtained, set
 
 ### 9.2 Registered screening execution
 
-Title and abstract screening are paper-specific semantic decisions under `PROTOCOL.md`, even when records are presented in batches. Record the screening method and a separate reason for every paper. Keyword or regex signals may order work for efficiency, but may not independently produce `exclude` or `screen-out`. A deterministic exclusion is permitted only when its exact rule is preregistered and the row records that rule identifier; the default method is `agent-semantic`.
+Title and abstract screening are paper-specific semantic decisions under `PROTOCOL.md`, even when records are presented in batches. Title batches contain at most 25 logical works and abstract batches at most 10. Batch membership is context amortization only: write one durable decision and one paper-specific reason per logical work. A prior decision may be reused only for the same logical work, same scientific regime fingerprint, and unchanged decision-relevant evidence. Genuinely new evidence permits revision only through an append-first decision-log event followed by the current-state update. Regex, keyword, embedding, citation-count, numeric relevance, and hidden lexical heuristics may not independently produce `exclude` or `screen-out`; this draft registers no deterministic scientific exclusion rule.
 
 ### 9.3 Auxiliary evidence sources
 
-Record each explicit classification-critical dependency in `auxiliary_sources.csv` before finalizing the affected comparison. The row must identify its purpose, target paper/comparison, source pointer in the target article, retrieval/acquisition provenance, transfer assessment where applicable, and whether it was used. A resolved dependency requires a retrieved linked auxiliary row used for the decision. An unresolved dependency requires a linked row documenting why it could not be resolved. Auxiliary rows do not create `papers_master.csv` or `discoveries.csv` records unless the work is independently encountered through an ordinary discovery event.
+Record each reusable external logical work/version in `auxiliary_sources.csv`. Store its bibliographic and retrieval identity once; do not duplicate it for each target comparison. Every scientific use, transfer judgment, limitation, and dependency role belongs in the target comparison's evidence bundle and link. Auxiliary rows do not create `papers_master.csv` or `discoveries.csv` records unless the work is independently encountered through an ordinary discovery event, so support-only evidence cannot leak into the candidate pool.
 
 ### 9.4 Evidence bundles
 
-Reserve an `evidence_bundle_id` once per focal comparison when it borrows support. Each row in `evidence_links.csv` receives its own stable `evidence_link_id` and records exactly one supported claim, role, transfer reason, limitation, and source location. A link to an external auxiliary source must reference the corresponding `auxiliary_id`. A within-paper supporting experiment may be referenced without creating a comparison row. Validators require every non-null comparison `evidence_bundle_id` to have at least one matching link and every link to target an existing focal comparison.
+Create one `evidence_bundles.csv` row for one named premise of one focal comparison. Its `required_member_keys` manifest names every member logically required before any result is known, so an omitted required link is auditable as incomplete. The same source used for two premises or comparisons requires distinct bundles and explicit direct links. Each `evidence_links.csv` row receives its own stable ID and unique bundle-local `member_key`, and records one member, supported claim, dependency role (`required`, `strengthening`, `robustness`, `generalization`, or `mechanistic`), member status, transfer reason, limitation, and source location. Links to external sources resolve to reusable auxiliary rows; within-paper supporting experiments need no candidate comparison row.
+
+Bundle status is derived, not asserted opportunistically: `conflicted` when any direct member contradicts or is conflicted; otherwise `incomplete` when any required member is absent, unavailable, unevaluated, or transfer-invalid; otherwise `complete` when at least one decision-used member supports the premise and every required member supports it. No scientific conclusion may depend on an incomplete or conflicted bundle. Evidence transfer is premise-specific and must justify population, manipulation, measure, analysis, and version compatibility where relevant. Evidence links are direct only: no transitivity, no inference from sharing a source or bundle, and no propagation of a conclusion from one comparison to another.
+
+### 9.5 Execution-only evidence assessments
+
+`evidence_assessments.csv` is a factual execution cache, never a scientific bundle or classification store. Reuse requires the same logical source/version, source-asset hash, factual premise, source location, and exact scientific-regime fingerprint. It may cache such facts as task structure, measure identity, reported analysis, or quoted result, but it must not contain or propagate A/E/F codes, route outcomes, eligibility, Meyen conclusions, or comparison-level scientific judgments. Every target comparison still requires its own explicit scientific bundle/link and decision.
+
+### 9.6 Verified full-text assets
+
+Record one verified `fulltext_assets.csv` row per logical paper/article version, with stable source identity, immutable file hash, verification reason, and—when created—extraction tool/version, extracted-text hash, and page-map hash. Reuse that verified asset and extraction across comparisons within the same paper/version. Never redownload or re-extract an unchanged verified version merely because another comparison needs it. A materially different article version receives a new immutable asset row; current-version changes are logged, never overwritten silently.
 
 ## 10. Deterministic derived files
 
@@ -249,7 +295,7 @@ At the end of every search wave:
 2. run `python tools/derive_outputs.py --run-id <RUN_ID>`;
 3. run `python tools/validate_run.py --run-id <RUN_ID>`;
 4. check IDs, counters, cross-file references, schema conditionals, file hashes, and every required why;
-5. check that every resolved/unresolved dependency and non-null evidence bundle has the required linked records, that external links resolve to auxiliary rows, and that no support-only source silently entered the candidate pool;
+5. check every declared bundle against its derived status, every direct member/reference and strict transfer record, every execution-cache fingerprint and source hash, every full-text version/hash, and that no support-only source silently entered the candidate pool;
 6. prepare the bounded ask-text batch;
 7. update `run_summary.md` with route/wave progress, counts, unresolved cases, missing texts, validation outcome, and remaining stopping conditions;
 8. update `run_state.json` checkpoint timestamp, counters, wave, status, and reason.
@@ -262,4 +308,6 @@ For CALIB003 only, after title/abstract screening, select at most 12 newly disco
 
 Do not inspect another run, use its discovered papers, import its classifications, or consolidate. Consolidation/adjudication occurs only after independent runs finish and is outside an executing agent's write scope.
 
-A run is complete only when all frozen routes and activated process searches are done; stopping rules are met; retrievable and manually supplied texts are evaluated; missing-text state is current; files validate; unresolved cases have reasons; derived files are current; and `run_summary.md` documents stopping evidence and validation. Set `run_state.status = complete` only after all conditions hold.
+A run is complete only when: the principal frontier was provisionally satisfied; every mandatory blind window is complete and hash-consistent; every blind-triggered citation or new-Y process frontier has been reopened and subsequently satisfied; all frozen routes and activated process searches are done; stopping rules are met; retrievable and manually supplied texts are evaluated; missing-text state is current; no scientific conclusion depends on an incomplete/conflicted bundle; route audits and result-inspection dispositions are complete; files validate; unresolved cases have reasons; derived files are current; and `run_summary.md` documents stopping evidence and validation. Set `run_state.status = complete` only after all conditions hold.
+
+Across independent registered runs, agents share only immutable static package inputs: frozen seed and review-anchor identity, normalization rules, schemas, queries, protocol, and agent instructions. They do not share semantic screening decisions, dynamic result sets, A/E/F codes, evidence links or assessments, statistical/Meyen judgments, process-Y or saturation judgments, full-text annotations, or run outputs. No dynamic query result is precomputed for distribution across agents. If one harness uses multiple workers inside a single independent run, it may divide already-reserved, non-overlapping execution units only; all writes still pass through that run's locked structured writer and the coordinator reconciles durable state before checkpoints.

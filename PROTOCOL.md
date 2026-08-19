@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.7.1
+**Version:** draft-0.8
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -186,7 +186,7 @@ Record `Meyen_role` before recording status:
 
 Every encountered paper remains in the master audit record. Every decision includes a brief why.
 
-Title and abstract screens are semantic decisions under this protocol. Agents may process records in batches, but each paper receives its own decision, method, and reason. Keyword, regex, or similar lexical heuristics may assist prioritization; they may not independently produce a scientific exclusion unless that exact deterministic exclusion rule was preregistered and its rule identifier is recorded. In the absence of such a frozen rule, the registered default is agent semantic screening.
+Title and abstract screens are semantic decisions under this protocol. Agents may process records in batches only as context amortization, but each paper receives its own decision, method, reason, and durable write. Batch membership is never evidence. Regex/keyword rejection, embedding thresholds, citation-count thresholds, numerical LLM relevance scores, and hidden lexical heuristics may not independently produce an exclusion. The registered default is agent semantic screening; this draft defines no deterministic scientific exclusion rule.
 
 ### 6.1 Title screening
 
@@ -216,6 +216,8 @@ When a user supplies requested full text, preserve its later provenance: associa
 
 For every obtained full text, regardless of source, record `obtained_at`, `obtained_wave`, `obtained_by` (`agent`, `user`, or `preexisting`), and `acquisition_route`. Acquisition provenance must describe how the target article was obtained and verified; a nominally free link is not sufficient.
 
+Within one run, the verified article/version is a reusable factual asset for every comparison and evidence bundle concerning that logical paper. Resolve identity, verify the article/version, hash the file, and extract it once per extraction-tool/version. A materially different version receives a separate durable asset record and never silently overwrites the verified source. This reuse changes no scientific classification.
+
 ## 7.1 Classification-critical auxiliary evidence
 
 Before finalizing A, E, F, or a statistical classification, inspect the candidate article and supplement for an explicit dependency on an external source for a classification-critical premise. Examples include a cited prior visibility validation, a cited perceptual threshold, matching or titration established elsewhere, or an external statistical method required to interpret the critical analysis.
@@ -234,13 +236,27 @@ Auxiliary sources do not need to pass the X→Y title/abstract screen merely to 
 
 ### 7.2 Structured evidence bundles
 
-A focal comparison may borrow a classification-critical premise from another experiment, a supplementary or same-experiment analysis, or an external auxiliary source. Record every borrowed premise in `evidence_links.csv`. Links sharing one `evidence_bundle_id` form the auditable evidence bundle for the focal comparison.
+A **scientific evidence bundle** is a structured argument specifying which experiments, analyses, validations, or auxiliary sources jointly warrant one named premise of one focal X→Y comparison. It is scientifically substantive. An **execution evidence assessment/cache** stores a reusable factual assessment to avoid repeated parsing. It is not scientific evidence linkage and may not propagate A, E, F, outcome, statistics, or Meyen classifications. The two objects must never be conflated.
 
-Each link records the focal comparison, supporting source type and identifiers where applicable, support role, exact supported claim, transfer reason, transfer limitation, and source location. Permitted roles include awareness validation, first-order-evidence control, E-diagnostic support, alternative-explanation control, replication, statistical support, mechanistic support, and robustness support.
+Every scientific bundle is a first-class `evidence_bundles.csv` row with one `focal_comparison_id`, one controlled `supported_premise`, a premise description, a route label, an explicit manifest of required member keys, status, reason, and notes. The manifest is fixed before evaluating member outcomes so a missing required link remains auditable. One bundle supports one named premise of one comparison. If the same underlying evidence supports two premises or two comparisons, create separate bundles and explicit links for every scientific use. If an independent route establishes the same premise, represent it as a separate bundle.
 
-A supporting experiment does not become a candidate X→Y comparison merely because it supports a focal inference. Give it a comparison row only when it independently answers an X→Y question. Evidence links never substitute for A/E/F/statistical coding of the focal comparison, and borrowing never silently erases transfer limitations.
+Use `bundle_status`:
 
-## 8. Full-text comparison evaluation order
+- `complete`: every member marked `required` is available, evaluated, transfer-valid enough, and supportive, with no unresolved contradiction that defeats the premise;
+- `incomplete`: a required member is unavailable, unevaluated, or transfer-invalid; or
+- `conflicted`: evaluated evidence contains a substantive unresolved contradiction relevant to the premise.
+
+An incomplete or conflicted bundle cannot silently establish its premise. Conflicting evidence is not averaged into completeness. A separate complete independent route may establish the premise only through its own bundle.
+
+Each `evidence_links.csv` row is one explicit scientific use. `support_role` records what support is provided: awareness validation, first-order-evidence control, E-diagnostic support, alternative-explanation control, replication, statistical support, robustness, generalization, mechanistic support, or other. Orthogonal `dependency_role` records whether it is `required`, `strengthening`, `robustness`, `generalization`, or `mechanistic`. A missing non-required member does not by itself make the premise incomplete. Every link records its member status, exact supported claim, source/experiment/analysis, source location, transfer reason, and transfer limitation.
+
+For cross-experiment/regime evidence, assess the relevant transfer dimensions—stimulus parameters, masking/suppression, timing, attentional allocation, task demands, participant population, awareness measurement, and first-order-evidence regime—without mechanically discussing irrelevant dimensions. Same-paper location never supplies transfer by itself.
+
+Evidence support is not transitive. If Exp. 2 supports Exp. 1 and Exp. 3 supports Exp. 2, Exp. 3 supports Exp. 1 only through a separate explicit link with its own rationale and caveats. Paper-level statements, awareness validations, E-diagnostic arguments, and auxiliary evidence likewise do not automatically propagate across experiments, regimes, Ys, premises, or comparisons.
+
+A supporting experiment does not become a candidate X→Y comparison merely because it supports a focal inference. Give it a comparison row only when it independently answers an X→Y question. Evidence links never substitute for comparison-specific A/E/F/statistical coding.
+
+## 8. Full-text comparison evaluation order and route-aware analysis
 
 First enumerate the distinct X→Y comparisons within each potentially relevant experiment. Keep a coherent factorial functional relation together under Section 2.5; assign a separate comparison when the conservative downstream function is genuinely different. Unaware capacity and awareness effect are separate fields and do not require duplicate comparison rows merely because both inferences apply. Then, for each comparison:
 
@@ -248,24 +264,27 @@ First enumerate the distinct X→Y comparisons within each potentially relevant 
 2. Identify the awareness measure or validation.
 3. Identify the direct first-order evidence measure.
 4. Identify Y at the most specific conservative functional level justified by the dependent measure; assign scalar versus factorial-functional structure, record component simple effects for a factorial Y, and record finer mechanistic interpretation separately.
-5. Check the article and supplement for classification-critical dependencies or supporting analyses. Resolve external auxiliary sources where reasonably possible and create structured evidence links for every borrowed premise.
+5. Check the article and supplement for classification-critical dependencies or supporting analyses. Resolve external auxiliary sources where reasonably possible, create one scientific bundle per focal premise, and create an explicit link for every scientific use.
 6. Assign A from the qualifying awareness evidence, record `awareness_evidence_type`, and explain objective-test informativeness where applicable.
 7. Assign F from the downstream-use design and explain why.
 8. Record the Y evidence role and function-level interpretation clarity separately from the proposed mechanism and mechanism clarity; do not use mechanism ambiguity as the F gate.
 9. Assess design-based E: assign `E-matched` if its positive requirements are met; otherwise record provisional `E-physical-only` or `E-uncontrolled`.
 10. If evidence is not matched, inspect the structured pattern only to test the frozen `E-diagnostic` criterion; record the competing account, its prediction, the violating pattern, same-Y justification, source locations, and required evidence links.
 11. Finalize E and explain why.
-12. Name the exact function in `unaware_capacity_claim`, classify `unaware_capacity` only for that function, and record its positive or contradictory evidence and route-specific statistical audit.
-13. Independently classify `awareness_effect`, identify the critical aware/unaware comparison, record the effect estimate and interpretability, and audit its statistics.
-14. Record the structured null-evidence basis, `null_evidence_strength`, and `null_evidence_adequacy` when relevant; never conflate no-detectable-difference with equivalence.
-15. Perform the overall statistical audit and record relevant robustness concerns.
-16. Assign the Meyen role and apply the diagnostic when relevant, explicitly stating whether dedicated awareness validation makes it supplementary.
-17. Write a one- or two-sentence empirical-constraint statement that keeps the two inference axes distinct.
-18. Record page, figure, table, analysis, auxiliary-source, and evidence-link locations.
+12. Record route viability and a reason. The awareness-effect route is viable only with strong A, strong E, and `F-meaningful`. The unaware-capacity route is viable with strong A and `F-meaningful`; **E is not a gate**. A null/equivalence audit is required only when the comparison actually supports that scientific question.
+13. Name the exact function in `unaware_capacity_claim`. When its route is viable, inspect the results enough to determine whether that exact capacity is positively demonstrated and record its critical statistics and applicable Meyen audit even when E is weak.
+14. When the awareness-effect route is viable, identify the critical aware/unaware comparison, record the effect estimate and interpretability, and audit its statistics. When structurally dead, record `not-tested`/not viable with the exact reason rather than generating irrelevant statistical prose.
+15. When the null/equivalence route is required, record the structured null-evidence basis, `null_evidence_strength`, and `null_evidence_adequacy`; never conflate no-detectable-difference with equivalence. Otherwise record why the audit is not required.
+16. Perform the overall statistical audit and record relevant robustness concerns.
+17. Assign the Meyen role and apply the diagnostic when relevant, explicitly stating whether dedicated awareness validation makes it supplementary.
+18. Write a one- or two-sentence empirical-constraint statement that keeps the two inference axes distinct.
+19. Record page, figure, table, analysis, auxiliary-source, bundle, and evidence-link locations.
 
 ## 9. Discovery routes and stopping rules
 
 The registered sweep combines all four routes below.
+
+Execute the principal routes first: empirical seeds, review/discovery anchors, citation waves, full-text evaluation, and every activated process search. After their frontier is provisionally satisfied, execute the mandatory supplementary blind lane. A new citation-eligible node reopens citation expansion; a genuinely new independently qualifying Y reopens/activates its process search. Completion requires every reopened frontier to satisfy the same unchanged stopping rule. This ordering changes no discovery obligation.
 
 ### 9.1 Empirical-seed citation graph
 
@@ -291,7 +310,9 @@ Use a frozen broad set of review, theory, method, and other discovery-anchor pap
 
 The principal recall instrument is the combination of empirical-seed backward/forward citation expansion, review/discovery anchors, and activated process-triggered expansion. Before the registered run, freeze compact source-specific independent query families only as a supplementary blind-spot and recall check. This lane does not claim complete enumeration and does not replace the principal routes. Nevertheless, every record returned inside each frozen window is screened and audited under the normal provenance rules.
 
-Use several conceptually motivated families that separately cross explicit awareness terminology with diagnostic downstream-process terms, including attention/control/inhibition/distractor control; metacognition/confidence/monitoring/error evaluation; binding/integration/object or event updating; memory/maintenance/working memory; decision/action/rule-guided or flexible use; and learning/adaptation. Do not use generic `task`, `performance`, `experiment`, `memory`, or `decision` alone as a process block. Unknown Y remains discoverable through the principal routes. Do not rely on relevance ranking from one multimillion-record monolithic query as the main instrument.
+The conservative pre-freeze instrument activates five conceptually motivated families: attention/control/inhibition/distractor control; metacognition/confidence/monitoring/error evaluation; binding/integration/object or event updating; memory operations/maintenance/working memory; and decision/action/rule-guided or flexible use. Use both OpenAlex and Europe PMC, one ranked window of at most 40 records per source/family, screen every return, request no second page/cursor, and never redistribute unused quota. The lane is mandatory and runs only after the principal frontier is provisionally satisfied.
+
+Learning/adaptation remains scientifically eligible and discoverable through seeds, reviews, citations, and independently earned process-trigger searches. CALIB004 diagnosed the current generic QCAL4-LEARN rendering as pathological; it is disabled/retired and not an active v1 instrument. **PRE-FREEZE TODO:** redesign it or explicitly decide that v1 omits a generic LEARN blind-query block. No such omission changes scientific eligibility.
 
 Every frozen source-specific query block must state its sort/ranking, page size, whether every returned record is screened, and—if not exhaustive—the exact preregistered record/page maximum. It must also specify behavior for ties, source reordering, cursor failure/API truncation, and deduplication across blocks. A registered instruction to merely “run the query” is insufficient. Pre-freeze calibration may use explicitly labeled draft bounds to determine whether exhaustive screening is feasible; those bounds do not become registered defaults by convenience.
 
@@ -314,6 +335,8 @@ Search only the observed Y; do not automatically expand to semantic neighbours. 
 Lexical expansion is controlled and auditable. A rendered dynamic query may contain only: (1) the canonical Y label; (2) morphology, grammatical reorderings, spelling, or hyphenation variants of that label; (3) terminology explicitly used for Y by the qualifying source paper; and (4) one frozen immediate-parent functional term. Every term must be logged with one of those provenance categories, its source or derivation, and a rationale. Unrestricted language-model synonyms, neighboring functions, and unlogged semantic expansions are prohibited.
 
 A genuinely new Y found in this lane may trigger another Y-specific search only if it independently satisfies the same activation conditions. Each normalized Y label may activate this route once per run; label normalization decisions and reasons must be logged.
+
+Use both OpenAlex and Europe PMC for each activated Y, one bounded ranked window of at most 50 records per source, no second page/cursor, and no quota reallocation. A same-Y rediscovery never retriggers the route.
 
 ## 10. Calibration, freeze, and registration
 

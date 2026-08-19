@@ -37,7 +37,10 @@ CSV_TO_SCHEMA = {
     "discoveries.csv": "discoveries.schema.json",
     "missing_texts.csv": "missing_texts.schema.json",
     "auxiliary_sources.csv": "auxiliary_sources.schema.json",
+    "evidence_bundles.csv": "evidence_bundles.schema.json",
     "evidence_links.csv": "evidence_links.schema.json",
+    "evidence_assessments.csv": "evidence_assessments.schema.json",
+    "fulltext_assets.csv": "fulltext_assets.schema.json",
     "design_eligible_experiments.csv": "experiments.schema.json",
     "constraint_ready_experiments.csv": "experiments.schema.json",
     "awareness_linked_differences.csv": "experiments.schema.json",
@@ -129,6 +132,16 @@ def start(args: argparse.Namespace, root: Path, run_dir: Path, config: dict[str,
         "next_auxiliary_counter": 1,
         "next_evidence_link_counter": 1,
         "next_evidence_bundle_counter": 1,
+        "next_evidence_assessment_counter": 1,
+        "next_fulltext_asset_counter": 1,
+        "workflow_phase": "initialized",
+        "blind_lane_status": "pending",
+        "citation_frontier_status": "open",
+        "process_frontier_status": "open",
+        "activated_normalized_y_labels": [],
+        "completed_search_window_keys": [],
+        "title_screen_batch_size": config["execution"]["title_screen_batch_size"],
+        "abstract_screen_batch_size": config["execution"]["abstract_screen_batch_size"],
         "started_at": timestamp,
         "last_checkpoint_at": timestamp,
         "model": args.model,
@@ -201,11 +214,10 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
     search_ids = read_ids(run_dir / "search_log.csv", "search_id")
     discovery_ids = read_ids(run_dir / "discoveries.csv", "discovery_id")
     auxiliary_ids = read_ids(run_dir / "auxiliary_sources.csv", "auxiliary_id")
+    evidence_bundle_ids = read_ids(run_dir / "evidence_bundles.csv", "evidence_bundle_id")
     evidence_link_ids = read_ids(run_dir / "evidence_links.csv", "evidence_link_id")
-    evidence_bundle_ids = [
-        *read_ids(run_dir / "evidence_links.csv", "evidence_bundle_id"),
-        *read_ids(run_dir / "experiments_master.csv", "evidence_bundle_id"),
-    ]
+    evidence_assessment_ids = read_ids(run_dir / "evidence_assessments.csv", "evidence_assessment_id")
+    fulltext_asset_ids = read_ids(run_dir / "fulltext_assets.csv", "fulltext_asset_id")
     decision_errors: list[str] = []
     decision_rows = load_jsonl_rows(
         run_dir / "decision_log.jsonl",
@@ -249,6 +261,8 @@ def resume(args: argparse.Namespace, root: Path, runs_root: Path, run_dir: Path,
         "next_auxiliary_counter": max(state.get("next_auxiliary_counter", 1), suffix_max(auxiliary_ids, "_AUX") + 1),
         "next_evidence_link_counter": max(state.get("next_evidence_link_counter", 1), suffix_max(evidence_link_ids, "_EL") + 1),
         "next_evidence_bundle_counter": max(state.get("next_evidence_bundle_counter", 1), suffix_max(evidence_bundle_ids, "_EB") + 1),
+        "next_evidence_assessment_counter": max(state.get("next_evidence_assessment_counter", 1), suffix_max(evidence_assessment_ids, "_EA") + 1),
+        "next_fulltext_asset_counter": max(state.get("next_fulltext_asset_counter", 1), suffix_max(fulltext_asset_ids, "_FT") + 1),
     })
     write_json(state_path, state)
     resume_decision_id = allocate_identifier(run_dir, "decision")

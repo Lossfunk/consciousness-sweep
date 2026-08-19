@@ -1,7 +1,7 @@
 # Draft configuration. Freeze and version every null/TODO before a registered run.
-protocol_version: "draft-0.7.1"
-package_version: "prefreeze-package-0.7.1"
-schema_version: "prefreeze-schema-0.7.1"
+protocol_version: "draft-0.8"
+package_version: "prefreeze-package-0.8"
+schema_version: "prefreeze-schema-0.8"
 registration_status: "pre-freeze"
 
 # Supplied by a registered run invocation; never set during scaffold construction.
@@ -29,6 +29,19 @@ fulltext:
 execution:
   independent_run: true
   checkpoint_after_each_wave: true
+  route_order: "principal-first-blind-last"
+  supplementary_blind_lane_mandatory: true
+  title_screen_batch_size: 25
+  abstract_screen_batch_size: 10
+  smaller_semantic_batches_allowed: true
+  batch_membership_is_evidence: false
+  semantic_auto_exclusion_mechanisms: []
+  prohibited_auto_exclusion_mechanisms:
+    - "regex-or-keyword"
+    - "embedding-similarity-threshold"
+    - "citation-count-threshold"
+    - "numerical-LLM-relevance-score"
+    - "hidden-lexical-heuristic"
 
 identifiers:
   paper_prefix: "P"
@@ -40,6 +53,8 @@ identifiers:
   auxiliary_separator: "_AUX"
   evidence_link_separator: "_EL"
   evidence_bundle_separator: "_EB"
+  evidence_assessment_separator: "_EA"
+  fulltext_asset_separator: "_FT"
 
 search:
   # TODO before freeze: name the permitted search/citation sources in fixed order.
@@ -52,6 +67,38 @@ search:
     Europe_PMC: "parallel metadata/full-text source and conditional biomedical citation fallback"
     Crossref: "DOI/bibliographic identity and publisher-deposited backward-reference fallback"
     Semantic_Scholar: "optional; not required"
+  conservative_execution:
+    supplementary_blind_lane:
+      mandatory: true
+      order: "after provisional satisfaction of every principal frontier"
+      sources: ["OpenAlex", "Europe PMC"]
+      active_families: ["QCAL4-ATTN", "QCAL4-META", "QCAL4-BIND", "QCAL4-MEM", "QCAL4-DEC"]
+      disabled_families: ["QCAL4-LEARN"]
+      max_results_per_source_family: 40
+      max_windows_per_source_family: 1
+      second_page_or_cursor: false
+      redistribute_unused_quota: false
+      screen_every_return: true
+    process_trigger:
+      sources: ["OpenAlex", "Europe PMC"]
+      max_results_per_source_y: 50
+      max_windows_per_source_y: 1
+      second_page_or_cursor: false
+      redistribute_unused_quota: false
+      same_normalized_y_retrigger: false
+      genuinely_new_y_recursion_only: true
+    completed_window_resume_policy: "reuse-durable-snapshot; retry-only-failed-or-incomplete"
+
+evidence_reuse:
+  scientific_bundles_are_classificatory: true
+  execution_assessments_propagate_scientific_codes: false
+  require_exact_regime_fingerprint_for_assessment_reuse: true
+
+fulltext_cache:
+  one_verified_asset_per_paper_version: true
+  reuse_hash: true
+  reuse_extraction_by_tool_version: true
+  article_version_mismatch_blocks_reuse: true
 
 calibration_002:
   # DRAFT calibration parameters only. CALIB002 must determine whether each
@@ -80,7 +127,8 @@ calibration_003:
   fulltext_sample_tie_breaker_excludes_expected_outcome: true
 
 calibration_004:
-  # PREPARED ONLY. No CALIB004 run is authorized by this file.
+  # Historical completed calibration parameters only. They do not authorize a rerun
+  # and are not the active conservative execution contract above.
   independent_query_families: 6
   independent_query_sources: ["OpenAlex", "Europe PMC"]
   independent_query_page_size: 40
