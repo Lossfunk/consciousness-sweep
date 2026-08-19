@@ -1,0 +1,950 @@
+
+===== PDF PAGE 1 =====
+560770PSSXXX10.1177/0956797614560770Lin, MurrayRepeated Cuing and Attentional Aftereffect
+research-article2015
+Psychological Science OnlineFirst, published on January 7, 2015 as doi:10.1177/0956797614560770
+Research Report
+More Power to the Unconscious:
+Conscious, but Not Unconscious,
+Exogenous Attention Requires Location
+Variation
+Psychological Science
+﻿ 1­ –10
+© The Author(s) 2015
+Reprints and permissions:
+sagepub.com/journalsPermissions.nav
+DOI: 10.1177/0956797614560770
+pss.sagepub.com
+Zhicheng Lin1,2 and Scott O. Murray1
+1University of Washington, Seattle and 2Ohio State University
+Abstract
+Substantial evidence suggests that unconscious processing can be characterized as a lesser or weaker version of
+conscious processing. To test this notion, we designed a novel repeated-cuing procedure based on exogenous
+attention: The location of the attentional cue was first fixed across blocks (fixed-cue blocks), and then the cue was
+removed in subsequent blocks (no-cue blocks). The visibility of the cue was also manipulated. We found that when
+the cue was invisible, the response to a prespecified stimulus in the fixed-cue blocks was faster if the stimulus was at
+the cued location than if it was at the uncued location. But when the cue was visible, this cuing effect was abolished,
+potentially because of an awareness-dependent, location-based inhibition mechanism, as revealed by an attentional
+bias against the previously cued location in the no-cue blocks. We call this bias negative attentional aftereffect.
+These results provide novel evidence against the weaker-version characterization of unconscious effects, highlighting
+dissociable components of orienting and inhibition in exogenous cuing through awareness and temporal dynamics.
+Keywords
+repeated cuing, attentional aftereffect, consciousness, unconscious processing, exogenous attention
+Received 3/13/14; Revision accepted 10/31/14
+Visual inputs hidden from conscious awareness never-
+theless can activate early visual cortex (and, to a lesser
+degree, higher visual cortex and parietal-frontal cortex)
+and alter perception, attention, and behavior. Unconscious
+behavioral effects are occasionally found to be as strong
+as conscious effects, particularly for the processing of
+low-level features such as orientation, but more often
+they are weaker or just absent. These observations have
+led to a characterization of unconscious processing as a
+lesser or weaker version of conscious processing (Kouider
+& Dehaene, 2007; Lin & He, 2009; Lin & Murray, 2013,
+2014b; van Gaal & Lamme, 2012).
+For example, a large body of research has revealed an
+important parallel between unconscious and conscious
+visual attention: An invisible cue can capture attention to
+its location (e.g., Hsieh, Colas, & Kanwisher, 2011; Y. Jiang,
+Costello, Fang, Huang, & He, 2006; Mulckhuyse, Talsma, &
+Theeuwes, 2007; Zhaoping, 2008), just as a visible one
+does (Posner, 1980); this unconscious cuing effect can go
+beyond the cued location and manifest itself at a remote
+location when the initial cue location is perceived to have
+moved to this remote location (Lin & Murray, 2013), just as
+conscious cuing does (e.g., Lin, 2013).
+But whether and how unconscious and conscious
+attention may be dissociated remains largely unexplored.
+It has been suggested that task-irrelevant background
+motion disrupts performance in a foveal task, more when
+the motion is subthreshold than suprathreshold
+(Tsushima, Sasaki, & Watanabe, 2006). Here, we asked
+whether an unconscious cuing effect can occur when
+there is no conscious cuing effect. Can a cue facilitate
+performance at the cued location relative to the uncued
+location only when it is invisible?
+Corresponding Author:
+Zhicheng Lin, Department of Psychology, Ohio State University, 225
+Psychology Building, 1835 Neil Ave., Columbus, OH 43210
+E-mail: zhichenglin@gmail.com
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 2 =====
+2 Lin, Murray
+To address this question, we designed a repeated-
+cuing procedure: A cue repeatedly appeared at a fixed
+location across trials (fixed-cue blocks), and then it was
+completely removed in subsequent trials (no-cue blocks).
+Cues were made either salient (visible-cue group) or
+nonsalient (invisible-cue group) by presenting them in
+red or black, respectively. We observed a robust facilita-
+tion effect in the fixed-cue blocks—but only for the invis-
+ible cue. The absence of a conscious cuing effect
+appeared to be due to an inhibition mechanism that
+manifested well after the fixed-cue blocks had ended, as
+revealed by an attentional bias against the previously
+cued location in the no-cue blocks—an effect we call
+negative attentional aftereffect.
+Experiment 1
+Method
+Participants and apparatus. Sixty participants with
+normal or corrected-to-normal vision were recruited.
+They were separated into three groups, each with 20 par-
+ticipants: (a) the visible-cue group (mean age = 19.1
+years; 65% female, 35% male), (b) the 33.3-ms-invisible-
+cue group (mean age = 19.5 years; 70% female, 30%
+male), and (c) the 16.7-ms-invisible-cue group (mean
+age = 19.7 years; 35% female, 65% male). The sample
+size was predetermined on the basis of a recent study
+using a similar paradigm (Lin & Murray, 2013). The
+experiment was approved by the University of Washing-
+ton Institutional Review Board.
+The stimuli were presented on a 19-in. CRT monitor
+(ViewSonic G90fB, refresh rate = 60 Hz; resolution =
+1,024 × 768 pixels). Participants sat approximately 50 cm
+from the monitor with their heads positioned in a chin
+rest in an almost dark room (no lighting except from the
+computer and the monitor).
+Procedure. The experiment involved two main phases:
+an exogenous cuing task followed by a cue-location-dis-
+crimination task.
+Exogenous cuing. Participants were trained to main-
+tain proper fixation first (as in, e.g., Lin & Murray, 2013).
+In this 2-min training session, a square patch of black-
+and-white noise flickered in counterphase on the screen,
+with each pixel alternating between black and white
+across frames. Participants perceived a flash each time
+they moved their eyes away from the central fixation dot,
+and they were asked to use this flash as feedback to
+maintain stable fixation (Guzman-Martinez, Leung, Fran-
+coneri, Grabowecky, & Suzuki, 2009).
+After this fixation training, participants took part in an
+exogenous cuing task that consisted of 12 practice trials
+and 840 experimental trials (40 trials × 21 blocks). Each
+trial consisted of three events: the fixation display, the
+cue display, and the target display (Fig. 1).
+The fixation point was a combination of a bull’s-eye
+and crosshairs (diameter of inner annulus = 0.23°; diam-
+eter of outer annulus = 0.69°; luminance = 49.2 cd/m2 for
+crosshairs, 0.14 cd/m2 for bull’s-eye), presented for 1,000
+ms in the center of a gray background (luminance =
+12.0 cd/m2). Participants were asked to fixate on this
+mark, which was followed by a blank screen for 200 ms.
+The cue—an abrupt-onset annulus (diameter = 3°,
+width = 0.25°)—appeared after the blank screen at the
+location of either the subsequent left-hand annulus or
+subsequent right-hand annulus (see the next paragraph).
+For the visible-cue group, the cue had a duration of 33.3
+ms and was colored red (luminance = 10.8 cd/m2; x =
+.600, y = .326, u′ = .420, v′ = .514). For the two invisible-
+cue groups, the cue was black (luminance = 0.14 cd/m2);
+its duration was 33.3 ms for one group—as for the visible-
+cue group—but 16.7 ms for the other group. This differ-
+ence allowed us to assess the robustness of the
+unconscious effect. Critically, for all three groups, the cue
+location was also manipulated. In the first 12 blocks, the
+cue appeared at a fixed location: always on the left or
+always on the right (distance from fixation = 6°), counter-
+balanced across participants. In the next 3 blocks, no cue
+was presented (i.e., the background remained blank dur-
+ing the cue interval). In the final 6 blocks, the cue
+appeared randomly on the left or on the right in each trial.
+For the visible-cue group, the red cue was not masked
+by the appearance of three subsequent black annuli (e.g.,
+Breitmeyer & Ogmen, 2000). For the invisible-cue groups,
+the black cue was strongly masked by the three black
+annuli. The annuli were the same size as the cue, and
+they appeared one each on the left, center, and right of
+the screen for 283.3 ms. On 80% of the trials, a target dot
+(diameter = 1.9°; luminance = 0.14 cd/m2) appeared at
+the same time as the three annuli, randomly within either
+the cued annulus (valid trials) or the uncued annulus
+(invalid trials) for 83.3 ms. The target dot then disap-
+peared, but the three annuli remained onscreen for the
+remaining 200 ms. The stimulus onset asynchrony (SOA)
+between the cue and the target was therefore equal to
+the duration of the cue. On the remaining 20% of the tri-
+als, no dot was presented. Participants were informed
+about the probability of the dot occurrence. They were
+asked to press a button as quickly as possible when the
+dot appeared but to refrain from response when the dot
+did not appear. The trial ended as soon as a response
+was made or 1 s after the offset of the annuli, whichever
+was earlier. To provide an incentive against false alarms,
+we followed each incorrect response with two tones
+(each lasting 200 ms with a 5-ms interval in between) and
+a 5-s time-out (blank background).
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 3 =====
+Repeated Cuing and Attentional Aftereffect 3
+1,000 ms
+200 ms
+Fixed
+Cue
+(12 Blocks)
+Cue Visibility
+Visible (33.3 ms )
+Invisible (33.3 or 16.7 ms )
+Cue Location
+No
+Cue
+(3 Blocks)
+Random
+Cue
+(6 Blocks)
+Cue
+83.3 ms
+Dot
+Detection
+200 ms
+1°
+Fig. 1. Sample trial sequence (left) and design (right) of Experiment 1. On each trial, a cue appeared briefly after a fixation
+point and a blank screen. The cue was followed by three annuli. On 80% of the trials, a target dot also briefly appeared,
+randomly within the cued annulus (valid trials) or the uncued annulus (invalid trials); on the remaining 20% of the trials,
+no dot was presented. Participants were asked to press a button as quickly as possible when the dot appeared, but refrain
+from response when no dot appeared. Cue visibility was manipulated between participants: The color of the cues was either
+different from or the same as the annuli. The presentation time of the cue was different in one of the three groups. Cue loca-
+tion was manipulated within participants: In the first 12 blocks, the cue appeared at a fixed location (i.e., always on the left
+or on the right, counterbalanced across participants); in the next 3 blocks, no cue was presented; and in the final 6 blocks,
+the cue appeared randomly on the left or on the right. To assess the visibility of the cue, we also asked participants at the
+end of the experiment to complete a cue-location-discrimination task (not shown here).
+Cue-location discrimination. To check cue visibil-
+ity, we asked participants to take part in a cue-location-
+discrimination task immediately after the cuing task.
+The procedure was identical to the random-cue blocks
+in the cuing task, except for the task: Participants indi-
+cated whether the annulus cue appeared on the left or
+on the right by respectively left-clicking or right-clicking
+the mouse. Once a response was made, that trial ended.
+There were 5 practice trials and one block of 80 experi-
+mental trials (to increase statistical power for the 16.7-
+ms-invisible-cue group, we increased the number of trials
+to 10 practice trials and 120 experimental trials).
+For this task, participants were told that “a red circle
+will appear either on the left or the right” (for the visible-
+cue group) or that “at the very beginning either the left or
+right circle will appear an instant earlier [than the three
+annuli]” (for the two invisible-cue groups)—the “circle”
+refers to the annulus cue. They were asked to “attend to
+the circle, not the dot, while fixating at the center.” They
+were informed that “response time is not important” and
+told to “respond as accurately as possible.” By directing
+their attention to the cue, this test provided a conservative
+measure of awareness (Vermeiren & Cleeremans, 2012).
+Data analysis. Reaction times (RTs) for the cuing task
+were calculated as the time between the target onset
+and the button press. False alarms occurred when no
+target was presented but the button was pressed
+(Table 1), and these trials were excluded from the RT
+analysis—we counted only the trials with hits (i.e., those
+on which the button was correctly pressed in response
+to a target). Anticipatory responses (i.e., RTs < 100 ms)
+were rare (< 1%) and were excluded from analysis (Lin
+& Murray, 2014a)—counting RTs less than 200 ms as
+anticipatory responses yielded the same pattern of
+results (see the Supplemental Material available online).
+No other trimming of RTs was applied (excluding data
+outside of 3 standard deviations in each condition did
+not change the results). Effects that are not reported
+were not significant.
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 4 =====
+4 Lin, Murray
+Table 1. Taxonomy of Responses for the Cuing Task
+Target stimulus and response Categorization
+Present at the cued or old location
+“Yes” Valid or old
+“No” Miss
+Present at the uncued or new location
+“Yes” Invalid or new
+“No” Miss
+Absent
+“Yes” False alarm
+“No” Correct rejection
+Results
+To ensure that the visible cue was visible and the invisible
+cue invisible, we first examined the results from the cue-
+location-discrimination task. Accuracy in this task—the
+percentage of correct responses—served as an index of
+conscious awareness of the cue location. The criterion for
+awareness versus unawareness was based on the bino-
+mial test: Participants with ps greater than .05 (one-tailed)
+were deemed unaware, whereas those with ps of .05 or
+lower were deemed aware.
+For the visible cue, location discrimination was at ceil-
+ing (M = 97.8% correct, SD = 3.1%, range = 88.8–100%);
+this confirms that the cue was visible. For the invisible
+cue, 10 participants performed at chance for the 33.3-ms
+cue, and 14 performed at chance for the 16.7-ms cue;
+because the pattern of the attentional-cuing results was
+the same for the two groups (as detailed in the following
+paragraphs), their data were combined. Combined group
+performance in cue-location discrimination also did not
+differ significantly from chance (M = 49.30% correct, SD =
+4.59%), t(23) = −0.75, p = .46 (two-tailed), which suggests
+that participants in the invisible-cue groups were unable
+to discern the location of the cue.
+To address the role of location variation in conscious
+and unconscious cuing, we next examined the results
+from the cuing task (Fig. 2). We first looked at the visible-
+cue group. The cuing effect was measured by the RT dif-
+ference scores (mean RT on invalid trials – mean RT on
+valid trials). In the fixed-cue blocks, there was no cuing
+effect (mean RT difference = 2.1 ms), t(19) = 0.85, p =
+.407, d = 0.19, which suggests that conscious exogenous
+attention requires location variation. Notably, there was
+also no evidence for a cuing effect even in the first few
+blocks (e.g., mean RT difference = 1.0 ms, −2.7 ms, and
+0.3 ms for the first, second, and third blocks, respectively,
+all ps > .6), which suggests that the lack of the cuing effect
+was not due to an early cuing effect being diluted when
+averaged across all 12 blocks. In the subsequent no-cue
+blocks, we measured the location-bias effect, which was
+indexed by the mean RT for targets at the previously
+uncued location (the new location) minus the mean RT
+for targets at the previously cued location (the old loca-
+tion). Performance was slower at the old location than at
+the new location (mean RT difference = −12.2 ms), t(19) =
+−3.78, p = .001, d = −0.85; this suggests that attention was
+biased against the repeatedly cued location, even when
+the cue no longer appeared, which may reflect an inhibi-
+tion mechanism. This negative attentional bias was rela-
+tively long-lived and consistent across the three blocks, as
+revealed by the lack of an interaction effect between loca-
+tion (old vs. new) and block number (1 vs. 2 vs. 3), F(2,
+38) = 0.83, p = .443, ηp
+2 = .04. In the random-cue blocks—
+when the cue was reintroduced and appeared at a ran-
+dom location—the cuing effect emerged (mean RT
+difference = 14.2 ms), t(19) = 4.57, p < .001, d = 1.02,
+which suggests that the lack of a cuing effect in the fixed-
+cue blocks was not due to the cue itself being impotent.
+We next looked at the invisible-cue groups, restricting
+our data analysis to participants who were objectively
+unaware of the cue location. The patterns in the fixed-
+cue and no-cue blocks contrasted the patterns in those
+blocks following the visible cue. First, in the fixed-cue
+blocks, the cuing effect was readily observed (mean RT
+difference = 15.7 ms; for the 33.3-ms cue: 14.7 ms, for the
+16.7-ms cue: 16.4 ms), t(23) = 5.96, p < .001, d = 1.22; this
+suggests that, in contrast to conscious exogenous atten-
+tion, unconscious exogenous attention does not require
+location variation. Second, in the no-cue blocks, perfor-
+mance was similar for targets appearing at the old loca-
+tion and the new location (mean RT difference = 1.6 ms;
+for the 33.3-ms cue: 4.7 ms, for the 16.7-ms cue: −0.6 ms),
+t(23) = 0.50, p = .621, d = 0.10, which suggests that
+repeatedly cuing a fixed location does not generate an
+attentional aftereffect when the cue does not enter aware-
+ness. Finally, in the random-cue blocks, the cuing effect
+emerged (mean RT difference = 14.9 ms; for the 33.3-ms
+cue: 15.4 ms, for the 16.7-ms cue: 14.6 ms), t(23) = 8.49,
+p < .001, d = 1.73; this reveals an otherwise similar cuing
+effect for the visible and invisible cues.
+The fundamentally distinct patterns between the visi-
+ble- and invisible-cue groups in the fixed-cue and no-cue
+blocks were further supported by interaction effects.
+Specifically, the finding that the cuing effect without loca-
+tion variation (i.e., in the fixed-cue blocks) occurred only
+for the invisible cue, but not for the visible cue, was sup-
+ported by a significant interaction effect between cue
+validity (valid vs. invalid) and cue visibility (visible vs.
+invisible), F(1, 42) = 14.00, p = .001, ηp
+2 = .25. Likewise,
+the finding that repeatedly cuing a fixed location subse-
+quently generates a negative attentional aftereffect (i.e.,
+in the no-cue blocks) only when the cue is consciously
+perceived was bolstered by a significant interaction effect
+between location (old vs. new) and cue visibility (visible
+vs. invisible), F(1, 42) = 9.17, p = .004, ηp
+2 = .18.
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 5 =====
+Repeated Cuing and Attentional Aftereffect 5
+Cue Visible ( ) Mean for Location-
+Discrimination Task = 97.8%
+Valid
+Invalid
+Old
+New
+Cue Invisible ( )
+Mean for Location-
+Discrimination Task = 49.3%
+Valid
+Invalid
+Old
+New
+*
+**
+**
+**
+Reaction Time (ms)
+Fixed
+Cue
+No
+Cue
+Random
+Cue
+Fixed
+Cue
+No
+Cue
+Random
+Cue
+380
+380
+360
+360
+340
+340
+320
+320
+300
+300
+40
+40
+RT Difference
+20
+20
+(ms)
+0
+0
+−20
+−20
+−40
+−40
+Fig. 2. Results from Experiment 1 for the visible-cue group and the invisible-cue group in the cuing task. The
+graphs in the top row show mean reaction time (RT) as a function of cue location and trial type (valid vs. invalid
+for fixed- and random-cue trials; old vs. new for no-cue trials). Error bars show standard errors of the mean.
+The box-and-whisker plots in the bottom row show median RT differences between each trial type for each cue
+location. RT differences were calculated by subtracting the mean RT for valid trials from the mean RT for invalid
+trials (fixed- and random-cue trials) or the mean RT for old trials from the mean RT for new trials (no-cue trials).
+In the plots, the horizontal center lines indicate medians; the top and bottom edges of the side notches mark
+95% confidence intervals for the medians; the top and bottom edges of the boxes designate the 25th and 75th
+percentiles, respectively; whiskers delimit 1.5 times the interquartile range from the 25th and 75th percentiles
+(the ends of the whiskers are plotted at the actual data points closest to those limits); and the dot indicates an
+outlier. Asterisks indicate significant differences between trial types (*p < .005; **p < .001).
+These results regarding the effect of the invisible cue
+were from participants who were objectively unaware of
+the cue location. What about the other participants, who
+performed above chance in discriminating the location of
+the strongly masked cue (accuracy: M = 72.28% correct,
+SD = 11.82%, range = 58.3–92.5%) even though they gen-
+erally reported being unable to see it? This group is con-
+ceivably more heterogeneous in cue awareness because
+forced-choice performance could have been above
+chance for two distinct reasons (Lin & Murray, 2014a):
+conscious cue processing and unconscious cue process-
+ing. Therefore, although we had no a priori prediction
+regarding this group, given their heterogeneity in aware-
+ness and given the distinct cuing effects for visible and
+invisible cues in both the fixed- and no-cue blocks (but
+not in the random-cue blocks), a reasonable expectation
+was that (a) in the fixed- and no-cue blocks, the respec-
+tive cuing and location-bias effects from this heteroge-
+neous group would be likely to fall in between the effects
+from visible and invisible cues, and (b) in the random-
+cue blocks, the cuing effect should be similar to the
+effects from visible and invisible cues. This appears to
+have been the case: In the fixed-cue blocks, the cuing
+effect was 8.5 ms, t(15) = 2.44, p = .028, d = 0.61; in the
+no-cue blocks, the location-bias effect was −7.5 ms,
+t(15) = −1.52, p = .149, d = −0.38; in the random-cue
+blocks, the cuing effect was 17.7 ms, t(15) = 6.52, p <
+.001, d = 1.63.
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 6 =====
+6 Lin, Murray
+Table 2. Results From Analyses of Miss Rates and False Alarm Rates
+Miss rate
+Experiment and block
+type
+Mean rate
+for valid and
+old trials (%)
+Mean rate
+for invalid and
+new trials (%) Difference between conditions
+Mean false
+alarm rate
+(%) d′ c
+Experiment 1: visible
+Fixed cue 0.8 0.7 t(19) = 0.54, p = .595, d = 0.12 24.7 3.31 −0.91
+No cue 0.2 0.4 t(19) = −0.97, p = .343, d = −0.22 18.3 4.04 −0.89
+Random cue 0.4 0.8 t(19) = −1.00, p = .33, d = −0.22 31.4 3.19 −1.04
+Experiment 1: invisible
+Fixed cue 0.3 0.6 t(23) = −0.30, p = .006, d = −0.61 16.6 3.80 −0.83
+No cue 1.0 0.7 t(23) = 0.17, p = .867, d = 0.03 18.2 3.83 −0.77
+Random cue 1.0 0.9 t(23) = 0.6, p = .555, d = 0.12 20.2 3.61 −0.81
+Experiment 2
+Fixed cue 0.4 0.3 t(12) = 0.35, p = .735, d = 0.1 11.7 4.32 −0.64
+No cue 0.3 0.3 t(12) = 0.01, p = .999, d = 0.01 14.1 4.63 −0.61
+Random cue 0.9 1.1 t(13) = −0.23, p = .819, d = −0.06 16.4 3.89 −0.56
+Experiment 3
+Fixed cue 1.0 0.9 t(19) = 0.59, p = .564, d = 0.13 31.7 3.11 −1.02
+Note: Comparisons in the fixed-cue and random-cue blocks were made between valid and invalid trials; comparisons in the no-cue blocks
+were between old and new trials. The measure of d′ was calculated as follows: z(1 − miss) − z(false alarm). The criterion (c) measure was
+calculated as follows: −(z(1 − miss) + z(false alarm))/2. Boldface indicates a significant result.
+Misses were rare (< 1%) and generally did not differ
+between the valid and invalid conditions or between the
+old and new conditions (see Table 2), except between
+the valid and invalid conditions in the fixed-cue blocks
+for the invisible-cue group—in this case, the valid condi-
+tion had a lower miss rate than the invalid condition.
+Two control experiments
+Following Experiment 1, we conducted two control
+experiments. The first one (Experiment 2) examined the
+unconscious effects in Experiment 1. In the location-
+discrimination task of the first experiment, we had
+assessed visual awareness using 80 trials for the 33.3-
+ms cue and 120 trials for the 16.7-ms cue—less than the
+840 trials in the cuing task. Although it is almost univer-
+sal in studies of unconscious processing to have fewer
+trials in an awareness test than in the main test, such a
+mismatch nevertheless could pose some methodologi-
+cal concerns (Lin & Murray, 2014a). For instance, a
+shorter awareness test may show a weaker learning
+effect or have less power in quantifying awareness—
+which could lead to underestimates of visual awareness.
+Relatedly, in Experiment 1, we measured awareness in
+the random-cue blocks but not in the fixed-cue blocks.
+Although cue awareness in the random-cue blocks pro-
+vided a reasonably good surrogate for cue awareness in
+the fixed-cue blocks, the two conceivably could differ.
+We addressed these issues in Experiment 2, in which
+trials for both the exogenous cuing task and the
+cue-location-discrimination task were identical; this
+meant that both the total number of trials and the
+sequence of trials for the two tasks were matched.
+The second control experiment (Experiment 3) con-
+cerned the lack of a conscious cuing effect in the fixed-
+cue blocks in Experiment 1. In the first experiment, the
+cue-to-target SOA was 33.3 ms, whereas in discrimination
+tasks, peak cuing effects have been observed at 83 to 100
+ms (Cheal & Lyon, 1991) and 70 to 150 ms (Nakayama &
+Mackeben, 1989). This raises the question whether a con-
+scious cuing effect might appear in the fixed-cue blocks
+if the SOA was lengthened. Evidently the SOA of 33.3 ms
+was sufficient to induce a robust conscious cuing effect
+in the random-cue blocks in Experiment 1, which sug-
+gests that this short SOA was effective in our task.
+Nevertheless, we directly addressed this question in
+Experiment 3 by employing a longer SOA of 100 ms and
+examining whether a conscious cuing effect appeared in
+the fixed-cue blocks. An added benefit of using this lon-
+ger SOA was that it would weaken any potential forward-
+masking effect from the cue on the target and thus
+provide a better chance to detect the cuing effect, should
+it exist.
+Experiment 2
+Method
+The design of Experiment 2 was the same as that of the
+16.7-ms-invisible-cue condition in Experiment 1, except
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 7 =====
+Repeated Cuing and Attentional Aftereffect 7
+for two changes. First, both the exogenous cuing task
+and the cue-location-discrimination task had 12 practice
+trials and 420 experimental trials. The 420 trials—includ-
+ing their order—were the same in the two tasks, which
+consisted of seven blocks (60 trials each): four fixed-cue
+blocks, one no-cue block, and two random-cue blocks.
+Including the fixed-cue blocks in the cue-location-dis-
+crimination task allowed us to directly test the visibility of
+the cue when its location was fixed—which may have
+differed from the visibility of the cue when its location
+was random. Second, in the cue-location-discrimination
+task, to ensure that participants knew what to expect
+from the cue (Lin & Murray, 2014a), we increased the cue
+duration in the 12 practice trials from 16.7 ms to 100 ms.
+There were 20 participants in this experiment (mean
+age = 19.2 years; 50% female, 50% male). Anticipatory
+responses were rare (0.47%) and excluded from analysis.
+All participants performed above chance in the practice
+session of the cue-location-discrimination task (M =
+95.4% correct, SD = 8.3%, range = 75.0–100%).
+Results
+As in Experiment 1, accuracy in the cue-location-discrim-
+ination task served as an index of conscious awareness of
+the cue location. Accuracy was submitted to the binomial
+test: Participants with ps greater than .05 (one-tailed)
+were deemed unaware, whereas those with ps of .05 or
+lower were deemed aware. Unlike in Experiment 1,
+awareness for the fixed-location cue was directly tested
+in the fixed-cue blocks (rather than in the random-cue
+blocks).
+We first examined the unconscious cuing effect in the
+fixed-cue blocks and its aftereffect in the no-cue block.
+Thirteen participants performed at chance; group perfor-
+mance for these 13 participants also did not differ from
+chance (accuracy: M = 49.39% correct, SD = 9.48%),
+t(12) = −0.61, p = .55 (two-tailed), which suggests that
+these participants were unable to discern the location of
+the cue. Replicating Experiment 1, results showed that
+when the cue location was fixed, the invisible cue
+induced an unconscious cuing effect (mean RT differ-
+ence between valid and invalid trials = 15.6 ms), t(12) =
+4.13, p = .001, d = 1.15. When there was no cue, there
+was no attentional aftereffect at the location where the
+previous cue repeatedly appeared (mean RT difference =
+−2.1 ms), t(12) = −0.41, p = .692, d = −0.11.
+We next looked at the effect in the random-cue blocks.
+Fourteen participants performed at chance; group perfor-
+mance for these 14 participants also did not differ from
+chance (accuracy: M = 50.48%, SD = 5.36%), t(13) = 0.33,
+p = .74. As in Experiment 1, a cuing effect was observed
+in these random-cue blocks (mean RT difference = 20.5
+ms), t(13) = 5.10, p < .001, d = 1.36. Misses were rare
+(< 1%) and did not differ between the valid and invalid
+­ conditions or between the old and new conditions (see
+Table 2).
+Hence, with all the trials (and their sequence) com-
+pletely matched between the cuing task and the location-
+discrimination task, we found, as in Experiment 1, a cuing
+effect in the fixed-cue blocks, no aftereffect in the no-cue
+block, and a cuing effect in the random-cue blocks. This
+pattern persisted even for participants who performed at
+chance in both the no-cue blocks and the random-cue
+blocks—fixed-cue blocks: mean RT difference = 16.9 ms,
+t(5) = 2.33, p = .067, d = 0.95; no-cue blocks: mean RT
+difference = −3.7 ms, t(5) = –0.77, p = .476, d = –0.31;
+random-cue blocks: mean RT difference = 21.0 ms, t(5) =
+2.66, p = .045, d = 1.09.
+Experiment 3
+Method
+The design of Experiment 3 was the same as that of the
+visible-cue condition in Experiment 1, except for two
+changes. First, there were 12 blocks, all with the cue loca-
+tion fixed. Second, in each trial, a 66.67-ms blank period
+was inserted between the offset of the cue and the onset
+of the target—this brought the cue-to-target SOA to 100 ms.
+There were 22 participants in this experiment (mean
+age = 20.6 years; 82% female, 18% male). Anticipatory
+responses were rare (0.2%) and excluded from analysis.
+Data from 2 participants were discarded because of
+chance-level performance in the location-discrimination
+task (50% and 58% correct responses, respectively—com-
+pared with near-ceiling performance for the other partici-
+pants: M = 98.5% correct, SD = 2.1%, range = 91.3–100%).
+Results
+The results replicated those in the visible-cue condition
+of Experiment 1: With the cue location fixed, there was
+no cuing effect (mean RT difference = −2.9 ms), t(19) =
+−1.03, p = .317, d = −0.23; there was also no evidence for
+a cuing effect in the first few blocks (e.g., mean RT dif-
+ference = −5.1 ms, 2.7 ms, and −6.3 ms for the first, sec-
+ond, and third blocks, respectively, all ps > .2). Misses
+were rare (< 1%) and did not differ between the valid and
+invalid conditions (see Table 2). Therefore, the lack of a
+conscious cuing effect in the fixed-cue blocks was robust,
+and it was unlikely to be explained by suboptimal SOAs
+or by forward masking from the cue.
+Individual Differences in the False
+Alarm Rate
+As Table 2 shows, for all three experiments, the miss rate
+was exceedingly low and generally did not differ signifi-
+cantly between the valid and invalid conditions or
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 8 =====
+8 Lin, Murray
+between the old and new conditions. In contrast, the
+false alarm rate was much higher, consistent with previ-
+ous reports using a similar task (e.g., Lin & Murray, 2013).
+False alarms, however, could in no way contaminate the
+critical comparisons (valid vs. invalid trials, old vs. new
+trials): False alarm trials, by definition, were those on
+which targets were absent; in contrast, trials in the valid,
+invalid, old, and new conditions were those on which
+targets were present. In other words, since trials in our
+critical comparisons (invalid – valid; old – new) were all
+hit trials that were randomly mixed with the false alarm
+trials within each block, such a design precludes accounts
+based on changes in either sensitivity (d′, calculated as
+z(hit) − z(false alarm)) or criterion (c, calculated as −
+(z(hit) + z(false alarm))/2; see Table 2).
+Nevertheless there was considerable individual varia-
+tion in the false alarm rate, which raises the questions
+whether and how the false alarm rate might correlate
+with the critical difference effects in RTs. To address these
+questions, we examined the correlation between the false
+alarm rate and three variables: (a) the cuing effect (invalid
+trials – valid trials) for the fixed-cue blocks and the ran-
+dom-cue blocks, (b) the location-bias effect (new trials
+– old trials) for the no-cue blocks, and (c) the mean RTs,
+that is, (invalid trials + valid trials)/2 for the fixed-cue and
+random-cue blocks and (new trials + old trials)/2 for the
+no-cue blocks.
+Figure 3 shows the results. First, in no case did the
+false alarm rate correlate with the difference effects in
+RTs, whether the cue was visible or invisible. Indeed, the
+correlation was rather weak and ran in both positive and
+negative directions, which suggests that the cuing effect
+and the location-bias effect were insensitive to the false
+alarm rate. Second, the false alarm rate strongly corre-
+lated with the mean RTs: Participants who tended to
+press the button indiscriminately (higher false alarms)
+also tended to respond earlier than others (faster RTs).
+Taken together, these results show that although higher
+false alarm rates were associated with faster RTs, false
+alarms did not play a major role in determining the cuing
+effect or the location-bias effect.
+Discussion
+Using a repeated-cuing paradigm, we uncovered two
+main results. First, repeatedly cuing the same location
+can facilitate performance at the cued location relative to
+the uncued location, but only when the cue is invisible—
+not when it is visible. Second, such repeated cuing results
+in a relatively long-term consequence (at least 120 trials),
+that is, an attentional bias against the previously cued
+location, but only when the cue is visible—not when it is
+invisible. These results show that in repeated cuing, con-
+scious awareness comes with two costs with regard to
+attention: Not only does conscious awareness eliminate
+the cuing effect, but it also reduces the subsequent prior-
+ity of the cued location.
+These results suggest that an exogenous cue elicits
+two opposing effects that together determine the behav-
+ioral cuing effect: an awareness-independent orienting
+effect and an awareness-dependent inhibition effect. In
+addition, the orienting component is a transient and rela-
+tively automatic effect, whereas the inhibition compo-
+nent is a sustained and controlled effect. Accordingly,
+when the location of a visible cue is fixed and thereby
+rendered predictable, inhibition of the cue location is
+facilitated, which can effectively cancel out the orienting
+component—thus explaining the lack of a conscious
+cuing effect in fixed-cue blocks. This conscious-inhibi-
+tion effect may arise from a need to suppress task-irrele-
+vant information (e.g., the cue) in order to extract the
+task-relevant information (e.g., the target)—particularly
+when the two are spatially and temporally close. This
+notion is consistent with the observation that task-irrele-
+vant dynamic random dots on the background are sub-
+ject to effective inhibitory control when they are
+suprathreshold, but not when they are subthreshold
+(Tsushima et al., 2006).
+That the negative attentional bias was observed in
+blocks in which the cue was removed is perhaps sur-
+prising. Such an effect mimics traditional perceptual
+aftereffects such as motion aftereffects—in which expo-
+sure to a moving stimulus causes a subsequent static
+image to be perceived as moving in the opposite direc-
+tion (e.g., Lin & He, 2012; Mather, Verstraten, & Anstis,
+1998)—and hence could be referred to as an attentional
+aftereffect. Unlike low-level perceptual aftereffects,
+which typically do not require awareness (Lin & He,
+2009), the attentional aftereffect here depends critically
+on awareness, which implies that it has a cognitive ori-
+gin (Huber, 2008).
+Persisting attentional bias has been documented previ-
+ously. For example, the tendency to attend to locations
+that are likely to contain the target lingers even when
+such a bias is no longer warranted—when the target
+appears equally likely at all locations (Y. V. Jiang, Swallow,
+Rosenbaum, & Herzig, 2013). This positive attentional
+bias contrasts with the negative attentional aftereffect
+observed here. In addition, whereas the positive atten-
+tional bias is claimed to be implicit (Y. V. Jiang et al.,
+2013), the negative attentional aftereffect apparently
+requires explicit awareness of the cue. These distinctions
+highlight fundamental differences between attentional
+biases arising from manipulating target locations and
+from manipulating exogenous cue locations.
+The novel demonstration of a cuing effect confined
+only to invisible cues also has an important implication
+for unconscious perception and cognition. Unconscious
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 9 =====
+Repeated Cuing and Attentional Aftereffect 9
+480
+Fixed-Cue Blocks No-Cue Blocks Random-Cue Blocks
+Invalid Trials Valid Trials Mean:
+r = −.75, Difference:
+r = .07, p < .001
+p = .653
+New Trials Old Trials
+Mean:
+r = −.43, Difference:
+r = .21, p = .058
+p = .373
+Invalid Trials Valid Trials
+Mean:
+r = −.69, p = .001
+Difference:
+r = −.18, p = .441
+Visible-Cue Group
+Reaction Time (ms)
+380
+280
+180
+480
+380
+Invisible-Cue Group
+Mean:
+r = −.59, p < .001
+Difference:
+r = −.17, p = .308
+Mean:
+r = −.49, Difference:
+r = .12, p = .002
+p = .492
+Mean:
+r = −.56, Difference:
+r = −.15, p < .001
+p = .362
+Reaction Time (ms)
+280
+180
+0 30 60 90
+0 30 60 90
+0 30 60 90
+False Alarm Rate (%)
+False Alarm Rate (%)
+False Alarm Rate (%)
+Fig. 3. Results from the three experiments: scatter plots showing mean reaction time (RT) as a function of false alarm rate and trial type (valid
+vs. invalid for fixed- and random-cue blocks; old vs. new for no-cue blocks). Plots are shown separately for each block type for the visible- and
+invisible-cue groups. Lines between circles and crosses connect the RTs of the two critical conditions in each individual participant. The correla-
+tions shown are between false alarm rate and mean RT (calculated as (invalid trials + valid trials)/2 or (new trials + old trials)/2) and between false
+alarm rate and the difference in mean RTs (calculated as invalid trials – valid trials or new trials – old trials). The data from Experiments 1 and 3
+were pooled for the visible-cue group (for the fixed-cue blocks only, as Experiment 3 did not include the no-cue or random-cue blocks), whereas
+the data for the invisible-cue group were pooled from Experiments 1 and 2.
+effects are routinely demonstrated to be weaker than
+conscious effects (Kouider & Dehaene, 2007; Lin & He,
+2009; Lin & Murray, 2013, 2014b; van Gaal & Lamme,
+2012). This characteristic of unconscious effects poses a
+serious challenge for the study of unconscious process-
+ing itself: Because of the notorious difficulty of proving
+the absolute invisibility of a stimulus, a so-called uncon-
+scious effect could be due to partial awareness in a num-
+ber of trials, a number of participants, or both, particularly
+when the visibility test is inappropriate (for recent dem-
+onstrations, see Lin & Murray, 2014a, in press). Here, we
+demonstrated a robust unconscious effect and an essen-
+tially absent conscious effect in the fixed-cue blocks. These
+results are difficult to explain by residual ­ awareness—­ if
+this were the explanation, the unconscious cuing effect
+would have been weaker than the conscious cuing effect.
+Thus, together with studies showing distinct conscious
+and unconscious effects (Barbot & Kouider, 2012; Eimer
+& Schlaghecken, 1998; Merikle & Joordens, 1997; Sumner,
+Tsai, Yu, & Nachev, 2006), our results provide novel evi-
+dence against the weaker characterization of unconscious
+effects. They also highlight orienting and inhibition as
+distinct components in exogenous cuing—these compo-
+nents differ in their dependence on visual awareness and
+in their timescale.
+Author Contributions
+Z. Lin conceived, designed, and conducted the research. Z. Lin
+and S. O. Murray wrote the manuscript.
+Declaration of Conflicting Interests
+The authors declared that they had no conflicts of interest with
+respect to their authorship or the publication of this article.
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from
+
+===== PDF PAGE 10 =====
+10 Lin, Murray
+Supplemental Material
+Additional supporting information can be found at http://pss
+.sagepub.com/content/by/supplemental-data
+References
+Barbot, A., & Kouider, S. (2012). Longer is not better:
+Nonconscious overstimulation reverses priming influences
+under interocular suppression. Attention, Perception, &
+Psychophysics, 74, 174–184.
+Breitmeyer, B. G., & Ogmen, H. (2000). Recent models and find-
+ings in visual backward masking: A comparison, review,
+and update. Perception & Psychophysics, 62, 1572–1595.
+Cheal, M., & Lyon, D. R. (1991). Central and peripheral precu-
+ing of forced-choice discrimination. Quarterly Journal of
+Experimental Psychology, Section A: Human Experimental
+Psychology, 43, 859–880.
+Eimer, M., & Schlaghecken, F. (1998). Effects of masked stim-
+uli on motor activation: Behavioral and electrophysiologi-
+cal evidence. Journal of Experimental Psychology: Human
+Perception and Performance, 24, 1737–1747.
+Guzman-Martinez, E., Leung, P., Franconeri, S., Grabowecky,
+M., & Suzuki, S. (2009). Rapid eye-fixation training without
+eyetracking. Psychonomic Bulletin & Review, 16, 491–496.
+Hsieh, P. J., Colas, J. T., & Kanwisher, N. (2011). Pop-out with-
+out awareness: Unseen feature singletons capture attention
+only when top-down attention is available. Psychological
+Science, 22, 1220–1226.
+Huber, D. E. (2008). Immediate priming and cognitive after-
+effects. Journal of Experimental Psychology: General, 137,
+324–347.
+Jiang, Y., Costello, P., Fang, F., Huang, M., & He, S. (2006).
+A gender- and sexual orientation-dependent spatial atten-
+tional effect of invisible images. Proceedings of the National
+Academy of Sciences, USA, 103, 17048–17052.
+Jiang, Y. V., Swallow, K. M., Rosenbaum, G. M., & Herzig, C.
+(2013). Rapid acquisition but slow extinction of an atten-
+tional bias in space. Journal of Experimental Psychology:
+Human Perception and Performance, 39, 87–99.
+Kouider, S., & Dehaene, S. (2007). Levels of processing dur-
+ing non-conscious perception: A critical review of visual
+masking. Philosophical Transactions of the Royal Society B:
+Biological Sciences, 362, 857–875.
+Lin, Z. (2013). Object-centered representations support flexible
+exogenous visual attention across translation and reflec-
+tion. Cognition, 129, 221–231.
+Lin, Z., & He, S. (2009). Seeing the invisible: The scope and lim-
+its of unconscious processing in binocular rivalry. Progress
+in Neurobiology, 87, 195–211.
+Lin, Z., & He, S. (2012). Emergent filling in induced by motion
+integration reveals a high-level mechanism in filling in.
+Psychological Science, 23, 1534–1541.
+Lin, Z., & Murray, S. O. (2013). Visible propagation from invisi-
+ble exogenous cueing. Journal of Vision, 13(11), Article 12.
+Retrieved from http://www.journalofvision.org/content/
+13/11/12.full
+Lin, Z., & Murray, S. O. (2014a). Priming of awareness or how
+not to measure visual awareness. Journal of Vision, 14(1),
+Article 27. Retrieved from http://www.journalofvision.org/
+content/14/1/27.full
+Lin, Z., & Murray, S. O. (2014b). Unconscious processing of an
+abstract concept. Psychological Science, 25, 296–298.
+Lin, Z., & Murray, S. O. (in press). Automaticity of unconscious
+response inhibition. Journal of Experimental Psychology:
+General.
+Mather, G., Verstraten, F., & Anstis, S. (1998). The motion after-
+effect: A modern perspective. Cambridge, MA: MIT Press.
+Merikle, P. M., & Joordens, S. (1997). Parallels between percep-
+tion without attention and perception without awareness.
+Consciousness and Cognition, 6, 219–236.
+Mulckhuyse, M., Talsma, D., & Theeuwes, J. (2007). Grabbing
+attention without knowing: Automatic capture of atten-
+tion by subliminal spatial cues. Visual Cognition, 15,
+779–788.
+Nakayama, K., & Mackeben, M. (1989). Sustained and transient
+components of focal visual attention. Vision Research, 29,
+1631–1647.
+Posner, M. I. (1980). Orienting of attention. Quarterly Journal of
+Experimental Psychology, 32, 3–26.
+Sumner, P., Tsai, P. C., Yu, K., & Nachev, P. (2006). Attentional
+modulation of sensorimotor processes in the absence of
+perceptual awareness. Proceedings of the National Academy
+of Sciences, USA, 103, 10520–10525.
+Tsushima, Y., Sasaki, Y., & Watanabe, T. (2006). Greater disrup-
+tion due to failure of inhibitory control on an ambiguous
+distractor. Science, 314, 1786–1788.
+van Gaal, S., & Lamme, V. A. F. (2012). Unconscious high-level
+information processing: Implication for neurobiological
+theories of consciousness. Neuroscientist, 18, 287–301.
+Vermeiren, A., & Cleeremans, A. (2012). The validity of d′ measures.
+PLoS ONE, 7(2), Article e31595. Retrieved from http://www
+.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal
+.pone.0031595
+Zhaoping, L. (2008). Attention capture by eye of origin single-
+tons even without awareness—A hallmark of a bottom-up
+saliency map in the primary visual cortex. Journal of Vision,
+8(5), Article 1. Retrieved from http://www.journalofvision
+.org/content/8/5/1.full
+at WASHBURN UNIV on January 13, 2015 pss.sagepub.com Downloaded from

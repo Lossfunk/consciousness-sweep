@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.8.1
+**Version:** draft-0.8.2
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -64,6 +64,8 @@ Every `E-diagnostic` decision must record all of:
 4. every experiment or analysis required for the inference, through source pointers and evidence links; and
 5. why the evidence concerns one coherent focal Y rather than an opportunistic cross-Y dissociation.
 
+For a factorial-functional comparison, apply `E-diagnostic` to the **whole focal functional relation**, not opportunistically to one component. Component simple effects may differ in strength while their joint structured mapping rules out the specified same-Y scalar account. When required support spans experiments, analyses, or sources, a strict evidence bundle must identify the member that addresses the first-order-evidence alternative. An interaction or cross-Y dissociation alone is never sufficient: the same-Y/coherent-functional-relation requirement and every ordinary `E-diagnostic` requirement above remain mandatory.
+
 For example, Experiment A may find a downstream extremum around a detectability threshold, while Experiment B experimentally shifts detectability and the downstream extremum shifts correspondingly. If the complete, premise-specific evidence bundle shows that this joint same-Y pattern violates the stated simple signal-strength prediction, it may support `E-diagnostic`; the extremum alone does not. Charles et al. (2013) motivate the distinction between identical physical stimuli and identical internal evidence.
 
 ### 2.4 F — meaningful downstream use Y
@@ -78,18 +80,40 @@ Assign Y at the most specific functional level justified by the dependent measur
 
 For every comparison, record `Y_label`, `Y_description`, `Y_evidence_role`, and `Y_interpretation_clarity` separately from `mechanistic_interpretation` and `mechanism_clarity`. `mechanism_clarity` is never part of the F gate. Neural evidence may support a proposed mechanism for a behavioral Y, but a generic neural difference is not itself a qualifying Y merely because it is compatible with that mechanism. `F-ambiguous` supports discovery recall but does not pass the strongest empirical-lot filter, which continues to require `F-meaningful`.
 
-### 2.5 Scalar and factorial-functional Y
+### 2.5 Mandatory pre-atomization functional-structure check
+
+Perform this check after enumerating the physical experiment and **before** final comparison decomposition or scalar-row finalization. For every experiment containing multiple relevant factors, cells, or simple effects, ask:
+
+1. Is the critical scientific hypothesis or inferential statistic testing whether X changes one coherent downstream functional mapping across conditions?
+2. Do the component cells or simple effects jointly operationalize that same conservative function-level Y?
+3. Is the critical evidence an interaction, crossover, conditional mapping, or structured pattern whose scientific meaning would be lost if the cells were evaluated only as separate scalar Ys?
+
+If yes, instantiate the factorial-functional focal X→Y comparison first, record its component effects, and assess A/E/F and any evidence bundles for that whole relation. Scalar/component comparisons may additionally coexist when they independently answer meaningful X→Y questions, but they must link to and never replace or suppress the focal comparison.
+
+If no, scalar decomposition is allowed. Record why the cells represent genuinely distinct downstream functions or why no coherent common Y is defensible.
+
+Use `functional_structure_assessment` as follows:
+
+- `not-applicable`: the experiment has no multiple relevant factors/cells/simple effects requiring the check;
+- `scalar-justified`: the check was performed and separate scalar Ys are scientifically warranted;
+- `factorial-functional-required`: the check was performed and a focal factorial-functional comparison is required; or
+- `not-assessed`: temporary state only, never permitted for a fully evaluated row.
+
+Record the durable rationale in `functional_structure_reason`. A scalar component that coexists with a focal factorial comparison records its focal ID in `factorial_focal_comparison_id`.
+
+### 2.6 Scalar and factorial-functional Y
 
 Record `Y_structure = scalar` when the downstream function is operationalized by one simple effect or a set of interchangeable measures. Record `Y_structure = factorial-functional` when the focal Y is a functional mapping across experimentally defined relations or task states.
 
 A factorial functional relation remains one comparison only when:
 
-1. the design explicitly treats its component conditions as parts of one functional question;
-2. the simple effects jointly operationalize how the same downstream system uses X under different task relations or states;
-3. the critical inference is an interaction or structured pattern over those components; and
-4. a conservative common function-level Y can be stated without asserting an unsupported finer mechanism.
+1. a conservative common function-level Y can be stated;
+2. the design treats the component conditions as parts of one functional question and the critical hypothesis/statistic genuinely concerns that mapping;
+3. the simple effects jointly operationalize how the same downstream system uses X under different task relations or states;
+4. grouping does not conflate substantively distinct downstream processes; and
+5. the relation is empirically operationalized rather than imposed post hoc merely to obtain a preferred E code or result.
 
-Record each component simple effect in `factorial_component_effects`. Do not split a coherent relation merely because its interaction has multiple cells. Conversely, do not merge genuinely different downstream functions to obtain a desirable classification.
+Record each component simple effect in `factorial_component_effects`. Do not split a coherent relation merely because its interaction has multiple cells. Conversely, `interaction exists` does not imply one factorial Y: do not merge genuinely different downstream functions or construct a grouping merely to rescue E.
 
 ## 3. Independent scientific inferences
 
@@ -258,12 +282,12 @@ A supporting experiment does not become a candidate X→Y comparison merely beca
 
 ## 8. Full-text comparison evaluation order and route-aware analysis
 
-First enumerate the distinct X→Y comparisons within each potentially relevant experiment. Keep a coherent factorial functional relation together under Section 2.5; assign a separate comparison when the conservative downstream function is genuinely different. Unaware capacity and awareness effect are separate fields and do not require duplicate comparison rows merely because both inferences apply. Then, for each comparison:
+First enumerate each physical experiment. Before final comparison decomposition, perform the mandatory pre-atomization functional-structure check in Section 2.5 and record its decision and why. When the check requires a factorial-functional relation, instantiate that focal comparison before any optional scalar/component comparison. Assign separate scalar comparisons only when they independently answer meaningful X→Y questions or when the check justifies genuinely distinct downstream functions. Unaware capacity and awareness effect are separate fields and do not require duplicate comparison rows merely because both inferences apply. Then, for each comparison:
 
 1. Identify X and the aware/unaware contrast.
 2. Identify the awareness measure or validation.
 3. Identify the direct first-order evidence measure.
-4. Identify Y at the most specific conservative functional level justified by the dependent measure; assign scalar versus factorial-functional structure, record component simple effects for a factorial Y, and record finer mechanistic interpretation separately.
+4. Identify Y at the most specific conservative functional level justified by the dependent measure; carry forward the recorded pre-atomization decision, assign scalar versus factorial-functional structure, record component simple effects and any linked optional scalar comparisons, and record finer mechanistic interpretation separately.
 5. Check the article and supplement for classification-critical dependencies or supporting analyses. Resolve external auxiliary sources where reasonably possible, create one scientific bundle per focal premise, and create an explicit link for every scientific use.
 6. Assign A from the qualifying awareness evidence, record `awareness_evidence_type`, and explain objective-test informativeness where applicable.
 7. Assign F from the downstream-use design and explain why.

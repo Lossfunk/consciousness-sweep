@@ -39,7 +39,7 @@ def comparison(**updates: object) -> dict[str, object]:
 
 
 class SixAnchorDerivedViewNonRegressionTests(unittest.TestCase):
-    def test_draft_0_8_1_preserves_draft_0_8_anchor_route_tuples(self) -> None:
+    def test_draft_0_8_2_uses_adjudicated_diagnostic_anchor_route_tuples(self) -> None:
         cases = {
             "Tsushima": comparison(
                 A_code="A-validated", unaware_capacity="not-supported",
@@ -53,7 +53,7 @@ class SixAnchorDerivedViewNonRegressionTests(unittest.TestCase):
                 Meyen_role="supplementary", Meyen_status="Meyen-failed",
             ),
             "Ben-Haim": comparison(),
-            "Persaud": comparison(E_code="E-matched"),
+            "Persaud": comparison(E_code="E-matched", unaware_capacity="unclear"),
             "Keizer": comparison(
                 A_code="A-validated", E_code="E-physical-only",
                 awareness_effect="no-detectable-difference",
@@ -66,7 +66,7 @@ class SixAnchorDerivedViewNonRegressionTests(unittest.TestCase):
             "Lin and Murray": (True, False, False, False),
             "Lamy": (True, True, False, False),
             "Ben-Haim": (True, True, False, False),
-            "Persaud": (True, True, False, False),
+            "Persaud": (True, False, False, False),
             "Keizer": (False, True, False, True),
         }
         for name, row in cases.items():

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure, network-free enforcement helpers for the draft-0.8.1 execution contract."""
+"""Pure, network-free enforcement helpers for the draft-0.8.2 execution contract."""
 
 from __future__ import annotations
 
@@ -186,6 +186,97 @@ def route_audit_errors(row: dict[str, Any]) -> list[str]:
         if row.get("result_inspection_status") not in {"not-required", "completed-viable-routes"}:
             errors.append("dead routes require an explicit result-inspection disposition")
     return errors
+
+
+def functional_structure_errors(rows: Iterable[dict[str, Any]]) -> list[str]:
+    """Enforce the durable pre-atomization decision without inferring scientific coherence."""
+    errors: list[str] = []
+    by_experiment: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_experiment.setdefault(str(row.get("experiment_id") or ""), []).append(row)
+
+    for experiment_id, experiment_rows in by_experiment.items():
+        finalized = [
+            row for row in experiment_rows
+            if row.get("current_status") == "fully-evaluated"
+        ]
+        focals = {
+            row.get("comparison_id"): row
+            for row in finalized
+            if row.get("functional_structure_assessment") == "factorial-functional-required"
+            and row.get("Y_structure") == "factorial-functional"
+        }
+        requires_focal = any(
+            row.get("functional_structure_assessment") == "factorial-functional-required"
+            for row in finalized
+        )
+        if requires_focal and not focals:
+            errors.append(
+                f"{experiment_id}: factorial-functional-required assessment lacks a focal comparison"
+            )
+
+        for row in finalized:
+            comparison_id = str(row.get("comparison_id") or "")
+            focal_id = row.get("factorial_focal_comparison_id")
+            if focal_id is None:
+                continue
+            focal = focals.get(focal_id)
+            if focal is None:
+                errors.append(
+                    f"{comparison_id}: linked factorial focal {focal_id} is missing from the same experiment"
+                )
+                continue
+            try:
+                focal_order = int(str(focal_id).rsplit("_C", 1)[1])
+                component_order = int(comparison_id.rsplit("_C", 1)[1])
+            except (IndexError, ValueError):
+                continue
+            if focal_order >= component_order:
+                errors.append(
+                    f"{comparison_id}: factorial focal must be instantiated before linked scalar components"
+                )
+
+        scalar_rows = [row for row in finalized if row.get("Y_structure") == "scalar"]
+        if len(finalized) > 1 and not focals:
+            for row in scalar_rows:
+                if row.get("functional_structure_assessment") != "scalar-justified":
+                    errors.append(
+                        f"{row.get('comparison_id')}: multi-row scalar decomposition requires "
+                        "a scalar-justified pre-atomization assessment"
+                    )
+    return errors
+
+
+def factorial_e_diagnostic_bundle_errors(
+    row: dict[str, Any], bundles: Iterable[dict[str, Any]], links: Iterable[dict[str, Any]],
+) -> list[str]:
+    """Require a factorial E bundle member that directly addresses the stated alternative."""
+    if row.get("Y_structure") != "factorial-functional" or row.get("E_code") != "E-diagnostic":
+        return []
+    focal_id = row.get("comparison_id")
+    complete_bundle_ids = {
+        bundle.get("evidence_bundle_id")
+        for bundle in bundles
+        if bundle.get("focal_comparison_id") == focal_id
+        and bundle.get("supported_premise") == "E-diagnostic"
+        and bundle.get("bundle_status") == "complete"
+    }
+    direct_controls = [
+        link for link in links
+        if link.get("evidence_bundle_id") in complete_bundle_ids
+        and link.get("support_role") == "alternative-explanation-control"
+        and link.get("dependency_role") == "required"
+        and link.get("member_status") == "supports"
+        and link.get("used_for_decision") is True
+        and str(link.get("supported_claim") or "").strip()
+    ]
+    if direct_controls:
+        return []
+    return [
+        f"{focal_id}: factorial E-diagnostic requires a complete bundle with a required, "
+        "decision-used alternative-explanation-control member identifying the result that "
+        "addresses the first-order-evidence alternative"
+    ]
 
 
 def reopen_for_blind_discovery(

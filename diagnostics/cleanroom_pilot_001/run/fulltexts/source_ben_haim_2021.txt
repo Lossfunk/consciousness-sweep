@@ -1,0 +1,821 @@
+
+===== PDF PAGE 1 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+Disentangling perceptual awareness from
+nonconscious processing in rhesus monkeys
+(Macaca mulatta)
+Moshe Shay Ben-Haima,b,1, Olga Dal Montea,c, Nicholas A. Fagana, Yarrow Dunhama, Ran R. Hassinb,d,2
+,
+Steve W. C. Changa,e,f,2, and Laurie R. Santosa,2
+aDepartment of Psychology, Yale University, New Haven, CT 06511; bDepartment of Psychology, The Hebrew University of Jerusalem, 91905 Jerusalem,
+Israel; cDepartment of Psychology, University of Turin, 10124 Torino, Italy; dThe Federmann Center for the Study of Rationality, The Hebrew University of
+Jerusalem, 91905 Jerusalem, Israel; eDepartment of Neuroscience, Yale School of Medicine, New Haven, CT 06520; and fKavli Institute for Neuroscience, Yale
+School of Medicine, New Haven, CT 06520
+Edited by Michael Shadlen, Columbia University, New York, NY, and accepted by Editorial Board Member Leslie G. Ungerleider February 17, 2021 (received for
+review August 19, 2020)
+Scholars have long debated whether animals, which display
+impressive intelligent behaviors, are consciously aware or not.
+Yet, because many complex human behaviors and high-level func-
+tions can be performed without conscious awareness, it was long
+considered impossible to untangle whether animals are aware or
+just conditionally or nonconsciously behaving. Here, we developed
+an empirical approach to address this question. We harnessed a
+well-established cross-over double dissociation between noncon-
+scious and conscious processing, in which people perform in com-
+pletely opposite ways when they are aware of stimuli versus
+when they are not. To date, no one has explored if similar perfor-
+mance dissociations exist in a nonhuman species. In a series of
+seven experiments, we first established these signatures in hu-
+mans using both known and newly developed nonverbal double-
+dissociation tasks and then identified similar signatures in rhesus
+monkeys (Macaca mulatta). These results provide robust evidence
+for two distinct modes of processing in nonhuman primates. This
+empirical approach makes it feasible to disentangle conscious vi-
+sual awareness from nonconscious processing in nonhuman spe-
+cies; hence, it can be used to strip away ambiguity when exploring
+the processes governing intelligent behavior across the animal
+kingdom. Taken together, these results strongly support the exis-
+tence of both nonconscious processing as well as functional
+human-like visual awareness in nonhuman animals.
+Additional attempts to study animal consciousness focused on
+various methodological approaches including: demonstrating
+analog forms of human neural deficits of awareness in animals
+[e.g., blindsight-like phenomena (18)]; documenting differences
+between more implicit forms of memory (e.g., memory for be-
+havioral habits) and more explicit forms (e.g., memory for an
+image presented in a single trial) (19–24); testing correlates of
+attentional awareness in auditory local–global neurosignature
+violations (25); finding parallels with human visual illusions/
+binocular rivalry (26, 27) and anesthesia (28); and attempting to
+obtain an animal’s reports on the subjective identification of the
+presence or absence of a subliminal stimulus (29, 30), including a
+very recent demonstration in a corvid bird (31). All these im-
+portant single dissociations of awareness exploration convinc-
+ingly show that animals display properties similar to those seen in
+conscious or nonconscious processes. These data are encourag-
+ing and provide strong support for our main hypothesis here:
+Humans are not alone in having two types of cognitive processes
+animal consciousness | conscious and nonconscious perception | nonhuman
+primates | double dissociation of awareness | visual awareness
+Conscious awareness to the events and stimuli around us is a
+central part of our everyday experience. Yet are humans the
+only species that experiences conscious awareness? Since non-
+verbal species cannot report their internal states, philosophers
+and scientists have long debated whether the question of animal
+consciousness is empirically testable, and it still remains a topic
+of speculation (1, 2). In the large spectrum of views, some ad-
+vocate that consciousness may require complex processes like
+language, which is unique to adult humans (3) or a human-like
+theory of mind (4), which may extend to only a few selected species
+such as great apes (5, 6). In contrast, based on neuroanatomical
+similarities, some argue that a number of species (including some
+birds and octopuses) are likely to be capable of generating conscious
+experience (7). Others consider animal intelligent behaviors which,
+in humans, seem to coincide with conscious awareness [behaviors
+such as planning (8) or metacognition (9, 10)], as supporting ev-
+idence for animal consciousness (for review, see refs. 11–13). Yet,
+since many complex human behaviors and high-level functions can
+be performed outside of conscious awareness (14–16), it is difficult
+to determine whether nonhuman animals that display intelligent
+behaviors are indeed conscious or not (17).
+Significance
+Many animals perform complex intelligent behaviors, but the
+question of whether animals are aware while doing so remains
+a long debated but unanswered question. Here, we develop a
+new approach to assess whether nonhuman animals have
+awareness by utilizing a well-known double dissociation of
+visual awareness—cases in which people behave in completely
+opposite ways when stimuli are processed consciously versus
+nonconsciously. Using this method, we found that a nonhuman
+species—the rhesus monkey—exhibits the very same behav-
+ioral signature of both nonconscious and conscious processing.
+This opposite double dissociation of awareness firstly allows
+stripping away the long inherent ambiguity when interpreting
+the processes governing animal behavior. Collectively, it pro-
+vides robust support for two distinct awareness modes in
+nonhuman animals.
+Author contributions: M.S.B.-H., O.D.M., Y.D., R.R.H., S.W.C.C., and L.R.S. designed re-
+search; M.S.B.-H. and O.D.M. performed research; M.S.B.-H. and N.A.F. contributed new
+reagents/analytic tools; M.S.B.-H. analyzed data; M.S.B.-H., O.D.M., Y.D., R.R.H., S.W.C.C.,
+and L.R.S. wrote the paper; and M.S.B.-H. conceived the idea and experiments.
+The authors declare no competing interest.
+This article is a PNAS Direct Submission. M.S. is a guest editor invited by the
+Editorial Board.
+Published under the PNAS license.
+1To whom correspondence may be addressed. Email: shay.ben-haim@aya.yale.edu.
+2R.R.H., S.W.C.C., and L.R.S. contributed equally to this work.
+This article contains supporting information online at https://www.pnas.org/lookup/suppl/
+doi:10.1073/pnas.2017543118/-/DCSupplemental.
+Published March 30, 2021.
+PNAS 2021 Vol. 118 No. 15 e2017543118 https://doi.org/10.1073/pnas.2017543118 | 1 of 9
+PSYCHOLOGICAL AND
+COGNITIVE SCIENCES
+
+===== PDF PAGE 2 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+that are meaningfully different—one nonconscious and the other
+accompanied by awareness. Yet given the ambiguity and diffi-
+culty in disentangling conscious from nonconscious processes in
+nonverbal species (17), many consider the question of animal
+consciousness as far from resolved (1, 2). For many, the“ex-
+planatory gap” in evidence that is needed to unambiguously infer
+animal consciousness is considered“as wide as ever” (32).
+By departing from all previous attempts to study conscious-
+ness, we developed an empirical approach that can allow dis-
+entangling of the two modes of processing. Specifically, we
+harnessed well-established double dissociations between non-
+conscious and conscious visual awareness in humans. In special
+circumstances, humans show characteristically opposite perfor-
+mance signatures when processing consciously accessible stimuli
+versus stimuli that are just below the threshold of conscious
+detection. Using this paradigm, we tested whether rhesus mon-
+keys (Macaca mulatta) also show these same opposite double-
+dissociation signatures of visual awareness. Because this approach
+predicts that completely opposite signatures of performance
+would emerge only if there were both conscious and noncon-
+scious processing modes, this framework can be used to reliably
+disentangle the two levels of processing in a nonhuman animal.
+Crucially, our approach can provide evidence for the presence of
+nonconscious processing in nonhuman animals and the imme-
+diate corollary of conscious visual awareness (or a similarly
+characterized processing mode) in animals.
+Much work in human cognitive science has shown that under
+certain circumstances, people display opposite behavioral sig-
+natures when they are consciously aware of stimuli (i.e., when
+they are exposed to clearly visible stimuli—supraliminal stimuli)
+versus when they are not aware (i.e., when they are exposed to
+stimuli that are flashed for a few milliseconds on the screen—
+subliminal stimuli). In one well-known double-dissociation task,
+human participants are asked to complete a word stem (e.g.,
+“SPI
+__
+”) without using a reference word that had been flashed
+on the screen just before it (e.g.,“SPICE”). When the reference
+word is presented supraliminally—that is, when it is consciously
+seen—participants can easily refrain from using it (and fill the
+stem with a different word, e.g.,“SPIKE”). In contrast, when the
+reference word is presented subliminally, participants tend to per-
+form poorly, using the primed word more often than in a control
+condition in which no reference word is presented (33, 34). Re-
+searchers have argued that this phenomenon stems from the diffi-
+culty of disregarding a stimulus that is nonconsciously processed
+(33, 34). This dissociation between conscious and nonconscious
+processing is a central characteristic of the cognitive processes of
+the human species, with important implications for human behav-
+ior, broadly defined (35, 36). To date, we have no evidence for such
+a double dissociation with opposite predictions of awareness in
+other species. Crucially, establishing nonconscious influence in
+animals will not only provide a solid evidence for a nonconscious
+mode of processing but will also allow us to gain important insights
+into the possible existence and functions of conscious visual
+awareness in animals other than humans.
+Establishing a Double Dissociation of Awareness Using a
+Nonverbal Spatial-Cueing Paradigm
+To examine nonconscious influence in monkeys, we adopted a
+spatial-cueing paradigm (37–40). In this task, a target appears in
+one of two locations and participants are requested to identify
+the target location as quickly as possible. Critically, the target is
+preceded by a cue presented either supraliminally (for 250 ms) or
+subliminally (17/33 ms) in the opposite location, long before the
+target appearance (Fig. 1 A, Left). The cue predicts the location
+of the target but in an incongruent manner—the targets always
+appear in the opposite location. In the supraliminal condition, in
+which stimuli are consciously accessible, we predicted that par-
+ticipants will be able to use the cues to identify the targets faster,
+2 of 9 | PNAS https://doi.org/10.1073/pnas.2017543118 but only if they become aware of the predictive nature of the
+cues (i.e., recognizing that the target will appear in the opposite
+side of the cue). In contrast, in the subliminal condition, we
+hypothesized that the presentation of the incongruent cue would
+have the opposite effect: It would attract attention to the cue
+location, thereby working against identifying the actual target
+location without participants’ awareness. As a control, we also
+presented two nonpredictive cues, both in the supraliminal and
+subliminal conditions. Thus, the participants in this control
+condition could not use the spatial cues to predict the target lo-
+cation (Fig. 1 A, Right). Participants were exposed to the supra-
+liminal cues and subliminal cues in a counterbalanced block design*
+and participants’ eye gaze was recorded and used as the mode of
+response. Participants needed to saccade and hold their fixation for
+200 ms on the chosen target in order to select it. Importantly, if
+participants’ gaze happened to be at the incorrect location at the
+moment of the target onset, they could still move their gaze to the
+correct target location before fixating to select their final response.
+Note that in this task monkeys and humans need to inhibit the more
+dominant (congruent) response in order to successfully choose the
+opposite incongruent target. Hence, one may expect that subjects will
+likely experience more difficulty inhibiting the congruent response
+when seeing supraliminal stimuli of higher saliency. Yet, in contrast,
+we hypothesize that subliminal stimuli that are barely noticeable and
+low in saliency will be harder, if not impossible, to disengage in order
+to properly produce an incongruent nondominant response (while
+subjects are unaware). In other words, our predictions for implicating
+visual awareness and nonconscious processing are predicted in the
+reverse direction of what would typically be expected when inhibiting
+salient versus nonsalient incongruent stimuli. Thus, if results show the
+predicted opposite performance (slower responses compared to
+baseline with subliminal stimuli but faster than baseline with supra-
+liminal stimuli), they will strongly support that awareness, or lack
+thereof, is the source for the observed discrepancy.
+Results
+Experiment 1† first tested the spatial-cueing paradigm in hu-
+mans. As hypothesized, participants were considerably faster to
+identify the target location following supraliminal incongruent
+cues than subliminal incongruent cues of which they reported not
+being aware [F(1,3585)= 315.66, P < 0.0001, Fig. 1B]‡ and faster
+compared to the two nonpredictive supraliminal cues’ baseline
+[F(1,1492)= 554.67, P < 0.0001, Fig. 1 C, Right]. In contrast,
+participants in the same supraliminal condition, who reported
+that they were not aware of the supraliminal cue’s predictive
+value, were not facilitated (mean= 324 ms) relative to baseline
+(mean= 312 ms), [SI Appendix, Fig. S2A, F(1,2032)= 1.46, P=
+0.227]. These results thus suggest that participants did indeed
+need a conscious strategy to harness the incongruency of the cues
+to improve performance. Importantly, all of the participants
+performing in the subliminal condition, regardless of block or-
+der, reported that they did not see any cues§ yet showed a sig-
+nificant slowdown in detecting the target location compared to
+the baseline with two nonpredictive subliminal cues [F(1,2989)=
+13.36, P < 0.0001, Fig. 1 C, Left]. We tested participants’ lack of
+*Prior to the beginning of each condition, participants were also exposed to a short
+congruent training phase; see Methods.
+†The results presented here are referring to the data collected with an eye-tracking mo-
+dality in humans (the same paradigm and modality used in testing monkeys). For sup-
+porting data of participants in a key-press modality (suited to only detect facilitations)
+with and without masking, please see SI Appendix, Fig. S1 A and B, respectively.
+‡All statistics were performed on log response time for correct responses using linear
+mixed models; see Methods. Error rates were low (1.2%) and did not differ significantly
+between the supraliminal and subliminal conditions.
+§Two participants did report seeing the cues and were excluded from the experiment
+based on our preregistered awareness exclusion criteria; please see Methods. The results
+of these participants are presented in SI Appendix, Fig. S2F.
+Ben-Haim et al.
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+(Macaca mulatta)
+
+===== PDF PAGE 3 =====
+PSYCHOLOGICAL AND
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+Fig. 1. Spatial-cueing paradigm in humans. (A) Illustration of the experimental conditions in the task. Following a fixation square, a star cue is presented in
+one side of the screen for either a brief subliminal duration of 17/33 ms and then masked or for a consciously accessible supraliminal duration of 250 ms and
+masked. Following 667 ms from cue onset, a contra lateral target (treasure chest) appears on the opposite side until a selection is made. In the baseline control
+condition two nonpredictive cues are presented. (B) Median of participants’ response times to select the target of participants who reported being aware of
+the supraliminal cue’s predictability, following a supraliminal incongruent cue versus a subliminal incongruent cue. Participants were faster with supraliminal
+cues than with subliminal cues [F(1,3585)= 315.66, P < 0.0001]. This facilitation improved with time as indicated by the interaction of cue type with ex-
+perimental trials [F(2,3585)= 167.06, P < 0.0001; r =−0.86, P < 0.001]. Subliminal and supraliminal trials appeared in different counterbalanced blocks. Error
+bars denote SEM. (C) Individual participants’ response time to respond to the target following a single incongruent cue versus two nonpredictive cues in the
+subliminal and supraliminal conditions. All participants in the subliminal condition were unaware of the presence of cues yet were slower to locate the target
+following incongruent cues relative to the two cues baseline [F(1,2989)= 13.36, P < 0.0001] (Left). In contrast, participants in the supraliminal condition who
+were aware of the cue’s predictability were faster to locate the target following incongruent cues relative to baseline [F(1,1492)= 554.67, P < 0.0001] (Right).
+Thick black lines depict mean response time. (D) An example heatmap of gaze frequencies of one participant performing the task. All trials are plotted as
+right cue → left target trials (left cue→ right target trials are reversed and presented as well). The y-axis corresponds to time in milliseconds and the x-axis to
+the participant’s gaze position on the horizontal axis on the screen. Left target and right cue positions are presented in degrees of visual angle from the
+central fixation. Warm colors represent higher frequency of gaze in that location across trials. The upper dashed line represents the onset of the cue, and
+the bottom dashed line the onset of the target. (E) Mean frequency of gaze in the cue location versus the opposite no-cue location of all participants during
+the first 300 ms from cue onset (Left) in the subliminal or supraliminal conditions and in the last 100 ms prior to the target appearance (Right). Thick black
+lines depict mean gaze frequency. Gaze frequency is measured as the mean duration of gaze within the specified time slots across trials; larger numbers
+signify higher frequency of gaze in that location.
+Ben-Haim et al. (Macaca mulatta)
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+PNAS | 3 of 9
+https://doi.org/10.1073/pnas.2017543118
+COGNITIVE SCIENCES
+
+===== PDF PAGE 4 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+Fig. 2. Spatial-cueing paradigm in monkeys. (A) Illustration of the experimental apparatus. Animals faced a computer monitor on which cues and targets
+were shown and their eye movements recorded with an eye-tracking camera. When the animals correctly made a saccade to the target and held it for a specified
+duration of time, they received a juice reward. The experimental conditions are the same as the ones depicted in Fig. 1A. (B) Median of monkeys’ response times to
+select the target. Monkeys were faster with supraliminal incongruent cues than with subliminal incongruent cues [F(1,4066)= 7.66, P= 0.006]. This facilitation
+improved with time as indicated by the interaction of cue type with experimental trial [F(2,4066)= 25.09, P < 0.0001; r =−0.85, P < 0.001]. Error bars denote SEM of
+monkey trials. (C) Individual monkeys’ response time to respond to the target following a single incongruent cue versus two nonpredictive cues in the subliminal
+and supraliminal conditions. Thick black lines depict mean response time. (D) A corresponding gaze frequency heatmap example of a monkey task performance.
+Warm colors represent higher frequency of gaze in that location across trials. (E) Mean gaze frequency of all monkeys in the cue location versus the opposite no-cue
+location. Thick black lines depict mean gaze frequency. Gaze frequency is measured as the mean duration of gaze within the specified time slots across trials and is
+presented in arbitrary unites; larger numbers signify higher frequency of gaze in that location.
+awareness to the presence of subliminal cues via self-reports
+after participation in that condition (SI Appendix, Fig. S2C)
+and via an objective awareness forced-choice test at the end of
+the experiment, which requested participants to identify on
+which side of the screen the subliminal cue appeared. Partici-
+pants’ performance did not differ from chance at the individual
+binomial level or at the group level (SI Appendix, Fig. S2D){. The
+{Note that since the predicted effect of the cues in the subliminal condition is in the
+opposite direction to that of the supraliminal condition, the worries about selection (41)
+do not hold here. In fact, if we mistakenly categorize subjects as unaware, we are de-
+flating the anticipated effect, not inflating it.
+observation that subliminal cues significantly hindered the de-
+tection of the targets relative to baseline, even though partici-
+pants were unaware of the cues or their locations, demonstrates
+that these cues were processed nonconsciously.
+In order to further verify that the observed effects are consis-
+tent with perceptually attending the subliminal cues nonconsciously,
+we analyzed the participants’ eye-tracking data (Fig. 1D). Even
+though many human participants focused on the center until the
+target appeared, analyzing gaze frequencies (mean duration of
+gaze across trials) at the cue location versus the no-cue opposite
+location indicated that their gaze was still captured by the sub-
+liminal cue location more than the no-cue location immediately
+4 of 9 | PNAS https://doi.org/10.1073/pnas.2017543118 Ben-Haim et al.
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+(Macaca mulatta)
+
+===== PDF PAGE 5 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+after the presentation of the cues [F(1,7650)= 5.76, P= 0.016,
+Fig. 1 E, Left] and during the final 100 ms prior to the target
+appearance [F(1,20420)= 9.43, P= 0.002, Fig. 1 E, Right],
+resulting in the observed slowdown without participants’ aware-
+ness. Similarly, participants in the supraliminal condition first had
+their gaze captured by the cue location [F(1,11042)= 35.39, P <
+0.0001, Fig. 1 E, Left], but they then quickly redirected their gaze
+to the no-cue location in the final 100 ms prior to the target
+appearance [F(1,3832)= 3,080, P < 0.0001, Fig. 1 E, Right], gen-
+erating the observed facilitation in performance. However, partici-
+pants in the supraliminal condition who reported they were not
+aware of the cue’s predictive value showed gaze patterns similar to
+that of the subliminal condition; they tended to look more at the
+cue location in both time points [F(1,11085)= 79.8, P < 0.0001 and
+F(1,3831)= 33.38, P < 0.0001, respectively, SI Appendix, Fig. S2B],
+suggesting again that a conscious strategy was necessary in order for
+participants to redirect their gaze to the relevant location.
+Monkeys Exhibit the Double Dissociation of Awareness in a
+Spatial-Cueing Paradigm
+In Experiment 2, we implemented the spatial-cueing paradigm in
+rhesus monkeys. Monkeys, like human participants, were tested
+using an eye-tracking response apparatus, with similar training
+(see *) but with an added juice reward upon successful identi-
+fication of the target location to motivate them to perform the
+task (Fig. 2A). Importantly, like the humans who were consciously
+aware of the cue’s predictability, monkeys tested in the supra-
+liminal condition used the incongruent supraliminal cues to
+identify the target faster than in the subliminal incongruent cue
+condition [F(1,4066)= 7.66, P= 0.006, Fig. 2B, SI Appendix, Fig.
+S3 A–C, and Movie S1]# and relative to the two nonpredictive
+supraliminal cues’ baseline [F(1,3656)= 103.02, P < 0.0001,
+Fig. 2 C, Right]. Critically, however, when the monkeys were
+tested in the subliminal condition, they were significantly slower
+to detect the target location compared to the control baseline
+condition with two nonpredictive subliminal cues [F(1,1737)=
+7.14, P= 0.007, Fig. 2 C, Left], exactly like our human partici-
+pants, who were completely not aware of the cues.
+We further analyzed the monkeys’ eye-tracking data in the
+same way we did for the human participants (Fig. 2D and SI
+Appendix, Fig. S4 A and B). We measured the monkeys’ gaze
+frequencies (mean duration of gaze across trials) in the cue lo-
+cation and the opposite no-cue location. Indeed, although the
+monkeys’ gaze in the subliminal condition was captured by the
+subliminal cue location more than the no-cue location immedi-
+ately after the presentation of the cues [F(1,2249)= 571.53, P <
+0.0001, Fig. 2 E, Left], subjects still failed to move their gaze to
+the target location ahead of time and maintained their gaze at
+the cue location during the final 100 ms prior to the target ap-
+pearance [F(1,6504)= 170.32, P < 0.0001, Fig. 2 E, Right], thus
+resulting in a similar slowdown in performance as observed in
+humans. Importantly, monkeys also first looked at the cue lo-
+cation in the supraliminal condition [F(1,2856)= 2,312.1, P <
+0.0001, Fig. 2 E, Left] but then quickly used the consciously ac-
+cessible cue to move their gaze to the opposite location before
+the target appeared [F(1,3067)= 96.4, P < 0.0001, Fig. 2 E,
+Right, for the last 100 ms prior to the target appearance], yielding
+a similar improvement in performance seen only in humans who
+reported being consciously aware of the cue’s predictability
+(Fig. 1E).
+Developing a Double Dissociation of Awareness Using a
+Nonverbal Forced-Guessing Paradigm
+Humans and monkeys showed strikingly comparable perfor-
+mance on the spatial-cueing paradigm, with both species dem-
+onstrating a double dissociation with opposite performance
+signatures in the two awareness conditions. Though these results
+provide compelling evidence for a double dissociation between
+visual awareness and nonconscious processing in monkeys, we
+decided to apply an even more stringent test by presenting mon-
+keys and humans with a new double-dissociation task, one that
+makes the conscious identification of cues imperative to solving
+the task. Note that although participants who used the cues to
+predict the target location in Experiments 1 and 2 would respond
+faster, they could still be very accurate and obtain most rewards
+without using the cues. Indeed, monkeys and humans were more
+than 90% accurate and could have had insufficient motivation to
+use the cues just for the sake of speed. We thus modified the task
+to be a forced-guessing paradigm in which monkeys and humans
+had to choose which of two simultaneous targets contained a
+reward. As in the previous experiments, one of the targets was
+cued with a supraliminal or subliminal stimulus. Again, the reward
+was always hidden in the opposite target (Fig. 3A)||. In order to
+find the reward with more than 50% accuracy (chance level),
+participants have to use the incongruent cue. We hypothesized
+that monkeys and humans would successfully use the incongru-
+ent cue to find the reward when the cue was consciously acces-
+sible but would continue to perform significantly below chance in
+the subliminal condition. This pattern of below-chance perfor-
+mance would indicate that the subliminal stimuli were indeed
+processed nonconsciously and that they affected performance in
+a nonrandom fashion.
+In Experiment 3, we tested humans on the forced-guessing
+paradigm using either eye-gaze or a key-press response modal-
+ity. Participants successfully performed the task in the supra-
+liminal condition, reliably choosing the target opposite to the cue
+(mean= 94.6% correct, SD= 3.7% in the eye-tracking modality
+and mean= 94.6%, SD= 3.5% in the key-press modality). In the
+subliminal condition, as hypothesized and preregistered (Dataset
+S2), we compared individuals’ binomial test’s P values of each
+participant against chance and examined if more participants
+than expected had obtained binomial P values in the most extreme
+lowest quartile as a group. Critically, there were significantly more
+participants in the lowest P value quartile (42%) than expected by
+chance (25%) regardless of response modality [χ (1)= 5.33, P=
+0.021], suggesting that more participants than expected were
+performing markedly below chance (see Fig. 3 B and C for ex-
+amples of individual participant performance and SI Appendix,
+Fig. S5 A and B for the group). Participants also showed no signs
+of learning in the subliminal condition [flat learning slope, mean
+r(383)= 0.005, P= 0.92]. Critically, because participants’ perfor-
+mance in the subliminal condition differed from random guessing, it
+suggests that the stimuli were processed nonconsciously. We also
+found that participants were unaware of the subliminal cues’ in-
+fluence, as evidenced by their self-reports, and were unable to de-
+tect the subliminal cues’ location in an objective awareness test
+when instructed specifically to do so at the end of the experiment
+(both at the individual binomial level and group level, SI Appendix,
+Fig. S5C, see also {), suggesting that the cues were processed and
+affected participants’ performance nonconsciously.
+#Error rates were low and did not differ significantly between the subliminal condition (9.
+3%) and the supraliminal condition (7.9%).
+jjAs in the previous experiments, all conditions began with a congruent training phase;
+see Methods.
+Ben-Haim et al. (Macaca mulatta)
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+PNAS | 5 of 9
+https://doi.org/10.1073/pnas.2017543118
+PSYCHOLOGICAL AND
+COGNITIVE SCIENCES
+
+===== PDF PAGE 6 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+Fig. 3. Forced-guessing paradigm in humans and monkeys. (A) Illustration of the experimental array. In the supraliminal condition two treasure chests are
+presented with a star cue within one of them, whereas in the subliminal condition the star cue is immediately masked after 17/33 ms. A reward is always given
+in the location opposite of the cue. Participants are not informed of the rule and must guess where the reward is. (B and C) Example of the performance of
+two human participants in the supraliminal incongruent condition (green marker) and subliminal incongruent condition (red marker) performing with a key-
+press response modality (Human 1) or an eye tracking response modality (Human 2). Performance of humans in the supraliminal condition, which had only a
+single block of 30 trials, is plotted as a dashed line connected to the hypothetical chance level (50%). (D and E) Performance of two monkeys in the su-
+praliminal incongruent condition (green marker) and subliminal incongruent condition (red marker). Monkeys in the supraliminal condition were run until
+reaching a stopping criterion of 80% accuracy in the last 25 trials (P= 0.003), which determined successful learning of the task. In the subliminal condition,
+monkeys were run for 385 trials, as humans were, or until reaching the success criterion.
+Monkeys Exhibit the Double Dissociation of Awareness in a
+Forced Guessing Paradigm
+In Experiment 4, we presented monkeys with the same forced-
+guessing paradigm as humans tested in Experiment 3, using the
+same eye-tracking response apparatus, with similar training
+phases (see ||), and with an added juice reward upon correct
+selections. Like humans, monkeys performed very well in the
+supraliminal condition (Fig. 3 D and E, green marker) but crit-
+ically performed significantly below-chance level in the sublimi-
+nal condition (mean= 43.5% correct, with a combined binomial
+probability of P= 0.00018, Fig. 3 D and E, red marker; Movie
+S2). Just as we observed in human participants, monkeys failed
+to ignore the subliminal cues and showed no signs of learning
+[flat learning slope, mean r(383)=0.0005, P= 0.99] throughout
+multiple trials, even when they had successfully learned the in-
+congruent rule in the supraliminal condition before being tested
+on the subliminal condition (Fig. 3D) or even when performing it
+6 of 9 | PNAS https://doi.org/10.1073/pnas.2017543118 directly after the supraliminal condition without precongruent
+training (see SI Appendix, Fig. S5D for this control condition).
+The results of Experiments 3 and 4 replicate those of Exper-
+iments 1 and 2 in a different paradigm: Monkeys demonstrate
+the same signature double dissociation with opposite perfor-
+mance between perceptual awareness and nonconscious pro-
+cessing as humans do. This pattern suggests that monkeys may
+experience the stimuli in this task under similar awareness as hu-
+mans and process them nonconsciously in a similar way as humans
+do. These experiments provide robust evidence that nonhuman
+animals exhibit a classic human-like double dissociation of visual
+awareness.
+Opposite Performance Signatures Are Driven by
+Nonconscious Processing
+In the following experiments, we attempted to examine the un-
+derlying mechanism for the identified opposite performance
+signatures and tested for alternative explanations. Experiment 5
+Ben-Haim et al.
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+(Macaca mulatta)
+
+===== PDF PAGE 7 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+addressed a possible claim that participants in the subliminal
+condition might be aware of only a subset of the trials, a number
+that is not enough for participants to learn the incongruent rule
+successfully but enough to show a significant cueing effect. If this
+is the case, below-chance performance in the subliminal condi-
+tion can result from congruent responses made on few aware
+trials before subjects learned rather than genuinely nonconscious
+influence. To test if participants can learn the incongruent rule
+with a small subset of consciously accessible trials, we exposed a
+group of human adults to the forced-guessing paradigm (see
+Experiment 3) with a small percentage of supraliminally cued
+masked trials (20%) randomly intermixed within 80% unsolvable
+masked trials with no cues whatsoever. We found that even in
+this design the majority of participants (75%) became aware of
+the cues and used them efficiently to choose the opposite target,
+scoring significantly well above chance [χ (3)= 16.67, P < 0.001,
+Fig. 4A]. In addition, it took most aware participants less than 10
+of these trials to learn (merely 2.6% out of the 385 trials), see SI
+Appendix, Fig. S6A. These data suggest that awareness of a very
+small proportion of trials is sufficient to learn the rule, and this
+alternative explanation is thus unlikely to explain our findings.
+Another important alternative explanation to be considered is
+that the subliminal cues were simply less salient and thus harder
+to learn than supraliminal cues. Thus, the reason for the ob-
+served below-chance performance may be merely a result of the
+difficulty in learning the rule with low-saliency subliminal cues,
+rather than lack of awareness to the cues. In order to examine
+this possibility, Experiment 6 tested a subset of human partici-
+pants with the forced-guessing paradigm after informing them,
+halfway through the subliminal condition, about the presence of
+quick-flashing cues. Consequently, many participants became
+aware of the cues (Fig. 4B), learned the rule, and performed al-
+most as well as in a supraliminal condition (with 67% of the
+participants who attested seeing the cues after being informed,
+now reaching the 80% success criterion and scoring ≥95% at the
+peak consecutive 25 trials, both in the key-press and eye-tracking
+modalities; e.g., see Fig. 4C). Even though participants per-
+formed below chance prior to being informed [χ (1)= 4.85, P=
+0.028, SI Appendix, Fig. S6B], none reported seeing any cues
+prior to that point. This suggests that cue awareness rather than
+cue saliency (which remained constantly difficult to see, here at
+33 ms) is the critical factor in performance on our studies.
+PSYCHOLOGICAL AND
+Fig. 4. Performance as a function of cue awareness. (A) Accuracies in percentages of cued trials during the forced-guessing paradigm with only 20% of
+supraliminal cued trials (Experiment 5) plotted for human participants who reported they noticed the cues and used them (n = 9) versus participants who did
+not (n = 3). (B) Distribution of naive participants responses in Experiment 3 and 6 to the question if the participants saw flashing cues on the screen in the
+subliminal condition and if they used them somehow. Only 1 participant of 36 ignorant participants (3%) reported to possibly have seen flashes but did not do
+anything with them and reported to have selected by using intuition. In contrast, in Experiment 6 after being informed, 50% of participants reported to have
+seen flashing cues, and 83% of those who saw also reported they chose opposite of the cues when they were spotted. (C) Accuracy of a participant in the
+informed group of Experiment 6, performing with a subliminal 33 ms interval throughout the task before being informed (red marker) and after being
+informed (green marker) about flashing cues. (D) Distribution of participants’ accuracies performing in the 17 ms subliminal interval session in Experiment 7
+for the trials they reported they did not see the location of the cue (0 ratings) (Left, red bars) compared to an expected random distribution of accuracies
+(black bars); and accuracy scores of the same participants on trials they reported being more confident in seeing the location of the subliminal cue (two to
+three ratings) (Right, green bars) versus an expected random distribution of accuracies (black bars).
+Ben-Haim et al. (Macaca mulatta)
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+PNAS | 7 of 9
+https://doi.org/10.1073/pnas.2017543118
+COGNITIVE SCIENCES
+
+===== PDF PAGE 8 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+Lastly, to better understand the mechanisms governing the
+task, Experiment 7 completely removed the learning aspect of
+the task, instructing participants from the very beginning to
+choose the opposite location of the cue if they see it (presented
+for only 17 ms). We further gauged participants’ awareness after
+every subliminal trial (42, 43) from a scale of 0 (saw nothing at
+all) to 3 (saw it clearly), while urging participants to always
+choose the opposite location of the cue regardless of how sure
+they were. Remarkably, participants’ performance was still sig-
+nificantly below chance when they reported no awareness of
+where the cue was presented (0 rating) (Fig. 4 D, Left), whereas
+it was significantly above chance when they were more confident
+that they saw the subliminal cue (2 to 3 rating), [Fig. 4 D, Right
+and SI Appendix, Fig. S6 C and D, χ (3)= 24.8, P < 0.0001].
+These results strongly support the importance of cue awareness
+in driving the below-chance level performance.
+Discussion
+We successfully adopted one known empirical method and de-
+veloped another paradigm to test for double dissociations be-
+tween visual awareness and nonconscious processing in a
+nonhuman animal. We found that one nonhuman species—the
+rhesus monkey—exhibits a double-dissociation performance re-
+markably similar to that observed in humans. We observed that
+this dissociation in humans is centrally dependent on awareness.
+Indeed, exploring the underlying mechanism for the observed
+opposite performance in Experiments 5 to 7 indicated that the
+signature of nonconscious processing was present only when
+participants reported being unaware, whereas the signature of
+conscious processing was obtained only when participants indi-
+cated that they were aware of the stimuli predictability. While of
+course we could not linguistically probe awareness in monkeys,
+monkeys displayed similar incongruent responses that required
+awareness in humans and critically also showed similar opposite
+performance with subliminal cues. Since these opposite patterns
+of performance are predicted to emerge only if animals are
+aware in one condition (presenting functional facilitation) but
+unaware in the other (presenting persistent interference), they
+allow us to successfully disentangle the two types of processing in
+nonhuman species. These results thus provide clear evidence for
+the existence of two levels of processing in nonhuman primates,
+which at least in humans correspond to two modes of visual
+awareness. Establishing the existence of the two distinct pro-
+cesses through cross-over opposite predictions thus help strip
+away an inherent ambiguity that is typically present when
+assessing animal behavior.
+In our tasks, awareness of the cues was identified as necessary
+to functionally overcome the dominant response and to ade-
+quately use incongruent cues. This pattern supports previous
+postulations that awareness might be important for“departure
+from routine behavior patterns to cope with novel and unpre-
+dictable challenges” (11). Yet from worms to humans, it remains
+elusive when along the evolutionary phylogenetic tree this ca-
+pacity could have emerged (1, 44). The current paradigm can
+therefore be further adopted to test multiple additional species
+to try elucidating this puzzle. Future characterization of species
+that possess or lack perceptual awareness can ultimately help in
+understanding the necessary neural components required for
+awareness.
+Note that our tasks employing gaze fixation as the response
+modality share similarities with the anti-saccade task, which
+similarly documents parallel performance across humans and
+monkeys (45). However, while anti-saccade tasks are commonly
+used in monkey studies, and sometimes in awareness contexts in
+humans (46), these tasks have not to date been used to illustrate
+the double dissociation of awareness. Thus, our task for the first
+time revealed opposite patterns of performance to subliminal
+and supraliminal incongruent cues. Whereas the nonconscious
+8 of 9 | PNAS https://doi.org/10.1073/pnas.2017543118 effect demonstrated here may possibly be generated by low-level
+nonconscious orienting of attention or from the subliminal cues’
+leftover visual traces, it should be noted that it critically influ-
+enced free behavioral choices without participants awareness in
+both humans and monkeys.
+It is also noteworthy that while previous single-dissociation
+studies are very powerful in terms of testing the neural corre-
+lates of conscious reports of animals (30), they typically rely on
+the assumption that the animals’ reporting behavior is accom-
+panied by conscious awareness. The double-dissociation ap-
+proach allows the testing of these assumptions and to empirically
+disentangle aware and unaware processes in behaving animals.
+Our results in rhesus monkeys provide clear empirical evidence
+supporting nonhuman visual awareness and nonconscious visual
+processing. While we have not specifically collected the monkeys’
+subjective reports, we employed the exact same subliminal thresh-
+olds as in humans. These masked thresholds (i.e., 17 and 33 ms)
+were previously shown to be more often subjectively reported by
+monkeys as“stimulus not there” (29). Here, we showed that
+employing similar subliminal thresholds in double dissociation of
+awareness tasks with incongruent stimuli can reliably generate
+nonconscious interference in behavioral choices and response
+times. Yet, importantly, these nonconscious interference effects
+operate against subjects’ motivation to succeed and in the op-
+posite direction of the results obtained with supraliminal cues.
+Therefore, these counter motivational effects cannot be con-
+founded by individual differences in decision criterions as in
+subjective reports studies (47).
+Conclusions
+In sum, while scholars long debated whether nonhuman species
+are aware, disentangling perceptual awareness from noncon-
+scious processing in animals is considered necessary in order to
+inform this question (17). Our approach offers an empirical way
+to reliably disentangle the two modes of visual awareness in
+nonverbal animals. We obtained robust evidence that one non-
+human species exhibits two modes of processing. We observed
+that nonhuman primates’ visual awareness, and susceptibility to
+nonconscious influence, appears highly comparable to our own.
+These results show that our species is not unique in terms of
+awareness to the environment or visual stimuli around us. Crit-
+ically, by importing one of the strictest indicators of genuine
+nonconscious processing in human studies (37, 48)—the cross-
+over opposite predictions of the double dissociation of awareness—
+we were able to separate the two processes and strip away the in-
+herent ambiguity when interpreting animal intelligent behavior.
+Doing so, we thus provide strict empirical support for both
+nonconscious processing and functional visual awareness in
+nonhuman animals.
+Methods
+Data for our experiments were collected from 4 adult rhesus monkeys
+(Macaca mulatta) and 145 human subjects. All procedures were conducted in
+accordance with the NIH guidelines and the Public Health Service’s Guide for
+the Care and Use of Laboratory Animals and with approval from the Yale
+University Institutional Animal Care and Use Committee. All human experi-
+ments were approved by the Yale Human Subjects Committee (#2000022495)
+and the Hebrew University Human Subjects Committee. We obtained in-
+formed consent from all human participants. Full details of our tasks’ design,
+materials, and data analysis are provided in SI Appendix.
+Data Availability. Data from individual participants are included within the
+figures and/or supporting information. Additional source data have been
+deposited in the GIN repository with DOI: 10.12751/g-node.s8xoy1.
+ACKNOWLEDGMENTS. We thank the editor and three anonymous reviewers
+for the many valuable comments and insightful suggestions while reviewing
+our manuscript. We further wish to thank Gabriella Seo, Georgia Woscoboinik,
+Allie Schneider, Brendan Murray, and Oishani Basuchoudhary for help in
+human data collection. M.S.B.-H. was supported by a Rothschild Fellowship,
+Ben-Haim et al.
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+(Macaca mulatta)
+
+===== PDF PAGE 9 =====
+Downloaded from https://www.pnas.org by 106.213.82.234 on July 7, 2026 from IP address 106.213.82.234.
+Fulbright Israel, Lady Davis Fellowship, Jerusalem Brain Community Fellowship,
+and the Ministry of Science and Technology Israel. M.S.B.-H. and R.R.H. were
+supported by Grant FQXi-RFP-CPW-2003 from the Foundational Questions
+Institute and Fetzer Franklin Fund, a donor-advised fund of the Silicon Valley
+Community Foundation. O.D.M., N.A.F., and S.W.C.C. were supported by the
+National Institute of Mental Health Grants R01 MH120081 and R01 MH110750.
+1. Y. Gutfreund, The neuroethological paradox of animal consciousness. Trends Neu-
+rosci. 40, 196–199 (2017).
+2. M. Dawkins, Chapter two: Animal welfare and the paradox of animal consciousness.
+Adv. Study Behav. 47, 5–38 (2015).
+3. D. C. Dennett, Animal consciousness: What matters and why. Soc. Res. 62, 691–710
+(1995).
+4. P. Carruthers, Natural theories of consciousness. Eur. J. Philos. 6, 203–222 (2002).
+5. C. Krupenye, F. Kano, S. Hirata, J. Call, M. Tomasello, Great apes anticipate that other
+individuals will act according to false beliefs. Science 354, 110–114 (2016).
+6. F. Kano, C. Krupenye, S. Hirata, M. Tomonaga, J. Call, Great apes use self-experience
+to anticipate an agent’s action in a false-belief test. Proc. Natl. Acad. Sci. U.S.A. 116,
+20904–20909 (2019).
+7. P. Low et al.,
+“Cambridge declaration on consciousness” in Francis Crick Memorial
+Conference on Consciousness in Human and non-Human Animals, J. Panksepp et al.,
+Eds. (Cambridge, UK, 2012).
+8. M. Osvath, H. Osvath, Chimpanzee (Pan troglodytes) and orangutan (Pongo abelii )
+forethought: Self-control and pre-experience in the face of future tool use. Anim.
+Cogn. 11, 661–674 (2008).
+9. R. R. Hampton, J. W. M. Engelberg, R. J. Brady, Explicit memory and cognition in
+monkeys. Neuropsychologia 138, 107326 (2020).
+10. A. G. Rosati, L. R. Santos, Spontaneous metacognition in rhesus monkeys. Psychol. Sci.
+27, 1181–1191 (2016).
+11. D. R. Griffin, G. B. Speck, New evidence of animal consciousness. Anim. Cogn. 7, 5–18
+(2004).
+12. M. Gross, Elements of consciousness in animals. Curr. Biol. 23, R981–R983 (2013).
+13. M. Boly et al., Consciousness in humans and non-human animals: Recent advances
+and future directions. Front. Psychol. 4, 625 (2013).
+14. A. Y. Sklar et al., Reading and doing arithmetic nonconsciously. Proc. Natl. Acad. Sci.
+U.S.A. 109, 19614–19619 (2012).
+15. S. van Gaal, V. A. F. Lamme, Unconscious high-level information processing: Impli-
+cation for neurobiological theories of consciousness. Neuroscientist 18, 287–301
+(2012).
+16. R. R. Hassin, Yes it can: On the functional abilities of the human unconscious. Per-
+spect. Psychol. Sci. 8, 195–207 (2013).
+17. P. Carruthers,“The problem of animal consciousness” in Pacific Division meeting of
+the American Philosophical Association (American Philosophical Association, San
+Diego, CA, 2018), pp. 179–205.
+18. A. Cowey, P. Stoerig, Blindsight in monkeys. Nature 373, 247–249 (1995).
+19. M. G. Packard, J. L. McGaugh, Inactivation of hippocampus or caudate nucleus with
+lidocaine differentially affects expression of place and response learning. Neurobiol.
+Learn. Mem. 65, 65–72 (1996).
+20. R. J. McDonald, N. M. White, A triple dissociation of memory systems: Hippocampus,
+amygdala, and dorsal striatum. Behav. Neurosci. 107, 3–22 (1993).
+21. L. R. Squire, C. E. L. Stark, R. E. Clark, The medial temporal lobe. Annu. Rev. Neurosci.
+27, 279–306 (2004).
+22. S. Zola-Morgan, L. R. Squire, The neuropsychology of memory. Parallel findings in
+humans and nonhuman primates. Ann. N. Y. Acad. Sci. 608, 434–450, discussion
+450–456 (1990).
+23. W. A. Roberts, C. Strang, K. Macpherson, Memory systems interaction in the pigeon:
+Working and reference memory. J. Exp. Psychol. Anim. Learn. Cogn. 41, 152–162
+(2015).
+24. H.-W. Tu, R. R. Hampton, E. A. Murray, Perirhinal cortex removal dissociates two
+memory systems in matching-to-sample performance in rhesus monkeys. J. Neurosci.
+31, 16336–16343 (2011).
+25. L. Uhrig, S. Dehaene, B. Jarraya, A hierarchy of responses to auditory regularities in
+the macaque brain. J. Neurosci. 34, 1127–1132 (2014).
+26. N. K. Logothetis, J. D. Schall, Binocular motion rivalry in macaque monkeys: Eye
+dominance and tracking eye movements. Vision Res. 30, 1409–1419 (1990).
+27. R. Blake, J. Brascamp, D. J. Heeger, Can binocular rivalry reveal neural correlates of
+consciousness? Philos. Trans. R. Soc. Lond. B Biol. Sci. 369, 20130211 (2014).
+28. G. A. Mashour, M. T. Alkire, Evolution of consciousness: Phylogeny, ontogeny, and
+emergence from general anesthesia. Proc. Natl. Acad. Sci. U.S.A. 110 (suppl. 2),
+10357–10364 (2013).
+29. L. M. Andersen, B. M. Basile, R. R. Hampton, Dissociation of visual localization and
+visual detection in rhesus monkeys (Macaca mulatta). Anim. Cogn. 17, 681–687 (2014).
+30. B. van Vugt et al., The threshold for conscious report: Signal loss and response bias in
+visual and frontal cortex. Science 360, 537–542 (2018).
+31. A. Nieder, L. Wagener, P. Rinnert, A neural correlate of sensory consciousness in a
+corvid bird. Science 369, 1626–1629 (2020).
+32. M. S. Dawkins, Why Animals Matter: Animal Consciousness, Animal Welfare, and
+Human Well-Being (Oxford University Press, New York, 2012).
+33. J. A. Debner, L. L. Jacoby, Unconscious perception: Attention, awareness, and control.
+J. Exp. Psychol. Learn. Mem. Cogn. 20, 304–317 (1994).
+34. P. M. Merikle, S. Joordens, J. A. Stolz, Measuring the relative magnitude of uncon-
+scious influences. Conscious. Cogn. 4, 422–439 (1995).
+35. S. Dehaene, Consciousness and the Brain: Deciphering How the Brain Codes Our
+Thoughts (Viking, 2014).
+36. D. Kahneman, Thinking, Fast and Slow (Farrar, Straus and Giroux, 2011).
+37. P. A. McCormick, Orienting attention without awareness. J. Exp. Psychol. Hum. Per-
+cept. Perform. 23, 168–180 (1997).
+38. J. Ivanoff, R. M. Klein, Orienting of attention without awareness is affected by
+measurement-induced attentional control settings. J. Vis. 3, 32–40 (2003).
+39. S. Lu, Y. Cai, M. Shen, Y. Zhou, S. Han, Alerting and orienting of attention without
+visual awareness. Conscious. Cogn. 21, 928–938 (2012).
+40. L. Herreros, A. J. Lambert, A. B. Chica, Orienting of attention with and without cue
+awareness. Neuropsychologia 99, 165–171 (2017).
+41. D. R. Shanks, Regressive research: The pitfalls of post hoc data selection in the study
+of unconscious mental processes. Psychon. Bull. Rev. 24, 752–775 (2017).
+42. Z. Peremen, D. Lamy, Comparing unconscious processing during continuous flash
+suppression and meta-contrast masking just under the limen of consciousness. Front.
+Psychol. 5, 969 (2014).
+43. D. Lamy, M. Salti, Y. Bar-Haim, Neural correlates of subjective awareness and un-
+conscious processing: An ERP study. J. Cogn. Neurosci. 21, 1435–1446 (2009).
+44. S. Ginsburg, E. Jablonka, The Evolution of the Sensitive Soul: Learning and the Origins
+of Consciousness (MIT Press, Cambridge, MA, 2019).
+45. D. P. Munoz, S. Everling, Look away: The anti-saccade task and the voluntary control
+of eye movement. Nat. Rev. Neurosci. 5, 218–228 (2004).
+46. S. Nieuwenhuis, K. R. Ridderinkhof, J. Blom, G. P. Band, A. Kok, Error-related brain
+potentials are differentially related to awareness of response errors: Evidence from
+an antisaccade task. Psychophysiology 38, 752–760 (2001).
+47. N. Macmillan, The psychophysics of subliminal perception. Behav. Brain Sci. 9, 38–39
+(1986).
+48. P. Merikle, M. Daneman, Psychological investigations of unconscious perception.
+J. Conscious. Stud. 5, 5–18 (1998).
+Ben-Haim et al. (Macaca mulatta)
+Disentangling perceptual awareness from nonconscious processing in rhesus monkeys
+PNAS | 9 of 9
+https://doi.org/10.1073/pnas.2017543118
+PSYCHOLOGICAL AND
+COGNITIVE SCIENCES

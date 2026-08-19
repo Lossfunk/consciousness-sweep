@@ -17,7 +17,8 @@
     "first_order_measure", "E_code", "E_reason",
     "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
     "E_competing_account", "E_competing_prediction", "E_violating_pattern", "E_same_Y_reason",
-    "E_diagnostic_source_locations", "Y_label", "Y_description", "Y_structure", "factorial_Y_reason",
+    "E_diagnostic_source_locations", "Y_label", "Y_description", "functional_structure_assessment",
+    "functional_structure_reason", "factorial_focal_comparison_id", "Y_structure", "factorial_Y_reason",
     "factorial_component_effects", "Y_evidence_role", "F_code", "F_reason",
     "Y_interpretation_clarity", "mechanistic_interpretation", "mechanism_clarity",
     "critical_comparison", "unaware_capacity_claim", "unaware_capacity", "unaware_capacity_reason",
@@ -71,6 +72,16 @@
     "E_diagnostic_source_locations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
     "Y_label": { "$ref": "#/$defs/nullableString" },
     "Y_description": { "$ref": "#/$defs/nullableString" },
+    "functional_structure_assessment": {
+      "enum": ["not-assessed", "not-applicable", "scalar-justified", "factorial-functional-required"]
+    },
+    "functional_structure_reason": { "$ref": "#/$defs/nullableString" },
+    "factorial_focal_comparison_id": {
+      "anyOf": [
+        { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$" },
+        { "type": "null" }
+      ]
+    },
     "Y_structure": { "anyOf": [{ "enum": ["scalar", "factorial-functional"] }, { "type": "null" }] },
     "factorial_Y_reason": { "$ref": "#/$defs/nullableString" },
     "factorial_component_effects": { "type": "array", "items": { "$ref": "#/$defs/factorialComponent" } },
@@ -204,6 +215,39 @@
       "then": { "properties": { "Y_evidence_role": { "enum": ["mechanistic-support-only", "direct-registration-only", "not-assessed"] } } }
     },
     {
+      "if": { "properties": { "functional_structure_assessment": { "const": "not-assessed" } }, "required": ["functional_structure_assessment"] },
+      "then": { "properties": { "functional_structure_reason": { "type": "null" }, "factorial_focal_comparison_id": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "functional_structure_assessment": { "enum": ["not-applicable", "scalar-justified", "factorial-functional-required"] } }, "required": ["functional_structure_assessment"] },
+      "then": { "properties": { "functional_structure_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "functional_structure_assessment": { "enum": ["not-applicable", "scalar-justified"] } }, "required": ["functional_structure_assessment"] },
+      "then": { "properties": { "Y_structure": { "const": "scalar" }, "factorial_focal_comparison_id": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "functional_structure_assessment": { "const": "factorial-functional-required" } }, "required": ["functional_structure_assessment"] },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "Y_structure": { "const": "factorial-functional" },
+              "factorial_focal_comparison_id": { "type": "null" }
+            },
+            "required": ["Y_structure", "factorial_focal_comparison_id"]
+          },
+          {
+            "properties": {
+              "Y_structure": { "const": "scalar" },
+              "factorial_focal_comparison_id": { "type": "string", "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$" }
+            },
+            "required": ["Y_structure", "factorial_focal_comparison_id"]
+          }
+        ]
+      }
+    },
+    {
       "if": { "properties": { "Y_structure": { "const": "scalar" } }, "required": ["Y_structure"] },
       "then": { "properties": { "factorial_Y_reason": { "type": "null" }, "factorial_component_effects": { "maxItems": 0 } } }
     },
@@ -294,6 +338,8 @@
         "first_order_measure": { "type": "string", "minLength": 1 }, "E_code": { "type": "string" },
         "E_matching_basis": { "type": "string" }, "E_equivalence_result": { "type": "string" },
         "Y_label": { "type": "string", "minLength": 1 }, "Y_description": { "type": "string", "minLength": 1 },
+        "functional_structure_assessment": { "enum": ["not-applicable", "scalar-justified", "factorial-functional-required"] },
+        "functional_structure_reason": { "type": "string", "minLength": 1 },
         "Y_structure": { "type": "string" }, "Y_evidence_role": { "type": "string" }, "F_code": { "type": "string" },
         "Y_interpretation_clarity": { "type": "string" }, "mechanistic_interpretation": { "type": "string", "minLength": 1 },
         "mechanism_clarity": { "type": "string" }, "critical_comparison": { "type": "string", "minLength": 1 },

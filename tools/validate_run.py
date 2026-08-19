@@ -25,8 +25,9 @@ except ModuleNotFoundError as exc:
     raise SystemExit(3) from None
 
 from execution_contract import (
-    completion_errors, ordered_result_set_sha256, route_audit_errors,
-    search_window_key, validate_declared_bundle_status,
+    completion_errors, factorial_e_diagnostic_bundle_errors, functional_structure_errors,
+    ordered_result_set_sha256, route_audit_errors, search_window_key,
+    validate_declared_bundle_status,
 )
 ROOT = Path(__file__).resolve().parents[1]
 DOI_PREFIX = re.compile(
@@ -369,6 +370,8 @@ def evidence_bundle_errors(
             errors.append(
                 f"experiments_master.csv: {focal_id} assigns E-diagnostic without a complete E-diagnostic bundle"
             )
+        for error in factorial_e_diagnostic_bundle_errors(row, evidence_bundles, evidence_links):
+            errors.append(f"experiments_master.csv: {error}")
     return errors
 
 
@@ -514,6 +517,8 @@ def main() -> int:
             errors.append(f"experiments_master.csv: {row['comparison_id']} does not belong to experiment_id {row['experiment_id']}")
         for error in route_audit_errors(row):
             errors.append(f"experiments_master.csv: {row['comparison_id']}: {error}")
+    for error in functional_structure_errors(experiments):
+        errors.append(f"experiments_master.csv: {error}")
     for row in searches:
         if row.get("discovery_route") in {"independent-query", "process-triggered-query"}:
             expected_key = search_window_key(

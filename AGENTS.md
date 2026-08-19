@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.8.1, pre-freeze
+**Status:** draft-0.8.2, pre-freeze
 
 ## 1. Authority split
 
@@ -173,7 +173,9 @@ Every title, abstract/abstract-unavailable state, retrieval, auxiliary dependenc
 
 ## 7. Full-text sequence and revisions
 
-Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate physical experiment groups first and reserve each experiment ID before reserving any comparison IDs. Then enumerate scalar or coherent factorial X→Y comparisons. For each comparison: complete the structural audit; record A and F; log provisional E and the full E-diagnostic rationale where applicable; create one evidence-bundle row per borrowed premise; create every direct member link before relying on the bundle; derive and record each bundle status; name the exact focal or component function in `unaware_capacity_claim`; assess the unaware-capacity route whenever A/F permit it; assess the awareness-effect route only when strong A/E/F permit it; assess null/equivalence only when the awareness-effect route and its statistics permit it; and record the result-inspection disposition. A supporting experiment receives an experiment pointer in a link but no comparison row unless it independently answers an X→Y question. Weak or unusable E closes the awareness-effect and null/equivalence routes but does not by itself close the unaware-capacity route. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
+Follow the scientific order in `PROTOCOL.md`. Operationally, enumerate physical experiment groups first and reserve each experiment ID before reserving any comparison IDs. For every experiment, perform the pre-atomization functional-structure check before finalizing the comparison decomposition and append an experiment-level decision event recording the assessment and why. If it requires a factorial-functional focal relation, reserve and instantiate that focal comparison before optional scalar/component comparisons; every component row must link to the already instantiated focal comparison. If scalar decomposition is justified, record the scientific reason. A completed row must carry a non-temporary `functional_structure_assessment` and `functional_structure_reason`; `structural_audit_status = complete` cannot substitute for this specific check.
+
+Then enumerate scalar or coherent factorial X→Y comparisons. For each comparison: complete the structural audit; record A and F; log provisional E and the full E-diagnostic rationale where applicable; create one evidence-bundle row per borrowed premise; create every direct member link before relying on the bundle; derive and record each bundle status; name the exact focal or component function in `unaware_capacity_claim`; assess the unaware-capacity route whenever A/F permit it; assess the awareness-effect route only when strong A/E/F permit it; assess null/equivalence only when the awareness-effect route and its statistics permit it; and record the result-inspection disposition. A factorial-functional `E-diagnostic` bundle must explicitly identify the direct member that addresses the stated first-order-evidence alternative; an interaction alone is insufficient. A supporting experiment receives an experiment pointer in a link but no comparison row unless it independently answers an X→Y question. Weak or unusable E closes the awareness-effect and null/equivalence routes but does not by itself close the unaware-capacity route. The allocator must reject a comparison whose experiment group has not already been reserved. Do not duplicate or reinterpret the scientific definitions here.
 
 Before changing current state:
 

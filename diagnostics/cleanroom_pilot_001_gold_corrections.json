@@ -1,0 +1,27 @@
+{
+  "scope": "diagnostic-only hand-adjudication provenance for clean-room pilot 001",
+  "registered_facing": false,
+  "must_not_enter_registered_inputs_or_cleanroom_fixtures": true,
+  "source_package_commit": "0be0cc2d0a18dfbec320f8a2ace0b16573914f8c",
+  "corrections": [
+    {
+      "anchor": "Persaud et al. (2011)",
+      "pilot_comparison_id": "P000005_E01_C01",
+      "field": "unaware_capacity",
+      "superseded_gold_value": "supported",
+      "adjudicated_gold_value": "unclear",
+      "reason": "The blind-field wagering-accuracy correlation is reported as r=.30, but the supplied article does not report an adequate direct positive test of that correlation against zero. The between-field correlation difference supports an awareness-linked metacognitive difference but cannot establish positive blind-field metacognitive capacity.",
+      "source_location": "Persaud main article pp. 3-5; pilot experiments_master.csv P000005_E01_C01",
+      "pilot_already_matches_corrected_gold": true
+    }
+  ],
+  "structural_non_regression_expectations": [
+    {
+      "anchor": "Lamy et al. (2015)",
+      "pilot_experiment_ids": ["P000003_E01", "P000003_E02", "P000003_E03"],
+      "expectation": "Before scalar component rows are finalized, assess and instantiate the focal factorial-functional comparison when the awareness x cue-feature-relation x target-location interaction tests one coherent spatial-cuing mapping. Component capacity rows may coexist but may not replace that focal comparison.",
+      "old_pilot_violation": "The pilot instantiated attentional-capture and feature-change-cost scalar rows without a durable pre-atomization assessment or focal factorial comparison.",
+      "classification_scope": "structural only; this record does not force final A/E/F or route outcomes"
+    }
+  ]
+}
