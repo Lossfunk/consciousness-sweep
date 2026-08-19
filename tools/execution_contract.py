@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure, network-free enforcement helpers for the draft-0.8 execution contract."""
+"""Pure, network-free enforcement helpers for the draft-0.8.1 execution contract."""
 
 from __future__ import annotations
 

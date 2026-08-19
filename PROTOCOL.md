@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.8
+**Version:** draft-0.8.1
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -64,7 +64,7 @@ Every `E-diagnostic` decision must record all of:
 4. every experiment or analysis required for the inference, through source pointers and evidence links; and
 5. why the evidence concerns one coherent focal Y rather than an opportunistic cross-Y dissociation.
 
-Tsushima, Sasaki, and Watanabe (2006) motivate `E-diagnostic`: interference is non-monotonic with motion coherence, is maximal around the awareness threshold, and the interference dip shifts when the perceptual threshold is experimentally shifted. The diagnostic value comes from the whole pattern, not from non-monotonicity alone. Charles et al. (2013) motivate the distinction between identical physical stimuli and identical internal evidence.
+For example, Experiment A may find a downstream extremum around a detectability threshold, while Experiment B experimentally shifts detectability and the downstream extremum shifts correspondingly. If the complete, premise-specific evidence bundle shows that this joint same-Y pattern violates the stated simple signal-strength prediction, it may support `E-diagnostic`; the extremum alone does not. Charles et al. (2013) motivate the distinction between identical physical stimuli and identical internal evidence.
 
 ### 2.4 F — meaningful downstream use Y
 

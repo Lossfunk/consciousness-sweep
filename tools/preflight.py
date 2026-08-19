@@ -9,6 +9,8 @@ import json
 import sys
 from pathlib import Path
 
+from leakage_guard import registered_leakage_errors
+
 try:
     import yaml
     from jsonschema import Draft202012Validator
@@ -121,6 +123,7 @@ def main() -> int:
         ["seed_id", "title", "authors", "year", "doi", "url", "coverage_area", "seed_reason", "notes"],
         errors,
     )
+    errors.extend(registered_leakage_errors(root))
 
     protocol_version = config.get("protocol_version")
     for name in ("AGENTS.md", "PROTOCOL.md"):

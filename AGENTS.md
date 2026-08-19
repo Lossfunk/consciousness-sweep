@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.8, pre-freeze
+**Status:** draft-0.8.1, pre-freeze
 
 ## 1. Authority split
 
@@ -42,6 +42,7 @@ consciousness-sweep/
 │   ├── derive_outputs.py
 │   ├── structured_write.py
 │   ├── query_instruments.py
+│   ├── leakage_guard.py
 │   ├── calibration_sampling.py
 │   └── bootstrap_env.py
 ├── tests/

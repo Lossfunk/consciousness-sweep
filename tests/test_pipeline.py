@@ -40,12 +40,20 @@ from query_instruments import (  # noqa: E402
     QCAL_MAX_RESULTS_PER_SOURCE_FAMILY,
     PROCESS_MAX_RESULTS_PER_SOURCE_Y,
     ACTIVE_QCAL_SOURCES,
-    TSUSHIMA_DIAGNOSTIC_VARIANTS,
+    build_process_variants,
     conservative_instrument_contract,
+    process_query_plan,
     render_process_query,
     render_title_abstract_query,
     validate_process_variants,
     validate_rendered_query,
+)
+from leakage_guard import (  # noqa: E402
+    NEUTRAL_EMPIRICAL_SEED_REASON,
+    anchor_specific_tool_identifier_errors,
+    empirical_seed_errors,
+    named_answer_context_errors,
+    registered_leakage_errors,
 )
 from execution_contract import (  # noqa: E402
     completion_errors,
@@ -826,6 +834,27 @@ class CapacityIdentityCorrectionTests(unittest.TestCase):
 
 
 class QueryInstrumentTests(unittest.TestCase):
+    @staticmethod
+    def synthetic_variants() -> tuple[dict[str, object], ...]:
+        return build_process_variants(
+            "context-dependent response selection",
+            canonical_rationale="Synthetic conservative Y from the dependent measure.",
+            morphology_variants=[{
+                "term": "selection of responses depending on context",
+                "rationale": "Direct grammatical reordering of the canonical label.",
+            }],
+            source_terms=[{
+                "term": "context-guided response selection",
+                "source_pointer": "Synthetic qualifying source, Methods p. 4",
+                "rationale": "Same-function terminology used by the qualifying source.",
+            }],
+            immediate_parent={
+                "term": "response selection",
+                "frozen_parent_id": "Y-PARENT-RESPONSE-SELECTION",
+                "rationale": "One frozen immediate parent, with no neighboring function.",
+            },
+        )
+
     def test_compact_queries_parse_on_both_source_renderers(self) -> None:
         documented = (ROOT / "queries.md").read_text(encoding="utf-8")
         for terms in COMPACT_PROCESS_TERMS.values():
@@ -835,23 +864,85 @@ class QueryInstrumentTests(unittest.TestCase):
                 self.assertNotIn("{{", rendered)
                 self.assertIn(rendered, documented)
 
-    def test_tsushima_lexical_expansion_is_provenance_backed(self) -> None:
-        checked = validate_process_variants(TSUSHIMA_DIAGNOSTIC_VARIANTS)
-        self.assertEqual(len(checked), 6)
+    def test_runtime_lexical_expansion_is_provenance_backed_and_documented(self) -> None:
+        checked = validate_process_variants(self.synthetic_variants())
+        self.assertEqual(len(checked), 4)
         documented = (ROOT / "queries.md").read_text(encoding="utf-8")
         for source in ("OpenAlex", "Europe PMC"):
             rendered = render_process_query(source, checked)
             validate_rendered_query(source, rendered)
             self.assertIn(rendered, documented)
+            plan = process_query_plan(source, checked)
+            self.assertEqual(plan, process_query_plan(source, checked))
+            self.assertEqual(plan["canonical_y"], "context-dependent response selection")
+            self.assertEqual(plan["max_results"], 50)
+            self.assertEqual(plan["max_windows"], 1)
+            self.assertEqual(plan["lexical_provenance"], checked)
 
     def test_unrestricted_semantic_synonym_is_rejected(self) -> None:
-        variants = [*TSUSHIMA_DIAGNOSTIC_VARIANTS, {
+        variants = [*self.synthetic_variants(), {
             "term": "executive attention",
             "provenance_category": "llm-semantic-synonym",
             "rationale": "Unrestricted neighboring term.",
         }]
         with self.assertRaisesRegex(ValueError, "unrestricted"):
             validate_process_variants(variants)
+
+    def test_source_term_requires_explicit_pointer(self) -> None:
+        with self.assertRaisesRegex(ValueError, "source pointer"):
+            build_process_variants(
+                "context-dependent response selection",
+                canonical_rationale="Synthetic conservative Y.",
+                source_terms=[{
+                    "term": "context-guided response selection",
+                    "rationale": "Purported source term without provenance pointer.",
+                }],
+            )
+
+    def test_multiple_immediate_parents_are_rejected(self) -> None:
+        variants = [*self.synthetic_variants(), {
+            "term": "cognitive control",
+            "provenance_category": "frozen-immediate-parent",
+            "frozen_parent_id": "Y-PARENT-SECOND",
+            "rationale": "A prohibited second parent.",
+        }]
+        with self.assertRaisesRegex(ValueError, "at most one"):
+            validate_process_variants(variants)
+
+
+class RegisteredLeakageGuardTests(unittest.TestCase):
+    def test_current_registered_facing_allowlist_passes(self) -> None:
+        self.assertEqual(registered_leakage_errors(ROOT), [])
+
+    def test_seed_answer_reason_is_flagged_but_bibliography_is_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "seeds_empirical.csv"
+            path.write_text(
+                "seed_id,title,authors,year,doi,url,seed_reason,notes\n"
+                f"ESEED001,Synthetic title,Sampleanchor A,2020,10.1/example,https://doi.org/10.1/example,{NEUTRAL_EMPIRICAL_SEED_REASON},Bibliographic identity only\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(empirical_seed_errors(path), [])
+            path.write_text(
+                "seed_id,title,authors,year,doi,url,seed_reason,notes\n"
+                "ESEED001,Synthetic title,Sampleanchor A,2020,10.1/example,https://doi.org/10.1/example,Preserved-capacity example,Bibliographic identity only\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(empirical_seed_errors(path))
+
+    def test_anchor_name_alone_is_allowed_but_named_answer_context_is_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "method.md"
+            path.write_text("Sampleanchor et al. (2020) is a frozen bibliographic seed.\n", encoding="utf-8")
+            self.assertEqual(named_answer_context_errors(path, ("sampleanchor",)), [])
+            path.write_text("Sampleanchor et al. (2020) is expected to be E-diagnostic.\n", encoding="utf-8")
+            self.assertTrue(named_answer_context_errors(path, ("sampleanchor",)))
+
+    def test_anchor_specific_runtime_identifier_is_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "runtime.py"
+            path.write_text("SAMPLEANCHOR_VARIANTS = ()\n", encoding="utf-8")
+            self.assertTrue(anchor_specific_tool_identifier_errors(path, ("sampleanchor",)))
 
 
 class ConservativeExecutionTests(unittest.TestCase):

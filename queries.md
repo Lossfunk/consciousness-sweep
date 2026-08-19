@@ -42,13 +42,9 @@ CALIB004 diagnosed this rendering as pathological. It is retained verbatim below
 - OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("error-based learning" OR "reinforcement learning" OR "evaluative conditioning" OR "adaptive updating")`
 - Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"error-based learning" OR TITLE_ABS:"reinforcement learning" OR TITLE_ABS:"evaluative conditioning" OR TITLE_ABS:"adaptive updating")`
 
-### Blind sentinel check
-
-The historical CALIB004 sentinel check used the six existing CALIB003 sentinels without embedding titles, authors, or identifiers in any query. Future registered entry of empirical anchors must come from frozen seeds, never from the supplementary lane. Sentinel recovery remains a calibration diagnostic, not an inclusion or stopping rule.
-
 ## CALIB003 independent-query instrument — executed historical provenance
 
-CALIB002's Q001/Q002 instruments each returned 300 screened records from all eight source blocks but recovered none of the six calibration sentinels. They are retained below as failed historical calibration instruments, not as the proposed CALIB003 lane. The redesign uses six separate process families. Their union is a supplementary recall check alongside the empirical-seed citation graph, review/discovery anchors, and process-triggered searches; it is not a universal enumeration of Y.
+CALIB002's Q001/Q002 instruments each returned 300 screened records from all eight source blocks but had poor recovery of the held-out calibration set. They are retained below as failed historical calibration instruments, not as the proposed CALIB003 lane. The redesign uses six separate process families. Their union is a supplementary recall check alongside the empirical-seed citation graph, review/discovery anchors, and process-triggered searches; it is not a universal enumeration of Y. Named sentinel identities and recovery bookkeeping are archived outside registered-facing inputs in `diagnostics/calibration_provenance_draft_0_8_1.md`.
 
 Shared draft CALIB003 instrumentation for every block below: title/abstract fields; relevance order; page size 100; screen every returned record; stop after source exhaustion or 2 pages/200 encountered records, whichever comes first. Persist exact parameters and the stable IDs from each completed page before continuing. These bounds are calibration instruments, not registered stopping rules.
 
@@ -83,10 +79,6 @@ Shared draft CALIB003 instrumentation for every block below: title/abstract fiel
 - Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:learning OR TITLE_ABS:adaptation OR TITLE_ABS:adaptive OR TITLE_ABS:conditioning OR TITLE_ABS:"error driven" OR TITLE_ABS:"error-driven")`
 
 For the OpenAlex blocks after QCAL3-ATTN, endpoint, field, sort, and page size are the same as QCAL3-ATTN. For Europe PMC, endpoint, field restriction, relevance order, page size, cursor behavior, and `synonym=false` are likewise shared. The exact rendered query and source parameters must still be logged for every executed block.
-
-### Query-calibration sentinels
-
-The calibration-only sentinels are Tsushima et al. (2006), Lin and Murray (2015), Lamy et al. (2015), Ben-Haim et al. (2021), Persaud et al. (2011), and Keizer et al. (2015). They are not scientific inclusion labels. The union of the CALIB003 family windows should recover a substantial fraction of them; report the observed recovery without imposing a final numeric threshold in this draft. Do not embed their titles/DOIs in queries, do not count title lookups, and do not reveal expected A/E/F/outcome codes to registered agents.
 
 ### Draft source roles
 
@@ -268,21 +260,21 @@ The permitted lexical universe is closed: canonical Y; morphology/grammar/spelli
 
 The source-specific query crosses explicit awareness terms directly with the validated Y variants in title/abstract fields. Generic `experiment`, `task`, and `performance` clauses and an obligatory masking-method clause are removed because CALIB003 showed that they can make an already narrow process phrase pathological.
 
-### Historical Tsushima diagnostic query (executed only in CALIB004; not rerun here)
+### Synthetic dynamic-query rendering example
 
 Permitted variants, exhaustively:
 
 | Term | Provenance category | Rationale |
 |---|---|---|
-| `regulation of task-irrelevant distractor interference` | canonical-y | Conservative Y assigned from the behavioral dependent measure. |
-| `task-irrelevant distractor-interference regulation` | morphology-grammar | Nominal reordering and hyphenation only; the function is unchanged. |
-| `regulating task-irrelevant distractor interference` | morphology-grammar | Gerund form of the canonical label only. |
-| `inhibitory control` | source-paper-terminology | Explicitly used in the paper title and article, pp. 1786–1788. |
-| `attention filtering` | source-paper-terminology | Filtering terminology explicitly used for the observed interference effect, article pp. 1786–1788. |
-| `distractor interference control` | frozen-immediate-parent | Single immediate parent `Y-PARENT-DISTRACTOR-INTERFERENCE-CONTROL`; no neighboring function is added. |
+| `context-dependent response selection` | canonical-y | Synthetic conservative function assigned from a hypothetical dependent measure. |
+| `selection of responses depending on context` | morphology-grammar | Direct grammatical reordering of the synthetic canonical label. |
+| `context-guided response selection` | source-paper-terminology | Hypothetical same-function terminology, explicitly sourced to the qualifying paper's Methods p. 4. |
+| `response selection` | frozen-immediate-parent | Single synthetic immediate parent `Y-PARENT-RESPONSE-SELECTION`; no neighboring function is added. |
 
-- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("regulation of task-irrelevant distractor interference" OR "task-irrelevant distractor-interference regulation" OR "regulating task-irrelevant distractor interference" OR "inhibitory control" OR "attention filtering" OR "distractor interference control")`
-- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"regulation of task-irrelevant distractor interference" OR TITLE_ABS:"task-irrelevant distractor-interference regulation" OR TITLE_ABS:"regulating task-irrelevant distractor interference" OR TITLE_ABS:"inhibitory control" OR TITLE_ABS:"attention filtering" OR TITLE_ABS:"distractor interference control")`
+- OpenAlex: `filter=title_and_abstract.search:(awareness OR unaware OR conscious OR unconscious OR visibility OR visible OR invisible OR unseen OR subliminal OR nonconscious) AND ("context-dependent response selection" OR "selection of responses depending on context" OR "context-guided response selection" OR "response selection")`
+- Europe PMC: `(TITLE_ABS:awareness OR TITLE_ABS:unaware OR TITLE_ABS:conscious OR TITLE_ABS:unconscious OR TITLE_ABS:visibility OR TITLE_ABS:visible OR TITLE_ABS:invisible OR TITLE_ABS:unseen OR TITLE_ABS:subliminal OR TITLE_ABS:nonconscious) AND (TITLE_ABS:"context-dependent response selection" OR TITLE_ABS:"selection of responses depending on context" OR TITLE_ABS:"context-guided response selection" OR TITLE_ABS:"response selection")`
+
+This example is synthetic. In execution, the renderer receives the canonical Y and permitted lexical records only after the qualifying comparison earns the process route; it contains no paper-specific default or hidden lexical set.
 
 Conservative process-search bound: both sources, one initial result window per source, maximum 50 records each, screen/audit every returned record, and do not redistribute unused quota. Each normalized Y can activate once per run. Only a genuinely new Y that independently satisfies the unchanged activation rule may recurse.
 

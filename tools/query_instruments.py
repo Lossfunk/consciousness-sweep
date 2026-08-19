@@ -53,44 +53,6 @@ ALLOWED_VARIANT_PROVENANCE = {
     "frozen-immediate-parent",
 }
 
-TSUSHIMA_DIAGNOSTIC_VARIANTS = (
-    {
-        "term": "regulation of task-irrelevant distractor interference",
-        "provenance_category": "canonical-y",
-        "rationale": "Conservative Y assigned from the behavioral dependent measure.",
-    },
-    {
-        "term": "task-irrelevant distractor-interference regulation",
-        "provenance_category": "morphology-grammar",
-        "derived_from": "regulation of task-irrelevant distractor interference",
-        "rationale": "Nominal reordering and hyphenation only; the function is unchanged.",
-    },
-    {
-        "term": "regulating task-irrelevant distractor interference",
-        "provenance_category": "morphology-grammar",
-        "derived_from": "regulation of task-irrelevant distractor interference",
-        "rationale": "Gerund form of the canonical label only.",
-    },
-    {
-        "term": "inhibitory control",
-        "provenance_category": "source-paper-terminology",
-        "source_pointer": "Tsushima et al. (2006) title and article pp. 1786-1788",
-        "rationale": "Terminology explicitly used by the qualifying source paper.",
-    },
-    {
-        "term": "attention filtering",
-        "provenance_category": "source-paper-terminology",
-        "source_pointer": "Tsushima et al. (2006) article pp. 1786-1788",
-        "rationale": "Filtering terminology explicitly used for the observed interference effect.",
-    },
-    {
-        "term": "distractor interference control",
-        "provenance_category": "frozen-immediate-parent",
-        "frozen_parent_id": "Y-PARENT-DISTRACTOR-INTERFERENCE-CONTROL",
-        "rationale": "Single immediate parent frozen for this diagnostic; no neighboring function is added.",
-    },
-)
-
 
 def _term(term: str) -> str:
     return f'"{term}"' if any(character.isspace() for character in term) else term
@@ -151,9 +113,14 @@ def validate_rendered_query(source: str, query: str) -> None:
 def validate_process_variants(variants: Iterable[dict[str, Any]]) -> tuple[dict[str, Any], ...]:
     """Reject unprovenanced or semantically unrestricted dynamic-query variants."""
     values = tuple(variants)
+    if any(not isinstance(item, dict) for item in values):
+        raise ValueError("each dynamic-query variant must be a provenance record")
     canonical = [item.get("term") for item in values if item.get("provenance_category") == "canonical-y"]
     if len(canonical) != 1:
         raise ValueError("exactly one canonical-y variant is required")
+    parents = [item for item in values if item.get("provenance_category") == "frozen-immediate-parent"]
+    if len(parents) > 1:
+        raise ValueError("at most one frozen immediate-parent term is permitted")
     seen: set[str] = set()
     for item in values:
         term = item.get("term")
@@ -175,11 +142,65 @@ def validate_process_variants(variants: Iterable[dict[str, Any]]) -> tuple[dict[
     return values
 
 
+def build_process_variants(
+    canonical_y: str,
+    *,
+    canonical_rationale: str,
+    morphology_variants: Iterable[dict[str, str]] = (),
+    source_terms: Iterable[dict[str, str]] = (),
+    immediate_parent: dict[str, str] | None = None,
+) -> tuple[dict[str, Any], ...]:
+    """Build a provenance-complete lexical set from comparison-derived runtime inputs."""
+    values: list[dict[str, Any]] = [{
+        "term": canonical_y,
+        "provenance_category": "canonical-y",
+        "rationale": canonical_rationale,
+    }]
+    for item in morphology_variants:
+        values.append({
+            "term": item.get("term"),
+            "provenance_category": "morphology-grammar",
+            "derived_from": canonical_y,
+            "rationale": item.get("rationale"),
+        })
+    for item in source_terms:
+        values.append({
+            "term": item.get("term"),
+            "provenance_category": "source-paper-terminology",
+            "source_pointer": item.get("source_pointer"),
+            "rationale": item.get("rationale"),
+        })
+    if immediate_parent is not None:
+        values.append({
+            "term": immediate_parent.get("term"),
+            "provenance_category": "frozen-immediate-parent",
+            "frozen_parent_id": immediate_parent.get("frozen_parent_id"),
+            "rationale": immediate_parent.get("rationale"),
+        })
+    return validate_process_variants(values)
+
+
 def render_process_query(source: str, variants: Iterable[dict[str, Any]]) -> str:
     checked = validate_process_variants(variants)
     query = render_title_abstract_query(source, [item["term"] for item in checked])
     validate_rendered_query(source, query)
     return query
+
+
+def process_query_plan(source: str, variants: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Return a deterministic, log-ready bounded query plan for one earned Y."""
+    checked = validate_process_variants(variants)
+    query = render_process_query(source, checked)
+    canonical_y = next(item["term"] for item in checked if item["provenance_category"] == "canonical-y")
+    return {
+        "source": source,
+        "canonical_y": canonical_y,
+        "query": query,
+        "lexical_provenance": tuple(dict(item) for item in checked),
+        "max_results": PROCESS_MAX_RESULTS_PER_SOURCE_Y,
+        "max_windows": 1,
+        "redistribute_unused_quota": False,
+    }
 
 
 def conservative_instrument_contract() -> dict[str, Any]:
