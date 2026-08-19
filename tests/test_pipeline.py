@@ -85,11 +85,17 @@ def experiment(**updates: object) -> dict:
         "X_label": None,
         "X_description": None,
         "awareness_measure": None,
+        "awareness_procedure_type": None,
         "awareness_evidence_type": None,
         "objective_visibility_test_informative": None,
         "objective_visibility_test_reason": None,
         "A_code": None,
         "A_reason": None,
+        "awareness_result_status": None,
+        "awareness_result_procedure_type": None,
+        "awareness_result_description": None,
+        "awareness_result_source_location": None,
+        "awareness_result_source_experiment_id": None,
         "critical_dependency_status": None,
         "critical_dependency_reason": None,
         "evidence_bundle_ids": [],
@@ -113,9 +119,12 @@ def experiment(**updates: object) -> dict:
         "E_violating_pattern": None,
         "E_same_Y_reason": None,
         "E_diagnostic_source_locations": [],
+        "alternative_control_scan_status": None,
+        "alternative_control_scan_reason": None,
         "Y_label": None,
         "Y_description": None,
         "functional_structure_assessment": "not-assessed",
+        "functional_identity_basis": "not-assessed",
         "functional_structure_reason": None,
         "factorial_focal_comparison_id": None,
         "Y_structure": None,
@@ -129,6 +138,7 @@ def experiment(**updates: object) -> dict:
         "mechanism_clarity": None,
         "critical_comparison": None,
         "unaware_capacity_claim": None,
+        "unaware_capacity_evidence_scope": None,
         "unaware_capacity": None,
         "unaware_capacity_reason": None,
         "unaware_capacity_critical_effect": None,
@@ -164,13 +174,28 @@ def experiment(**updates: object) -> dict:
         "notes": None,
     }
     row.update(updates)
+    if row["E_code"] in {"E-diagnostic", "E-physical-only", "E-uncontrolled"} and "alternative_control_scan_status" not in updates:
+        row["alternative_control_scan_status"] = "completed-none-found"
+        row["alternative_control_scan_reason"] = "The complete synthetic article record contains no separate classification-critical control."
+    elif row["E_code"] == "E-matched" and "alternative_control_scan_status" not in updates:
+        row["alternative_control_scan_status"] = "not-required"
+        row["alternative_control_scan_reason"] = "First-order evidence is matched by design."
+    if row["A_code"] in {"A-direct", "A-validated"} and "awareness_result_status" not in updates:
+        row["awareness_procedure_type"] = "other"
+        row["awareness_result_status"] = "supportive-result-reported"
+        row["awareness_result_procedure_type"] = "other"
+        row["awareness_result_description"] = "The reported synthetic result supports the recorded awareness classification."
+        row["awareness_result_source_location"] = "synthetic result"
+        row["awareness_result_source_experiment_id"] = row["experiment_id"]
     return row
 
 
 def route_row(**updates: object) -> dict:
     row = {
         "A_code": "A-direct", "E_code": "E-diagnostic", "F_code": "F-meaningful",
+        "Y_label": "synthetic downstream use of X",
         "unaware_capacity_claim": "synthetic downstream use of X",
+        "unaware_capacity_evidence_scope": "whole-focal-Y",
         "unaware_capacity": "supported", "unaware_capacity_stats_status": "adequate",
         "awareness_effect": "difference-supported", "awareness_effect_stats_status": "adequate",
         "difference_tested": "yes", "null_evidence_adequacy": "not-applicable",
@@ -250,6 +275,14 @@ def bundle(**updates: object) -> dict:
         "required_member_keys": ["validation"],
         "bundle_status": "complete",
         "bundle_reason": "Every required direct member supports the premise.",
+        "contrast_integrity_alternative": None,
+        "contrast_integrity_anchor_type": "none",
+        "contrast_integrity_anchor_source_location": None,
+        "contrast_integrity_viability_reason": None,
+        "contrast_integrity_prediction": None,
+        "contrast_integrity_control_member_key": None,
+        "contrast_integrity_resolution": "not-applicable",
+        "contrast_integrity_resolution_reason": "No separate design-motivated task-state alternative applies to this non-E bundle.",
         "notes": None,
     }
     row.update(updates)
@@ -269,10 +302,12 @@ def evidence_link(**updates: object) -> dict:
         "supporting_source_type": "within-paper-experiment",
         "support_role": "awareness-validation",
         "dependency_role": "required",
+        "evidence_content_type": "critical-result",
+        "same_focal_Y_status": "not-applicable",
         "member_status": "supports",
         "supported_claim": "The masking regime supports the focal A decision.",
         "transfer_reason": "Same population, manipulation, measure, analysis, and article version.",
-        "transfer_limitation": None,
+        "transfer_limitation": "No material transfer limitation was identified after explicit regime comparison.",
         "source_location": "Experiment 2",
         "used_for_decision": True,
         "notes": None,
@@ -795,6 +830,7 @@ class ScientificRevisionSyntheticTests(unittest.TestCase):
 class CapacityIdentityCorrectionTests(unittest.TestCase):
     def test_a_unaware_behavioral_effect_does_not_establish_focal_control(self) -> None:
         row = route_row(
+            Y_label="regulation of task-irrelevant distractor interference",
             unaware_capacity_claim="regulation of task-irrelevant distractor interference",
             unaware_capacity="not-supported",
             unaware_capacity_stats_status="adequate",
@@ -804,11 +840,13 @@ class CapacityIdentityCorrectionTests(unittest.TestCase):
 
     def test_b_factorial_component_capacity_does_not_transfer_to_awareness_component(self) -> None:
         automatic = route_row(
+            Y_label="automatic cue-guided behavioral bias",
             unaware_capacity_claim="automatic cue-guided behavioral bias",
             unaware_capacity="supported",
         )
         strategic = dict(
             automatic,
+            Y_label="strategic use of the instructed opposite-location rule",
             unaware_capacity_claim="strategic use of the instructed opposite-location rule",
             unaware_capacity="not-supported",
         )
@@ -817,6 +855,7 @@ class CapacityIdentityCorrectionTests(unittest.TestCase):
 
     def test_c_identical_focal_y_under_unawareness_supports_capacity(self) -> None:
         row = route_row(
+            Y_label="orientation-location binding and retrieval",
             unaware_capacity_claim="orientation-location binding and retrieval"
         )
         self.assertTrue(constraint_unaware_capacity(row))

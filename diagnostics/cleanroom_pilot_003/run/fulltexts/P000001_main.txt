@@ -1,0 +1,304 @@
+
+
+===== PDF PAGE 1 =====
+
+Greater Disruption Due to Failure of Inhibitory
+Control on an Ambiguous Distractor
+Yoshiaki Tsushima, et al.
+Science 314, 1786 (2006);
+DOI: 10.1126/science.1133197
+The following resources related to this article are available online at
+www.sciencemag.org (this information is current as of December 11, 2009 ):
+Updated information and services, including high-resolution figures, can be found in the online
+version of this article at:
+http://www.sciencemag.org/cgi/content/full/314/5806/1786
+Supporting Online Material can be found at:
+http://www.sciencemag.org/cgi/content/full/314/5806/1786/DC1
+A list of selected additional articles on the Science Web sites related to this article can be
+found at:
+http://www.sciencemag.org/cgi/content/full/314/5806/1786#related-content
+This article cites 27 articles, 6 of which can be accessed for free:
+http://www.sciencemag.org/cgi/content/full/314/5806/1786#otherarticles
+This article has been cited by 7 article(s) on the ISI Web of Science.
+This article has been cited by 5 articles hosted by HighWire Press; see:
+http://www.sciencemag.org/cgi/content/full/314/5806/1786#otherarticles
+This article appears in the following subject collections:
+Neuroscience
+http://www.sciencemag.org/cgi/collection/neuroscience
+Information about obtaining reprints of this article or about obtaining permission to reproduce
+this article in whole or in part can be found at:
+http://www.sciencemag.org/about/permissions.dtl
+Science (print ISSN 0036-8075; online ISSN 1095-9203) is published weekly, except the last week in December, by the
+American Association for the Advancement of Science, 1200 New York Avenue NW, Washington, DC 20005. Copyright
+2006 by the American Association for the Advancement of Science; all rights reserved. The title Science is a
+registered trademark of AAAS.
+9002
+,11
+rebmeceD
+no
+gro.gamecneics.www
+morf
+dedaolnwoD
+
+===== PDF PAGE 2 =====
+
+REPORTS
+those from alternative nitrogenases. However, the 6. J.P.W.Young,inBiologicalNitrogenFixation,G.Stacey, 23. J.F.Kasting,J.L.Siefert,Science296,1066(2002).
+quartetpuzzlingsupportandbootstrapvaluesarenot R.H.Burris,H.J.Evans,Eds.(Chapman&Hall,NewYork, 24. T.Arcondéguy,R.Jack,M.Merrick,Microbiol.Mol.Biol.
+1992),pp.43–86. Rev.65,80(2001).
+highenoughtoruleoutalternativetopologies.The
+7. N.Belay,R.Sparling,L.Daniels,Nature312,286(1984). 25. J.A.Leigh,inGenomesandGenomicsofNitrogen-Fixing
+maximum-likelihoodbranchlengthsinFig.3sug- 8. A.-S.Steunouetal.,Proc.Natl.Acad.Sci.U.S.A.103, Organisms,R.Palacios,W.E.Newton,Eds.(Springer,the
+gestthatFS406-22NifI andNifI aretheshortest 2398(2006). Netherlands,2005),pp.7–12.
+1 2
+distance to the internal node that represents the 9. L.A.Gilbert,thesis,UniversityofWashington(2004). 26. J.A.Leigh,Curr.IssuesMol.Biol.2,125(2000).
+10. M.J.Pruis,H.P.Johnson,Geophys.Res.Lett.29,1076 27. Y.-T.Chien,S.H.Zinder,J.Bacteriol.178,143(1996).
+ancestralP protein.Arecentreconstructionofthe
+II (2002). 28. Y.-T.Chien,V.Auerbuch,A.D.Brabban,S.H.Zinder,
+treeoflifewith31universalgenefamiliessupports
+11. J.A.Huber,D.A.Butterfield,J.A.Baross,Appl.Environ. J.Bacteriol.182,3247(2000).
+the hypothesis that the last universal common Microbiol.68,1585(2002). 29. F.D.Ciccarellietal.,Science311,1283(2006).
+ancestorlivedathightemperatures(29).Wepropose 12. Materialsandmethodsareavailableassupporting 30. WethankS.Bolton,D.Butterfield,W.Chadwick,the
+that among diazotrophic archaea, the nitrogenase materialonScienceOnline. NOAAVentsProgram,andthecrewsoftheROVROPOS
+13. W.J.Jones,J.A.Leigh,F.Mayer,C.R.Woese, andR/VThompsonforsamplecollectionandE.Olsonfor
+fromFS406-22mighthaveretainedthemostancient R.S.Wolfe,Arch.Microbiol.136,254(1983). performingGCworkandassistancewith15N2tracer
+characteristics,possiblyderivedfromanitrogenase 14. Y.-T.Chien,S.H.Zinder,J.Bacteriol.176,6590(1994). assays.WashingtonSeaGrant(NA76RG0119)andthe
+presentinthelastcommonancestorofmodernlife. 15. C.J.Bultetal.,Science273,1058(1996). NASAAstrobiologyInstitute,throughtheCarnegie
+16. N.Souillard,L.Sibold,Mol.Microbiol.3,541(1989). GeophysicalInstitute,supportedthisresearch.GenBank
+ReferencesandNotes 17. J.P.Montoya,M.Voss,P.Kähler,D.G.Capone,Appl. accessionnumbersforFS406-22sequencesare
+1. D.A.Butterfieldetal.,inTheSubseafloorBiosphere Environ.Microbiol.62,986(1996). EF079967toEF079969.
+atMid-OceanRidges,W.S.D.Wilcock,E.F.DeLong, 18. M.C.KennicuttII,R.A.BurkeJr.,inTheMicrobiologyof
+SupportingOnlineMaterial
+D.S.Kelley,J.A.Baross,S.C.Cary,Eds.(American Deep-SeaHydrothermalVents,D.M.Karl,Ed.(CRCPress, GeophysicalUnion,Washington,DC,2004),vol.144of BocaRaton,FL,1995),pp.275–287. www.sciencemag.org/cgi/content/full/314/5806/1783/DC1
+GeophysicalMonographSeries,pp.269–289. 19. J.A.Dodsworth,J.A.Leigh,Proc.Natl.Acad.Sci.U.S.A. MaterialsandMethods
+SOMText
+2. M.Summit,J.A.Baross,Proc.Natl.Acad.Sci.U.S.A.98, 103,9779(2006). Figs.S1toS4
+2158(2001). 20. G.Rocapetal.,Nature424,1042(2003).
+TablesS1toS4
+3. J.L.Charlouetal.,Chem.Geol.171,49(2000). 21. D.H.Burke,J.E.Hearst,A.Sidow,Proc.Natl.Acad.Sci. References
+4. G.H.Rau,Nature289,484(1981). U.S.A.90,7134(1993).
+5. M.P.Mehta,D.A.Butterfield,J.A.Baross,Appl.Environ. 22. J.Raymond,J.L.Siefert,C.R.Staples,R.E.Blankenship, 6September2006;accepted31October2006
+Microbiol.69,960(2003). Mol.Biol.Evol.21,541(2004). 10.1126/science.1134772
+Greater Disruption Due to that a higher task-irrelevant motion coherence
+stimulus would also produce stronger internal
+Failure of Inhibitory Control on an signals within the visual system, which either
+would result in greater disturbance in task per-
+formance(2,19,20)orwouldnotinfluencetask
+Ambiguous Distractor
+performancebecauseofattentionalfilteringorthe
+suppressionof,ifweak,irrelevantsignals(21).
+Performancewithcoherentmotion≥20%did
+Yoshiaki Tsushima,1 Yuka Sasaki,2,3 TakeoWatanabe1* notsignificantlydifferfromperformancewith0%
+coherentmotion(Fig.2A).Thisisconsistentwith
+Considerableevidenceindicatesthatastimulusthatissubthreshold,andthusconsciouslyinvisible, theattention-filteringhypothesis(21)inthattask-
+influencesbrainactivityandbehavioralperformance.However,itisnotclearhowsubthreshold irrelevant motion coherence signals (at least
+stimuliareprocessedinthebrain.Wefoundthatatask-irrelevantsubthresholdcoherentmotionled ≥20%) did not influence task performance.
+toastrongerdisturbanceintaskperformancethandidsuprathresholdmotion.Withthesubthreshold However, at 5% coherence ratio, performance
+motion,activityinthevisualcortexmeasuredbyfunctionalmagneticresonanceimagingwashigher, wassignificantlylowerthanat0and20%coher-
+butactivityinthelateralprefrontalcortexwaslower,thanwithsuprathresholdmotion.Theseresults enceratios.Immediatelyafterthemaincondition,
+suggestthatsubthresholdirrelevantsignalsarenotsubjecttoeffectiveinhibitorycontrol. we conducted a test to measure motion coher-
+enceratiothreshold(16).Theparticipantswere
+Weexperienceanoverwhelmingamount Weconductedaseriesofpsychophysicaland instructed to indicate one of the four coherent
+of visual stimuli. However, a great functional magnetic resonance imaging (fMRI) motiondirectionsusedinthemainconditionina
+number of the stimuli are not con- experiments.Duringeachtrialofexperiment1,
+sciouslyperceived(areinvisible)foranumberof 15participantswerepresentedwithasequenceof
+reasons,includingweaknessofthestimuli(1,2), eightitems(twodigitsandsixalphabeticletters)
+taskirrelevance(3,4),interferencebyotherstimuli atthecenterofacomputerscreen.Intheback-
+(1, 5–10), and combinations of these factors. ground, a dynamic random-dot (DRD) display
+Nevertheless,aninvisiblestimuluscaninfluence with coherently moving dots (signal) and ran-
+brainactivityandtaskperformance(1,2,10–12). domlymovingdots(noise)(2,13–15)waspres-
+Onewouldnaturallyassumethatthedegreeofan ented(Fig.1).Theparticipantswereinstructedto
+invisiblestimulus’sinfluenceisgenerallyweaker focus onandreportthetwodigits.This taskis
+thanthatofavisiblestimulus. known as the rapid serial visual presentation
+(RSVP)task.ThebackgroundDRDdisplaywas
+1Department of Psychology, Boston University, 64
+thustask-irrelevant(16).Theratioofsignaldots
+CummingtonStreet,Boston,MA02215,USA.2Athinoula tothetotalnumberofdots(coherenceratio)was
+A. Martinos Center forBiomedical Imaging, Department variedfromtrialtotrial.Ahighermotioncoher- Fig. 1. Stimulus.Asequenceoflettersanddigits
+T o to e f w ch R n n a , o d M l i o o A g l y o 0 g ( 2 E y 1 , R 2 A M 9 TO , as ) U s S a S h c A h i . m u 3 o s E e j x o t p ts l I o m r G a p t l e i o c n r i y e t r B R a r e l a s i e H n a o r F s c u p h n it f c a o ti l r o , n A C d P h v r a a o n r j l e c e e c s t d - , e m n o c n e ke ta y sk m -r i e d l d e l v e a t n e t m c p o o n r d al iti ( o M n T s ) tr ( o 1 n 7 g ) l a y nd ac h ti u v m at a e n s w ba a c s k p g r r e o s u e n n d te . d Th in e t r h a e tio ce o n f te t r he wh n i u le m d b o e t r s o m f o c v o e h d e i r n en th tl e y
+CaliforniaInstituteofTechnology,Pasadena,CA91125,USA. MT+ (18), which are the visual areas that are moving dots to the total number of randomly
+*To whom correspondence should be addressed. E-mail: largelyspecializedformotionprocessing.These moving plus coherently moving dots was varied
+takeo@bu.edu findings would naturally lead to the prediction fromtrialtotrial.Arrowsrepresentmotionvectors.
+1786 15DECEMBER 2006 VOL314 SCIENCE www.sciencemag.org
+9002
+,11
+rebmeceD
+no
+gro.gamecneics.www
+morf
+dedaolnwoD
+
+===== PDF PAGE 3 =====
+
+REPORTS
+DRD display whose coherent motion ratio was There is the possibility that task-irrelevant, ipants, with contracting coherent motion ratios
+variedinsevenstepsfromtrialtotrial.Theresult translating coherent motion may induce eye variedbetween0,5,10,and20%.Theamountof
+showed that the 5% coherence ratio produced movements,whichcouldberelatedtotheper- activity of MT+, which reflects the strength of
+chance-level performance and therefore can be formancedip.Inexperiment3(n=6),usingthe processedmotionsignals(18),washighestfor5%
+considered to be a subthreshold motion ratio samemethodasinexperiment1exceptthateye coherence (Fig. 3A, red), at which level the
+condition (2). Thus, although suprathreshold movementsweremonitored,thesamepatternof performancedipoccurred(Fig.3A,black).Weak
+task-irrelevant signals (e.g., 20%) were success- performance was obtained. No systematic dif- coherent motion that is around the chance-level
+fully filtered out (21), those below but near the ferencewasobservedineye-movementpatterns threshold thus strongly activates MT+ and also
+chance-levelthresholdledtodisturbanceoftask between coherence ratios (16). We also con- impairstaskperformance.Incontrast,theresults
+performance. ducted experiment 4 (n = 15) in which signal ofthecontrolconditioninwhichmotionwastask-
+Inexperiment2,toexaminewhethertheper- dots contracted rather than translated, because relevant(16)showthattheMT+activity(Fig.3A,
+formancedipandmotioncoherencethresholdare contracting motion does not elicit major eye green)andperformanceincreasedwithincreasing
+correlated,weloweredtheluminancecontrastof movements. Nevertheless, basically the same coherenceratio,whichisinaccordwithprevious
+themovingdots(from65.9to2.2candela/m2)so pattern of results was obtained, including the findings(17,18).Thus,theperformancedipand
+thatthecoherencethresholdwouldconsiderably performancedipatthe5%coherenceratio(16). highestMT+activityarerelatedtothefactthat
+increase, while maintaining the same methods Thus,itdoesnotseemthateyemovementsarea motionwastask-irrelevant.
+used in the previous experiment (n = 10 majorfactorintheperformance-dipeffect. Inthelateralprefrontalcortex(LPFC),which
+participants).Boththethresholdofcoherentmo- Inexperiment5,toinvestigatetheunderlying plays an important role in inhibitory control of
+tion and the performance dip shifted toward a neuralmechanismthatcausessuchaparadoxical inappropriate behavior or irrelevant signals
+highercoherenceratio(Fig.2B). effect,wemeasuredfMRIactivityinsixpartic- (22–26),theamountofactivityatthe5%coher-
+enceratioshowednosignificantdifferencefrom
+thatat0%coherencebutwassignificantlylower
+Fig. 2. Results of ex- than at the 10 and 20% coherence levels (Fig.
+periments 1 and 2. (A) 3B,red)(27).
+Resultsofexperiment1.
+Mean RSVP task per-
+formance(d’)asafunc-
+tion of the coherence
+ratio of background
+DRD displays is shown.
+d’ at 5% coherence
+ratio was significantly
+lowerthanat0%coher-
+enceratio(P<0.001,
+t test with Bonferroni
+correction)and20%co-
+herence(P<0.001),in-
+dicatingaperformancedipat5%coherenceratio.Verticalerrorbars,±1SEM.Averticalpinkbarrepresents
+themeanchance-levelthresholdwithahorizontalpinkbar,±1SEM,indicatingthat5%coherentmotionis
+underthechance-levelthreshold.(B)Resultsofexperiment2inwhichthedotluminancecontrastwaslower
+thaninexperiment1.MeanRSVPperformance(d’)at30%coherenceratiowassignificantlylowerthanat
+20%coherenceratio(P<0.01)and40%coherenceratio(P<0.01).Thedipperformance(d’)aswellasthe
+chance-levelthresholdwereshifted.Thescalesoftheyaxesin(A)and(B)arenotidentical.
+Fig. 3. Results of ex- Fig. 4. Schematic illustration of the hypothe-
+periment 5. (A) Aver- sizedbidirectionalinteractionsbetweentheLPFC
+agedBOLDsignalsfor and MT+. (A) No significant difference between
+area MT+ in the condi- the LPFC activity at 0 and 5% coherence ratios
+tions in which coherent in experiment 5 suggests that the LPFC fails to
+motionwastask-relevant notice 5% coherent motion signals from MT+
+(green line) and task- (left dotted flow line). Thus, the LPFC does not
+irrelevant(redline)and provide direct or indirect effective inhibitory
+meanRSVPperformance control on MT+ (right dotted flow line). Activity
+(d’)inthetask-irrelevant inMT+determinestheengagementoftheLPFC,
+condition(blackline)are which in turn determines inhibitory control on
+shown.Inthetask-relevant MT+ signals. (B) Significantly higher LPFC
+condition, BOLD signals activity at the 10% coherence ratiothan at the
+at 0% coherence ratio 0% coherence ratio in experiment 5 suggests
+were significantly lower that the LPFC-noticed 10% coherent motion
+thanat5%(P<0.05), signals from MT+ (left solid flow line) provide
+10%(P<0.05),and20%(P<0.05)coherenceratios.BOLDsignalsinthetask-irrelevantconditionand direct or indirect inhibitory control (right solid
+RSVPperformanceshowclearsymmetricpatterns,asindicatedbyanarrow.Verticalerrorbars,±1SEMfor flow line) on MT+. This observed relationship
+eachcondition.(B)AveragedBOLDsignalsforareaLPFCintheconditioninwhichcoherentmotionwas betweentheLPFCandMT+isinaccordwiththe
+task-relevant(greenline)and-irrelevant(redline).Inthetask-irrelevantcondition,BOLDsignalsatthe5% observedhighnegativecorrelationbetweentask-
+coherenceratioweresignificantlylowerthanthoseatthe10and20%ratios(P<0.05forboth)butshowed irrelevance–relatedactivityintheLPFCandMT+
+nosignificantdifferencefromthoseat0%coherenceratio.Verticalerrorbars,±1SEMforeachcondition. overthefourcoherenceratios(28).
+www.sciencemag.org SCIENCE VOL314 15 DECEMBER 2006 1787
+9002
+,11
+rebmeceD
+no
+gro.gamecneics.www
+morf
+dedaolnwoD
+
+===== PDF PAGE 4 =====
+
+REPORTS
+HowistheLPFCactivityrelatedtotheac- hand, suprathreshold coherent motion may be 23. J.M.Fuster,ThePrefrontalCortex:Anatomy,Physiology,
+tivity in MT+ in the task-irrelevant condi- noticed,maybegivensuccessfulinhibitorycon- andNeurophysiologyoftheFrontalLobe(Lippincott-
+Raven,NewYork,ed.3,1997).
+tion?Thecorrelationcoefficientbetweenthe trolbytheLPFC,andmayleavemoreresources
+24. R.T.Knight,W.R.Staines,D.Swick,L.L.Chao,Acta
+task-irrelevance–related activity(28)inMT+ for a task (Fig. 4B) (22–26). This mechanism Psychol.(Amst.)101,159(1999).
+andtheLPFCwas–0.90.Thisisinaccordwith may underlie the present paradoxical finding 25. J.G.Kernsetal.,Science303,1023(2004).
+the view that when the LPFC is activated, it thatsubthresholdtask-irrelevantstimuliactivate 26. A.W.MacDonaldIII,J.D.Cohen,V.A.Stenger,
+C.S.Carter,Science288,1835(2000).
+providesdirectorindirectinhibitorycontrolonthe thevisualareastronglyanddisrupttaskperform-
+27. Inthecontrolconditioninwhichmotionwastask-
+activityofMT+. ance more than some suprathreshold stimuli.
+relevant(Fig.3B,green),nosignificantdifferencewas
+Onemightthinkthatthelowperformanceat It could also be one of the reasons why sub- foundbetweenanypairofcoherencelevels.
+the 5% coherence ratio was obtained because, thresholdstimulioftenleadtorelativelyrobust 28. Task-irrelevance–relatedactivityisdefinedasaBOLD
+despitetheinstructionstofocusonRSVPtask effects(2,11,14). signalamountinthetask-relevantconditionsubtracted
+fromthatinthetask-irrelevantcondition,foreach
+performance,theparticipantsmayhavetriedto
+motioncoherenceandforeachcorticalarea.
+find a coherent motion direction or to detect ReferencesandNotes 29. M.Ben-Shachar,R.F.Dougherty,G.K.Deutch,
+whethercoherentmotionwaspresented.Ifthese 1. S.He,P.Cavanagh,J.Intriligator,Nature383,334(1996). B.A.Wandell,Cereb.Cortex10.1093/cercor/bhl071(2006).
+motiontasksaredifficult,theymayleavefewer 2. T.Watanabe,J.E.Nanez,Y.Sasaki,Nature413,844 30. S.Dehaene,L.Cohen,M.Sigman,F.Vinckier,Trends
+(2001). Cogn.Sci.9,335(2005).
+resourcesavailablefortheRSVPtask.However,
+3. J.K.O'Regan,R.A.Rensink,J.J.Clark,Nature398,34 31. A.M.Callan,D.E.Callan,S.Masaki,Neuroimage28,
+thisisnotlikely.Iftheparticipantsengagedin (1999). 553(2005).
+thesearchformotiondirection,thistaskshould 4. A.Mack,I.Rock,InattentionalBlindness(MITPress, 32. R.Desimone,J.Duncan,Annu.Rev.Neurosci.18,193
+be hardest at 0% coherence and therefore, the Cambridge,MA,1998). (1995).
+5. M.M.Chun,J.Exp.Psychol.Hum.Percept.Perform.23, 33. E.K.Miller,J.D.Cohen,Annu.Rev.Neurosci.24,167
+lowestRSVPperformanceshouldhaveoccurred
+738(1997). (2001).
+at0%andnotat5%coherence.Second,ifthe 6. V.Stuphorn,J.D.Schall,Nat.Neurosci.9,925(2006). 34. ThisstudyisfundedbygrantsfromNIH(R01EY015980
+participants engaged in motion detection, this 7. R.Blake,R.Fox,Nature249,488(1974). andR21EY017737),NSF(BCS-0345746,BCS-0549036,
+taskshouldbehardestat5%coherencebecause 8. S.H.Lee,R.Blake,D.J.Heeger,Nat.Neurosci.8,22 andBCS-PR04-137CenterofExcellenceforLearningin
+(2005). Education,Science,andTechnology),andtheHuman
+indecision may be greatest near the coherent
+9. N.K.Logothetis,J.D.Schall,Science245,761(1989). FrontierScienceProgramOrganization(RGP18/2004)to
+motion threshold, and thus in accordance with 10. S.Dehaeneetal.,Nature395,597(1998). T.W.,andbygrantsfromNationalCenterforResearch
+the observed RSVP performance result. How- 11. M.Bar,I.Biederman,Psychol.Sci.9,464(1998). Resources(P41RR14075),theMentalIllnessand
+ever,thelowestbloodoxygenlevel–dependent 12. J.D.Haynes,G.Rees,Nat.Neurosci.8,686(2005). NeuroscienceDiscoveryInstitute,theAthinoulaA.Martinos
+13. A.Sahraie,M.Milders,M.Niedeggen,VisionRes.41, CenterforBiomedicalImaging,andtheERATOShimojo
+(BOLD)activitywasobservedat5%coherence 1613(2001). ImplicitBrainFunctionprojecttoY.S.Wethank
+ratio in the LPFC and cannot be directly
+14. A.R.Seitz,T.Watanabe,Nature422,36(2003). P.Cavanagh,Y.Kamitani,M.Kawato,I.Motoyoshi,
+explainedbythispossibility. 15. M.Niedeggen,A.Sahraie,G.Hesselmann,M.Milders, J.Nanez,M.Sakagami,S.Shimojo,andthemembersof
+The results of the present study demon- C.Blakemore,BrainRes.Cogn.BrainRes.13,241(2002). VisionSciencesLaboratoryatBostonUniversityfortheir
+stratetwoimportantpoints.First,aweaktask- 16. Materialsandmethodsareavailableassupporting commentsonthestudyandN.ItoandY.Yotsumotofor
+materialonScienceOnline. technicalassistance.
+irrelevantstimulusfeaturethatisbelowbutnear
+17. W.T.Newsome,E.B.Pare,J.Neurosci.8,2201(1988).
+theperceptualthresholdmorestronglyactivates 18. G.Rees,K.Friston,C.Koch,Nat.Neurosci.3,716(2000).
+SupportingOnlineMaterial
+thevisualarea(MT+)thatishighlyrelatedtothe 19. J.Stroop,J.Exp.Psychol.18,643(1935).
+www.sciencemag.org/cgi/content/full/314/5806/1786/DC1
+stimulusfeatureandmoregreatlydisruptstask 20. A.M.Treisman,G.Gelade,Cogn.Psychol.12,97(1980). MaterialsandMethods
+21. S.R.Friedman-Hill,L.C.Robertson,R.Desimone,
+performance.Therewasatendencyforactivity Figs.S1andS2
+L.G.Ungerleider,Proc.Natl.Acad.Sci.U.S.A.100,4263 intheposterioroccipitotemporalsulcus(pOTS) (2003). References
+(29,30)andtheleftangulargyrus(31),which 22. R.Dias,T.W.Robbins,A.C.Roberts,Nature380,69 31July2006;accepted20October2006
+are sensitive to letters and words and may be (1996). 10.1126/science.1133197
+relatedtotheRSVPtask,tobeloweratthe5%
+coherence than at the other coherent motion
+ratios.Thiscontradictsthegeneralviewthatir- Maternal Oxytocin Triggers a Transient
+relevant signals that are stronger in stimulus
+propertieshaveagreaterinfluenceonthebrain
+Inhibitory Switch in GABA Signaling in
+and performance and that the influence of a
+subthreshold stimulus is smaller than that of a
+suprathresholdstimulus. the Fetal Brain During Delivery
+Second, the results may reveal important
+bidirectional interactions between a cognitive
+controlling system and the visual system. The RomanTyzio,1 Rosa Cossart,1 Ilgam Khalilov,1 Marat Minlebaev,1 ChristianA. Hübner,2
+LPFC, which has been suggested to provide Alfonso Represa,1 Yehezkel Ben-Ari,1*Rustem Khazipov1
+inhibitory control on task-irrelevant signals
+(22–26),mayhaveahigherdetectionthreshold Wereportasignalingmechanisminratsbetweenmotherand fetusaimedatpreparingfetal
+for incoming signals than the visual cortex. neuronsfor delivery.Inimmatureneurons,g-aminobutyricacid(GABA)istheprimaryexcitatory
+Task-irrelevant signals around the threshold neurotransmitter. Wefoundthat,shortlybeforedelivery,there isatransientreduction inthe
+levelmaybesufficientlystrongtobeprocessed intracellular chlorideconcentrationandanexcitatory-to-inhibitory switchofGABAactions.These
+in the visual system but not strong enough eventsweretriggeredbyoxytocin,anessentialmaternalhormoneforlabor.Invivoadministration
+fortheLPFCtonoticeand,therefore,topro- ofanoxytocinreceptor antagonistbeforedeliveryprevented theswitchofGABAactionsinfetal
+videeffectiveinhibitorycontrolonthesignals neuronsand aggravatedtheseverity ofanoxicepisodes. Thus,maternaloxytocin inhibitsfetal
+(Fig.4A).Inthiscase,suchsignalsmayremain neuronsand increasestheirresistancetoinsultsduringdelivery.
+uninhibited, take more resources for a task-
+irrelevantdistractor,leavefewerresourcesfora Deliveryisastressfuleventassociatedwith deliveryremainslargelyunknown.Weaddressed
+giventask(32,33),anddisrupttaskperformance highriskstothefetalbrain(1);however, this issue by studying g-aminobutyric acid
+more than suprathreshold signals. On the other whether the fetal brain prepares for (GABA)–mediated(GABAergic)signalinginthe
+1788 15DECEMBER 2006 VOL314 SCIENCE www.sciencemag.org
+9002
+,11
+rebmeceD
+no
+gro.gamecneics.www
+morf
+dedaolnwoD

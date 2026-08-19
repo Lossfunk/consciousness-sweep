@@ -1,0 +1,597 @@
+
+
+===== PDF PAGE 1 =====
+
+556777
+research-article2014 PSSXXX10.1177/0956797614556777Lamy et al.Attention Capture and Conscious Perception Psychological Science OnlineFirst, published on November 20, 2014 as doi:10.1177/0956797614556777
+Research Article
+Psychological Science
+The Role of Conscious Perception in 1 –10
+© The Author(s) 2014
+Reprints and permissions:
+Attentional Capture and Object-File
+sagepub.com/journalsPermissions.nav
+DOI: 10.1177/0956797614556777
+Updating pss.sagepub.com
+Dominique Lamy, Limor Alon, Tomer Carmel, and
+Nir Shalev
+Tel Aviv University
+Abstract
+A mental process that is independent of conscious perception should run equally well with or without it. Previous
+investigations of unconscious processing have seldom included this comparison: They typically demonstrated only
+processing without conscious perception. In the research reported here, we showed that attentional capture is largely
+independent of conscious perception and that updating the episodic information stored about an object is entirely
+contingent on conscious perception. We used a spatial-cuing paradigm, in which the cue was a color-singleton distractor
+rendered liminal by continuous flash suppression or brief exposure. When the cue matched the participant’s attentional
+set, it strongly captured attention whether it was subliminal or consciously perceived. In contrast, a nonmatching cue
+did not capture attention but instead produced a same-location cost, which was contingent on consciously perceiving
+the cue. Our findings demonstrate a dissociation between attention and conscious perception and unveil an important
+boundary condition of object-file updating.
+Keywords
+selective attention, attentional capture, object files
+Received 6/6/14; Revision accepted 9/22/14
+Which mental processes are independent of conscious 2009; Hsieh, Colas, & Kanwisher, 2011; Jiang et al., 2006;
+perception, and which benefit from it? The answer to this Van Opstal et al., 2011).
+question is key to understanding the functions of con- However, to demonstrate that a mental process is inde-
+sciousness. Yet research on unconscious processing has pendent of conscious perception, showing that it can run
+most often addressed a fundamentally different question. without it is not enough: One should show that it runs
+It has explored the limits of unconscious processing by equally well with or without conscious perception.
+investigating which mental operations can be performed Indeed, a mental operation that is shown not to be con-
+without any consciousness of the eliciting stimulus and tingent on conscious perception might nevertheless
+which cannot (Jiang, Costello, Fang, Huang, & He, 2006; strongly benefit from it. If, for instance, exposure to a
+Mudrik, Breska, Lamy, & Deouell, 2011; Van Opstal, de liminal prime speeds responses to a subsequent target by
+Lange, & Dehaene, 2011). To do that, much effort has 20 ms when this prime is not consciously perceived and
+been expended to render the critical stimuli subliminal, by 120 ms when it is, it would be awkward to conclude
+while showing that such stimuli nevertheless affect sub- that processing of the prime was independent of con-
+jects’ behavior, thoughts, memory, or feelings. In pursu- scious perception. Investigations of unconscious process-
+ing this goal, the gold standard to date has been an ing have seldom included the relevant comparison,
+experimental block in which a subliminal prime is shown
+to affect responses to a subsequent target, followed by a
+Corresponding Author:
+prime-awareness test block in which null sensitivity, that
+Dominique Lamy, Department of Psychology, Tel Aviv University,
+is, chance performance at judging some property of this
+Ramat Aviv, P. O. Box 39040, Tel Aviv 69978, Israel
+prime, is demonstrated (e.g., Ansorge, Kiss, & Eimer, E-mail: domi@post.tau.ac.il
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 2 =====
+
+2 Lamy et al.
+because priming was demonstrated when the critical stim- cue (Experiment 2). We showed that spatial capture by a
+uli were subliminal on most trials, and there was therefore relevant-color cue is largely independent of conscious
+no conscious priming against which to compare uncon- perception of that cue and that the same-location cost
+scious priming (but see Van den Bussche et al., 2013). associated with irrelevant-color cues is entirely contin-
+In the research reported here, we investigated whether gent on it. We thus demonstrated dissociations between
+spatial capture of attention can occur independently of spatial attention and conscious perception, on the one
+conscious perception. This question has not been hand, and between the mechanisms underlying atten-
+addressed to date: Previous studies have shown only that tional capture and same-location costs, on the other
+subliminal objects can capture attention (see Hsieh et al., hand.
+2011; Ivanoff & Klein, 2003; McCormick, 1997; Mulckhuyse,
+Talsma, & Theeuwes, 2007; for reviews, see Ansorge,
+Experiment 1
+Horstmann, & Scharlau, 2011; Lamy, Leber, & Egeth, 2012;
+Mulckhuyse & Theeuwes, 2010). To rectify this, we Method
+adapted the spatial-cuing paradigm pioneered by Folk
+and Remington (1998). In the feature-search variant of this Participants. Fourteen Tel Aviv University undergrad-
+paradigm, observers search for a color-defined target uate students (12 right-handed, 2 left-handed; 12 females,
+(e.g., red) among heterogeneously colored objects. A spa- 2 males; mean age = 22.28 years, SD = 3.03) participated
+tially noninformative color-singleton cue appears shortly for course credit. All participants reported having normal
+before the target display. In this situation, the color single- or corrected-to-normal visual acuity and normal color
+ton typically captures spatial attention only when it vision. The number of participants was preset between
+matches the target-defining color. Such orienting of atten- 10 and 15.
+tion, which is referred to as contingent capture (e.g., Folk,
+Remington, & Johnston, 1992), is manifested by improved Apparatus. Stimuli were presented on an LCD monitor
+performance when the target appears at the same location (23-in. Samsung SyncMaster) with a 1,920-pixel × 1,080-
+as the cue than at a different location (henceforth, same- pixel resolution and 120-Hz refresh rate. To create stereo-
+location benefit; e.g., Folk & Remington, 1998; Lamy, scopic perception, we had participants view stimuli
+Leber, & Egeth, 2004). through Samsung SSG-M3150GB 3-D Active Glasses,
+Several studies have shown that with the same para- which let an image through to one eye while blocking
+digm, an equally salient cue that has a color not matching stimulation to the other, with a 120-Hz rate of alternation
+that of the target produces a same-location cost (e.g., between the two eyes that is beyond the perceptual
+Anderson & Folk, 2012; Belopolsky, Schreij, & Theeuwes, threshold.
+2010; Eimer, Kiss, Press, & Sauter, 2009; Folk & Remington,
+2008; Lamy et al., 2004; Schönhammer & Kerzel, 2013). Stimuli and procedure. The sequence of events is
+The mechanisms underlying this cost are currently illustrated in Figure 1. Each trial consisted of a fixation
+debated. Some authors argue that the same-location cost display, followed by a cue display, and then by a target
+reflects fast disengagement following attentional capture display. In the suppressed eye, the fixation display was
+by a cue with a to-be-ignored feature (Belopolsky et al., blank for 500 ms, and then a fixation cross appeared in
+2010; Theeuwes, Atchley, & Kramer, 2000). Others sug- the center of the screen. Four 1-pixel-thick gray circles
+gest a feature-inhibition account, according to which (1° radius and 2.8° distant from fixation) were gradually
+attending to the location of a to-be-ignored feature is faded in within 500 ms at the cardinal positions around
+delayed (Eimer et al., 2009; Lamy et al., 2004). Finally, we the fixation cross. In the subsequent cue display (150
+recently proposed that this same-location cost is unre- ms), all circles were 2-pixels thick, and one circle (the
+lated to attentional allocation and reflects the cost of cue) changed to one of two possible colors. The target
+updating the episodic information stored about an object display was identical to the display prior to the cue
+in visual memory when this object changes (Carmel & display.
+Lamy, 2014; see also Kahneman, Treisman, & Gibbs, In the nonsuppressed eye, an array of outline circles
+1992; Park & Kanwisher, 1994). and solid discs of various sizes and shades of gray (the
+In the present study, we used continuous flash sup- Mondrian suppressor) was visible throughout the trial.
+pression (Experiments 1 and 2) and brief exposure These stimuli randomly onset and offset at a frequency of
+(Experiment 3) to render the cue liminal. We probed sub- 20 Hz, and a fixation cross appeared in the center of the
+jective perception of the cue on each trial, using a scale array. During the fixation and cue displays, four gray “T”
+ranging from 0 (not visible at all) to 3 (clearly visible), shapes (0.5° × 0.5°) rotated by 90° (two to the left and
+while also verifying that reports of null cue visibility cor- the other two to the right) appeared at locations corre-
+responded to chance-level performance at localizing the sponding to the centers of the circles presented to the
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 3 =====
+
+Attention Capture and Conscious Perception 3
+Target
+Fixation Circles Fade In Cue (1,500 ms or
+(500 ms) (500 ms) (150 ms) Until Response)
+Time
+suppressed eye. In the target display, each “T” took on a (not visible at all) to 3 (clearly visible), with their other
+different color (red, blue, yellow, or green). The target hand. The participants were informed that on some pro-
+display remained visible for 1,500 ms or until response. portion of the trials, the colored circle would be absent.
+For each participant, the target color remained con- As the Mondrian pattern included no colors, any failure
+stant throughout the experiment and was counterbal- to report seeing the cue could not result from mistakenly
+anced between participants. For participants in the construing it as a part of the Mondrian mask. A new trial
+red- and green-target groups, the possible singleton-cue began after a 500-ms interval. A 40-trial practice block
+colors were red and green, and for participants in the was followed by 400 experimental trials divided into
+yellow- and blue-target groups, the possible singleton- eight blocks.
+cue colors were yellow and blue. The relevant-color-cue
+condition, in which the cue shared the target color, and
+Results
+the irrelevant-color-cue condition, in which it had a dif-
+ferent color, were equally probable. The cue was absent Participants rated cue visibility to be 0, 1, 2, and 3 on
+on 20% of the trials. The cue and target locations were 68%, 17%, 8%, and 7% of the trials, respectively, on cue-
+randomly set on each trial and were uncorrelated. absent trials and on 53%, 13%, 10%, and 24%, respec-
+On each trial, participants had to provide two tively, on cue-present trials. There were not enough
+responses. They first made a speeded response to the cue-present trials with intermediate ratings (1 and 2) to
+orientation of the color-defined target (left or right) with allow meaningful analysis of each visibility level. We
+their dominant hand. Then they provided a subjective therefore adopted the most conservative criterion for
+report of their perception of a colored circle appearing conscious perception: The unaware condition included
+prior to the target (the cue), using a scale ranging from 0 only trials on which visibility was rated 0, and the aware
+desserppusnoN
+desserppuS
+eyE
+eyE
+Fig. 1. Sample trial sequence in Experiments 1 and 2. A dynamic Mondrian pattern was presented to the nonsuppressed eye throughout
+each trial, together with four “T” shapes, two oriented 90° to the left and two 90° to the right. These “T” shapes remained gray until the target
+display appeared, when each changed to a different color (red, blue, yellow, or green). Participants searched for a color-defined target and
+reported its orientation (right or left). The suppressed eye was presented with four circles, which faded in after a fixation period. In the cue
+display, these circles thickened, and on cue-present trials one of them changed to a color that either matched or did not match the target
+color. Participants first made a speeded response to the target and then reported their subjective perception of the color-circle cue on a scale
+ranging from 0 (not visible at all) to 3 (clearly visible). The color-singleton cue and target locations were uncorrelated.
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 4 =====
+
+4 Lamy et al.
+80
+60
+40
+20
+0
+–20
+–40
+–60
+condition included all the remaining trials (i.e., on which location effects was significant, F(1, 52) = 4.54, p < .04.
+visibility was rated 1, 2, and 3). Mean error rates did not yield any significant effect, all
+Similar analyses with the aware condition including ps > .12, but followed the same pattern as RT data. Both
+only trials on which visibility was rated 3 yielded similar are shown in Table 1.
+results. A linear mixed model with cue awareness (aware It is noteworthy that the RTs to the target were much
+vs. unaware), cue color (relevant vs. irrelevant), and tar- slower when participants were aware of the cue (M = 783
+get location (same as cue vs. different from cue) as inde- ms, SE = 25 ms) than when they were unaware of the cue
+pendent variables was run on the reaction times (RTs) for (M = 712 ms, SE = 25 ms), F(1, 13) = 236.57, p < .0001. An
+trials with correct responses (96.0% of all trials), exclud- additional analysis including all four levels of cue aware-
+ing RT outliers (any trial exceeding the mean of its cell by ness showed that the more visible participants rated the
+more than 2.5 standard deviations; 1.6% of all trials with cue to be, the slower they were at responding to the
+correct responses). target, F(3, 36) = 106.44, p < .0001 (Fig. 3). Accuracy
+The three-way interaction was significant, F(4, 52) = between the aware and unaware conditions did not differ
+14.99, p < .000 (Fig. 2). Follow-up analyses focused on significantly, F < 1.
+location effects, which were calculated by subtracting Finally, a Pearson chi-square test for the contingency
+RTs for targets appearing at the same location as the cue table of cue color (relevant vs. irrelevant) and number of
+from RTs for targets appearing at different locations from cue-aware versus cue-unaware trials showed that rele-
+the cue. They revealed that when the cue was in the vant-color cues were significantly more likely to gain con-
+relevant color, it captured attention whether it was con- scious access (50.77% of all trials) than irrelevant-color
+sciously perceived (M = 50 ms, SE = 10.35 ms), F(1, 52) = cues (43.46% of all trials), χ2(1, N = 14) = 23.01, p < .0001.
+28.71, p < .0001, Cohen’s d = 1.22, or not consciously
+perceived (M = 36 ms, SE = 10.62 ms), F(1, 52) = 11.35,
+Discussion
+p < .0002, Cohen’s d = 0.90. There was no significant
+difference between these two location effects, F(1, 52) = Our results demonstrate that an observer’s attentional set
+1.76, p > .19. In contrast, when the cue was in the irrel- can be applied to invisible displays and that attentional
+evant color, it produced a significant same-location cost capture by a distractor matching this set does not only
+when it was consciously perceived (M = 33 ms, SE = occur in total absence of conscious perception but is also
+11.29 ms), F(1, 52) = 8.31, p < .006, Cohen’s d = 0.77, but largely independent of it. In contrast, the same-location
+not when it was invisible (M = 1 ms, SE = 9.82 ms), F < cost associated with irrelevant-color cues was contingent
+1, Cohen’s d = 0.02. The difference between these two on conscious perception. In Experiment 1, we relied on a
+)sm(
+noitacoL
+emaS
+–
+tnereffiD
+Aware Aware Aware
+Unaware Unaware Unaware
+Experiment 1 Experiment 2 Experiment 3
+80 140
+120
+60
+100
+40
+80
+20
+60
+0
+40
+–20
+20
+–40 0
+Relevant Color Irrelevant Color Relevant Color Irrelevant Color Same Color Different Color
+–60 –20
+Fig. 2. Mean location effect as a function of cue color and participants’ reported awareness of the cue. Results are shown separately for the three
+experiments. In Experiments 1 and 2, the cue color was in either the relevant (target) or the irrelevant (nontarget) color; in Experiment 3, the
+target and cue colors were either the same or different. Location effects were calculated by subtracting reaction times for targets appearing at the
+same location as the cue from reaction times for targets appearing at different locations from the cue. The unaware condition included only trials
+on which participants indicated that the cue was not visible at all, whereas the aware condition included all trials in which the cue was rated as
+having some degree of visibility. Error bars represent standard errors.
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 5 =====
+
+Attention Capture and Conscious Perception 5
+Table 1. Mean Reaction Time (RT) and Mean Error Rate by Cue Color and Awareness Condition
+Relevant/same-color cues Irrelevant/different-color cues
+Unaware condition Aware condition Unaware condition Aware condition
+Experiment and
+target location RT (ms) Error rate (%) RT (ms) Error rate (%) RT (ms) Error rate (%) RT (ms) Error rate (%)
+Experiment 1
+Same as cue 686 (27) 4.7 (1.8) 770 (27) 2.2 (1.8) 715 (27) 3.9 (1.8) 792 (27) 6.0 (1.9)
+Different from cue 722 (26) 5.1 (1.5) 820 (26) 5.4 (1.5) 714 (26) 4.0 (1.5) 759 (26) 3.8 (1.5)
+Experiment 2
+Same as cue 877 (60) 0.3 (1.4) 914 (59) 1.1 (1.0) 891 (60) 2.2 (1.3) 970 (59) 4.1 (1.4)
+Different from cue 917 (59) 3.2 (0.9) 969 (59) 3.7 (0.7) 889 (59) 1.2 (0.8) 935 (59) 3.9 (1.1)
+Experiment 3
+Same as cue 643 (34) 5.5 (2.6) 701 (34) 7.8 (2.7) 701 (34) 10.3 (2.9) 794 (34) 6.4 (2.5)
+Different from cue 747 (35) 15.1 (2.0) 805 (35) 13.0 (2.0) 744 (36) 17.9 (2.1) 802 (35) 14.1 (1.9)
+Note: Standard errors are given in parentheses.
+subjective measure to assess participants’ conscious per- relevant property with regard to attentional capture)
+ception of the cue because this was necessary for com- instead of responding to the target. If participants were
+paring the effects in the aware condition with those in the truly unaware of the cue when reporting a visibility of 0
+unaware condition. However, as sensitive as a 4-point in the experimental phase, then their performance at
+awareness scale may be (e.g., Ramsøy & Overgaard, localizing the cue should be at chance when reporting a
+2004), one could still claim that subjective measures are visibility of 0 in the cue-awareness test.
+not as exhaustive as objective measures (e.g., Eriksen,
+1960; Holender, 1986; Sandberg, Timmermans, Overgaard,
+Results
+& Cleeremans, 2010). If so, partial awareness of the cue
+may account for the attentional capture by subjectively Mean RTs and error rates are shown in Table 1. The find-
+invisible cues. ings of Experiment 1 were closely replicated (Fig. 2). In
+We addressed this potential criticism in Experiment 2 the main experimental phase, participants rated cue vis-
+by adding an awareness-check block similar to the exper- ibility to be 0, 1, 2, and 3 on 71%, 16%, 5%, and 8% of
+imental blocks, in which participants localized the cue cue-absent trials, respectively, and on 39%, 13%, 7%, and
+and then rated its visibility. If participants were partially 41% of cue-present trials, respectively. Trials with errors
+aware of the cue when reporting 0 visibility, their forced- (2.9% of all trials) as well as RT outliers (2.8% of all trials
+choice performance at localizing it should exceed chance. with correct responses) were excluded from all analyses.
+The three-way interaction among cue awareness (aware
+vs. unaware), cue color (relevant vs. irrelevant), and tar-
+Experiment 2
+get location (same as cue vs. different from cue) was
+Method again significant, F(4, 44) = 12.30, p < .0001.
+Follow-up analyses on location effects showed that the
+Participants. Twelve Tel Aviv University undergraduate relevant-color cue captured attention both when it was
+students (all right-handed; 7 females, 5 males; mean age = consciously perceived (M = 55 ms, SE = 9.54 ms), F(1,
+25.33 years, SD = 4.44) participated for course credit. All 44) = 33.55, p < .0001, Cohen’s d = 1.47, and when it was
+participants reported having normal or corrected-to-nor- not consciously perceived (M = 40 ms, SE = 13.06 ms),
+mal visual acuity and normal color vision. The number of F(1, 44) = 8.98, p < .005, Cohen’s d = 1.02. The difference
+participants was preset between 10 and 15. between these two location effects was not significant,
+F < 1. With irrelevant-color cues, the same-location cost
+Apparatus, stimuli, and procedure. The apparatus, occurred only when the cue was consciously perceived
+stimuli, and procedure were the same as in Experiment 1, (M = 35 ms, SE = 10.11 ms), F(1, 44) = 12.55, p < .0009,
+except that a cue-awareness test block followed the Cohen’s d = 1.03, but not when it was invisible (M = 2 ms,
+experimental phase. This 100-trial test block was similar SE = 9.91 ms), F < 1, Cohen’s d = 0.07. The difference
+to the experimental blocks, except that prior to reporting between these conditions was significant, F(1, 44) = 4.50,
+on their awareness of the cue, participants made a forced- p < .04. Crucially, performance on the cue-awareness test
+choice response to the location of the cue (which was its block was at chance when participants reported null
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 6 =====
+
+6 Lamy et al.
+850
+800
+750
+700
+650
+600
+Absent Present
+visibility of the cue (25.07%, SE = 3.24%), t < 1, which An additional analysis including all four levels of cue
+confirms that the subjective 4-point scale of conscious awareness showed that the more visible participants
+perception was as exhaustive as an objective perceptual- rated the cue to be, the slower they were at responding
+sensitivity measure. Cue-localization performance for to the target, F(3, 33) = 56.43, p < .0001 (Fig. 3).
+each subjective-visibility rating is shown in Figure 4. For accuracy data, only the main effect of cue aware-
+Again, RTs were slower when participants were aware ness was significant: There were fewer errors when the
+of the cue (M = 949 ms, SE = 60 ms) than when they were cue was perceived consciously than when it was not. No
+not (M = 897 ms, SE = 59 ms), F(1, 11) = 136.29, p < .0001, other effect was significant, all ps > .2.
+and error rates were also higher in the aware (3.5%) than Finally, a Pearson chi-square test for the contingency
+in the unaware (1.9%) condition, F(1, 11) = 7.84, p < .02. table of cue color (relevant vs. irrelevant) and number of
+)sm(
+TR
+naeM
+1,050
+1,000
+950
+900
+850
+800
+0 1 2 3
+Experiment 3
+Subjective Report of Cue Presence
+)sm(
+TR
+naeM
+Experiment 2
+850
+800
+750
+700
+650
+600
+0 1 2 3
+Subjective Cue-Visibility Rating
+)sm(
+TR
+naeM
+Experiment 1
+Subjective Cue-Visibility Rating
+Fig. 3. Mean reaction time (RT) as a function of participants’ ratings of cue visibility in the three experiments. Error bars represent standard
+errors.
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 7 =====
+
+Attention Capture and Conscious Perception 7
+100 the same color, we expected similar effects in the two
+awareness conditions.
+80
+Method
+60 Participants. Fourteen Tel Aviv University undergrad-
+uate students (all right-handed; 10 females, 4 males;
+mean age = 21.25 years, SD = 2.71) participated for
+40
+course credit. All participants reported having normal or
+corrected-to-normal visual acuity and normal color
+20 vision. The number of participants was preset between
+10 and 15.
+0
+Apparatus, stimuli, and procedure. Stimuli were
+0 1 2 3
+presented on a CRT monitor (1,024-pixel × 768-pixel res-
+olution, 85-Hz refresh rate). The stimuli and procedure
+were similar to those of Experiment 1, except for the fol-
+lowing changes. We limited conscious perception by pre-
+senting the cues for a very brief duration instead of using
+continuous flash suppression. All stimuli were presented
+cue-aware vs. cue-unaware trials showed that relevant- binocularly, such that the “T” shapes were enclosed in
+color cues were again significantly more likely to gain the circles. There was no dynamic Mondrian pattern. The
+conscious access (67.0% of all trials) than irrelevant-color target was an unpredictable color singleton, randomly
+cues (56.9%), χ2(1, N = 12) = 40.63, p < .0001. either green or red among gray nontargets for one half of
+the subjects and either yellow or blue among gray non-
+targets for the other half, and so was the color singleton
+Experiment 3
+cue. Thus, the cue color was equally likely to be the
+In Experiments 1 and 2, we showed that the same-l ocation same color as the target or a different color.
+benefit is largely independent of conscious perception, On each trial, the cue display was presented for 40 ms
+whereas the same-location cost is contingent on it. instead of 150 ms and was followed by the fixation dis-
+However, this difference might be only quantitative rather play for a 110-ms interstimulus interval before the target
+than qualitative, because in both experiments, both spa- display appeared. The target display was presented for
+tial effects were numerically smaller in the unaware con- 150 ms. Instead of rating their subjective perception of
+dition than in the aware condition. The main objective of the cue using a scale from 0 to 3, participants made a yes
+Experiment 3 was to invalidate this claim by creating a (“I saw it”) or no (“I did not see it”) response by pressing
+situation in which the spatial effect was expected to be one of two designated keys with their nondominant
+larger in the unaware than in the aware condition. hand. Because the results of Experiments 1 and 2 showed
+To test our hypothesis, we relied on our previous attentional capture to be independent of conscious per-
+finding (Carmel & Lamy, 2014) showing that the same- ception of the cue, contamination of “no” responses by
+location benefit and cost are additive: In the search for partial awareness should not affect the pattern of results
+an unpredictable color singleton, the spatial-cuing effect in the same-color-cue condition: The same-location ben-
+was smaller when the cue and target colors differed than efit should again be similar whether participants were
+when they were the same. As all cues had the same aware or unaware of the cue. For different-color cues,
+attentional status, this difference was taken to reflect a such contamination should reduce the difference between
+same-location cost that is independent of attentional the aware and unaware conditions and thus work against
+selection. In Experiment 3, we used a similar singleton- our predictions.
+search task, and, to generalize our findings beyond con-
+tinuous flash suppression, we used a brief cue exposure
+Results
+found to yield liminal perception in a pilot experiment.
+When the cue and target colors were different, we One participant was excluded from the analyses because
+expected a larger same-location advantage with invisible she reported seeing the cue on 90% of no-cue trials.
+than with consciously perceived cues, because the same- Participants reported not seeing the cue on 85% of cue-
+location cost should reduce the net same-location advan- absent trials and on 42% of cue-present trials. Trials with
+tage only on aware trials. When the cue and target had errors (9.4% of all trials) and RT outliers (3.1% of all trials
+)%(
+noitazilacoL
+euC
+tcerroC
+Subjective Cue-Visibility Rating
+Fig. 4. Mean cue-localization performance as a function of partici-
+pants’ ratings of cue visibility in Experiment 2. Error bars represent
+standard errors. The dashed line represents chance-level performance.
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 8 =====
+
+8 Lamy et al.
+with correct responses) were excluded from all analyses. Kanai, Tsuchiya, & Verstraten, 2006), there is no strong
+Preliminary analyses showed no effect involving target evidence to date for purely salience-based capture by
+color, and the data were therefore collapsed across tar- invisible stimuli. Authors who showed attentional capture
+get-color conditions. Mean RTs and error rates are shown by subliminal singletons or abrupt onsets interpreted
+in Table 1. The results conformed to our predictions. The their findings as demonstrating stimulus-driven orienting
+three-way interaction among cue awareness, cue color (e.g., Hsieh et al., 2011; McCormick, 1997; Mulckhuyse
+(same as target vs. different from target), and target loca- et al., 2007). However, the target was also typically a sin-
+tion (same as cue vs. different from cue) was significant, gleton or had an abrupt onset, so attentional capture may
+F(4, 45) = 13.74, p < .0001. have been contingent on adopting a set for unique
+Follow-up analyses on location effects showed that on objects (e.g., Bacon & Egeth, 1994). Here, we showed
+same-color trials, attentional capture was as large when that subliminal color singletons strongly capture atten-
+the cue had been consciously perceived (M = 104 ms, tion, but only when their unique color matches the tar-
+SE = 11 ms), F(1, 45) = 75.66, p < .0001, Cohen’s d = 2.55, get-defining feature. Notably, requiring participants to
+as when it had been invisible (M = 104 ms, SE = 12 ms), report on the cue’s visibility failed to induce goal-directed
+F(1, 45) = 84.25, p < .0001, Cohen’s d = 2.41. There was capture by this cue (Ivanoff & Klein, 2003).
+no difference between these two location effects, F < 1. We recently reported that the same-location cost is
+On different-color trials, there was a significant same- unrelated to the participant’s attentional set and disap-
+location benefit when the cue was invisible (M = 43 ms, pears when the spatiotemporal continuity between cue
+SE = 13 ms), F(1, 45) = 9.95, p < .003, Cohen’s d = 0.90, and target is broken (Carmel & Lamy, 2014). We con-
+but not when the cue was consciously perceived (M = 8 cluded that the effect reflects the cost of updating an
+ms, SE = 13 ms), F < 1, Cohen’s d = 0.17. The difference object’s episodic representation in visual memory when
+between these two effects approached significance, F(1, this object changes. Such episodic object representations
+45) = 3.92, p < .055 (Fig. 2).1 Similar analyses on error (or object files; Kahneman et al., 1992) have been invoked
+rates showed only a significant main effect of location, to account for a range of phenomena such as negative
+F(1, 12) = 28.30, p < .0001, with higher accuracy on same- priming (Park & Kanwisher, 1994), object-specific pre-
+than on different-location trials. No other effect view effects (Kahneman et al., 1992), repetition blindness
+approached significance, all ps > .11. (Kanwisher, 1987), and feature binding (Hommel, 1998).
+RTs to the target were again slower following visible Here, we showed that object-file updating occurs only
+cues (M = 793 ms, SE = 34 ms) than following invisible when the object’s initial state is consciously perceived,
+cues (M = 723 ms, SE = 34 ms), F(1, 12) = 11.29, p < .0001 which suggests that conscious perception of a visual
+(Fig. 3), but they were more accurate (visible cues: M = object may be necessary for setting up an object file rep-
+88.5% correct, SE = 1.8%; invisible cues: M = 85.86% cor- resenting this object. Note that for such conscious per-
+rect, SE = 1.6%), F(1, 11) = 5.01, p < .05, which suggests ception, attention broadly distributed across the visual
+that there was a speed/accuracy trade-off. field seems to suffice: In our study, irrelevant-color cues
+did not benefit from focused attention (as they did not
+capture attention), yet they entered participants’ visual
+General Discussion
+consciousness on a substantial proportion of the trials.
+This study is the first to measure the extent to which cap- Our findings also have general implications for the
+ture of spatial attention depends on conscious percep- study of unconscious processing. By uncovering a mental
+tion of the attention-grabbing object. We found such process that is largely independent of conscious percep-
+capture to be largely independent of conscious percep- tion, we demonstrated a qualitative discontinuity between
+tion. Previous studies have found attentional capture by unconscious and conscious processing. Conversely, by
+invisible objects, but they did not compare visible and identifying a mental process that is contingent on con-
+invisible objects: The aware condition was either missing scious perception, we identified an objective and indirect
+because the attention-capturing object was invisible behavioral marker of conscious perception. Finally, the
+throughout the experiment (e.g., Ansorge et al., 2009; finding that forced localization of the cue was at chance
+Hsieh et al., 2011; Mulckhuyse et al., 2007) or not compa- when reported cue visibility was null demonstrates that
+rable with the unaware condition because the objects subjective measures of conscious perception can be as
+physically differed in the two conditions (e.g., Ivanoff & sensitive as objective measures (e.g., Peremen & Lamy,
+Klein, 2003; McCormick, 1997). 2014). We suggest that the present approach, the main
+We also showed that such capture is contingent on the features of which are (a) that we measured subjective
+participant’s attentional set. Although purely goal-directed perception on a sensitive scale on each trial, thereby (b)
+capture by invisible objects has been convincingly dem- allowing for the comparison of a conscious and an
+onstrated in previous studies (e.g., Ansorge et al., 2009; unconscious condition, and (c) verifying that the
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 9 =====
+
+Attention Capture and Conscious Perception 9
+subjective measure was exhaustive by corroborating that disengagement account of contingent capture. Attention,
+null visibility corresponds to chance performance, pro- Perception, & Psychophysics, 74, 1183–1198.
+vides a promising tool for the study of consciousness. Ansorge, U., Horstmann, G., & Scharlau, I. (2011). Top-down
+An incidental finding recurred in all three experiments: contingent feature-specific orienting with and without
+awareness of the visual input. Advances in Cognitive
+Higher cue-visibility reports were associated with slower
+Psychology, 7, 108–119.
+RTs to the target. We speculate that the slow responses
+Ansorge, U., Kiss, M., & Eimer, M. (2009). Goal-driven atten-
+following consciously perceived cues may reflect an
+tional capture by invisible colors: Evidence from event-
+“awareness blink” by which being conscious of an event
+related potentials. Psychonomic Bulletin & Review, 16,
+makes perception of a temporally close subsequent event
+648–653.
+difficult. We are currently investigating this issue. Bacon, W. F., & Egeth, H. E. (1994). Overriding stimulus-driven
+Finally, in both Experiments 1 and 2, we showed that attentional capture. Perception & Psychophysics, 55, 485–496.
+relevant-color cues were more likely to gain conscious Belopolsky, A. V., Schreij, D., & Theeuwes, J. (2010). What is
+access than irrelevant-color cues. This result replicates top-down about contingent capture? Attention, Perception,
+Most, Scholl, Clifford, & Simons’s (2005) finding that the & Psychophysics, 72, 326–341.
+likelihood of consciously perceiving an object is strongly Carmel, T., & Lamy, D. (2014). The same-location cost is unre-
+lated to attentional settings: An object-updating account.
+influenced by the participants’ attentional set and
+Journal of Experimental Psychology: Human Perception
+extends this finding beyond their inattentional-blindness
+and Performance, 40, 1465–1478.
+paradigm.
+Eimer, M., Kiss, M., Press, C., & Sauter, D. (2009). The roles of
+feature-specific task set and bottom-up salience in attentional
+Author Contributions
+capture: An ERP study. Journal of Experimental Psychology:
+D. Lamy conceived the idea for the study. D. Lamy, L. Alon, and Human Perception and Performance, 35, 1316–1328.
+N. Shalev designed Experiments 1 and 2, and L. Alon and Eriksen, C. W. (1960). Discrimination and learning with-
+N. Shalev ran them. T. Carmel designed Experiment 3 and ran out awareness: A methodological survey and evaluation.
+it. N. Shalev adapted the continuous-flash-suppression equip- Psychological Review, 67, 279–300.
+ment and calibrated the experiments. D. Lamy wrote the Folk, C. L., & Remington, R. W. (1998). Selectivity in distraction
+manuscript. by irrelevant featural singletons: Evidence for two forms
+of attentional capture. Journal of Experimental Psychology:
+Human Perception and Performance, 24, 847–858.
+Acknowledgments
+Folk, C. L., & Remington, R. W. (2008). Bottom-up priming of
+We thank Alon Zivony for programming the experiments.
+top-down attentional control settings. Visual Cognition, 16,
+215–231.
+Declaration of Conflicting Interests Folk, C. L., Remington, R. W., & Johnston, J. C. (1992).
+The authors declared that they had no conflicts of interest with Involuntary covert orienting is contingent on attentional
+respect to their authorship or the publication of this article. control settings. Journal of Experimental Psychology:
+Human Perception and Performance, 18, 1030–1044.
+Holender, D. (1986). Semantic activation without conscious
+Funding
+identification in dichotic listening, parafoveal vision, and
+This research was supported by Israel Science Foundation visual masking: A survey and appraisal. Behavioral & Brain
+Grant No. 1475/12 and Binational Science Foundation Grant Sciences, 9, 1–23.
+No. 2009425 to D. Lamy. Hommel, B. (1998). Event files: Evidence for automatic inte-
+gration of stimulus-response episodes. Visual Cognition, 5,
+Note 183–216.
+Hsieh, P.-J., Colas, J., & Kanwisher, N. (2011). Pop-out with-
+1. In the unaware condition, the same-location benefit was
+out awareness: Unseen feature singletons capture attention
+smaller with different-color than with same-color cues,
+only when top-down attention is available. Psychological
+although similar effects were expected in the two conditions
+Science, 22, 1220–1226.
+because both should reflect only contingent attentional capture.
+Ivanoff, J., & Klein, R. M. (2003). Orienting of attention without
+However, our use of a relatively coarse measure of conscious
+awareness is affected by measurement-induced attentional
+perception can account for this finding. With a binary yes/no
+control settings. Journal of Vision, 3(1), Article 4. Retrieved
+measure, partial awareness was likely to occur on a portion of
+from http://www.journalofvision.org/content/3/1/4.full
+the unaware trials (e.g., Kouider & Dehaene, 2007): On such tri-
+Jiang, Y., Costello, P., Fang, F., Huang, M., & He, S. (2006).
+als, a same-location cost should have occurred in the different-
+A gender- and sexual orientation-dependent spatial atten-
+color condition, thus reducing the same-location benefit.
+tion effect of invisible images. Proceedings of the National
+Academy of Sciences, USA, 103, 17048–17052.
+References
+Kahneman, D., Treisman, A., & Gibbs, B. J. (1992). The review-
+Anderson, B. A., & Folk, C. L. (2012). Dissociating location- ing of object files: Object-specific integration of informa-
+specific inhibition and attention shifts: Evidence against the tion. Cognitive Psychology, 24, 175–219.
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015
+
+===== PDF PAGE 10 =====
+
+10 Lamy et al.
+Kanai, R., Tsuchiya, N., & Verstraten, F. A. (2006). The scope Park, J., & Kanwisher, N. (1994). Negative priming for spatial
+and limits of top-down attention in unconscious visual pro- locations: Identity mismatching, not distractor inhibition.
+cessing. Current Biology, 16, 2332–2336. Journal of Experimental Psychology: Human Perception
+Kanwisher, N. G. (1987). Repetition blindness: Type recogni- and Performance, 20, 613–623.
+tion without token individuation. Cognition, 27, 117–143. Peremen, Z., & Lamy, D. (2014). Do conscious perception and
+Kouider, S., & Dehaene, S. (2007). Levels of processing dur- unconscious processing rely on independent mechanisms?
+ing non-conscious perception: A critical review of visual A meta-contrast study. Consciousness and Cognition, 24,
+masking. Philosophical Transactions of the Royal Society B: 22–32.
+Biological Sciences, 362, 857–875. Ramsøy, T. Z., & Overgaard, M. (2004). Introspection and
+Lamy, D., Leber, A., & Egeth, H. E. (2004). Effects of task rele- subliminal perception. Phenomenology and the Cognitive
+vance and stimulus-driven salience in feature-search mode. Sciences, 3, 1–23.
+Journal of Experimental Psychology: Human Perception Sandberg, K., Timmermans, B., Overgaard, M., & Cleeremans,
+and Performance, 30, 1019–1031. A. (2010). Measuring consciousness: Is one measure bet-
+Lamy, D., Leber, A. B., & Egeth, H. E. (2012). Selective atten- ter than the other? Consciousness and Cognition, 19,
+tion. In A. F. Healy & R. W. Proctor (Eds.), Handbook of 1069–1078.
+Psychology: Vol. 4. Experimental Psychology (2nd ed., Schönhammer, J. G., & Kerzel, D. (2013). Some effects of non-
+pp. 265–294). New York, NY: Wiley. predictive cues on accuracy are mediated by feature-based
+McCormick, P. A. (1997). Orienting attention without awareness. attention. Journal of Vision, 13(9), Article 76. Retrieved
+Journal of Experimental Psychology: Human Perception from http://www.journalofvision.org/content/13/9/76.short
+and Performance, 23, 168–180. Theeuwes, J., Atchley, P., & Kramer, A. F. (2000). On the time
+Most, S. B., Scholl, B. J., Clifford, E. R., & Simons, D. J. (2005). course of top-down and bottom-up control of visual atten-
+What you see is what you set: Sustained inattentional blind- tion. In S. Monsell & J. Driver (Eds.), Attention and perfor-
+ness and the capture of awareness. Psychological Review, mance XVIII: Control of cognitive processes (pp. 105–124).
+112, 217–242. Cambridge, MA: MIT Press.
+Mudrik, L., Breska, A., Lamy, D., & Deouell, L. Y. (2011). Van den Bussche, E., Vermeiren, A., Desender, K., Gevers,
+Integration without awareness: Expanding the limits of W., Hughes, G., Verguts, T., & Reynvoet, B. (2013).
+unconscious processing. Psychological Science, 22, 764–770. Disentangling conscious and unconscious processing: A sub-
+Mulckhuyse, M., Talsma, D., & Theeuwes, J. (2007). Grabbing jective trial-based assessment approach. Frontiers in Human
+attention without knowing: Automatic capture of attention Neuroscience, 7, Article 769. Retrieved from http://journal
+by subliminal spatial cues. Visual Cognition, 15, 779–788. .frontiersin.org/Journal/10.3389/fnhum.2013.00769/full
+Mulckhuyse, M., & Theeuwes, J. (2010). Unconscious atten- Van Opstal, F., de Lange, F. P., & Dehaene, S. (2011). Rapid
+tional orienting to exogenous cues: A review of the litera- parallel semantic processing of numbers without aware-
+ture. Acta Psychologica, 134, 299–309. ness. Cognition, 120, 136–147.
+Downloaded from pss.sagepub.com at UNIV PRINCE EDWARD ISLAND on January 23, 2015

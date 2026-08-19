@@ -1,0 +1,55 @@
+{
+  "source_pdf": "P000003_main.pdf",
+  "pages": [
+    {
+      "pdf_page": 1,
+      "text_start": 0,
+      "text_end": 3931
+    },
+    {
+      "pdf_page": 2,
+      "text_start": 3931,
+      "text_end": 9473
+    },
+    {
+      "pdf_page": 3,
+      "text_start": 9473,
+      "text_end": 12869
+    },
+    {
+      "pdf_page": 4,
+      "text_start": 12869,
+      "text_end": 17226
+    },
+    {
+      "pdf_page": 5,
+      "text_start": 17226,
+      "text_end": 21877
+    },
+    {
+      "pdf_page": 6,
+      "text_start": 21877,
+      "text_end": 23538
+    },
+    {
+      "pdf_page": 7,
+      "text_start": 23538,
+      "text_end": 28240
+    },
+    {
+      "pdf_page": 8,
+      "text_start": 28240,
+      "text_end": 34185
+    },
+    {
+      "pdf_page": 9,
+      "text_start": 34185,
+      "text_end": 39854
+    },
+    {
+      "pdf_page": 10,
+      "text_start": 39854,
+      "text_end": 43439
+    }
+  ]
+}

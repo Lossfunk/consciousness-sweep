@@ -26,6 +26,7 @@ except ModuleNotFoundError as exc:
 
 from structured_write import allocate_identifier, append_jsonl_record, load_schema
 from validate_run import immutable_hashes, load_jsonl_rows
+from execution_contract import validate_run_id_namespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -313,11 +314,23 @@ def main() -> int:
     parser.add_argument("--model-version")
     parser.add_argument("--reopen-reason")
     parser.add_argument("--allow-pre-freeze", action="store_true", help="Synthetic/calibration use only")
+    parser.add_argument(
+        "--pre-freeze-diagnostic", action="store_true",
+        help="Require the reserved PREFREEZE_DIAG_* namespace for a source-bounded diagnostic",
+    )
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--runs-root", type=Path)
     args = parser.parse_args()
     if not RUN_ID_RE.fullmatch(args.run_id):
         raise SystemExit("RUN_ID must match ^[A-Za-z0-9._-]+$")
+    if args.pre_freeze_diagnostic and not args.allow_pre_freeze:
+        raise SystemExit("--pre-freeze-diagnostic requires --allow-pre-freeze")
+    try:
+        validate_run_id_namespace(
+            args.run_id, pre_freeze_diagnostic=args.pre_freeze_diagnostic
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
     root = args.root.resolve()
     config = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8"))
     runs_root = args.runs_root.resolve() if args.runs_root else (root / config["paths"]["runs"])

@@ -9,7 +9,7 @@
     "evidence_link_id", "evidence_bundle_id", "member_key", "focal_comparison_id",
     "supporting_paper_id", "supporting_experiment_id", "supporting_auxiliary_id",
     "evidence_assessment_id", "supporting_source_type", "support_role", "dependency_role",
-    "member_status", "supported_claim", "transfer_reason", "transfer_limitation",
+    "evidence_content_type", "same_focal_Y_status", "member_status", "supported_claim", "transfer_reason", "transfer_limitation",
     "source_location", "used_for_decision", "notes"
   ],
   "properties": {
@@ -53,6 +53,12 @@
     },
     "dependency_role": {
       "enum": ["required", "strengthening", "robustness", "generalization", "mechanistic"]
+    },
+    "evidence_content_type": {
+      "enum": ["critical-result", "procedure-description", "transfer-context", "other"]
+    },
+    "same_focal_Y_status": {
+      "enum": ["yes", "no", "unclear", "not-applicable"]
     },
     "member_status": {
       "enum": ["supports", "contradicts", "conflicted", "unavailable", "unevaluated", "transfer-invalid"]

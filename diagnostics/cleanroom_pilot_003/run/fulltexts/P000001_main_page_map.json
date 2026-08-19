@@ -1,0 +1,25 @@
+{
+  "source_pdf": "P000001_main.pdf",
+  "pages": [
+    {
+      "pdf_page": 1,
+      "text_start": 0,
+      "text_end": 1896
+    },
+    {
+      "pdf_page": 2,
+      "text_start": 1896,
+      "text_end": 9414
+    },
+    {
+      "pdf_page": 3,
+      "text_start": 9414,
+      "text_end": 14998
+    },
+    {
+      "pdf_page": 4,
+      "text_start": 14998,
+      "text_end": 22596
+    }
+  ]
+}

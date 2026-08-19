@@ -42,6 +42,8 @@ def constraint_unaware_capacity(row: dict[str, str]) -> bool:
         row["A_code"] in {"A-direct", "A-validated"}
         and row["F_code"] == "F-meaningful"
         and bool(row.get("unaware_capacity_claim", "").strip())
+        and row.get("unaware_capacity_claim") == row.get("Y_label")
+        and row.get("unaware_capacity_evidence_scope") == "whole-focal-Y"
         and row["unaware_capacity"] == "supported"
         and row["unaware_capacity_stats_status"] == "adequate"
         and meyen_passes(row)
@@ -52,6 +54,8 @@ def constraint_equivalence_supported(row: dict[str, str]) -> bool:
     return (
         awareness_design_eligible(row)
         and bool(row.get("unaware_capacity_claim", "").strip())
+        and row.get("unaware_capacity_claim") == row.get("Y_label")
+        and row.get("unaware_capacity_evidence_scope") == "whole-focal-Y"
         and row["unaware_capacity"] == "supported"
         and row["unaware_capacity_stats_status"] == "adequate"
         and row["awareness_effect"] == "equivalence-supported"

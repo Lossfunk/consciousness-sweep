@@ -8,7 +8,11 @@
   "required": [
     "evidence_bundle_id", "focal_comparison_id", "supported_premise",
     "premise_description", "route_label", "required_member_keys",
-    "bundle_status", "bundle_reason", "notes"
+    "bundle_status", "bundle_reason", "contrast_integrity_alternative",
+    "contrast_integrity_anchor_type", "contrast_integrity_anchor_source_location",
+    "contrast_integrity_viability_reason", "contrast_integrity_prediction",
+    "contrast_integrity_control_member_key", "contrast_integrity_resolution",
+    "contrast_integrity_resolution_reason", "notes"
   ],
   "properties": {
     "evidence_bundle_id": {
@@ -32,6 +36,67 @@
     },
     "bundle_status": { "enum": ["complete", "incomplete", "conflicted"] },
     "bundle_reason": { "type": "string", "minLength": 1 },
+    "contrast_integrity_alternative": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "contrast_integrity_anchor_type": {
+      "enum": [
+        "design-imposed-difference", "directly-measured-difference",
+        "reported-behavioral-evidence", "manipulation-check-or-control",
+        "other-direct-design-evidence", "none"
+      ]
+    },
+    "contrast_integrity_anchor_source_location": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "contrast_integrity_viability_reason": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "contrast_integrity_prediction": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "contrast_integrity_control_member_key": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "contrast_integrity_resolution": { "enum": ["ruled-out", "unresolved", "not-applicable"] },
+    "contrast_integrity_resolution_reason": { "type": "string", "minLength": 1 },
     "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "supported_premise": { "not": { "const": "E-diagnostic" } } }, "required": ["supported_premise"] },
+      "then": { "properties": {
+        "contrast_integrity_alternative": { "type": "null" },
+        "contrast_integrity_anchor_type": { "const": "none" },
+        "contrast_integrity_anchor_source_location": { "type": "null" },
+        "contrast_integrity_viability_reason": { "type": "null" },
+        "contrast_integrity_prediction": { "type": "null" },
+        "contrast_integrity_control_member_key": { "type": "null" },
+        "contrast_integrity_resolution": { "const": "not-applicable" }
+      } }
+    },
+    {
+      "if": { "properties": { "contrast_integrity_resolution": { "const": "ruled-out" } }, "required": ["contrast_integrity_resolution"] },
+      "then": { "properties": {
+        "contrast_integrity_alternative": { "type": "string", "minLength": 1 },
+        "contrast_integrity_anchor_type": { "not": { "const": "none" } },
+        "contrast_integrity_anchor_source_location": { "type": "string", "minLength": 1 },
+        "contrast_integrity_viability_reason": { "type": "string", "minLength": 1 },
+        "contrast_integrity_prediction": { "type": "string", "minLength": 1 },
+        "contrast_integrity_control_member_key": { "type": "string", "minLength": 1 }
+      } }
+    },
+    {
+      "if": { "properties": { "contrast_integrity_resolution": { "const": "unresolved" } }, "required": ["contrast_integrity_resolution"] },
+      "then": { "properties": {
+        "contrast_integrity_alternative": { "type": "string", "minLength": 1 },
+        "contrast_integrity_anchor_type": { "not": { "const": "none" } },
+        "contrast_integrity_anchor_source_location": { "type": "string", "minLength": 1 },
+        "contrast_integrity_viability_reason": { "type": "string", "minLength": 1 },
+        "contrast_integrity_prediction": { "type": "string", "minLength": 1 },
+        "contrast_integrity_control_member_key": { "type": "string", "minLength": 1 }
+      } }
+    },
+    {
+      "if": { "properties": { "contrast_integrity_resolution": { "const": "not-applicable" } }, "required": ["contrast_integrity_resolution"] },
+      "then": { "properties": {
+        "contrast_integrity_alternative": { "type": "null" },
+        "contrast_integrity_anchor_type": { "const": "none" },
+        "contrast_integrity_anchor_source_location": { "type": "null" },
+        "contrast_integrity_viability_reason": { "type": "null" },
+        "contrast_integrity_prediction": { "type": "null" },
+        "contrast_integrity_control_member_key": { "type": "null" }
+      } }
+    }
+  ]
 }

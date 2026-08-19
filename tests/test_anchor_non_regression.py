@@ -23,7 +23,9 @@ def comparison(**updates: object) -> dict[str, object]:
         "A_code": "A-direct",
         "E_code": "E-diagnostic",
         "F_code": "F-meaningful",
+        "Y_label": "named synthetic capacity",
         "unaware_capacity_claim": "named synthetic capacity",
+        "unaware_capacity_evidence_scope": "whole-focal-Y",
         "unaware_capacity": "supported",
         "unaware_capacity_stats_status": "adequate",
         "awareness_effect": "difference-supported",
@@ -38,21 +40,13 @@ def comparison(**updates: object) -> dict[str, object]:
     return row
 
 
-class SixAnchorDerivedViewNonRegressionTests(unittest.TestCase):
-    def test_draft_0_8_2_uses_adjudicated_diagnostic_anchor_route_tuples(self) -> None:
+class AdjudicatedAnchorDerivedViewNonRegressionTests(unittest.TestCase):
+    def test_draft_0_8_3_preserves_settled_diagnostic_route_tuples(self) -> None:
         cases = {
             "Tsushima": comparison(
                 A_code="A-validated", unaware_capacity="not-supported",
                 Meyen_role="supplementary", Meyen_status="Meyen-failed",
             ),
-            "Lin and Murray": comparison(
-                A_code="A-validated", unaware_capacity="not-supported",
-                Meyen_role="supplementary", Meyen_status="Meyen-failed",
-            ),
-            "Lamy": comparison(
-                Meyen_role="supplementary", Meyen_status="Meyen-failed",
-            ),
-            "Ben-Haim": comparison(),
             "Persaud": comparison(E_code="E-matched", unaware_capacity="unclear"),
             "Keizer": comparison(
                 A_code="A-validated", E_code="E-physical-only",
@@ -63,9 +57,6 @@ class SixAnchorDerivedViewNonRegressionTests(unittest.TestCase):
         }
         expected = {
             "Tsushima": (True, False, False, False),
-            "Lin and Murray": (True, False, False, False),
-            "Lamy": (True, True, False, False),
-            "Ben-Haim": (True, True, False, False),
             "Persaud": (True, False, False, False),
             "Keizer": (False, True, False, True),
         }

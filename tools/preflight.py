@@ -164,13 +164,17 @@ def main() -> int:
         "comparison_id", "evidence_bundle_ids", "structural_audit_status",
         "awareness_effect_route_status", "unaware_capacity_route_status",
         "null_equivalence_route_status", "result_inspection_status",
-        "awareness_evidence_type", "objective_visibility_test_informative",
+        "awareness_evidence_type", "awareness_procedure_type", "objective_visibility_test_informative",
+        "awareness_result_status", "awareness_result_procedure_type",
+        "awareness_result_description", "awareness_result_source_location",
+        "awareness_result_source_experiment_id",
         "critical_dependency_status", "E_matching_basis", "E_equivalence_margin", "E_equivalence_result",
         "E_competing_account", "E_competing_prediction", "E_violating_pattern", "E_same_Y_reason",
-        "E_diagnostic_source_locations", "functional_structure_assessment",
-        "functional_structure_reason", "factorial_focal_comparison_id",
+        "E_diagnostic_source_locations", "alternative_control_scan_status",
+        "alternative_control_scan_reason", "functional_structure_assessment",
+        "functional_identity_basis", "functional_structure_reason", "factorial_focal_comparison_id",
         "Y_structure", "factorial_component_effects",
-        "unaware_capacity_claim", "unaware_capacity", "unaware_capacity_stats_status", "awareness_effect",
+        "unaware_capacity_claim", "unaware_capacity_evidence_scope", "unaware_capacity", "unaware_capacity_stats_status", "awareness_effect",
         "awareness_effect_stats_status", "awareness_effect_critical_effect",
         "Y_evidence_role", "mechanistic_interpretation", "mechanism_clarity",
         "null_equivalence_margin", "null_equivalence_result", "null_BF01",
@@ -213,6 +217,10 @@ def main() -> int:
     for field in (
         "evidence_bundle_id", "focal_comparison_id", "supported_premise",
         "premise_description", "required_member_keys", "bundle_status", "bundle_reason",
+        "contrast_integrity_alternative", "contrast_integrity_viability_reason",
+        "contrast_integrity_anchor_type", "contrast_integrity_anchor_source_location",
+        "contrast_integrity_prediction", "contrast_integrity_control_member_key",
+        "contrast_integrity_resolution", "contrast_integrity_resolution_reason",
     ):
         if field not in bundle_properties:
             errors.append(f"evidence-bundle schema lacks {field}")
@@ -220,7 +228,7 @@ def main() -> int:
     for field in (
         "evidence_link_id", "evidence_bundle_id", "focal_comparison_id",
         "member_key", "supporting_experiment_id", "supporting_auxiliary_id", "evidence_assessment_id",
-        "support_role", "dependency_role", "member_status",
+        "support_role", "dependency_role", "evidence_content_type", "same_focal_Y_status", "member_status",
         "supported_claim", "transfer_reason", "transfer_limitation", "source_location",
     ):
         if field not in evidence_properties:

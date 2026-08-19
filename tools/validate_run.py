@@ -25,7 +25,9 @@ except ModuleNotFoundError as exc:
     raise SystemExit(3) from None
 
 from execution_contract import (
-    completion_errors, factorial_e_diagnostic_bundle_errors, functional_structure_errors,
+    alternative_control_scan_errors, awareness_result_provenance_errors,
+    capacity_identity_errors, completion_errors, contrast_integrity_bundle_errors,
+    e_diagnostic_same_y_bundle_errors, factorial_e_diagnostic_bundle_errors, functional_structure_errors,
     ordered_result_set_sha256, route_audit_errors, search_window_key,
     validate_declared_bundle_status,
 )
@@ -372,6 +374,14 @@ def evidence_bundle_errors(
             )
         for error in factorial_e_diagnostic_bundle_errors(row, evidence_bundles, evidence_links):
             errors.append(f"experiments_master.csv: {error}")
+        for error in e_diagnostic_same_y_bundle_errors(row, evidence_bundles, evidence_links):
+            errors.append(f"experiments_master.csv: {error}")
+        for error in contrast_integrity_bundle_errors(row, evidence_bundles, evidence_links):
+            errors.append(f"experiments_master.csv: {error}")
+        for error in alternative_control_scan_errors(row):
+            errors.append(f"experiments_master.csv: {focal_id}: {error}")
+        for error in awareness_result_provenance_errors(row, evidence_bundles, evidence_links):
+            errors.append(f"experiments_master.csv: {error}")
     return errors
 
 
@@ -516,6 +526,8 @@ def main() -> int:
         if not row["comparison_id"].startswith(f"{row['experiment_id']}_C"):
             errors.append(f"experiments_master.csv: {row['comparison_id']} does not belong to experiment_id {row['experiment_id']}")
         for error in route_audit_errors(row):
+            errors.append(f"experiments_master.csv: {row['comparison_id']}: {error}")
+        for error in capacity_identity_errors(row):
             errors.append(f"experiments_master.csv: {row['comparison_id']}: {error}")
     for error in functional_structure_errors(experiments):
         errors.append(f"experiments_master.csv: {error}")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure, network-free enforcement helpers for the draft-0.8.2 execution contract."""
+"""Pure, network-free enforcement helpers for the draft-0.8.4 execution contract."""
 
 from __future__ import annotations
 
@@ -15,6 +15,26 @@ SCIENTIFIC_CODE_FIELDS = {
     "A_code", "E_code", "F_code", "unaware_capacity", "awareness_effect",
     "Meyen_role", "Meyen_status", "stats_status",
 }
+
+CONTRAST_INTEGRITY_ANCHORS = {
+    "design-imposed-difference", "directly-measured-difference",
+    "reported-behavioral-evidence", "manipulation-check-or-control",
+    "other-direct-design-evidence",
+}
+UNMATCHED_E_CODES = {"E-diagnostic", "E-physical-only", "E-uncontrolled"}
+COMPLETED_ALTERNATIVE_CONTROL_SCANS = {
+    "completed-none-found", "completed-candidate-evaluated",
+}
+PREFREEZE_DIAGNOSTIC_PREFIX = "PREFREEZE_DIAG_"
+
+
+def validate_run_id_namespace(run_id: str, *, pre_freeze_diagnostic: bool = False) -> None:
+    """Keep future source-bounded diagnostics out of the historical CALIB namespace."""
+    if pre_freeze_diagnostic and not run_id.startswith(PREFREEZE_DIAGNOSTIC_PREFIX):
+        raise ValueError(
+            f"pre-freeze diagnostic RUN_ID must begin {PREFREEZE_DIAGNOSTIC_PREFIX}; "
+            "CALIB_* is reserved for historical calibration runs"
+        )
 
 
 def _canonical_hash(value: Any) -> str:
@@ -178,14 +198,52 @@ def route_audit_errors(row: dict[str, Any]) -> list[str]:
             errors.append("difference-supported result does not require a null/equivalence audit")
     if viability["unaware_capacity"] and row.get("unaware_capacity") == "not-tested":
         errors.append("capacity-viable comparison cannot skip capacity result inspection")
-    if viability["awareness_effect"] and row.get("awareness_effect") == "not-tested":
-        errors.append("awareness-effect-viable comparison cannot skip its result audit")
+    difference_tested = row.get("difference_tested")
+    awareness_result = row.get("awareness_effect")
+    if difference_tested == "yes":
+        if awareness_result == "not-tested":
+            errors.append("a direct same-Y awareness comparison cannot be recorded as not-tested")
+        if row.get("result_inspection_status") == "not-required":
+            errors.append("a direct same-Y awareness comparison requires descriptive result inspection")
+        for field in ("awareness_effect_critical_effect", "awareness_effect_estimate", "awareness_effect_stats_reason"):
+            if not str(row.get(field) or "").strip():
+                errors.append(f"a direct same-Y awareness comparison requires {field}")
+        if row.get("awareness_effect_estimate_interpretable") != "yes":
+            errors.append("a direct same-Y awareness comparison requires an interpretable estimate")
+        if row.get("awareness_effect_stats_status") not in {"adequate", "concern", "unclear"}:
+            errors.append("a direct same-Y awareness comparison requires a nonempty statistical audit")
+        if awareness_result == "difference-supported" and not viability["awareness_effect"]:
+            errors.append(
+                "a significant direct comparison with weak A/E/F must remain awareness-effect unresolved"
+            )
+    if difference_tested in {"no", "unclear"} and awareness_result in {
+        "difference-supported", "no-detectable-difference", "equivalence-supported",
+    }:
+        errors.append("a conclusive awareness-comparison result requires a direct same-Y test")
+    if difference_tested == "not-applicable" and awareness_result not in {None, "not-tested"}:
+        errors.append("no direct same-Y comparison permits only not-tested on the awareness-effect axis")
     if any(viability.values()) and row.get("result_inspection_status") == "not-required":
         errors.append("a viable route requires result inspection")
     if not any(viability.values()) and row.get("null_equivalence_route_status") == "not-required":
         if row.get("result_inspection_status") not in {"not-required", "completed-viable-routes"}:
             errors.append("dead routes require an explicit result-inspection disposition")
     return errors
+
+
+def operational_functional_identity_requires_factorial(
+    *, same_information_x: bool, same_downstream_output: bool, same_task_stage: bool,
+    factor_changes_x_relation: bool, higher_order_shared_mapping: bool,
+    conservative_common_function: bool,
+) -> bool:
+    """Apply the bounded operational identity questions without using labels or mechanisms."""
+    return all((
+        same_information_x,
+        same_downstream_output,
+        same_task_stage,
+        factor_changes_x_relation,
+        higher_order_shared_mapping,
+        conservative_common_function,
+    ))
 
 
 def functional_structure_errors(rows: Iterable[dict[str, Any]]) -> list[str]:
@@ -217,6 +275,25 @@ def functional_structure_errors(rows: Iterable[dict[str, Any]]) -> list[str]:
 
         for row in finalized:
             comparison_id = str(row.get("comparison_id") or "")
+            assessment = row.get("functional_structure_assessment")
+            basis = row.get("functional_identity_basis")
+            allowed_scalar_bases = {
+                "distinct-downstream-outputs", "distinct-computational-stages",
+                "distinct-input-output-relations", "no-conservative-common-function",
+            }
+            if assessment == "factorial-functional-required" and basis != "common-operational-mapping":
+                errors.append(
+                    f"{comparison_id}: factorial focal/component requires common-operational-mapping basis"
+                )
+            elif assessment == "scalar-justified" and basis not in allowed_scalar_bases:
+                errors.append(
+                    f"{comparison_id}: scalar separation requires a positive operational identity basis; "
+                    "effect or mechanism labels are insufficient"
+                )
+            elif assessment == "not-applicable" and basis != "not-applicable-single-effect":
+                errors.append(
+                    f"{comparison_id}: not-applicable structure requires not-applicable-single-effect basis"
+                )
             focal_id = row.get("factorial_focal_comparison_id")
             if focal_id is None:
                 continue
@@ -247,6 +324,24 @@ def functional_structure_errors(rows: Iterable[dict[str, Any]]) -> list[str]:
     return errors
 
 
+def capacity_identity_errors(row: dict[str, Any]) -> list[str]:
+    """Enforce one comparison = one focal Y = one possible unaware-capacity target."""
+    errors: list[str] = []
+    claim = row.get("unaware_capacity_claim")
+    focal_y = row.get("Y_label")
+    capacity = row.get("unaware_capacity")
+    if capacity is not None or claim is not None:
+        if not isinstance(claim, str) or not claim.strip():
+            errors.append("unaware-capacity assessment requires the focal Y label as its claim")
+        elif not isinstance(focal_y, str) or claim != focal_y:
+            errors.append("unaware_capacity_claim must exactly equal Y_label; components require their own comparison")
+    if capacity == "supported" and row.get("unaware_capacity_evidence_scope") != "whole-focal-Y":
+        errors.append("supported unaware capacity requires evidence for the whole focal Y")
+    if capacity == "not-tested" and row.get("unaware_capacity_evidence_scope") != "not-applicable":
+        errors.append("not-tested unaware capacity requires not-applicable evidence scope")
+    return errors
+
+
 def factorial_e_diagnostic_bundle_errors(
     row: dict[str, Any], bundles: Iterable[dict[str, Any]], links: Iterable[dict[str, Any]],
 ) -> list[str]:
@@ -268,6 +363,7 @@ def factorial_e_diagnostic_bundle_errors(
         and link.get("dependency_role") == "required"
         and link.get("member_status") == "supports"
         and link.get("used_for_decision") is True
+        and link.get("same_focal_Y_status") == "yes"
         and str(link.get("supported_claim") or "").strip()
     ]
     if direct_controls:
@@ -277,6 +373,195 @@ def factorial_e_diagnostic_bundle_errors(
         "decision-used alternative-explanation-control member identifying the result that "
         "addresses the first-order-evidence alternative"
     ]
+
+
+def e_diagnostic_same_y_bundle_errors(
+    row: dict[str, Any], bundles: Iterable[dict[str, Any]], links: Iterable[dict[str, Any]],
+) -> list[str]:
+    """Require decision-used E support to address the same conservative focal Y."""
+    if row.get("E_code") != "E-diagnostic":
+        return []
+    focal_id = row.get("comparison_id")
+    complete_ids = {
+        bundle.get("evidence_bundle_id")
+        for bundle in bundles
+        if bundle.get("focal_comparison_id") == focal_id
+        and bundle.get("supported_premise") == "E-diagnostic"
+        and bundle.get("bundle_status") == "complete"
+    }
+    if any(
+        link.get("evidence_bundle_id") in complete_ids
+        and link.get("support_role") in {
+            "first-order-evidence-control", "E-diagnostic-support",
+            "alternative-explanation-control",
+        }
+        and link.get("dependency_role") == "required"
+        and link.get("member_status") == "supports"
+        and link.get("used_for_decision") is True
+        and link.get("same_focal_Y_status") == "yes"
+        for link in links
+    ):
+        return []
+    return [
+        f"{focal_id}: E-diagnostic requires a complete bundle with required, "
+        "decision-used support explicitly verified as addressing the same focal Y"
+    ]
+
+
+def contrast_integrity_alternative_is_gating(anchor_type: str | None) -> bool:
+    """Only a finite alternative with a direct design/evidential anchor may gate E."""
+    return anchor_type in CONTRAST_INTEGRITY_ANCHORS
+
+
+def alternative_control_scan_errors(row: dict[str, Any]) -> list[str]:
+    """Require a durable within-paper scan before unmatched E is finalized."""
+    e_code = row.get("E_code")
+    status = row.get("alternative_control_scan_status")
+    reason = str(row.get("alternative_control_scan_reason") or "").strip()
+    errors: list[str] = []
+    if e_code in UNMATCHED_E_CODES:
+        if status not in COMPLETED_ALTERNATIVE_CONTROL_SCANS | {"incomplete-source-missing"}:
+            errors.append("unmatched E requires a bounded within-paper alternative-control scan")
+        if not reason:
+            errors.append("within-paper alternative-control scan requires a reason")
+        if status == "incomplete-source-missing" and row.get("current_status") == "fully-evaluated":
+            errors.append("final E is prohibited while a classification-critical within-paper control is unavailable")
+    elif e_code == "E-matched" and status != "not-required":
+        errors.append("E-matched requires alternative-control scan status not-required")
+    return errors
+
+
+def awareness_result_provenance_errors(
+    row: dict[str, Any], bundles: Iterable[dict[str, Any]], links: Iterable[dict[str, Any]],
+) -> list[str]:
+    """Require strong A to point to an actual procedure-matched supportive result."""
+    if row.get("A_code") not in {"A-direct", "A-validated"}:
+        return []
+    focal_id = row.get("comparison_id")
+    errors: list[str] = []
+    if row.get("awareness_result_status") != "supportive-result-reported":
+        errors.append(f"{focal_id}: strong A requires a supportive critical awareness result")
+    for field in (
+        "awareness_measure", "awareness_procedure_type", "awareness_result_procedure_type",
+        "awareness_result_description", "awareness_result_source_location",
+    ):
+        if not str(row.get(field) or "").strip() or row.get(field) == "not-applicable":
+            errors.append(f"{focal_id}: strong A lacks {field}")
+    if (
+        row.get("awareness_procedure_type")
+        and row.get("awareness_result_procedure_type")
+        and row.get("awareness_procedure_type") != row.get("awareness_result_procedure_type")
+    ):
+        errors.append(f"{focal_id}: awareness result type does not match the recorded procedure")
+    if row.get("A_code") == "A-direct":
+        if row.get("awareness_result_source_experiment_id") != row.get("experiment_id"):
+            errors.append(f"{focal_id}: A-direct result must come from the focal experiment")
+        return errors
+
+    complete_bundle_ids = {
+        bundle.get("evidence_bundle_id")
+        for bundle in bundles
+        if bundle.get("focal_comparison_id") == focal_id
+        and bundle.get("supported_premise") == "awareness-A"
+        and bundle.get("bundle_status") == "complete"
+    }
+    result_links = [
+        link for link in links
+        if link.get("evidence_bundle_id") in complete_bundle_ids
+        and link.get("support_role") == "awareness-validation"
+        and link.get("evidence_content_type") == "critical-result"
+        and link.get("dependency_role") == "required"
+        and link.get("member_status") == "supports"
+        and link.get("used_for_decision") is True
+        and str(link.get("source_location") or "").strip()
+        and str(link.get("transfer_reason") or "").strip()
+        and str(link.get("transfer_limitation") or "").strip()
+        and (
+            (
+                row.get("awareness_result_source_experiment_id") is not None
+                and link.get("supporting_experiment_id")
+                == row.get("awareness_result_source_experiment_id")
+            )
+            or (
+                row.get("awareness_result_source_experiment_id") is None
+                and link.get("supporting_auxiliary_id") is not None
+            )
+        )
+    ]
+    if not result_links:
+        errors.append(
+            f"{focal_id}: A-validated requires a complete awareness-A bundle with a required, "
+            "decision-used, result-bearing member and explicit transfer assessment"
+        )
+    return errors
+
+
+def contrast_integrity_bundle_errors(
+    row: dict[str, Any], bundles: Iterable[dict[str, Any]], links: Iterable[dict[str, Any]],
+) -> list[str]:
+    """Reject E-diagnostic only for finite, directly anchored unresolved alternatives."""
+    if row.get("E_code") != "E-diagnostic":
+        return []
+    focal_id = row.get("comparison_id")
+    relevant = [
+        bundle for bundle in bundles
+        if bundle.get("focal_comparison_id") == focal_id
+        and bundle.get("supported_premise") == "E-diagnostic"
+    ]
+    errors: list[str] = []
+    for bundle in relevant:
+        bundle_id = bundle.get("evidence_bundle_id")
+        resolution = bundle.get("contrast_integrity_resolution")
+        anchor_type = bundle.get("contrast_integrity_anchor_type")
+        anchor_location = str(bundle.get("contrast_integrity_anchor_source_location") or "").strip()
+        member_key = bundle.get("contrast_integrity_control_member_key")
+        if resolution in {"ruled-out", "unresolved"} and (
+            not contrast_integrity_alternative_is_gating(anchor_type) or not anchor_location
+        ):
+            errors.append(
+                f"{focal_id}: contrast-integrity alternative in {bundle_id} lacks an "
+                "independent design/evidential anchor and cannot gate E"
+            )
+            continue
+        if resolution in {"ruled-out", "unresolved"} and member_key not in bundle.get(
+            "required_member_keys", []
+        ):
+            errors.append(
+                f"{focal_id}: contrast-integrity control member for {bundle_id} must be declared required"
+            )
+        if resolution == "unresolved":
+            errors.append(
+                f"{focal_id}: E-diagnostic prohibited because bundle {bundle_id} has an unresolved "
+                "design-motivated task-state/policy alternative"
+            )
+            if not any(
+                link.get("evidence_bundle_id") == bundle_id
+                and link.get("member_key") == member_key
+                for link in links
+            ):
+                errors.append(
+                    f"{focal_id}: unresolved contrast-integrity alternative in {bundle_id} lacks "
+                    "its explicitly identified evidence/control member"
+                )
+        elif resolution == "ruled-out":
+            controls = [
+                link for link in links
+                if link.get("evidence_bundle_id") == bundle_id
+                and link.get("member_key") == member_key
+                and link.get("support_role") == "alternative-explanation-control"
+                and link.get("dependency_role") == "required"
+                and link.get("member_status") == "supports"
+                and link.get("used_for_decision") is True
+                and link.get("same_focal_Y_status") == "yes"
+            ]
+            if not controls:
+                errors.append(
+                    f"{focal_id}: ruled-out contrast-integrity alternative in {bundle_id} lacks "
+                    "its required, decision-used control member"
+                )
+        elif resolution != "not-applicable":
+            errors.append(f"{focal_id}: E-diagnostic bundle {bundle_id} lacks contrast-integrity resolution")
+    return errors
 
 
 def reopen_for_blind_discovery(
