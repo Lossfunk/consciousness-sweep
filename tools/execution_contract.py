@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure, network-free enforcement helpers for the draft-0.8.5 execution contract."""
+"""Pure, network-free enforcement helpers for the draft-0.8.6 execution contract."""
 
 from __future__ import annotations
 
@@ -26,6 +26,9 @@ COMPLETED_ALTERNATIVE_CONTROL_SCANS = {
     "completed-none-found", "completed-candidate-evaluated",
 }
 PREFREEZE_DIAGNOSTIC_PREFIX = "PREFREEZE_DIAG_"
+BRIDGE_INGREDIENT_FIELDS = (
+    "citation_specific_x", "citation_awareness_attempt", "citation_functional_y",
+)
 
 
 def validate_run_id_namespace(run_id: str, *, pre_freeze_diagnostic: bool = False) -> None:
@@ -61,6 +64,157 @@ def search_window_key(
         "publication_cutoff": publication_cutoff,
         "requested_max_n": requested_max_n,
     })
+
+
+def citation_window_key(
+    *, parent_paper_id: str, direction: str, source: str,
+    source_parameters: dict[str, Any], publication_cutoff: str | None,
+    requested_max_n: int | None = None,
+) -> str:
+    """Fingerprint an ordinary or bridge citation window without choosing a source policy."""
+    if not parent_paper_id or direction not in {"backward", "forward"} or not source:
+        raise ValueError("citation window requires parent, backward/forward direction, and source")
+    if requested_max_n is not None and requested_max_n < 1:
+        raise ValueError("citation requested maximum must be positive when supplied")
+    return _canonical_hash({
+        "parent_paper_id": parent_paper_id,
+        "direction": direction,
+        "source": source,
+        "source_parameters": source_parameters,
+        "publication_cutoff": publication_cutoff,
+        "requested_max_n": requested_max_n,
+    })
+
+
+def experiment_citation_node_status(group: dict[str, Any]) -> str:
+    """Derive CORE/strict-bridge status from one physical experiment only."""
+    values = [group.get(field) for field in BRIDGE_INGREDIENT_FIELDS]
+    if all(value == "present" for value in values):
+        return "core"
+    if group.get("bridge_disposition") == "eligible":
+        return "bridge"
+    if all(value == "not-assessed" for value in values):
+        return "not-assessed"
+    return "not-node"
+
+
+def bridge_experiment_errors(group: dict[str, Any]) -> list[str]:
+    """Enforce the strict same-experiment exact-two bridge rule."""
+    values = {field: group.get(field) for field in BRIDGE_INGREDIENT_FIELDS}
+    errors: list[str] = []
+    if group.get("bridge_disposition") != "eligible":
+        return errors
+    present = [field for field, value in values.items() if value == "present"]
+    failed = [field for field, value in values.items() if value == "failed"]
+    if len(present) != 2 or len(failed) != 1 or any(value == "unclear" for value in values.values()):
+        errors.append("bridge eligibility requires exactly two present ingredients and one explicit failure")
+    failed_names = {
+        "citation_specific_x": "specific-x",
+        "citation_awareness_attempt": "awareness-attempt",
+        "citation_functional_y": "functional-y",
+    }
+    expected_failed = failed_names.get(failed[0]) if len(failed) == 1 else None
+    if group.get("bridge_failed_ingredient") != expected_failed:
+        errors.append("bridge failed ingredient does not match the single explicitly failed ingredient")
+    if group.get("bridge_near_neighbor") != "yes":
+        errors.append("bridge eligibility requires a positive empirical near-neighbor judgment")
+    rationale = str(group.get("bridge_rationale") or "").strip()
+    if len(rationale) < 20:
+        errors.append("bridge eligibility requires a substantive positive bridge rationale")
+    return errors
+
+
+def derive_paper_citation_node_status(
+    paper: dict[str, Any], groups: Iterable[dict[str, Any]],
+) -> str:
+    """Derive paper node status with full-text/empirical gates and CORE precedence."""
+    fulltext = paper.get("fulltext_status")
+    if fulltext in {"missing", "manually-requested", "unavailable"}:
+        return "not-assessable-missing-fulltext"
+    if (
+        fulltext not in {"retrieved-published", "retrieved-repository", "retrieved-preprint"}
+        or paper.get("current_status") != "fulltext-evaluated"
+    ):
+        return "not-assessed"
+    if paper.get("bridge_empirical_status") != "empirical":
+        return "not-node"
+    statuses = [experiment_citation_node_status(group) for group in groups]
+    if "core" in statuses:
+        return "core"
+    if "bridge" in statuses:
+        return "bridge"
+    return "not-node"
+
+
+def paper_citation_node_errors(
+    paper: dict[str, Any], groups: Iterable[dict[str, Any]],
+) -> list[str]:
+    expected = derive_paper_citation_node_status(paper, groups)
+    observed = paper.get("citation_node_status")
+    if observed != expected:
+        return [f"citation_node_status must derive as {expected}, not {observed}"]
+    if observed != "not-assessed" and not str(paper.get("citation_node_reason") or "").strip():
+        return ["assessed citation-node status requires a reason"]
+    return []
+
+
+def citation_child_bridge_depth(parent_node_status: str, parent_bridge_depth: int) -> int:
+    """Return child lineage depth; CORE and other depth-zero routes reset it."""
+    if parent_bridge_depth not in {0, 1}:
+        raise ValueError("bridge depth must be zero or one")
+    if parent_node_status == "bridge":
+        if parent_bridge_depth == 1:
+            raise ValueError("a bridge at depth one cannot continue the same bridge lineage")
+        return 1
+    return 0
+
+
+def bridge_expansion_allowed(
+    node_status: str, encounter_depths: Iterable[int], *, already_completed: bool = False,
+) -> bool:
+    """Permit one bridge expansion when any eligible depth-zero encounter exists."""
+    return node_status == "bridge" and 0 in set(encounter_depths) and not already_completed
+
+
+def reconcile_bridge_frontier(
+    state: dict[str, Any], *, paper_id: str, node_status: str, encounter_depth: int,
+) -> dict[str, Any]:
+    """Add/reopen a bridge obligation without making first encounter order authoritative."""
+    if encounter_depth not in {0, 1}:
+        raise ValueError("bridge encounter depth must be zero or one")
+    updated = copy.deepcopy(state)
+    eligible = updated.setdefault("bridge_depth0_eligible_paper_ids", [])
+    pending = updated.setdefault("pending_bridge_expansion_paper_ids", [])
+    completed = updated.setdefault("completed_bridge_expansion_paper_ids", [])
+    if node_status == "bridge" and encounter_depth == 0:
+        if paper_id not in eligible:
+            eligible.append(paper_id)
+        if paper_id not in completed and paper_id not in pending:
+            pending.append(paper_id)
+            updated["citation_frontier_status"] = "reopened"
+            updated["workflow_phase"] = "reopened-frontiers"
+    elif node_status == "core":
+        if paper_id in pending:
+            pending.remove(paper_id)
+        updated["citation_frontier_status"] = "reopened"
+        updated["workflow_phase"] = "reopened-frontiers"
+    elif node_status == "not-node" and paper_id in pending:
+        pending.remove(paper_id)
+    return updated
+
+
+def mark_bridge_expansion_complete(state: dict[str, Any], paper_id: str) -> dict[str, Any]:
+    """Close a bridge-parent obligation after its policy-required citation windows finish."""
+    updated = copy.deepcopy(state)
+    pending = updated.setdefault("pending_bridge_expansion_paper_ids", [])
+    completed = updated.setdefault("completed_bridge_expansion_paper_ids", [])
+    if paper_id not in updated.setdefault("bridge_depth0_eligible_paper_ids", []):
+        raise ValueError("cannot complete a bridge expansion without a depth-zero eligible lineage")
+    if paper_id in pending:
+        pending.remove(paper_id)
+    if paper_id not in completed:
+        completed.append(paper_id)
+    return updated
 
 
 def ordered_result_set_sha256(results: Iterable[dict[str, Any]]) -> str:
@@ -363,6 +517,8 @@ def experiment_group_errors(
             errors.append(f"{experiment_id}: comparison-bearing group has no comparisons")
         if disposition in {"support-only", "no-qualifying-comparison"} and observed:
             errors.append(f"{experiment_id}: {disposition} group has placeholder/comparison rows")
+        for error in bridge_experiment_errors(group):
+            errors.append(f"{experiment_id}: {error}")
     return errors
 
 
@@ -647,6 +803,8 @@ def completion_errors(state: dict[str, Any]) -> list[str]:
         errors.append("process frontier is not satisfied")
     if state.get("workflow_phase") not in {"final-validation", "complete"}:
         errors.append("workflow has not reached final validation")
+    if state.get("pending_bridge_expansion_paper_ids", []):
+        errors.append("required one-hop bridge expansions remain pending")
     return errors
 
 

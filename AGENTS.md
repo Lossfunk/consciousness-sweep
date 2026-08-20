@@ -1,6 +1,6 @@
 # Agent Execution Contract
 
-**Status:** draft-0.8.5, pre-freeze
+**Status:** draft-0.8.6, pre-freeze
 
 ## 1. Authority split
 
@@ -193,6 +193,10 @@ Never silently overwrite, including clerical corrections.
 
 Each `search_log.csv` row identifies an event. A process-triggered event links to its activating `comparison_id` through `trigger_comparison_id`. Each encountered result receives a separate `discoveries.csv` row linked by `search_id`, even when it resolves to an existing paper.
 
+For every adequately evaluated physical experiment, record the three discovery ingredients (`citation_specific_x`, `citation_awareness_attempt`, and `citation_functional_y`) independently as `present`, `failed`, or `unclear`; use `not-assessed` only before assessment. A strict bridge group requires exactly two `present`, one `failed`, `bridge_near_neighbor = yes`, the matching failed-ingredient value, and a substantive positive rationale. Never aggregate ingredients across experiment groups. Derive the paper's current `citation_node_status` from its groups and empirical/full-text state: CORE has precedence over BRIDGE; missing/insufficient text is `not-assessable-missing-fulltext`; an adequately assessed paper with neither is `not-node`. No bridge requires or permits a dummy comparison.
+
+Every discovery encounter records bridge-lineage depth 0 or 1 and why. Every backward/forward citation search records the parent, direction, source, parent node status, parent bridge depth, and whether CORE, strict BRIDGE, a review anchor, or a provisional CORE decision enabled traversal. A strict bridge parent may expand only from depth 0. Its children have depth 1 unless a child's eventual CORE status resets subsequent traversal to depth 0. A bridge first reached at depth 1 remains ineligible on that lineage, but any later depth-0 rediscovery adds a durable eligible obligation. Track depth-0 eligible, pending, and completed bridge-parent IDs in `run_state.json`; never base the decision solely on first-discovery fields. Reuse an identical completed paper/source/direction window rather than fetching it again, while retaining each rediscovery row. Bridge windows inherit the ordinary citation-source/fallback policy; do not hard-code a diagnostic source.
+
 Execute the workflow as this durable principal-first, blind-last state machine:
 
 1. initialize frozen empirical seeds;
@@ -211,6 +215,8 @@ Execute the workflow as this durable principal-first, blind-last state machine:
 14. reopen or activate the process frontier for every genuinely new Y that independently qualifies;
 15. recursively handle new nodes under the unchanged bounded rules; and
 16. finish only after every reopened citation and process frontier again satisfies its frozen stopping criterion.
+
+At steps 4, 7, 13, and 15, include every pending eligible one-hop bridge expansion in the citation frontier. A bridge-discovered CORE node reopens ordinary CORE recursion. A blind- or process-discovered BRIDGE node at depth 0 creates or reopens its bridge obligation. Bridge status alone never adds an activated normalized Y. Do not add resource-dependent caps, bridge-parent quotas, or a zero-yield bridge-generation stopping rule.
 
 The blind lane may not be skipped because the principal routes appear productive or saturated, known anchors were recovered, or available time/token budget seems sufficient. A blind-lane discovery that is independently citation-eligible reopens the citation frontier; a genuinely new independently qualifying Y activates or reopens its bounded process search. Record every transition and do not mark the run complete while any reopened frontier remains open.
 
@@ -316,6 +322,6 @@ For CALIB003 only, after title/abstract screening, select at most 12 newly disco
 
 Do not inspect another run, use its discovered papers, import its classifications, or consolidate. Consolidation/adjudication occurs only after independent runs finish and is outside an executing agent's write scope.
 
-A run is complete only when: the principal frontier was provisionally satisfied; every mandatory blind window is complete and hash-consistent; every blind-triggered citation or new-Y process frontier has been reopened and subsequently satisfied; all frozen routes and activated process searches are done; stopping rules are met; retrievable and manually supplied texts are evaluated; missing-text state is current; no scientific conclusion depends on an incomplete/conflicted bundle; route audits and result-inspection dispositions are complete; files validate; unresolved cases have reasons; derived files are current; and `run_summary.md` documents stopping evidence and validation. Set `run_state.status = complete` only after all conditions hold.
+A run is complete only when: the principal frontier was provisionally satisfied; every required eligible one-hop bridge expansion is complete; every mandatory blind window is complete and hash-consistent; every blind-triggered citation or new-Y process frontier has been reopened and subsequently satisfied; all frozen routes and activated process searches are done; stopping rules are met; retrievable and manually supplied texts are evaluated; missing-text state is current; no scientific conclusion depends on an incomplete/conflicted bundle; route audits and result-inspection dispositions are complete; files validate; unresolved cases have reasons; derived files are current; and `run_summary.md` documents stopping evidence and validation. Set `run_state.status = complete` only after all conditions hold.
 
 Across independent registered runs, agents share only immutable static package inputs: frozen seed and review-anchor identity, normalization rules, schemas, queries, protocol, and agent instructions. They do not share semantic screening decisions, dynamic result sets, A/E/F codes, evidence links or assessments, statistical/Meyen judgments, process-Y or saturation judgments, full-text annotations, or run outputs. No dynamic query result is precomputed for distribution across agents. If one harness uses multiple workers inside a single independent run, it may divide already-reserved, non-overlapping execution units only; all writes still pass through that run's locked structured writer and the coordinator reconciles durable state before checkpoints.

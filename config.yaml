@@ -1,7 +1,7 @@
 # Draft configuration. Freeze and version every null/TODO before a registered run.
-protocol_version: "draft-0.8.5"
-package_version: "prefreeze-package-0.8.5"
-schema_version: "prefreeze-schema-0.8.4"
+protocol_version: "draft-0.8.6"
+package_version: "prefreeze-package-0.8.6"
+schema_version: "prefreeze-schema-0.8.5"
 registration_status: "pre-freeze"
 
 # Supplied by a registered run invocation; never set during scaffold construction.

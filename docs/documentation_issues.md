@@ -24,7 +24,7 @@ The QCAL4-LEARN rendering is disabled/retired because it was pathological, while
 
 ## 6. Citation-source calibration conclusion and execution contract occupy different scopes
 
-The calibration-only strategy proposes roles for OpenAlex, Europe PMC, Crossref, and optional Semantic Scholar. The active conservative query contract fixes OpenAlex and Europe PMC for blind and process windows, while the final citation-source/fallback order is unset. This is not a direct contradiction, but readers could mistake a route-specific executable source list for the complete source policy. `METHODS.md` therefore presents the fixed route-specific behavior and the unresolved overall policy separately. Human freeze review should confirm that this interpretation is intended.
+The calibration-only strategy proposes roles for OpenAlex, Europe PMC, Crossref, and optional Semantic Scholar. The active conservative query contract fixes OpenAlex and Europe PMC for blind and process windows, while the final citation-source/fallback order is unset. One-hop bridge citation windows deliberately inherit that still-unresolved ordinary citation policy rather than naming a diagnostic source. This is not a direct contradiction, but readers could mistake a route-specific executable source list for the complete source policy. `METHODS.md` therefore presents the fixed route-specific behavior and the unresolved overall policy separately. Human freeze review should confirm that this interpretation is intended.
 
 ## Coverage and unbacked-claim result
 

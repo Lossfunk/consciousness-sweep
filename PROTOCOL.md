@@ -1,6 +1,6 @@
 # Consciousness X → Y Literature Sweep Protocol
 
-**Version:** draft-0.8.5
+**Version:** draft-0.8.6
 **Registration status:** pre-freeze; not preregistered
 
 This file is the scientific and procedural source of truth for the sweep. It is written for human and AI screeners. `AGENTS.md` governs execution mechanics. Neither file may change during a registered run.
@@ -353,6 +353,14 @@ Begin with the frozen empirical seeds. A newly discovered full-text empirical pa
 For discovery expansion only, a **substantive attempt** at an awareness contrast is a manipulation, grouping, or subjective measurement explicitly intended to distinguish awareness versus unawareness of the relevant X, even if the resulting evidence is too weak to satisfy `A-direct` or `A-validated`. This keeps borderline papers available as discovery nodes; it does not weaken the empirical-lot criteria.
 
 Weak A or E does not prevent expansion. Papers containing only generic registration or priming coded `F-not-meaningful` do not automatically seed recursive expansion. For unavailable full texts, an `ask-text-high` paper may act provisionally as a node only when its abstract explicitly supports the same X + awareness contrast + distinct plausible Y structure. Review and discovery anchors are expanded separately under their own route. Record every expansion decision and why.
+
+### 9.1.1 Strict one-hop empirical bridge
+
+In addition to CORE nodes above, a logical paper is a strict **BRIDGE** node only after adequate full-text evaluation establishes that it is empirical, is not CORE, and contains at least one single physical experiment that is a genuine near-neighbor of the target design and clearly contains **exactly two** of the three CORE ingredients. The remaining ingredient must explicitly fail; an unclear, unknown, or unassessed ingredient does not qualify. The two present ingredients and the failed ingredient must co-occur in that one experiment and may not be assembled across experiments. The record must identify all three ingredient states, the failed ingredient, and a positive scientific rationale for why the experiment is a meaningful near-miss. Reviews, theories, perspectives, commentaries, methods-only works, and generic conceptual papers cannot become dynamically generated BRIDGE nodes. Title or abstract evidence alone cannot establish BRIDGE status, and missing full text is not evidence that an ingredient failed.
+
+Paper status is derived from its physical experiments with CORE precedence: any CORE experiment makes the paper CORE; otherwise any strict bridge experiment makes it BRIDGE; otherwise it is not a citation node through this rule. A BRIDGE paper receives backward and forward citation expansion only when it has been encountered on an eligible depth-0 lineage, and it may create at most one consecutive non-CORE bridge generation (`K = 1`). A BRIDGE child reached at depth 1 is retained and screened but cannot continue that bridge lineage. A CORE child resets bridge depth to 0 and resumes ordinary CORE recursion. A later independent depth-0 encounter of a bridge paper enables its one expansion even if its first encounter was at depth 1; completed identical paper/source/window retrievals are reused while every encounter retains provenance. Thus discovery order cannot permanently suppress an otherwise eligible one-hop expansion.
+
+Bridge traversal changes discovery only. It does not create a comparison, alter A/E/F or any outcome/statistical/Meyen/evidence-bundle rule, promote `F-not-meaningful`, or independently activate QDYN. A bridge-discovered Y activates QDYN only if it separately meets §9.4. Bridge citation retrieval inherits the same registered source/fallback policy as ordinary citation expansion and uses the same immutable window identity, ordered-result hash, durable encounter, and resume-reuse rules; no bridge-specific source is fixed here. Bridge obligations are part of the citation frontier. Every eligible required expansion must finish before principal citation saturation or run completion; temporary resource limits require pause/checkpoint, not a paper/API/title budget, post hoc parent quota, or zero-yield stopping rule. Newly obtained text or append-first revision of node status deterministically reopens any newly enabled frontier.
 
 Stop citation expansion when a complete backward-and-forward citation wave yields zero new potentially relevant papers after deduplication and title/abstract screening.
 

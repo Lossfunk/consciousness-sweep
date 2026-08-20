@@ -212,6 +212,13 @@ def experiment_group(**updates: object) -> dict:
         "source_location": "Synthetic article, Experiment 1",
         "physical_experiment_description": "One bounded synthetic physical experiment group.",
         "pre_atomization_assessed": True,
+        "citation_specific_x": "not-assessed",
+        "citation_awareness_attempt": "not-assessed",
+        "citation_functional_y": "not-assessed",
+        "bridge_near_neighbor": "not-assessed",
+        "bridge_disposition": "not-assessed",
+        "bridge_failed_ingredient": "not-applicable",
+        "bridge_rationale": None,
         "functional_structure_assessment": "not-applicable",
         "functional_structure_reason": "The group contains one candidate focal relation.",
         "disposition": "comparison-bearing",
@@ -288,6 +295,8 @@ def paper(**updates: object) -> dict:
         "fulltext_priority_reason": None, "fulltext_status": "not-attempted",
         "fulltext_source": None, "missing_text_priority": "none",
         "citation_expansion_status": "not-assessed", "citation_expansion_reason": None,
+        "bridge_empirical_status": "not-assessed", "citation_node_status": "not-assessed",
+        "citation_node_reason": None,
         "duplicate_of": None, "duplicate_reason": None, "current_status": "encountered",
         "notes": None,
     }
@@ -496,7 +505,9 @@ class ProvenanceSchemaTests(unittest.TestCase):
             "fulltext_priority_reason": "Seed-adjacent title and direct terminology warrant retrieval.",
             "fulltext_status": "not-attempted", "fulltext_source": None,
             "missing_text_priority": "none", "citation_expansion_status": "not-assessed",
-            "citation_expansion_reason": None, "duplicate_of": None, "duplicate_reason": None,
+            "citation_expansion_reason": None, "bridge_empirical_status": "not-assessed",
+            "citation_node_status": "not-assessed", "citation_node_reason": None,
+            "duplicate_of": None, "duplicate_reason": None,
             "current_status": "abstract-unavailable", "notes": None,
         }
         validate("papers.schema.json", row)

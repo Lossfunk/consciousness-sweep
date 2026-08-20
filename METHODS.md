@@ -1,6 +1,6 @@
 # Planned methods for the consciousness X→Y literature sweep
 
-**Document status:** derived human-readable description of protocol `draft-0.8.5`, package `prefreeze-package-0.8.5`, schema `prefreeze-schema-0.8.4`. The package is pre-freeze and not preregistered. `PROTOCOL.md` remains the scientific/procedural authority and `AGENTS.md` the execution authority; this document creates no rule.
+**Document status:** derived human-readable description of protocol `draft-0.8.6`, package `prefreeze-package-0.8.6`, schema `prefreeze-schema-0.8.5`. The package is pre-freeze and not preregistered. `PROTOCOL.md` remains the scientific/procedural authority and `AGENTS.md` the execution authority; this document creates no rule.
 
 <a id="methods-01"></a>
 ## 1. Aim and scope
@@ -62,6 +62,8 @@ The fixed review list supplies broad discovery anchors rather than presumed X→
 
 Backward reference and forward-citation events are separately logged with their parent paper and source. A full-text empirical paper becomes a citation node when at least one experiment has a specific X, a genuine awareness contrast or substantive attempt to establish one, and a distinct plausible Y coded `F-meaningful` or `F-ambiguous`. For discovery only, a substantive attempt can be an intended awareness manipulation, grouping, or subjective measurement even when A is ultimately weak. `F-not-meaningful` registration/priming papers do not automatically seed recursion. An `ask-text-high` paper without full text may act provisionally as a node only when its abstract explicitly supports the same X + awareness contrast + distinct plausible Y structure. Eligible nodes are expanded in waves, with weak A or E not preventing expansion.
 
+Full-text empirical papers that narrowly miss CORE eligibility may receive one citation hop when a single physical experiment clearly contains exactly two of the three CORE ingredients and explicitly fails the third. The experiment must be a genuine near-neighbor with a positive rationale; unclear ingredients, cross-experiment aggregation, missing text, and review/theory/methods-only hubs do not qualify. CORE takes precedence at paper level. Consecutive bridge traversal is not allowed: a bridge reached from a bridge is screened but cannot continue that lineage, while encountering CORE resets bridge depth. A later independent depth-0 encounter can enable a bridge that was first found at depth 1, and identical completed citation windows are reused. Bridge status changes citation discovery only; it does not alter comparison eligibility, A/E/F, results, evidence requirements, or QDYN activation.
+
 ### 4.5 Process-triggered expansion
 
 A process search is activated only after a comparison independently earns the protocol’s qualifying A/E/F conditions for a normalized Y. It searches that observed process, not a broad neighboring topic. The closed lexical universe comprises the canonical Y, its direct morphology/grammar/spelling variants, same-function terminology explicitly used in the source paper, and at most one frozen immediate-parent functional term. Every term carries a provenance category and rationale. Unrestricted model-generated synonyms are prohibited.
@@ -82,11 +84,11 @@ Seeds, anchors, citation expansion, full-text work, and activated process search
 
 ### 4.10 Frontier reopening
 
-A blind-discovered node that independently meets citation eligibility reopens the citation frontier. A genuinely new, independently qualifying normalized Y activates or reopens its process frontier. The unchanged bounded rules then apply recursively.
+A blind-discovered CORE node or strict bridge at eligible depth 0 reopens the citation frontier. A genuinely new, independently qualifying normalized Y activates or reopens its process frontier. The unchanged bounded rules then apply recursively.
 
 ### 4.11–4.13 Stopping and mandatory completion
 
-Citation expansion stops only when a complete backward-and-forward wave yields zero new potentially relevant papers after deduplication and title/abstract screening. A process search stops after both frozen source windows for that Y are complete and its resulting eligible nodes and consequences have been handled. The blind lane is complete only when every frozen source/family window exists as a hash-consistent durable snapshot. The overall search cannot complete while any principal, blind-triggered citation, or process frontier remains open or reopened.
+Citation expansion stops only when a complete backward-and-forward wave yields zero new potentially relevant papers after deduplication and title/abstract screening and no required one-hop bridge expansion remains pending. A process search stops after both frozen source windows for that Y are complete and its resulting eligible nodes and consequences have been handled. The blind lane is complete only when every frozen source/family window exists as a hash-consistent durable snapshot. The overall search cannot complete while any principal, bridge, blind-triggered citation, or process frontier remains open or reopened. K=1 and the strict parent rule are the prospective resource control; runtime or yield does not create an extra stopping rule.
 
 **Authority:** PROTOCOL §9.1–9.4; AGENTS §8 and §12; `config.yaml` `search.conservative_execution`; `queries.md` active QCAL4 and QDYN001 specifications.
 
@@ -95,7 +97,7 @@ Citation expansion stops only when a complete backward-and-forward wave yields z
 
 Each query is rendered for its source-specific interface and field syntax. Its frozen specification must state sort/ranking, page size, whether every return is screened, exact page/record maximum when nonexhaustive, and behavior for ties, source reordering, cursor failure/API truncation, and cross-block deduplication. A query window is identified by execution phase, source, query family or normalized Y, canonical query, source parameters, publication cutoff, requested maximum N, and a deterministic key. Its logged record also stores ranking/order assumptions, actual return count, retrieval time, ordered result-set hash, status, and any reused search identifier.
 
-A completed window is an immutable retrieval snapshot. Resume may reuse it only when the entire key and the ordered hash agree with durable discovery records. It may not silently rerun, extend, rerank, or substitute a completed window. Failed, partial, missing, or internally inconsistent windows remain incomplete and require explicit resolution. Every encountered result receives a discovery row, including duplicates and rediscoveries; a reused completed window does not create a second set of encounters.
+A completed query or backward/forward citation window is an immutable retrieval snapshot. Citation windows additionally identify their parent, direction, node basis, and bridge-lineage depth, and bridge windows inherit whatever ordinary citation source/fallback policy is later frozen. Resume may reuse a window only when the entire key and the ordered hash agree with durable discovery records. It may not silently rerun, extend, rerank, or substitute a completed window. Failed, partial, missing, or internally inconsistent windows remain incomplete and require explicit resolution. Every encountered result receives a discovery row, including duplicates and rediscoveries; a reused completed window does not create a second set of encounters.
 
 The current source-specific QCAL and process renderers are locally validated for balanced syntax, supported fields, prohibited generic bare terms, and lexical provenance before any source call. The final preferred source order, fallback order, and publication-cutoff handling are not yet frozen; see §33.
 

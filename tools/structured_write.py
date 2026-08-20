@@ -60,6 +60,8 @@ ARRAY_FIELDS = {
     "stats_flags", "attempted_sources", "E_diagnostic_source_locations",
     "factorial_component_effects", "evidence_bundle_ids", "required_member_keys",
     "linked_comparison_ids", "support_roles",
+    "bridge_depth0_eligible_paper_ids", "pending_bridge_expansion_paper_ids",
+    "completed_bridge_expansion_paper_ids",
 }
 OBJECT_FIELDS = {"source_parameters"}
 DOI_PREFIX = re.compile(

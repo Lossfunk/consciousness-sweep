@@ -26,10 +26,10 @@ except ModuleNotFoundError as exc:
 
 from execution_contract import (
     alternative_control_scan_errors, awareness_result_provenance_errors,
-    capacity_identity_errors, completion_errors, contrast_integrity_bundle_errors,
+    capacity_identity_errors, citation_window_key, completion_errors, contrast_integrity_bundle_errors,
     e_diagnostic_same_y_bundle_errors, experiment_group_errors,
     factorial_e_diagnostic_bundle_errors, functional_structure_errors,
-    ordered_result_set_sha256, route_audit_errors, search_window_key,
+    ordered_result_set_sha256, paper_citation_node_errors, route_audit_errors, search_window_key,
     validate_declared_bundle_status,
 )
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,6 +65,8 @@ ARRAY_FIELDS = {
     "factorial_component_effects", "evidence_bundle_ids", "required_member_keys",
     "linked_comparison_ids", "support_roles",
     "activated_normalized_y_labels", "completed_search_window_keys",
+    "bridge_depth0_eligible_paper_ids", "pending_bridge_expansion_paper_ids",
+    "completed_bridge_expansion_paper_ids",
 }
 OBJECT_FIELDS = {"source_parameters"}
 BOOLEAN_FIELDS = {
@@ -76,6 +78,7 @@ INTEGER_FIELDS = {
     "year", "first_seen_wave", "wave", "results_returned", "new_unique_papers",
     "result_rank", "manual_request_wave", "obtained_wave", "requested_max_n",
     "actual_returned_n", "title_screen_batch_size", "abstract_screen_batch_size",
+    "bridge_lineage_depth", "citation_parent_bridge_depth",
 }
 
 
@@ -532,6 +535,9 @@ def main() -> int:
                 errors.append(f"papers_master.csv: {row['paper_id']} references missing {field} {row[field]}")
         if row.get("first_search_id") is not None and row["first_search_id"] not in search_ids:
             errors.append(f"papers_master.csv: {row['paper_id']} references missing first_search_id {row['first_search_id']}")
+        paper_groups = [group for group in experiment_groups if group.get("paper_id") == row["paper_id"]]
+        for error in paper_citation_node_errors(row, paper_groups):
+            errors.append(f"papers_master.csv: {row['paper_id']}: {error}")
     for error in experiment_group_errors(experiment_groups, experiments, paper_ids):
         errors.append(f"experiment_groups.csv: {error}")
     for row in experiments:
@@ -559,6 +565,24 @@ def main() -> int:
             )
             if row.get("window_key") != expected_key:
                 errors.append(f"search_log.csv: {row['search_id']} window_key does not match immutable parameters")
+        if row.get("discovery_route") in {"backward-citation", "forward-citation"}:
+            expected_key = citation_window_key(
+                parent_paper_id=row["parent_paper_id"], direction=row["index_direction"],
+                source=row["source"], source_parameters=row["source_parameters"],
+                publication_cutoff=row.get("publication_cutoff"),
+                requested_max_n=row.get("requested_max_n"),
+            )
+            if row.get("window_key") != expected_key:
+                errors.append(f"search_log.csv: {row['search_id']} citation window_key does not match immutable parameters")
+            expected_direction = row["discovery_route"].removesuffix("-citation")
+            if row.get("event_type") != row.get("discovery_route") or row.get("index_direction") != expected_direction:
+                errors.append(f"search_log.csv: {row['search_id']} citation event/route/direction disagree")
+            expected_parent_status = {
+                "core": "core", "strict-bridge": "bridge", "review-anchor": "review-anchor",
+                "provisional-core": "provisional-core",
+            }.get(row.get("citation_traversal_basis"))
+            if row.get("citation_parent_node_status") != expected_parent_status:
+                errors.append(f"search_log.csv: {row['search_id']} traversal basis disagrees with parent node status")
         if row.get("parent_paper_id") is not None and row["parent_paper_id"] not in paper_ids:
             errors.append(f"search_log.csv: {row['search_id']} references missing parent paper")
         if row.get("trigger_comparison_id") is not None and row["trigger_comparison_id"] not in comparison_ids:
@@ -568,6 +592,11 @@ def main() -> int:
             errors.append(f"discoveries.csv: {row['discovery_id']} references missing search {row['search_id']}")
         if row["paper_id"] not in paper_ids:
             errors.append(f"discoveries.csv: {row['discovery_id']} references missing paper {row['paper_id']}")
+        search = next((item for item in searches if item["search_id"] == row["search_id"]), None)
+        if search is not None:
+            expected_depth = 1 if search.get("citation_traversal_basis") == "strict-bridge" else 0
+            if row.get("bridge_lineage_depth") != expected_depth:
+                errors.append(f"discoveries.csv: {row['discovery_id']} bridge lineage depth differs from its search route")
     for row in missing:
         if row["paper_id"] not in paper_ids:
             errors.append(f"missing_texts.csv: references missing paper {row['paper_id']}")
@@ -827,6 +856,27 @@ def main() -> int:
         durable_keys = set(completed_window_hashes)
         if not completed_keys.issubset(durable_keys):
             errors.append("run_state.json: completed_search_window_keys includes no durable complete snapshot")
+        eligible_bridges = set(state.get("bridge_depth0_eligible_paper_ids", []))
+        pending_bridges = set(state.get("pending_bridge_expansion_paper_ids", []))
+        completed_bridges = set(state.get("completed_bridge_expansion_paper_ids", []))
+        if not pending_bridges.issubset(eligible_bridges):
+            errors.append("run_state.json: pending bridge parents lack a depth-zero eligible lineage")
+        if pending_bridges & completed_bridges:
+            errors.append("run_state.json: a bridge expansion cannot be both pending and complete")
+        bridge_paper_ids = {row["paper_id"] for row in papers if row.get("citation_node_status") == "bridge"}
+        if not pending_bridges.issubset(bridge_paper_ids):
+            errors.append("run_state.json: pending bridge parents are not currently strict bridge nodes")
+        for paper_id in completed_bridges:
+            directions = {
+                row.get("index_direction") for row in searches
+                if row.get("parent_paper_id") == paper_id
+                and row.get("citation_traversal_basis") == "strict-bridge"
+                and row.get("window_status") in {"complete", "reused"}
+            }
+            if directions != {"backward", "forward"}:
+                errors.append(
+                    f"run_state.json: completed bridge parent {paper_id} lacks completed/reused backward and forward windows"
+                )
 
     if errors:
         for error in errors:

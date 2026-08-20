@@ -12,6 +12,7 @@
     "abstract_status", "abstract_screen", "abstract_screen_reason", "abstract_screen_method", "abstract_screen_rule_id",
     "fulltext_priority", "fulltext_priority_reason", "fulltext_status", "fulltext_source",
     "missing_text_priority", "citation_expansion_status", "citation_expansion_reason",
+    "bridge_empirical_status", "citation_node_status", "citation_node_reason",
     "duplicate_of", "duplicate_reason", "current_status", "notes"
   ],
   "properties": {
@@ -83,6 +84,11 @@
       "enum": ["not-assessed", "pending", "in-progress", "complete", "not-applicable"]
     },
     "citation_expansion_reason": { "$ref": "#/$defs/nullableString" },
+    "bridge_empirical_status": { "enum": ["not-assessed", "empirical", "nonempirical"] },
+    "citation_node_status": {
+      "enum": ["not-assessed", "not-assessable-missing-fulltext", "core", "bridge", "not-node"]
+    },
+    "citation_node_reason": { "$ref": "#/$defs/nullableString" },
     "duplicate_of": {
       "anyOf": [
         { "type": "string", "pattern": "^P[0-9]{6}$" },
@@ -213,6 +219,23 @@
     {
       "if": { "properties": { "citation_expansion_status": { "enum": ["pending", "in-progress", "complete", "not-applicable"] } }, "required": ["citation_expansion_status"] },
       "then": { "properties": { "citation_expansion_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "citation_node_status": { "not": { "const": "not-assessed" } } }, "required": ["citation_node_status"] },
+      "then": { "properties": { "citation_node_reason": { "type": "string", "minLength": 1 } } }
+    },
+    {
+      "if": { "properties": { "citation_node_status": { "enum": ["core", "bridge", "not-node"] } }, "required": ["citation_node_status"] },
+      "then": {
+        "properties": {
+          "fulltext_status": { "enum": ["retrieved-published", "retrieved-repository", "retrieved-preprint"] },
+          "current_status": { "const": "fulltext-evaluated" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "citation_node_status": { "const": "bridge" } }, "required": ["citation_node_status"] },
+      "then": { "properties": { "bridge_empirical_status": { "const": "empirical" } } }
     },
     {
       "if": { "properties": { "duplicate_of": { "type": "string" } }, "required": ["duplicate_of"] },

@@ -14,7 +14,9 @@
     "next_evidence_assessment_counter", "next_fulltext_asset_counter",
     "workflow_phase", "blind_lane_status", "citation_frontier_status",
     "process_frontier_status", "activated_normalized_y_labels",
-    "completed_search_window_keys", "title_screen_batch_size", "abstract_screen_batch_size",
+    "bridge_depth0_eligible_paper_ids", "pending_bridge_expansion_paper_ids",
+    "completed_bridge_expansion_paper_ids", "completed_search_window_keys",
+    "title_screen_batch_size", "abstract_screen_batch_size",
     "started_at", "last_checkpoint_at", "model", "model_version", "agent_harness"
   ],
   "properties": {
@@ -65,6 +67,9 @@
     "activated_normalized_y_labels": {
       "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }
     },
+    "bridge_depth0_eligible_paper_ids": { "$ref": "#/$defs/paperIdSet" },
+    "pending_bridge_expansion_paper_ids": { "$ref": "#/$defs/paperIdSet" },
+    "completed_bridge_expansion_paper_ids": { "$ref": "#/$defs/paperIdSet" },
     "completed_search_window_keys": {
       "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }
     },
@@ -77,5 +82,11 @@
     "model": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
     "model_version": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
     "agent_harness": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "paperIdSet": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^P[0-9]{6}$" }
+    }
   }
 }

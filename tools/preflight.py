@@ -188,6 +188,9 @@ def main() -> int:
     for field in (
         "experiment_id", "paper_id", "experiment_label", "source_location",
         "physical_experiment_description", "pre_atomization_assessed",
+        "citation_specific_x", "citation_awareness_attempt", "citation_functional_y",
+        "bridge_near_neighbor", "bridge_disposition", "bridge_failed_ingredient",
+        "bridge_rationale",
         "functional_structure_assessment", "functional_structure_reason",
         "disposition", "disposition_reason", "linked_comparison_ids", "support_roles",
     ):
@@ -196,6 +199,15 @@ def main() -> int:
     search_properties = schemas.get("search_log.schema.json", {}).get("properties", {})
     if "trigger_comparison_id" not in search_properties:
         errors.append("search-log schema lacks trigger_comparison_id")
+    for field in (
+        "citation_parent_node_status", "citation_parent_bridge_depth", "citation_traversal_basis",
+    ):
+        if field not in search_properties:
+            errors.append(f"search-log schema lacks {field}")
+    discovery_properties = schemas.get("discoveries.schema.json", {}).get("properties", {})
+    for field in ("bridge_lineage_depth", "bridge_lineage_reason"):
+        if field not in discovery_properties:
+            errors.append(f"discoveries schema lacks {field}")
     state_properties = schemas.get("run_state.schema.json", {}).get("properties", {})
     if "next_comparison_counters" not in state_properties:
         errors.append("run-state schema lacks next_comparison_counters")
@@ -205,6 +217,8 @@ def main() -> int:
         "next_evidence_assessment_counter", "next_fulltext_asset_counter",
         "workflow_phase", "blind_lane_status", "citation_frontier_status",
         "process_frontier_status", "activated_normalized_y_labels",
+        "bridge_depth0_eligible_paper_ids", "pending_bridge_expansion_paper_ids",
+        "completed_bridge_expansion_paper_ids",
         "completed_search_window_keys",
     ):
         if field not in state_properties:
@@ -213,6 +227,7 @@ def main() -> int:
     for field in (
         "abstract_status", "title_screen_method", "title_screen_rule_id",
         "abstract_screen_method", "abstract_screen_rule_id",
+        "bridge_empirical_status", "citation_node_status", "citation_node_reason",
     ):
         if field not in paper_properties:
             errors.append(f"papers schema lacks {field}")

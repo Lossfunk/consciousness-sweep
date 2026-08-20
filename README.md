@@ -2,7 +2,7 @@
 
 `consciousness-sweep` is an auditable literature-review package for a specific question: for a content or entity **X** and a downstream cognitive process **Y**, does awareness of X change whether, or how well, Y can use X? The search is deliberately result-neutral. A useful experiment may support processing without awareness, an awareness-linked difference, no detectable difference, equivalence within a stated region, or an unresolved conclusion.
 
-> **Current status: pre-freeze.** This package is not preregistered and does not yet authorize a registered sweep. Its publication cutoff, preferred search-source order, fallback order, and final query status still require human decisions. The active protocol is `draft-0.8.5`, the package is `prefreeze-package-0.8.5`, and the schema is `prefreeze-schema-0.8.4`.
+> **Current status: pre-freeze.** This package is not preregistered and does not yet authorize a registered sweep. Its publication cutoff, preferred search-source order, fallback order, and final query status still require human decisions. The active protocol is `draft-0.8.6`, the package is `prefreeze-package-0.8.6`, and the schema is `prefreeze-schema-0.8.5`.
 
 `PROTOCOL.md` is the normative scientific and procedural authority. `AGENTS.md` is the normative execution authority. [METHODS.md](METHODS.md) is the complete, derived human-readable description; this README is only an orientation.
 
@@ -22,6 +22,8 @@ Stable identifiers distinguish papers, experiment groups, comparisons, searches,
 ## Discovery and screening
 
 Discovery is broad but bounded and auditable. The principal route starts with fixed empirical seeds and review/discovery anchors. Eligible nodes are expanded backward through references and forward through citing papers in waves. A comparison that independently earns a qualifying downstream Y can activate a bounded process-specific search using a closed, provenance-recorded lexical set for that Y. These routes are complemented—not replaced—by a mandatory supplementary blind-spot lane.
+
+One-hop empirical bridges improve citation recall without generic graph crawling: an adequately evaluated, non-CORE empirical paper may receive one citation hop only when one physical experiment clearly contains exactly two CORE ingredients, explicitly fails the third, and is a justified near-neighbor. Bridge-to-bridge continuation on the same lineage is prohibited; CORE resets depth, and bridge status affects discovery only.
 
 The workflow is **principal-first, blind-last**. The seed, anchor, citation, and activated process frontiers must first be provisionally satisfied. Only then are all frozen blind windows run. The current conservative pre-freeze candidate has five active families—attention/control, metacognition/monitoring, binding/integration, memory operations, and action/rule-guided use—on OpenAlex and Europe PMC, with one initial window of at most 40 records per family and source. The generic learning/adaptation block is disabled because its current rendering was pathological; learning remains eligible through every other route. Whether to redesign or omit that generic block is still a pre-freeze decision.
 
