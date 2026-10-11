@@ -1,0 +1,204 @@
+{
+  "candidates": [
+    {
+      "candidate_roles": [
+        "fulltext_reader",
+        "rescue_audit"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "openai-sol-reference",
+      "limits": "General capability does not qualify this literature-reading task, another role or native scientific certification. Pin model, effort, harness and context; backend identity may not be observable.",
+      "model_id": "gpt-6.1-sol",
+      "motivation": "Public documentation positions Sol for complex work at lower cost than Astra; compare exact role configurations using source-grounded behavior and measured resource use.",
+      "provider": "OpenAI",
+      "source_urls": [
+        "https://developers.openai.com/api/docs/models/gpt-6.1-sol"
+      ]
+    },
+    {
+      "candidate_roles": [
+        "title_screen",
+        "abstract_screen"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "openai-luna-screening",
+      "limits": "Model size, price and broad performance do not establish sufficiently low false exclusion.",
+      "model_id": "gpt-6-luna",
+      "motivation": "Documented efficient model for focused high-volume work. Proposed local screening profile is medium effort, pending separate title and abstract qualification.",
+      "provider": "OpenAI",
+      "source_urls": [
+        "https://developers.openai.com/api/docs/models/gpt-6-luna"
+      ]
+    },
+    {
+      "candidate_roles": [
+        "fulltext_reader",
+        "rescue_audit"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "openai-astra-reader",
+      "limits": "Do not assume higher effort or a stronger general model always improves this reader. Effort and endpoint must be qualified explicitly.",
+      "model_id": "gpt-6-astra",
+      "motivation": "Documented strongest OpenAI candidate for demanding reasoning/research; consider when it improves grounded judgments enough to justify measured resource use.",
+      "provider": "OpenAI",
+      "source_urls": [
+        "https://developers.openai.com/api/docs/models/gpt-6-astra"
+      ]
+    },
+    {
+      "candidate_roles": [
+        "title_screen",
+        "abstract_screen"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "anthropic-haiku-screening",
+      "limits": "Claude Code and API authentication, defaults and telemetry differ. Do not translate OpenAI effort by matching its name.",
+      "model_id": "claude-haiku-5-5",
+      "motivation": "Current documented high-volume classification/extraction candidate; first economical Claude profile to consider.",
+      "provider": "Anthropic",
+      "source_urls": [
+        "https://platform.claude.com/docs/en/models/haiku-5-5/overview"
+      ]
+    },
+    {
+      "candidate_roles": [
+        "abstract_screen",
+        "fulltext_reader",
+        "rescue_audit"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "anthropic-sonnet-balanced",
+      "limits": "Optional comparator, not a requirement to test a third Claude. Role approval remains separate.",
+      "model_id": "claude-sonnet-5-5",
+      "motivation": "Documented middle tier; evaluate if it can lower reader cost or improve screening relative to the other accessible Claude profiles.",
+      "provider": "Anthropic",
+      "source_urls": [
+        "https://platform.claude.com/docs/en/models/sonnet-5-5/overview"
+      ]
+    },
+    {
+      "candidate_roles": [
+        "fulltext_reader",
+        "rescue_audit"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "anthropic-opus-reader",
+      "limits": "Vendor research evaluations do not establish consciousness-literature eligibility judgments. Exact effort and serving route need evaluation.",
+      "model_id": "claude-opus-5-5",
+      "motivation": "Documented knowledge-work and reasoning candidate; first Claude reader configuration to consider when available.",
+      "provider": "Anthropic",
+      "source_urls": [
+        "https://platform.claude.com/docs/en/models/opus-5-5/overview"
+      ]
+    },
+    {
+      "candidate_roles": [
+        "title_screen",
+        "abstract_screen",
+        "fulltext_reader"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "zai-glm-flash",
+      "limits": "320B total parameters despite 18B active; do not treat it as a laptop-size model. Hosted FlashX, general API, Coding Plan and self-hosting are distinct profiles.",
+      "model_id": "glm-5.3-flash",
+      "motivation": "Open-weight multimodal candidate with long-context support; economical hosted GLM option to test for screening and reading.",
+      "provider": "Z.AI_or_self_hosted",
+      "source_urls": [
+        "https://huggingface.co/zai-org/GLM-5.3-Flash",
+        "https://docs.z.ai/guides/vlm/glm-5.3-flash"
+      ],
+      "weights_id": "zai-org/GLM-5.3-Flash",
+      "weights_license": "MIT"
+    },
+    {
+      "candidate_roles": [
+        "fulltext_reader",
+        "rescue_audit"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "zai-glm-reader",
+      "limits": "Text-only profile needs a qualified path for decisive figures. Open weights under a custom license must not be described as universally permissive open source. Reasoning controls low/high/max are provider-specific.",
+      "model_id": "glm-5.3",
+      "motivation": "Stronger long-context GLM candidate to compare when accessible; public reasoning/agent evidence motivates evaluation only.",
+      "provider": "Z.AI_or_self_hosted",
+      "source_urls": [
+        "https://docs.z.ai/guides/llm/glm-5.3",
+        "https://huggingface.co/zai-org/GLM-5.3",
+        "https://huggingface.co/zai-org/GLM-5.3/raw/main/LICENSE"
+      ],
+      "weights_id": "zai-org/GLM-5.3",
+      "weights_license": "custom_GLM-5.3_license"
+    },
+    {
+      "candidate_roles": [
+        "title_screen",
+        "abstract_screen"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "qwen-local-screening",
+      "limits": "35B total is not 3B resident memory. Pin quantization, weight revision and backend; measure full-context and concurrent memory on the actual host. Not claimed to be the latest or strongest Qwen. Reader use requires additional qualification.",
+      "model_id": "Qwen/Qwen3.6-35B-A3B",
+      "motivation": "Smaller open-weight text/vision candidate with documented local serving support; worth measuring when local compute is available.",
+      "provider": "self_hosted_or_hosted_provider",
+      "source_urls": [
+        "https://huggingface.co/Qwen/Qwen3.6-35B-A3B"
+      ],
+      "weights_license": "Apache-2.0"
+    },
+    {
+      "candidate_roles": [
+        "fulltext_reader",
+        "rescue_audit"
+      ],
+      "evidence_status": "candidate_not_task_qualified",
+      "id": "deepseek-reader-comparator",
+      "limits": "Large server model despite Flash naming. Exact hosted API identifier must be discovered, not inferred from the weight repository. Reasoning effort integers are not equivalent to another provider's xhigh.",
+      "model_id": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "motivation": "Optional open-weight multimodal comparator with documented document and long-context evaluations.",
+      "provider": "self_hosted_or_hosted_provider",
+      "source_urls": [
+        "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash"
+      ],
+      "weights_license": "MIT"
+    }
+  ],
+  "evaluation_dimensions": [
+    "same-X, awareness and downstream-Y fidelity",
+    "source grounding and evidence locations",
+    "false exclusions and independent rescue",
+    "restraint about null results and equivalence",
+    "structured-output validity",
+    "completed-call rate",
+    "measured tokens, latency and spend"
+  ],
+  "harness_sources": {
+    "claude_code": [
+      "https://code.claude.com/docs/en/headless",
+      "https://code.claude.com/docs/en/model-config",
+      "https://code.claude.com/docs/en/authentication",
+      "https://code.claude.com/docs/en/statusline"
+    ],
+    "claude_effort": [
+      "https://platform.claude.com/docs/en/build-with-claude/effort"
+    ],
+    "codex": [
+      "https://learn.chatgpt.com/docs/app-server",
+      "https://developers.openai.com/siwc/token-sharing-open-source/codex-app-server"
+    ],
+    "openclaw": [
+      "https://docs.openclaw.ai/providers/zai",
+      "https://docs.openclaw.ai/gateway/local-models"
+    ]
+  },
+  "qualification_rule": "Availability, authorization and task-specific qualification are separate. Exact configurations need source-grounded evidence before approved use; users are not required to evaluate the entire catalog.",
+  "ranking_scope": "No global model-quality ranking; qualification applies to the exact model, effort, adapter, context and scientific role.",
+  "registry_version": "portable-candidates-1",
+  "selection_order": [
+    "Establish accessible, authorized exact role configurations and explicit resource limits.",
+    "Check source-grounded behavior for that role; keep unknown performance and costs explicit.",
+    "Recommend the least costly accessible configuration that passes those checks; compare justified alternatives only within the commissioning budget."
+  ],
+  "selection_policy": "Recommend one accessible configuration and evaluate only justified alternatives within the user's agreed commissioning budget.",
+  "status": "candidate_catalog_not_runtime_allowlist",
+  "verified_on": "2026-10-11"
+}

@@ -1,0 +1,909 @@
+"""Durable operational state for commissioned prospect sweeps (not native records).
+
+Every mutation has a WAL-backed transaction. Scientific reasons and outputs are
+opaque JSON here: this store cannot establish scientific eligibility/completion.
+Connections are short-lived, making a Store safe to use across worker threads.
+Job dependencies are job IDs. Expiration never steals a worker's lease; recovery
+requires evidence that its registered local process has exited.
+"""
+from contextlib import contextmanager
+import csv
+import hashlib
+from itertools import islice
+import json
+import math
+import os
+from pathlib import Path
+import re
+import socket
+import sqlite3
+import tempfile
+import time
+import unicodedata
+from urllib.parse import unquote
+
+
+class StoreError(RuntimeError):
+    pass
+
+
+class StaleLease(StoreError):
+    pass
+
+
+class BudgetExceeded(StoreError):
+    pass
+
+
+def _json(value):
+    return json.dumps(value, sort_keys=True, ensure_ascii=True,
+                      separators=(",", ":"), allow_nan=False)
+
+
+def _state_delta(previous, value, path=()):
+    """Lossless structural changes; unchanged frontier branches are not logged."""
+    if previous == value:
+        return []
+    if isinstance(previous, dict) and isinstance(value, dict):
+        changes = []
+        for key in sorted(previous.keys() | value.keys()):
+            here = path + (key,)
+            if key not in value:
+                changes.append({"op": "remove", "path": list(here), "previous": previous[key]})
+            elif key not in previous:
+                changes.append({"op": "add", "path": list(here), "value": value[key]})
+            else:
+                changes.extend(_state_delta(previous[key], value[key], here))
+        return changes
+    if isinstance(previous, list) and isinstance(value, list) and len(value) >= len(previous) and value[:len(previous)] == previous:
+        return [{"op": "append", "path": list(path), "previous_length": len(previous), "values": value[len(previous):]}]
+    return [{"op": "replace", "path": list(path), "previous": previous, "value": value}]
+
+
+def apply_state_delta(previous, changes):
+    """Reconstruct an audited control state, refusing inconsistent prior values."""
+    value = json.loads(_json(previous))
+    for change in changes:
+        change = json.loads(_json(change))
+        path, operation = change["path"], change["op"]
+        parent = value
+        for key in path[:-1]:
+            parent = parent[key]
+        if not path:
+            if operation == "append" and isinstance(value, list) and len(value) == change["previous_length"]:
+                value.extend(change["values"])
+            elif operation == "replace" and value == change["previous"]:
+                value = change["value"]
+            else:
+                raise ValueError("Control delta root does not match previous state")
+            continue
+        key = path[-1]
+        if operation == "add":
+            if key in parent:
+                raise ValueError("Control delta adds an existing field")
+            parent[key] = change["value"]
+        elif operation == "remove":
+            if parent[key] != change["previous"]:
+                raise ValueError("Control delta removes a different prior value")
+            del parent[key]
+        elif operation == "replace":
+            if parent[key] != change["previous"]:
+                raise ValueError("Control delta replaces a different prior value")
+            parent[key] = change["value"]
+        elif operation == "append":
+            if not isinstance(parent[key], list) or len(parent[key]) != change["previous_length"]:
+                raise ValueError("Control delta appends to a different prior list")
+            parent[key].extend(change["values"])
+        else:
+            raise ValueError("Unknown control delta operation")
+    return value
+
+
+def normalize_doi(value):
+    value = unquote(str(value or "")).strip().lower()
+    for prefix in ("https://doi.org/", "http://doi.org/", "http://dx.doi.org/",
+                   "https://dx.doi.org/", "doi:"):
+        if value.startswith(prefix):
+            return value[len(prefix):].strip()
+    return value
+
+
+def _normal(value):
+    return " ".join(unicodedata.normalize("NFKC", str(value or "")).casefold().split())
+
+
+def _bibliographic_key(record):
+    title = _normal(record.get("title"))
+    while title and unicodedata.category(title[0]).startswith("P"):
+        title = title[1:].lstrip()
+    while title and unicodedata.category(title[-1]).startswith("P"):
+        title = title[:-1].rstrip()
+    authors = record.get("authors") or record.get("author")
+    if isinstance(authors, list):
+        authors = [_normal(a.get("name") or a.get("display_name") or _json(a))
+                   if isinstance(a, dict) else _normal(a) for a in authors]
+    else:
+        authors = _normal(authors)
+    year = _normal(record.get("year") or record.get("publication_year"))
+    if not title or not authors or not year:
+        return None  # Incomplete identities are never silently collapsed.
+    return hashlib.sha256(_json([title, year, authors]).encode()).hexdigest()
+
+
+def _amounts(value, default_calls=0):
+    value = value or {}
+    result = {
+        "calls": value.get("calls", default_calls),
+        "tokens": value.get("tokens", value.get("total_tokens",
+                            value.get("input_tokens", 0) + value.get("output_tokens", 0))),
+        "cost_usd": value.get("cost_usd", 0),
+    }
+    for key, amount in result.items():
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount < 0:
+            raise ValueError("Invalid nonnegative budget amount: " + key)
+    return result
+
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS counters(kind TEXT PRIMARY KEY,next_value INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT,at REAL NOT NULL,
+ kind TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS papers(id TEXT PRIMARY KEY,doi TEXT,biblio TEXT,status TEXT NOT NULL,
+ record TEXT NOT NULL,created_at REAL NOT NULL,updated_at REAL NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS paper_doi ON papers(doi) WHERE doi IS NOT NULL;
+CREATE INDEX IF NOT EXISTS paper_biblio ON papers(biblio);
+CREATE INDEX IF NOT EXISTS paper_status ON papers(status,id);
+CREATE TABLE IF NOT EXISTS encounters(id INTEGER PRIMARY KEY AUTOINCREMENT,
+ paper_id TEXT NOT NULL REFERENCES papers(id),at REAL NOT NULL,provenance TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS encounter_paper ON encounters(paper_id,id);
+CREATE TABLE IF NOT EXISTS owners(owner TEXT PRIMARY KEY,pid INTEGER NOT NULL,
+ host TEXT NOT NULL,registered_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,stage TEXT NOT NULL,key TEXT NOT NULL,
+ payload TEXT NOT NULL,priority INTEGER NOT NULL,state TEXT NOT NULL,available_at REAL NOT NULL,
+ owner TEXT,token INTEGER NOT NULL DEFAULT 0,lease_until REAL,attempts INTEGER NOT NULL DEFAULT 0,
+ result TEXT,error TEXT,projected INTEGER NOT NULL DEFAULT 0,created_at REAL NOT NULL,updated_at REAL NOT NULL,UNIQUE(stage,key));
+CREATE INDEX IF NOT EXISTS job_ready ON jobs(state,stage,available_at,priority DESC,id);
+CREATE INDEX IF NOT EXISTS job_priority ON jobs(state,priority DESC,id,available_at,stage);
+CREATE INDEX IF NOT EXISTS job_owner ON jobs(owner,state);
+CREATE INDEX IF NOT EXISTS job_projection ON jobs(state,projected,id);
+CREATE TABLE IF NOT EXISTS dependencies(job_id TEXT NOT NULL REFERENCES jobs(id),
+ dependency_id TEXT NOT NULL REFERENCES jobs(id),PRIMARY KEY(job_id,dependency_id),
+ CHECK(job_id != dependency_id));
+CREATE TABLE IF NOT EXISTS retry_links(parent_id TEXT PRIMARY KEY REFERENCES jobs(id),
+ child_id TEXT NOT NULL UNIQUE REFERENCES jobs(id),reason TEXT NOT NULL,actor TEXT NOT NULL,
+ evidence TEXT NOT NULL,created_at REAL NOT NULL,CHECK(parent_id != child_id));
+CREATE TABLE IF NOT EXISTS reservations(id TEXT PRIMARY KEY,job_id TEXT NOT NULL REFERENCES jobs(id),
+ attempt_key TEXT NOT NULL,owner TEXT NOT NULL,token INTEGER NOT NULL,estimate TEXT NOT NULL,
+ usage TEXT,state TEXT NOT NULL,admitted INTEGER NOT NULL DEFAULT 0,created_at REAL NOT NULL,
+ updated_at REAL NOT NULL,UNIQUE(job_id,attempt_key));
+CREATE INDEX IF NOT EXISTS reservation_state ON reservations(state);
+CREATE INDEX IF NOT EXISTS reservation_job ON reservations(job_id,created_at DESC,id DESC);
+CREATE TABLE IF NOT EXISTS budget_totals(id INTEGER PRIMARY KEY CHECK(id=1),
+ calls REAL NOT NULL,tokens REAL NOT NULL,cost_usd REAL NOT NULL,unknown_outcomes INTEGER NOT NULL);
+INSERT OR IGNORE INTO budget_totals VALUES(1,0,0,0,0);
+"""
+
+
+class Store:
+    def __init__(self, run_dir):
+        self.run_dir = Path(run_dir)
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+        self.path = self.run_dir / "state.sqlite3"
+        with self._connection() as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.executescript(_SCHEMA)
+
+    @contextmanager
+    def _connection(self):
+        conn = sqlite3.connect(str(self.path), timeout=30, isolation_level=None)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("PRAGMA synchronous=FULL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+    @contextmanager
+    def _transaction(self):
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                yield conn
+                conn.execute("COMMIT")
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+
+    @staticmethod
+    def _event(conn, kind, payload):
+        return conn.execute("INSERT INTO events(at,kind,payload) VALUES(?,?,?)",
+                            (time.time(), kind, _json(payload))).lastrowid
+
+    @staticmethod
+    def _id(conn, kind, prefix):
+        conn.execute("INSERT OR IGNORE INTO counters(kind,next_value) VALUES(?,1)", (kind,))
+        number = conn.execute("SELECT next_value FROM counters WHERE kind=?", (kind,)).fetchone()[0]
+        conn.execute("UPDATE counters SET next_value=next_value+1 WHERE kind=?", (kind,))
+        return ("%s%06d" if kind == "paper" else "%s%012d") % (prefix, number)
+
+    @staticmethod
+    def _require_initialized(conn):
+        if not conn.execute("SELECT 1 FROM meta WHERE key='plan'").fetchone():
+            raise StoreError("Initialize this run before adding operational state")
+
+    def initialize(self, plan):
+        encoded = _json(plan)
+        with self._transaction() as conn:
+            if conn.execute("SELECT 1 FROM meta WHERE key='plan'").fetchone():
+                raise StoreError("Run already initialized; resume without reinitializing")
+            conn.execute("INSERT INTO meta VALUES('plan',?)", (encoded,))
+            conn.execute("INSERT INTO meta VALUES('schema_version','1')")
+            self._event(conn, "initialized", {"plan": plan, "scope": "commissioned-prospect-operations"})
+
+    def plan(self):
+        with self._connection() as conn:
+            row = conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()
+            if not row:
+                raise StoreError("Run is not initialized")
+            return json.loads(row[0])
+
+    def event(self, kind, payload):
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            return self._event(conn, kind, payload)
+
+    def get_state(self, key, default=None):
+        with self._connection() as conn:
+            row = conn.execute("SELECT value FROM meta WHERE key=?", ("state:" + key,)).fetchone()
+            return json.loads(row[0]) if row else default
+
+    def set_state(self, key, value, reason):
+        return self.mutate_state(key, lambda previous: value, reason)
+
+    def mutate_state(self, key, updater, reason, default=None):
+        """Atomic control update. updater must be fast, pure and must not call Store."""
+        if not key or not str(reason).strip():
+            raise ValueError("A control update requires a key and reason")
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            row = conn.execute("SELECT value FROM meta WHERE key=?", ("state:" + key,)).fetchone()
+            previous = json.loads(row[0]) if row else default
+            value = updater(previous)
+            encoded = _json(value)
+            self._event(conn, "control_updated", {"key": key, "previous": previous, "value": value, "reason": reason})
+            conn.execute("INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)", ("state:" + key, encoded))
+            return value
+
+    def mutate_state_compact(self, key, updater, reason, *, history_field=None):
+        """Atomic current state plus reconstructable append-only change history.
+
+        Large frontier transitions use this opt-in form instead of storing two
+        full frontier snapshots in every event. An append-only history field is
+        moved to that transition's event and cleared from current state. This
+        bounds historical duplication; current state is still read/serialized
+        as a whole and therefore costs O(current frontier size) per mutation.
+        """
+        if not key or not str(reason).strip():
+            raise ValueError("A control update requires a key and reason")
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            row = conn.execute("SELECT value FROM meta WHERE key=?", ("state:" + key,)).fetchone()
+            if row is None:
+                raise ValueError("Initialize compact control state before updating it")
+            previous = json.loads(row[0])
+            value = updater(json.loads(row[0]))
+            archived = []
+            if history_field is not None:
+                old_history, new_history = previous.get(history_field, []), value.get(history_field, [])
+                if not isinstance(old_history, list) or not isinstance(new_history, list) or new_history[:len(old_history)] != old_history:
+                    raise ValueError("Frontier history must be append-only")
+                archived = new_history
+                value[history_field] = []
+            encoded = _json(value)
+            changes = _state_delta(previous, value)
+            self._event(conn, "control_delta", {"key": key, "changes": changes,
+                "previous_sha256": hashlib.sha256(_json(previous).encode()).hexdigest(),
+                "value_sha256": hashlib.sha256(encoded.encode()).hexdigest(),
+                "history_field": history_field, "history_entries": archived, "reason": reason})
+            conn.execute("UPDATE meta SET value=? WHERE key=?", (encoded, "state:" + key))
+            return value
+
+    def job_by_key(self, stage, key):
+        """One indexed immutable job identity; no growing scheduler-side key list."""
+        with self._connection() as conn:
+            row = conn.execute("SELECT * FROM jobs WHERE stage=? AND key=?", (stage, key)).fetchone()
+            return self._job(row) if row is not None else None
+
+    def add_paper(self, record, provenance):
+        """Record every encounter; exact DOI or unambiguous complete bibliography dedups.
+
+        New discovery metadata never silently replaces a previous semantic decision.
+        DOI-bearing conflicting works are kept distinct even if their titles match.
+        """
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            return self._add_paper(conn, record, provenance)
+
+    def import_many(self, records, provenance=None):
+        """Import at most 1000 records in one all-or-nothing transaction.
+
+        With provenance supplied, records is a list of metadata dicts. Otherwise
+        pass (record, provenance) pairs, preserving each encounter independently.
+        """
+        records = list(islice(iter(records), 1001))
+        if not 1 <= len(records) <= 1000:
+            raise ValueError("Import batches must contain 1..1000 records")
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            return [self._add_paper(conn, item, provenance) if provenance is not None
+                    else self._add_paper(conn, item[0], item[1]) for item in records]
+
+    def _add_paper(self, conn, record, provenance):
+        if not str(record.get("title", "")).strip():
+            raise ValueError("Paper requires a title")
+        doi, biblio = normalize_doi(record.get("doi")) or None, _bibliographic_key(record)
+        existing = None
+        if doi:
+            existing = conn.execute("SELECT id FROM papers WHERE doi=?", (doi,)).fetchone()
+        elif biblio:
+            matches = conn.execute("SELECT id FROM papers WHERE biblio=? LIMIT 2", (biblio,)).fetchall()
+            if len(matches) == 1:
+                existing = matches[0]
+        is_new = existing is None
+        paper_id = self._id(conn, "paper", "P") if is_new else existing[0]
+        if is_new:
+            now = time.time()
+            value = dict(record, paper_id=paper_id)
+            if doi:
+                value["doi"] = doi
+            value.setdefault("status", "discovered")
+            self._event(conn, "paper_added", {"paper_id": paper_id, "record": value,
+                                             "reason": "New logical work by deterministic identity"})
+            conn.execute("INSERT INTO papers VALUES(?,?,?,?,?,?,?)",
+                         (paper_id, doi, biblio, value["status"], _json(value), now, now))
+        self._event(conn, "discovery_encounter", {"paper_id": paper_id, "is_new": is_new,
+                                                  "reason": "new identity" if is_new else "matching DOI or complete bibliography",
+                                                  "provenance": provenance})
+        conn.execute("INSERT INTO encounters(paper_id,at,provenance) VALUES(?,?,?)",
+                     (paper_id, time.time(), _json(provenance)))
+        return paper_id, is_new
+
+    def paper(self, paper_id):
+        with self._connection() as conn:
+            row = conn.execute("SELECT record FROM papers WHERE id=?", (paper_id,)).fetchone()
+            return json.loads(row[0]) if row else None
+
+    def papers(self, status=None, limit=100, after_id=None):
+        if limit < 1 or limit > 10000:
+            raise ValueError("Bounded page limit must be 1..10000")
+        sql, args = "SELECT record FROM papers WHERE id>?", [after_id or ""]
+        if status is not None:
+            sql += " AND status=?"
+            args.append(status)
+        with self._connection() as conn:
+            return [json.loads(row[0]) for row in conn.execute(sql + " ORDER BY id LIMIT ?", args + [limit])]
+
+    def update_paper(self, paper_id, changes, reason, actor="coordinator"):
+        if not str(reason).strip():
+            raise ValueError("A state change requires a reason")
+        if set(changes) & {"id", "paper_id", "doi", "title", "authors", "author", "year", "publication_year"}:
+            raise ValueError("Identity corrections require an explicit deduplication operation")
+        with self._transaction() as conn:
+            row = conn.execute("SELECT record FROM papers WHERE id=?", (paper_id,)).fetchone()
+            if not row:
+                raise KeyError(paper_id)
+            value = json.loads(row[0])
+            self._event(conn, "paper_updated", {"paper_id": paper_id, "changes": changes,
+                                                 "previous": {k: value.get(k) for k in changes},
+                                                 "reason": reason, "actor": actor})
+            value.update(changes)
+            conn.execute("UPDATE papers SET record=?,status=?,updated_at=? WHERE id=?",
+                         (_json(value), value["status"], time.time(), paper_id))
+            return value
+
+    def enqueue(self, stage, key, payload, priority=0, dependencies=()):
+        if not stage or not key:
+            raise ValueError("Job stage and stable key are required")
+        encoded, deps = _json(payload), sorted(set(dependencies))
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            old = conn.execute("SELECT * FROM jobs WHERE stage=? AND key=?", (stage, key)).fetchone()
+            if old:
+                old_deps = [r[0] for r in conn.execute("SELECT dependency_id FROM dependencies WHERE job_id=? ORDER BY dependency_id", (old["id"],))]
+                if old["payload"] != encoded or old_deps != deps or old["priority"] != priority:
+                    raise StoreError("A job key is already bound to different inputs")
+                return old["id"]
+            job_id, now = self._id(conn, "job", "J"), time.time()
+            conn.execute("INSERT INTO jobs(id,stage,key,payload,priority,state,available_at,created_at,updated_at) VALUES(?,?,?,?,?,'pending',?,?,?)",
+                         (job_id, stage, key, encoded, priority, now, now, now))
+            conn.executemany("INSERT INTO dependencies VALUES(?,?)", [(job_id, dep) for dep in deps])
+            self._event(conn, "job_enqueued", {"job_id": job_id, "stage": stage, "key": key,
+                                               "payload_sha256": hashlib.sha256(encoded.encode()).hexdigest(), "dependencies": deps})
+            return job_id
+
+    def retry_failed(self, old_id, reason, actor, evidence):
+        """Create one explicitly supervised successor without refunding the past.
+
+        The recovery layer verifies receipt files, exact input/profile hashes and
+        transport termination before supplying this proof. Here the atomic
+        boundary checks its shape, the failed job and dependency graph. Original
+        jobs, receipts, attempts and all charged/unknown reservations are kept.
+        """
+        if not str(reason).strip() or not str(actor).strip():
+            raise ValueError("A supervised retry needs an explicit reason and actor")
+        if not isinstance(evidence, dict) or evidence.get("kind") != "terminal-model-receipt":
+            raise ValueError("Retry requires a verified terminal model receipt")
+        for name in ("receipt_sha256", "binding_sha256", "prompt_sha256", "schema_sha256", "source_sha256", "profile_sha256"):
+            if not isinstance(evidence.get(name), str) or not re.fullmatch(r"[0-9a-f]{64}", evidence[name]):
+                raise ValueError("Retry receipt proof lacks " + name)
+        if (evidence.get("terminal_transport") not in {"local-process-exited", "http-request-returned"}
+                or evidence.get("receipt_status") not in {"failed", "deferred", "completed"}
+                or evidence.get("admission") not in {"admitted", "unknown"}
+                or not isinstance(evidence.get("receipt_path"), str) or not evidence["receipt_path"].strip()
+                or not isinstance(evidence.get("completed_at"), str) or not evidence["completed_at"].strip()):
+            raise ValueError("Retry proof does not establish a terminal transport outcome")
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            old = conn.execute("SELECT * FROM jobs WHERE id=?", (old_id,)).fetchone()
+            if (old is None or old["state"] != "failed" or old["stage"] not in {"title", "abstract", "rescue", "audit", "reader"}
+                    or old["owner"] is not None or old["lease_until"] is not None):
+                raise StoreError("Only a failed, unowned model job can be explicitly retried")
+            if conn.execute("SELECT 1 FROM dependencies WHERE dependency_id=? LIMIT 1", (old_id,)).fetchone():
+                raise StoreError("Retry with outgoing dependents needs explicit graph reconciliation and is unsupported")
+            prior = conn.execute("SELECT * FROM retry_links WHERE parent_id=?", (old_id,)).fetchone()
+            if prior:
+                previous = json.loads(prior["evidence"])
+                if any(previous.get(key) != evidence.get(key) for key in ("receipt_sha256", "binding_sha256", "profile_sha256")):
+                    raise StoreError("Retry is already bound to different terminal evidence")
+                return prior["child_id"]
+            dependencies = [row[0] for row in conn.execute("SELECT dependency_id FROM dependencies WHERE job_id=? ORDER BY dependency_id", (old_id,))]
+            child, now, key = self._id(conn, "job", "J"), time.time(), "supervised-retry:" + old_id
+            conn.execute("INSERT INTO jobs(id,stage,key,payload,priority,state,available_at,created_at,updated_at) VALUES(?,?,?,?,?,'pending',?,?,?)",
+                         (child, old["stage"], key, old["payload"], old["priority"], now, now, now))
+            conn.executemany("INSERT INTO dependencies VALUES(?,?)", [(child, dep) for dep in dependencies])
+            self._event(conn, "job_enqueued", {"job_id": child, "stage": old["stage"], "key": key,
+                        "payload_sha256": hashlib.sha256(old["payload"].encode()).hexdigest(), "dependencies": dependencies})
+            conn.execute("INSERT INTO retry_links VALUES(?,?,?,?,?,?)", (old_id, child, reason, actor, _json(evidence), now))
+            self._event(conn, "job_retry_authorized", {"parent_id": old_id, "child_id": child,
+                        "reason": reason, "actor": actor, "evidence": evidence,
+                        "budget_policy": "Original charged and unknown reservations retained; new call requires fresh admission"})
+            return child
+
+    def retries(self, limit=100, after_parent_id=None):
+        """Bounded supervisor/validator retry lineage with immutable proof."""
+        if not 1 <= limit <= 1000:
+            raise ValueError("Retry page limit must be between 1 and 1000")
+        with self._connection() as conn:
+            rows = conn.execute("SELECT * FROM retry_links WHERE parent_id>? ORDER BY parent_id LIMIT ?", (after_parent_id or "", limit))
+            return [dict(row, evidence=json.loads(row["evidence"])) for row in rows]
+
+    @staticmethod
+    def _job(row):
+        value = dict(row)
+        value["job_id"] = value["id"]
+        value["payload"] = json.loads(value["payload"])
+        value["result"] = json.loads(value["result"]) if value["result"] is not None else None
+        return value
+
+    def register_owner(self, owner, pid=None, host=None):
+        """Owner names bind one process lifetime; use a random nonce in each name."""
+        with self._transaction() as conn:
+            self._register_owner(conn, owner, pid or os.getpid(), host or socket.gethostname())
+
+    @staticmethod
+    def _register_owner(conn, owner, pid, host):
+        row = conn.execute("SELECT * FROM owners WHERE owner=?", (owner,)).fetchone()
+        if row and (row["pid"] != pid or row["host"] != host):
+            raise StoreError("Owner name is bound to another process; use a fresh owner ID")
+        conn.execute("INSERT OR IGNORE INTO owners VALUES(?,?,?,?)", (owner, pid, host, time.time()))
+
+    def claim(self, stages, owner, lease_seconds=300, limit=1):
+        if not stages or not owner or not 1 <= limit <= 1000 or lease_seconds <= 0:
+            raise ValueError("Claim requires stages, owner, bounded limit and positive lease")
+        now = time.time()
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            self._register_owner(conn, owner, os.getpid(), socket.gethostname())
+            placeholders = ",".join("?" for _ in stages)
+            rows = conn.execute("SELECT j.* FROM jobs j WHERE j.state='pending' AND j.stage IN (" + placeholders + ") AND j.available_at<=? AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete') ORDER BY j.priority DESC,j.id LIMIT ?",
+                                list(stages) + [now, limit]).fetchall()
+            result = []
+            for row in rows:
+                token = row["token"] + 1
+                self._event(conn, "job_claimed", {"job_id": row["id"], "owner": owner, "token": token})
+                conn.execute("UPDATE jobs SET state='running',owner=?,token=?,lease_until=?,updated_at=? WHERE id=?",
+                             (owner, token, now + lease_seconds, now, row["id"]))
+                value = self._job(row)
+                value.update(state="running", owner=owner, token=token, lease_until=now + lease_seconds)
+                result.append(value)
+            return result
+
+    @staticmethod
+    def _owned(conn, job_id, owner, token):
+        row = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
+        if not row or row["state"] != "running" or row["owner"] != owner or row["token"] != token:
+            raise StaleLease("Worker no longer owns job " + job_id)
+        return row
+
+    def heartbeat(self, job_id, owner, token, lease_seconds=300):
+        if lease_seconds <= 0:
+            raise ValueError("Lease must be positive")
+        with self._transaction() as conn:
+            self._owned(conn, job_id, owner, token)
+            conn.execute("UPDATE jobs SET lease_until=?,updated_at=? WHERE id=?",
+                         (time.time() + lease_seconds, time.time(), job_id))
+
+    def complete(self, job_id, owner, token, result):
+        with self._transaction() as conn:
+            self._owned(conn, job_id, owner, token)
+            self._event(conn, "job_completed", {"job_id": job_id, "owner": owner, "token": token,
+                                                "result": result})
+            conn.execute("UPDATE jobs SET state='complete',result=?,lease_until=NULL,updated_at=? WHERE id=?",
+                         (_json(result), time.time(), job_id))
+
+    def defer(self, job_id, owner, token, reason, delay_seconds=0):
+        self._finish_attempt(job_id, owner, token, reason, "pending", delay_seconds)
+
+    def fail(self, job_id, owner, token, reason):
+        self._finish_attempt(job_id, owner, token, reason, "failed", 0)
+
+    def _finish_attempt(self, job_id, owner, token, reason, state, delay):
+        if not str(reason).strip() or delay < 0:
+            raise ValueError("A failure/defer requires a reason and nonnegative delay")
+        with self._transaction() as conn:
+            self._owned(conn, job_id, owner, token)
+            self._event(conn, "job_deferred" if state == "pending" else "job_failed",
+                        {"job_id": job_id, "owner": owner, "token": token, "reason": reason, "delay_seconds": delay})
+            conn.execute("UPDATE jobs SET state=?,owner=NULL,lease_until=NULL,available_at=?,error=?,updated_at=? WHERE id=?",
+                         (state, time.time() + delay, reason, time.time(), job_id))
+
+    def reconcile(self):
+        """Report expired leases without stealing them or changing attempt budgets."""
+        with self._connection() as conn:
+            return [dict(row) for row in conn.execute("SELECT id,owner,token,lease_until FROM jobs WHERE state='running' AND lease_until<? ORDER BY id LIMIT 1000", (time.time(),))]
+
+    def recover_owner(self, owner, reason, proof):
+        """Recover only a demonstrably exited registered local process.
+
+        proof={'kind':'process-dead','pid':123,'host':socket.gethostname()}.
+        Remote recovery must be handled by its supervisor; elapsed time is not
+        proof. Admitted unsettled calls become unknown and continue holding funds.
+        """
+        if not str(reason).strip() or proof.get("kind") != "process-dead":
+            raise StoreError("Recovery requires a reason and process-dead proof")
+        with self._transaction() as conn:
+            registered = conn.execute("SELECT * FROM owners WHERE owner=?", (owner,)).fetchone()
+            if not registered or proof.get("pid") != registered["pid"] or proof.get("host") != registered["host"]:
+                raise StoreError("Recovery proof does not match registered owner")
+            if registered["host"] != socket.gethostname():
+                raise StoreError("Cannot verify a remote process locally")
+            try:
+                os.kill(registered["pid"], 0)
+            except ProcessLookupError:
+                pass
+            except (PermissionError, OSError) as exc:
+                raise StoreError("Cannot prove owner has exited") from exc
+            else:
+                raise StoreError("Owner process remains live; do not steal its work")
+            rows = conn.execute("SELECT id FROM jobs WHERE owner=? AND state='running'", (owner,)).fetchall()
+            for row in rows:
+                self._event(conn, "owner_recovered", {"job_id": row[0], "owner": owner, "reason": reason, "proof": proof})
+                conn.execute("UPDATE jobs SET state='pending',owner=NULL,token=token+1,lease_until=NULL,available_at=?,updated_at=? WHERE id=?",
+                             (time.time(), time.time(), row[0]))
+            for reservation in conn.execute("SELECT * FROM reservations WHERE owner=? AND state IN ('reserved','admitted')", (owner,)).fetchall():
+                if reservation["admitted"]:
+                    conn.execute("UPDATE budget_totals SET unknown_outcomes=unknown_outcomes+1 WHERE id=1")
+                else:
+                    self._budget_delta(conn, json.loads(reservation["estimate"]), -1)
+                conn.execute("UPDATE reservations SET state=?,updated_at=? WHERE id=?",
+                             ("unknown" if reservation["admitted"] else "released", time.time(), reservation["id"]))
+            return [row[0] for row in rows]
+
+    @staticmethod
+    def _budget_totals(conn):
+        row = conn.execute("SELECT calls,tokens,cost_usd,unknown_outcomes FROM budget_totals WHERE id=1").fetchone()
+        return dict(row)
+
+    @staticmethod
+    def _budget_delta(conn, amounts, sign=1):
+        conn.execute("UPDATE budget_totals SET calls=calls+?,tokens=tokens+?,cost_usd=cost_usd+? WHERE id=1",
+                     (sign * amounts["calls"], sign * amounts["tokens"], sign * amounts["cost_usd"]))
+
+    def reserve_budget(self, job_id, owner, token, estimate, attempt_key):
+        """Reserve bounded call capacity before invocation, without admitting an attempt.
+
+        Estimates must be conservative upper bounds for enforced monetary caps;
+        unavailable provider pricing/usage must not be presented as known zero.
+        An unresolved billed outcome stops token/spend-capped dispatch until
+        reconciled. Calls-only subscription runs retain its one-call reservation
+        and may continue independent work; unknown calls never count as zero.
+        """
+        amounts = _amounts(estimate, default_calls=1)
+        if amounts["calls"] != 1 or not attempt_key:
+            raise ValueError("Each reservation represents one actual model call")
+        with self._transaction() as conn:
+            self._owned(conn, job_id, owner, token)
+            previous = conn.execute("SELECT * FROM reservations WHERE job_id=? AND attempt_key=?", (job_id, attempt_key)).fetchone()
+            if previous:
+                if previous["estimate"] != _json(amounts) or previous["owner"] != owner or previous["token"] != token:
+                    raise StoreError("Attempt key already bound to different inputs/owner")
+                return previous["id"]
+            if conn.execute("SELECT 1 FROM reservations WHERE job_id=? AND state IN ('reserved','admitted','unknown')", (job_id,)).fetchone():
+                raise StoreError("This job already has an unresolved reservation")
+            plan = json.loads(conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()[0])
+            caps = plan.get("budgets", plan.get("budget", {}))
+            totals = self._budget_totals(conn)
+            token_cap = caps.get("max_tokens", caps.get("tokens"))
+            spend_cap = caps.get("max_cost_usd", caps.get("cost_usd"))
+            if totals["unknown_outcomes"] and (token_cap is not None or spend_cap is not None and spend_cap > 0):
+                raise BudgetExceeded("Resolve unknown billed outcomes before additional dispatch")
+            for name in ("calls", "tokens", "cost_usd"):
+                cap = caps.get("max_" + name, caps.get(name))
+                measured = name in estimate or name == "calls" or name == "tokens" and ("total_tokens" in estimate or {"input_tokens", "output_tokens"} <= set(estimate))
+                if cap is not None and not measured:
+                    raise BudgetExceeded("A bounded estimate is required for capped " + name)
+                if cap is not None and totals[name] + amounts[name] > cap + 1e-12:
+                    raise BudgetExceeded("Run budget would exceed " + name)
+            reservation_id, now = self._id(conn, "reservation", "B"), time.time()
+            self._event(conn, "budget_reserved", {"reservation_id": reservation_id, "job_id": job_id,
+                                                   "attempt_key": attempt_key, "estimate": amounts})
+            conn.execute("INSERT INTO reservations(id,job_id,attempt_key,owner,token,estimate,state,created_at,updated_at) VALUES(?,?,?,?,?,?,'reserved',?,?)",
+                         (reservation_id, job_id, attempt_key, owner, token, _json(amounts), now, now))
+            self._budget_delta(conn, amounts)
+            return reservation_id
+
+    def admit_attempt(self, reservation_id, owner, token, max_attempts=None):
+        with self._transaction() as conn:
+            row = conn.execute("SELECT * FROM reservations WHERE id=?", (reservation_id,)).fetchone()
+            if not row or row["owner"] != owner or row["token"] != token:
+                raise StaleLease("Reservation owner mismatch")
+            job = self._owned(conn, row["job_id"], owner, token)
+            if row["state"] == "released":
+                raise StoreError("A released reservation cannot be readmitted")
+            if row["admitted"]:
+                return job["attempts"]
+            if row["state"] != "reserved":
+                raise StoreError("Reservation is no longer available for admission")
+            if max_attempts is not None and job["attempts"] >= max_attempts:
+                raise BudgetExceeded("Job has exhausted its lifetime attempt budget")
+            self._event(conn, "attempt_admitted", {"reservation_id": reservation_id, "job_id": row["job_id"], "attempt": job["attempts"] + 1})
+            conn.execute("UPDATE reservations SET admitted=1,state='admitted',updated_at=? WHERE id=?", (time.time(), reservation_id))
+            conn.execute("UPDATE jobs SET attempts=attempts+1,updated_at=? WHERE id=?", (time.time(), row["job_id"]))
+            return job["attempts"] + 1
+
+    def settle_budget(self, reservation_id, usage=None, outcome="known", reason="provider receipt"):
+        """Settle once; an unknown outcome can later be resolved from a receipt.
+
+        not-started is allowed only before admission. There is deliberately no
+        automatic refund for an admitted call lacking a transport response.
+        """
+        if outcome not in ("known", "unknown", "not-started", "completed-unmetered") or not str(reason).strip():
+            raise ValueError("Invalid budget settlement")
+        with self._transaction() as conn:
+            row = conn.execute("SELECT * FROM reservations WHERE id=?", (reservation_id,)).fetchone()
+            if not row:
+                raise KeyError(reservation_id)
+            if outcome == "not-started" and row["admitted"]:
+                raise StoreError("Cannot refund an admitted call without a usage receipt")
+            if outcome != "not-started" and not row["admitted"]:
+                raise StoreError("Call must be admitted before settlement")
+            if outcome == "known" and usage is None:
+                raise ValueError("Known outcomes require an explicit usage receipt")
+            state = {"known": "settled", "unknown": "unknown", "not-started": "released", "completed-unmetered": "unmetered"}[outcome]
+            amounts = _amounts(usage, default_calls=1) if outcome == "known" else None
+            if amounts is not None and amounts["calls"] != 1:
+                raise ValueError("An admitted model invocation always consumes one call")
+            encoded = _json(amounts) if amounts is not None else None
+            if row["state"] in ("settled", "released"):
+                if row["state"] == state and row["usage"] == encoded:
+                    return
+                raise StoreError("Settled budget history cannot be silently overwritten")
+            if row["state"] == "unmetered" and state == "unknown":
+                raise StoreError("Known completion cannot become an unknown execution")
+            self._event(conn, "budget_settled", {"reservation_id": reservation_id, "state": state,
+                                                  "usage": amounts, "reason": reason})
+            if state not in ("unknown", "unmetered"):
+                self._budget_delta(conn, json.loads(row["estimate"]), -1)
+                if amounts is not None:
+                    self._budget_delta(conn, amounts)
+            if row["state"] == "unknown":
+                conn.execute("UPDATE budget_totals SET unknown_outcomes=unknown_outcomes-1 WHERE id=1")
+            if state == "unknown":
+                conn.execute("UPDATE budget_totals SET unknown_outcomes=unknown_outcomes+1 WHERE id=1")
+            conn.execute("UPDATE reservations SET state=?,usage=?,updated_at=? WHERE id=?",
+                         (state, encoded, time.time(), reservation_id))
+
+    def reject_admission(self, reservation_id, reason, proof):
+        """Refund only an explicit authenticated endpoint pre-admission denial.
+
+        A CLI failure, timeout or absent response is not proof. Local preflight
+        should occur before admit_attempt and use not-started settlement instead.
+        Confirmed HTTP 401/403/429 rejects the provisional dispatch count too.
+        """
+        if (not str(reason).strip() or proof.get("admission") != "not-admitted"
+                or proof.get("status") not in ("deferred", "failed")
+                or proof.get("http_status") not in (401, 403, 429)
+                or not isinstance(proof.get("binding_sha256"), str)
+                or len(proof["binding_sha256"]) != 64):
+            raise StoreError("Explicit bound HTTP pre-admission rejection receipt required")
+        with self._transaction() as conn:
+            row = conn.execute("SELECT * FROM reservations WHERE id=?", (reservation_id,)).fetchone()
+            if not row:
+                raise KeyError(reservation_id)
+            if row["state"] == "released":
+                return
+            if row["state"] not in ("reserved", "admitted", "unknown"):
+                raise StoreError("Cannot refund an already completed call")
+            self._event(conn, "admission_rejected", {"reservation_id": reservation_id, "job_id": row["job_id"],
+                                                       "reason": reason, "proof": proof})
+            self._budget_delta(conn, json.loads(row["estimate"]), -1)
+            if row["state"] == "unknown":
+                conn.execute("UPDATE budget_totals SET unknown_outcomes=unknown_outcomes-1 WHERE id=1")
+            if row["admitted"]:
+                conn.execute("UPDATE jobs SET attempts=attempts-1,updated_at=? WHERE id=? AND attempts>0", (time.time(), row["job_id"]))
+            conn.execute("UPDATE reservations SET state='released',updated_at=? WHERE id=?", (time.time(), reservation_id))
+
+    @staticmethod
+    def _reservation(row):
+        if row is None:
+            return None
+        value = dict(row)
+        for key in ("estimate", "usage"):
+            value[key] = json.loads(value[key]) if value[key] is not None else None
+        return value
+
+    def reservation(self, reservation_id):
+        with self._connection() as conn:
+            return self._reservation(conn.execute("SELECT * FROM reservations WHERE id=?", (reservation_id,)).fetchone())
+
+    def reservation_for_job(self, job_id):
+        with self._connection() as conn:
+            return self._reservation(conn.execute("SELECT * FROM reservations WHERE job_id=? ORDER BY created_at DESC,id DESC LIMIT 1", (job_id,)).fetchone())
+
+    latest_reservation = reservation_for_job
+
+    def budget(self):
+        with self._connection() as conn:
+            result = self._budget_totals(conn)
+            result["completed_unmetered_calls"] = conn.execute("SELECT count(*) FROM reservations WHERE state='unmetered'").fetchone()[0]
+            return result
+
+    def list_jobs(self, stage=None, state=None, limit=100, after_id=None):
+        if not 1 <= limit <= 10000:
+            raise ValueError("Bounded page limit must be 1..10000")
+        sql, args = "SELECT * FROM jobs WHERE id>?", [after_id or ""]
+        for name, value in (("stage", stage), ("state", state)):
+            if value is not None:
+                sql += " AND " + name + "=?"
+                args.append(value)
+        with self._connection() as conn:
+            return [self._job(row) for row in conn.execute(sql + " ORDER BY id LIMIT ?", args + [limit])]
+
+    def job(self, job_id):
+        with self._connection() as conn:
+            row = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
+            return self._job(row) if row else None
+
+    def unprojected_results(self, limit=100):
+        if not 1 <= limit <= 10000:
+            raise ValueError("Bounded page limit must be 1..10000")
+        with self._connection() as conn:
+            return [self._job(row) for row in conn.execute("SELECT * FROM jobs WHERE state='complete' AND projected=0 ORDER BY id LIMIT ?", (limit,))]
+
+    def mark_projected(self, job_id):
+        """Acknowledge idempotent downstream state/jobs after durable completion."""
+        with self._transaction() as conn:
+            row = conn.execute("SELECT state,projected FROM jobs WHERE id=?", (job_id,)).fetchone()
+            if not row or row["state"] != "complete":
+                raise StoreError("Only completed results can be projected")
+            if not row["projected"]:
+                self._event(conn, "result_projected", {"job_id": job_id})
+                conn.execute("UPDATE jobs SET projected=1,updated_at=? WHERE id=?", (time.time(), job_id))
+
+    def count_jobs(self, stage=None, state=None):
+        sql, args = "SELECT count(*) FROM jobs WHERE 1=1", []
+        for name, value in (("stage", stage), ("state", state)):
+            if value is not None:
+                sql += " AND " + name + "=?"
+                args.append(value)
+        with self._connection() as conn:
+            return conn.execute(sql, args).fetchone()[0]
+
+    def result(self, job_id):
+        with self._connection() as conn:
+            row = conn.execute("SELECT result FROM jobs WHERE id=?", (job_id,)).fetchone()
+            return json.loads(row[0]) if row and row[0] is not None else None
+
+    def status(self):
+        with self._connection() as conn:
+            stages = {}
+            for row in conn.execute("SELECT stage,state,count(*) AS n FROM jobs WHERE NOT EXISTS (SELECT 1 FROM retry_links r WHERE r.parent_id=jobs.id) GROUP BY stage,state"):
+                stages.setdefault(row["stage"], {})[row["state"]] = row["n"]
+            papers = {r[0]: r[1] for r in conn.execute("SELECT status,count(*) FROM papers GROUP BY status")}
+            return {"jobs": stages, "papers": papers,
+                    "unfinished": conn.execute("SELECT count(*) FROM jobs WHERE state IN ('pending','running')").fetchone()[0],
+                    "failed": conn.execute("SELECT count(*) FROM jobs WHERE state='failed' AND NOT EXISTS (SELECT 1 FROM retry_links r WHERE r.parent_id=jobs.id)").fetchone()[0],
+                    "historical_failed": conn.execute("SELECT count(*) FROM jobs WHERE state='failed'").fetchone()[0],
+                    "retried_failed": conn.execute("SELECT count(*) FROM retry_links").fetchone()[0],
+                    "encounters": conn.execute("SELECT count(*) FROM encounters").fetchone()[0],
+                    "events": conn.execute("SELECT count(*) FROM events").fetchone()[0],
+                    "budget": self._budget_totals(conn), "native_scientific_completion": False}
+
+    def events(self, after_id=0, limit=None):
+        """Stream a consistent snapshot; close the generator if stopping early."""
+        with self._connection() as conn:
+            conn.execute("BEGIN")
+            sql, args = "SELECT * FROM events WHERE id>? ORDER BY id", [after_id]
+            if limit is not None:
+                sql += " LIMIT ?"
+                args.append(limit)
+            for row in conn.execute(sql, args):
+                value = dict(row)
+                value["payload"] = json.loads(value["payload"])
+                yield value
+
+    def export(self, directory=None):
+        """Stream one database snapshot to atomic individual JSONL/CSV files.
+
+        An export manifest is published last. Its file hashes allow readers to
+        reject a partially replaced multi-file export after interruption.
+        """
+        directory = Path(directory or self.run_dir / "exports")
+        directory.mkdir(parents=True, exist_ok=True)
+        temp_paths, manifest = [], {"files": {}, "scope": "commissioned-prospect-operations"}
+        try:
+            with self._connection() as conn:
+                conn.execute("BEGIN")
+                manifest["last_event_id"] = conn.execute("SELECT coalesce(max(id),0) FROM events").fetchone()[0]
+                for table in ("papers", "jobs", "encounters", "events", "reservations", "retry_links"):
+                    destination = directory / (table + ".jsonl")
+                    fd, name = tempfile.mkstemp(prefix="." + table + "-", dir=str(directory))
+                    temp_paths.append(name)
+                    digest, count = hashlib.sha256(), 0
+                    with os.fdopen(fd, "wb") as output:
+                        for row in conn.execute("SELECT * FROM " + table + " ORDER BY " + ("parent_id" if table == "retry_links" else "id")):
+                            item = dict(row)
+                            for key in ("record", "payload", "provenance", "result", "estimate", "usage", "evidence"):
+                                if key in item and item[key] is not None:
+                                    item[key] = json.loads(item[key])
+                            line = (_json(item) + "\n").encode()
+                            output.write(line)
+                            digest.update(line)
+                            count += 1
+                        output.flush()
+                        os.fsync(output.fileno())
+                    os.replace(name, destination)
+                    manifest["files"][destination.name] = {"sha256": digest.hexdigest(), "rows": count}
+                destination = directory / "papers.csv"
+                fd, name = tempfile.mkstemp(prefix=".papers-", dir=str(directory))
+                temp_paths.append(name)
+                with os.fdopen(fd, "w", newline="", encoding="utf-8") as output:
+                    writer = csv.DictWriter(output, fieldnames=["paper_id", "title", "doi", "year", "status", "record_json"])
+                    writer.writeheader()
+                    for row in conn.execute("SELECT id,record FROM papers ORDER BY id"):
+                        record = json.loads(row["record"])
+                        writer.writerow({"paper_id": row["id"], "title": record.get("title", ""), "doi": record.get("doi", ""),
+                                         "year": record.get("year", record.get("publication_year", "")), "status": record["status"], "record_json": row["record"]})
+                    output.flush()
+                    os.fsync(output.fileno())
+                os.replace(name, destination)
+                digest = hashlib.sha256()
+                with destination.open("rb") as stream:
+                    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                manifest["files"][destination.name] = {"sha256": digest.hexdigest()}
+            fd, name = tempfile.mkstemp(prefix=".manifest-", dir=str(directory))
+            temp_paths.append(name)
+            with os.fdopen(fd, "w", encoding="utf-8") as output:
+                output.write(_json(manifest) + "\n")
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(name, directory / "manifest.json")
+            return manifest
+        finally:
+            for name in temp_paths:
+                if os.path.exists(name):
+                    os.unlink(name)

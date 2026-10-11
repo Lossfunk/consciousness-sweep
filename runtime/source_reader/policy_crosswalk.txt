@@ -1,0 +1,95 @@
+Concise decision-trail policy crosswalk — contract concise-decision-trail-v1
+
+Authority: development/current/PROTOCOL.md, version 0.9.13. These instructions
+are a derived reading aid, not an amendment to scientific eligibility. The full
+protocol is not reproduced in the model prompt. Runtime bindings fingerprint
+this aid and the operative authorities; identifiers, source hashes, attempt
+metadata and native lifecycle status belong to the code envelope.
+
+Scientific instructions -> controlling PROTOCOL sections
+
+Source-grounded prospects, supported claim before tentative role, useful bounded
+associations rather than independent causation by awareness, and result-neutral
+review -> §§1, 12. The practical queue serves human vetting. A provisional
+prospect is not a certified primary/support recommendation.
+
+Aligned existing X, awareness of that content and downstream Y; internally
+generated content distinguished from absent content; qualitative reports,
+graded/probability regimes, actual observations rather than procedure labels,
+objective invisibility distinguished from above-chance performance, timing and
+claim-scoped transfer -> §§1, 2.1, 2.4, 12. Changing X does not automatically
+transfer an old awareness measure. Awareness of constituents does not by itself
+establish awareness of their composed relational content. This does not require
+a separate identification response for every property or a unique neural format.
+
+Same-item reports can support a plausible unresolved awareness interpretation
+while retaining retention/report confounds. Postlearning amount/correctness of
+knowledge requires a positive reason to measure awareness of that same content.
+Neither a universal PAS ban nor automatic report-based admission follows ->
+§§1, 2.1, 12.
+
+Conservative function distinguished from readout and unique mechanism; direct
+registration of X distinguished from downstream use; later-target discrimination
+as a possible outcome of earlier-X use; coherent functional mapping distinguished
+from a positive component -> §§2.4–2.6, 3.1. Each materially distinct proposed
+X→Y mapping earns its own claim-scoped evidence argument. A new label does not
+repair a failed premise, but an independently useful narrower claim can survive.
+
+Comparability, achieved relevant titration versus nonsignificance, physical versus
+internal matching, diagnostic same-Y patterns, signed amplification and bounded
+alternative-control scan -> §§2.2–2.3. Ordinary stronger/longer/unmasked input
+producing a larger effect is not made informative merely by listing the signal
+confound. A prospect's contribution argument identifies located evidence for
+what the comparison adds. This is not a universal matching or primary-level E
+gate: physical-only matching with internal uncertainty, diagnostic patterns across
+strength and genuine unresolved aligned comparisons can remain useful prospects.
+
+Strongest relevant supplied supplementary result, source/version compatibility,
+required versus strengthening evidence, and direct justified transfer rather
+than silently inherited conclusions -> §§2.1, 7.1–7.2, 8. A main contrast's
+limitation does not excuse overlooking narrower within-setting or nondifference
+analyses. Missing a strengthening donor does not invalidate an independently
+supported narrow claim. Known absent evidence differs from uncertain evidence.
+
+Actual direct/joint contrast distinguished from separate significance labels;
+positive whole-function capacity distinguished from equivalence; nondetection
+not equated with zero effect, incapacity or awareness necessity; material
+statistical and same-Y conflicting evidence retained -> §§3–5, 7.2, 8.
+Uncertainty and concern matter through their bearing on the claim, not automatic
+exclusion due to one patient, exploratory analysis or a significance crossing.
+
+Holistic source-grounded contribution, known absent/incompatible comparisons or
+nonfunctional outcomes kept in context, and concrete human judgment rather than
+a promise that rereading settles every causal alternative -> §§1, 12. A known
+unaware-only capacity can retain supplementary scientific value without becoming
+an awareness-comparison prospect. No paper names, expected verdicts, numerical
+scientific scores or keyword classification gates appear in this contract.
+
+Execution boundary
+
+This short model output is deliberately not the native physical-experiment,
+comparison, awareness-regime, statistical-test or evidence-bundle ledger. It
+contains a few materially distinct claim trails and decisive located evidence.
+Shared methods and limitations need not be repeated; incidental statistics and
+duplicate demonstrations need not be enumerated. Source coverage is unchanged.
+Native audits, IDs, physical group enumeration and claim/bundle records remain
+subject to AGENTS §§5–7, 9–12 and PROTOCOL §8 when that separate certification
+workflow is invoked. No native support-only comparison row is invented here.
+
+schema.py validates strict structure, source-identity status consistency, exact
+asset/unit pair references and unread-unit exceptions. The same page label in
+article and supplement is not the same source unit. A complete assessment must
+include at least one source-located claim/decision trail, including for context;
+an incomplete or identity-unresolved assessment may have none. Complete attests
+that all supplied extracted units were read, not that every scientific premise is resolved
+or that unseen pixels were inspected. Missing external texts and other extraction
+limitations are reported separately. This self-report does not mechanically prove
+reading quality; source checking remains necessary. The validator neither
+interprets prose nor certifies a scientific disposition, source transfer,
+statistical inference or primary/support tier.
+
+Incomplete or source-identity-unresolved assessments remain visibly incomplete;
+transport validation is not scientific acceptance. A staged prospect and even a
+completed bounded commissioning task do not certify native strong exports,
+discovery completeness, title/abstract recall, registered-sweep stopping rules
+or human acceptance. These remain separate explicit statuses and obligations.

@@ -1,107 +1,245 @@
-# consciousness-sweep
+# Consciousness literature sweep
 
-`consciousness-sweep` is an auditable literature-review package for a specific question: for a content or entity **X** and a downstream cognitive process **Y**, does awareness of X change whether, or how well, Y can use X? The search is deliberately result-neutral. A useful experiment may support processing without awareness, an awareness-linked difference, no detectable difference, equivalence within a stated region, or an unresolved conclusion.
+A portable, resumable literature pipeline for finding studies that help explain
+how awareness of an entity X relates to its use by a downstream function Y.
+Its deliverable is a source-grounded prospect queue for scientific review.
 
-> **Current status: pre-freeze.** This package is not preregistered and does not yet authorize a registered sweep. Its publication cutoff, preferred search-source order, fallback order, and final query status still require human decisions. The active protocol is `draft-0.8.6`, the package is `prefreeze-package-0.8.6`, and the schema is `prefreeze-schema-0.8.5`.
+Download this repository, open it in your coding agent, and say:
 
-`PROTOCOL.md` is the normative scientific and procedural authority. `AGENTS.md` is the normative execution authority. [METHODS.md](METHODS.md) is the complete, derived human-readable description; this README is only an orientation.
+> Follow AGENTS.md. Inspect the available system and model access, recommend one
+> configuration, agree a resource allowance with me, and start a bounded run.
 
-## Scientific records and why they are granular
+The agent handles configuration and evaluation work. You do not need to compare
+every model in the candidate catalog or label a new benchmark.
 
-The atomic scientific record is a **paper × physical experiment × X→Y comparison**, not a whole paper. A paper can contain several physical experiments, and one experiment can test several genuinely different downstream functions. Conversely, multiple component effects can jointly express one coherent factorial functional relation. Treating either the paper or every reported effect as the unit would therefore merge distinct questions or split one question destructively.
+## Start
 
-The package separates four objects:
-
-- A **logical paper** is the deduplicated bibliographic work. Preprints and published versions are linked only when their relationship is sufficiently clear.
-- A **physical experiment group** is one experiment as conducted and reported. Every physical experiment considered at full text receives a durable group record before any comparison is formed.
-- A **comparison** is one conservative mapping from X to Y within a physical experiment. It is the unit that receives the scientific codes and inference results.
-- A **support-only experiment** supplies evidence for another comparison but does not independently answer an eligible X→Y question. It remains represented as an experiment group and may be linked through an evidence bundle; it does not receive a placeholder comparison.
-
-Stable identifiers distinguish papers, experiment groups, comparisons, searches, result encounters, decisions, evidence objects, and full-text assets. Identifiers are allocated once and never recycled, so revisions do not erase provenance.
-
-## Discovery and screening
-
-Discovery is broad but bounded and auditable. The principal route starts with fixed empirical seeds and review/discovery anchors. Eligible nodes are expanded backward through references and forward through citing papers in waves. A comparison that independently earns a qualifying downstream Y can activate a bounded process-specific search using a closed, provenance-recorded lexical set for that Y. These routes are complemented—not replaced—by a mandatory supplementary blind-spot lane.
-
-One-hop empirical bridges improve citation recall without generic graph crawling: an adequately evaluated, non-CORE empirical paper may receive one citation hop only when one physical experiment clearly contains exactly two CORE ingredients, explicitly fails the third, and is a justified near-neighbor. Bridge-to-bridge continuation on the same lineage is prohibited; CORE resets depth, and bridge status affects discovery only.
-
-The workflow is **principal-first, blind-last**. The seed, anchor, citation, and activated process frontiers must first be provisionally satisfied. Only then are all frozen blind windows run. The current conservative pre-freeze candidate has five active families—attention/control, metacognition/monitoring, binding/integration, memory operations, and action/rule-guided use—on OpenAlex and Europe PMC, with one initial window of at most 40 records per family and source. The generic learning/adaptation block is disabled because its current rendering was pathological; learning remains eligible through every other route. Whether to redesign or omit that generic block is still a pre-freeze decision.
-
-Every returned record inside a completed window is recorded and screened. Rediscoveries remain in the discovery history even when they resolve to an existing logical paper. A genuinely new blind-lane node can reopen citation expansion, and a genuinely new qualifying Y can reopen process search. The sweep cannot finish until those reopened frontiers again satisfy their stopping rules.
-
-Screening is semantic and paper-specific. Titles are reviewed in batches of at most 25 and abstracts in batches of at most 10, solely to amortize context; every paper receives its own decision and reason. Regexes, keywords, embeddings, citation counts, numerical relevance scores, and hidden lexical heuristics cannot independently exclude a record. A retained paper with no obtainable abstract is marked abstract-unavailable, prioritized from its title and provenance, and may proceed to full-text retrieval. Final comparison classification requires full text.
-
-## A, E, and F
-
-Each comparison is characterized along three design dimensions before its scientific outcomes are classified:
-
-- **A: awareness evidence for X.** `A-direct` uses qualifying evidence in the focal experiment; `A-validated` uses a sufficiently transferable validation procedure; `A-transfer-risk` marks material transfer or sensitivity uncertainty; and `A-absent` means qualifying evidence is absent. Subjective evidence, informative objective invisibility evidence, or both may qualify. A described awareness procedure is not the same as a reported result. Strong A requires a supportive, located critical result in the focal experiment or, for transferred validation, a complete result-bearing awareness bundle.
-- **E: first-order evidence about X.** `E-matched` requires active matching/titration on the relevant direct measure or successful equivalence under a stated margin. `E-diagnostic` is an alternative strong route for unmatched evidence when a prespecified structured same-Y pattern rules out the relevant simple evidence-strength account. `E-physical-only` and `E-uncontrolled` retain cases where stimulus identity or control is insufficient. Nominal physical identity is not internal-evidence matching.
-- **F: meaningful downstream use Y.** `F-meaningful` requires an auditable downstream function or coherent mapping; `F-ambiguous` retains plausible downstream use whose function cannot be assigned conservatively; `F-not-meaningful` covers direct registration, generic neural response, or an effect that does not establish a downstream function. Mechanistic uncertainty does not by itself make F ambiguous.
-
-Before comparisons are finalized, each physical experiment undergoes a pre-atomization functional-structure assessment. Components remain together when they jointly instantiate one conservative factorial mapping and the inference depends on their interaction or structured pattern. They are separated when they represent distinct outputs, stages, or input–output relations. Effect names and mechanism labels do not decide this question.
-
-## Evidence spanning experiments
-
-Some classifications depend on another experiment, analysis, supplement, or external work. Such support is never pooled informally. One **evidence bundle** represents one named premise for one focal comparison. Its required members are declared before the result is used; every member is directly linked with a source location, status, role, transfer reason, and limitation. A bundle is complete only when every required member supports the premise and is decision-used, incomplete when required support is absent, unavailable, unevaluated, or transfer-invalid, and conflicted when a member contradicts or is conflicted. Evidence links are non-transitive.
-
-External support is stored separately as auxiliary evidence and does not enter the candidate pool merely because it was consulted. An execution-only evidence assessment may cache a verified fact for an exact source/version/regime, but it cannot propagate A/E/F or outcome classifications.
-
-## Independent inference axes and overlapping outputs
-
-The package keeps two principal scientific questions independent. **Unaware capacity** asks whether the exact focal Y is supported under the unaware condition. Strong E is not a gate: strong A, meaningful F, whole-Y evidence, adequate statistics, and any inference-critical Meyen requirement govern this route. **Awareness-linked difference** asks whether a direct aware/unaware test on the same focal Y supports a difference; its strongest route requires strong A, strong E, meaningful F, a focal same-experiment statistic, adequate statistics, and the applicable Meyen gate.
-
-Direct comparisons are also recorded descriptively even when weak E prevents a constraint-ready awareness interpretation. A nonsignificant direct test may be classified as **no detectable awareness difference**, but this is not equivalence. **Equivalence-supported no difference** requires positive null evidence from a stated equivalence procedure, sufficiently strong Bayes factor, or an interval entirely within a stated equivalence region; margins are never invented retrospectively.
-
-These are not mutually exclusive paper labels. A comparison may support unaware capacity while also showing an awareness-linked difference, or unaware capacity plus equivalence-supported invariance. Derived files therefore overlap where the scientific claims are compatible. An unresolved view preserves fully evaluated comparisons whose capacity or awareness-effect conclusion remains unclear.
-
-## Independent runs and adjudication
-
-Independent agents receive the same static frozen package but use separate run directories. They do not share dynamic search results, screening decisions, comparison structures, A/E/F codes, evidence assessments, statistical judgments, stopping judgments, or full-text annotations. Within-run workers may divide already reserved non-overlapping work, but all writes use the same locked, schema-aware writer.
-
-Only after compatible independent runs finish may their discovery sets and comparison-level judgments be consolidated. Disagreement is resolved by returning to the source evidence under the frozen protocol, preserving each original judgment and the adjudication trail. Adjudication is not majority voting and cannot change the frozen protocol.
-
-## Repository and outputs
-
-The main package contains:
-
-```text
-PROTOCOL.md                 normative scientific/procedural rules
-AGENTS.md                   normative execution contract
-METHODS.md                  complete derived human-readable methods
-config.yaml, queries.md     versioned execution and search instruments
-seeds_*.csv                 empirical seeds and review/discovery anchors
-schemas/                    strict run-record schemas
-tools/                      initialization, writing, derivation, and validation
-tests/                      synthetic and regression tests
-docs/                       crosswalk, issues, and manual-review guide
-runs/<RUN_ID>/              one isolated run (ignored by Git)
-outputs/consolidated/       post-run consolidation target
-```
-
-Within a run, `papers_master.csv` holds logical-paper state; `experiment_groups.csv` records physical experiments; `experiments_master.csv` holds comparison rows; `search_log.csv` and `discoveries.csv` preserve search events and every encounter; evidence, missing-text, and full-text tables preserve their own provenance; `decision_log.jsonl` is append-only history; and `run_state.json` is the durable checkpoint. Deterministic derived files include design-eligible comparisons, awareness-linked differences, unaware capacities, no-detectable differences, equivalence-supported invariance, unresolved comparisons, and their constraint-ready union.
-
-## Setup and lifecycle
-
-Create the canonical isolated environment and audit this draft:
+Python 3.9 or newer is required. From this directory:
 
 ```sh
-python3 tools/bootstrap_env.py --venv .venv
-.venv/bin/python tools/preflight.py --mode pre-freeze
+python3 bootstrap.py
+.venv/bin/python -B -m sweep doctor --output workspace/inventory.json
 ```
 
-Registered start and resume commands are documented now but must not be used until the package is frozen:
+On Windows, use `.venv\Scripts\python.exe` instead of `.venv/bin/python`.
+Bootstrap creates an isolated environment and installs the pinned dependencies.
+It does not call a model, purchase credits, or start a literature run. The
+inventory records hardware, installed tools and observable access facts without
+printing credentials. Unknown model access or quotas stay unknown.
+
+The default plan uses agent work exchange, which works with Codex, Claude Code,
+OpenClaw or another agent able to read files and run these commands:
 
 ```sh
-.venv/bin/python tools/init_run.py --run-id <RUN_ID> --run-mode start --agent-harness <HARNESS>
-.venv/bin/python tools/init_run.py --run-id <RUN_ID> --run-mode resume --agent-harness <HARNESS>
+.venv/bin/python -B -m sweep plan --preset manual --output workspace/plan.json
 ```
 
-A start refuses an existing run directory. A resume requires exact package/schema compatibility, unchanged immutable-input hashes, and validated durable state; it neither recreates nor truncates prior records. At every search-wave checkpoint, outputs are regenerated and the run is validated:
+Review the recommendation and resource allowance with the user. Choose manual
+exchange or one of the automatic options below. After authorization, record the
+agreement in the chosen plan. For manual exchange:
 
 ```sh
-.venv/bin/python tools/derive_outputs.py --run-id <RUN_ID>
-.venv/bin/python tools/validate_run.py --run-id <RUN_ID>
+.venv/bin/python -B -m sweep plan --preset manual --authorize --output workspace/plan.json
 ```
 
-The run remains incomplete until every principal route, mandatory blind window, reopened citation/process frontier, required full-text evaluation, evidence dependency, audit, and validation condition is satisfied. For the present draft, use only pre-freeze audit commands. Resolve the documented freeze items and complete human review before any registration or scientific execution.
+`--authorize` records permission already given; it is not a substitute for it.
+Plans default to a small commissioning allowance, not a budget for a full sweep.
+The supervising agent should use that allowance to check actual source-reading
+trails against the scientific gates, inspect failures and measure throughput.
+The default is 20 admitted calls. Before expanding, the agent reports what those
+checks establish and proposes a larger allowance; the user need not label a
+benchmark or evaluate the model catalog.
+
+## Automatic model workers
+
+Codex and Claude have separate subscription adapters. The selected model and
+reasoning settings are recorded explicitly; the pipeline does not switch to API
+billing when subscription access fails.
+
+For Claude Code, first confirm that **Usage credits / extra usage are disabled**
+in the account's Usage settings if the run is subscription-only. The adapter
+cannot establish that account setting from the CLI. After authorizing the plan:
+
+```sh
+.venv/bin/python -B -m sweep plan --preset claude --authorize \
+  --claude-extra-usage-disabled --workers 2 --max-calls 20 \
+  --max-seconds 3600 --output workspace/plan.json
+```
+
+This preset requests Haiku 5.5 at medium effort for screening and Opus 5.5 at high
+effort for reading and independent checks. It is a commissioning configuration,
+not a scientific qualification claim. Claude Code 2.1.293 or newer is required.
+The Claude adapter has automated simulated-CLI tests; live account behavior and
+scientific quality must be checked on the recipient's available installation.
+
+The analogous Codex preset is `--preset codex`. It requests Luna/medium for
+titles, Sol/medium for abstracts and Sol/xhigh for reading and checks, with the
+tested `source-only-v1` context to reduce repeated harness instructions. These
+are the final configurations exercised in bounded development checks, not a
+general ranking of model ability. Custom profiles remain supported and can
+explicitly select `codex_context: standard`. Model availability is account-dependent.
+See [EXECUTION.md](EXECUTION.md) for custom profiles, local endpoints, budget
+semantics and the task-specific qualification workflow. Official integration
+references are in [sweep/provider_docs.json](sweep/provider_docs.json).
+The candidate catalog nominates configurations using scientific fidelity,
+source grounding, rescue behavior, null interpretation, reliable structured
+completion and measured resource use. It does not rank every model on a claimed
+universal quality score. The agent recommends the least costly available
+configuration that passes the checks for its role.
+
+Once the selected plan is ready, initialize a fresh run:
+
+```sh
+.venv/bin/python -B -m sweep init --plan workspace/plan.json --run-id first-sweep
+```
+
+The plan becomes immutable for that run. To change models or execution settings,
+create a separately configured run with a new ID; overwriting the external plan
+file does not change an existing run.
+
+## Work from a corpus
+
+Supply UTF-8 JSONL or CSV, one logical work per row. Each row needs a title;
+include DOI, authors, year, abstract and full-text locations where available.
+JSONL supports nested fields directly. Keep local configuration, corpora and
+source inputs under `workspace/` or outside the downloaded repository. Relative
+source paths are relative to the corpus file. CSV arrays use JSON strings.
+
+```json
+{"title":"Study title","doi":"10.1234/example","authors":["A. Researcher"],"year":2020,"abstract":"Article abstract","provided_paths":[{"path":"papers/article.pdf","role":"main"},{"path":"papers/supplement.pdf","role":"supplement","association_reason":"Publisher-provided supplement for this article"}]}
+```
+
+This is a format example, not a paper or expected scientific decision. A missing
+abstract does not exclude a work. Duplicate encounters retain their provenance.
+Supplied source bytes are copied into the run and bound by hash before reading.
+
+```sh
+.venv/bin/python -B -m sweep ingest --run-id first-sweep --input workspace/corpus.jsonl
+.venv/bin/python -B -m sweep close-intake --run-id first-sweep
+.venv/bin/python -B -m sweep run --run-id first-sweep
+.venv/bin/python -B -m sweep status --run-id first-sweep
+.venv/bin/python -B -m sweep estimate --run-id first-sweep
+```
+
+With manual profiles, the agent repeatedly requests a task, reads its complete
+prompt and source packet, writes a JSON response matching its schema, and submits
+it. The returned task directory contains the exact instructions and identifiers:
+
+```sh
+.venv/bin/python -B -m sweep work --run-id first-sweep
+.venv/bin/python -B -m sweep submit --run-id first-sweep \
+  --job-id JOB_ID --input RESPONSE_PATH --actor AGENT_AND_MODEL
+.venv/bin/python -B -m sweep run --run-id first-sweep --local-only
+```
+
+Replace the uppercase placeholders with returned values. `--local-only` prevents
+automatic model dispatch; retrieval may still access public scholarly sources.
+The agent's own subscription/API consumption is external to that command and
+must follow the user's allowance.
+
+Repeat the work/submit/run cycle until the available tasks are handled. At a
+quiet checkpoint after workers finish, validate the saved run and regenerate the
+review pages:
+
+```sh
+.venv/bin/python -B -m sweep validate --run-id first-sweep
+.venv/bin/python -B -m sweep deliver --run-id first-sweep
+.venv/bin/python -B -m sweep status --run-id first-sweep
+```
+
+Inspect the validation result; a valid partial run can still have unresolved
+work. Validation checks integrity and provenance, not scientific correctness.
+
+## Discover literature
+
+A plan with `"mode": "discovery"` initializes the frozen empirical seeds and
+review anchors. For a separate discovery run, have the agent prepare an
+authorized configuration using the profile/resource fields in `EXECUTION.md`:
+
+```sh
+.venv/bin/python -B -m sweep plan --config workspace/discovery-configuration.json \
+  --output workspace/discovery-plan.json
+.venv/bin/python -B -m sweep init --plan workspace/discovery-plan.json --run-id discovery-sweep
+.venv/bin/python -B -m sweep discovery-init --run-id discovery-sweep
+.venv/bin/python -B -m sweep run --run-id discovery-sweep
+.venv/bin/python -B -m sweep native-work --run-id discovery-sweep
+```
+
+Native work units ask the agent for source-located experiment-group, citation,
+earned-function or wave-audit evidence. Submit the requested JSON with
+`native-submit --paper-id TASK_ID --input RESPONSE_PATH --actor AGENT_AND_MODEL`.
+Here `TASK_ID` may be a paper ID or a returned source/wave task identifier.
+These handoffs are agent work, not an assignment for the user to evaluate models.
+The supervising agent must keep servicing them. Automatic headless reader
+workers do not independently complete every native discovery judgment.
+
+Discovery follows the frozen principal-first, blind-last rules. Retrieval
+failures, unresolved identities and resource exhaustion leave obligations open.
+A prospect label does not establish citation eligibility or an earned process Y.
+
+## Review and resume
+
+Results accumulate under `runs/RUN_ID/`. Open `delivery/index.html` in a browser
+for the reading queue, searchable titles and per-paper decision trails. “Show
+all” also displays context and human-declined records. The machine-readable
+delivery is `delivery/prospects.jsonl`; `delivery/status.json` records current
+limitations, and `delivery/validation.json` records the latest integrity check.
+`export` creates auditable snapshots of the operational records. Human decisions
+are separate from model judgments:
+
+```sh
+.venv/bin/python -B -m sweep human-decision --run-id first-sweep \
+  --paper-id PAPER_ID --decision accepted-support --reason "Scientific review reason"
+.venv/bin/python -B -m sweep validate --run-id first-sweep
+.venv/bin/python -B -m sweep deliver --run-id first-sweep
+```
+
+`pause` requests a graceful stop after already-admitted bounded work is saved.
+`resume` clears that stop request; invoke `run` again to do more work. Completed
+requests and unchanged source assets are reused. A dead-worker recovery requires
+explicit process-death evidence; elapsed time alone never permits duplicate
+model dispatch.
+
+For a failed model request with a verified terminal receipt, the supervising
+agent can explicitly commission one fresh attempt within the remaining run
+allowance:
+
+```sh
+.venv/bin/python -B -m sweep retry --run-id first-sweep --job-id FAILED_JOB_ID \
+  --actor SUPERVISING_AGENT --reason "Why a fresh attempt is warranted"
+.venv/bin/python -B -m sweep run --run-id first-sweep
+```
+
+The retry keeps the same source, model and settings in a new job. The old failure,
+receipt and charged allowance remain intact; a timeout does not prove zero
+provider cost. Repeating this command for the same failed job returns the same
+successor. Unknown token or cost accounting can still block further dispatch.
+An ambiguous live request cannot be retried this way.
+
+Use `run --run-id first-sweep --watch --max-seconds 3600` to wait for deferred
+work to become eligible again within a bounded wall-time allowance. Without
+`--watch`, an idle runner returns control to the supervising agent. Waiting does
+not resolve missing texts, uncertain admissions or required native judgments.
+
+The command-line worker runs while its process and host are available. It does
+not install a background service, keep a sleeping laptop awake, or buy remote
+compute. A long run needs an operator-managed persistent terminal or supervisor.
+
+## Scope and integrity
+
+[science/PROTOCOL.md](science/PROTOCOL.md) defines the science. The portable
+coordinator maintains a separate operational prospect ledger. Its completion
+status does **not** certify the frozen native comparison ledger, native CSV
+exports, or comprehensive literature coverage. Native certification requires the
+unchanged scientific package's registered-run workflow and validators.
+
+The distribution contains static code, instructions, schemas, seed identities
+and a model candidate catalog. It excludes historical runs, paper PDFs, private
+paths, credentials and evaluation answer keys. Verify it with:
+
+```sh
+python3 bootstrap.py --verify-only
+```
+
+See [AGENTS.md](AGENTS.md) for the agent contract and [EXECUTION.md](EXECUTION.md)
+for operational details and current limitations.

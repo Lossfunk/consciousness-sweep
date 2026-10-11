@@ -1,0 +1,3509 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/experiments.schema.json",
+  "title": "X-to-Y comparison master row",
+  "description": "One experiments_master.csv row represents one paper x experiment x X-to-Y comparison. Unaware capacity and awareness effect are independent inference axes. JSON arrays are encoded in their CSV cells.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "comparison_id",
+    "experiment_id",
+    "paper_id",
+    "experiment_label",
+    "X_label",
+    "X_description",
+    "awareness_measure",
+    "awareness_procedure_type",
+    "awareness_evidence_type",
+    "objective_visibility_test_informative",
+    "objective_visibility_test_reason",
+    "A_code",
+    "A_reason",
+    "critical_dependency_status",
+    "awareness_result_reporting",
+    "awareness_result_support",
+    "awareness_result_procedure_type",
+    "awareness_result_description",
+    "awareness_result_source_location",
+    "awareness_result_source_experiment_id",
+    "critical_dependency_reason",
+    "evidence_bundle_ids",
+    "structural_audit_status",
+    "awareness_effect_route_status",
+    "awareness_effect_route_reason",
+    "unaware_capacity_route_status",
+    "unaware_capacity_route_reason",
+    "null_equivalence_route_status",
+    "null_equivalence_route_reason",
+    "result_inspection_status",
+    "result_inspection_reason",
+    "first_order_measure",
+    "E_code",
+    "E_reason",
+    "E_matching_basis",
+    "E_equivalence_margin",
+    "E_equivalence_result",
+    "E_competing_account",
+    "E_competing_prediction",
+    "E_violating_pattern",
+    "E_same_Y_reason",
+    "E_diagnostic_source_locations",
+    "alternative_control_scan_status",
+    "alternative_control_scan_reason",
+    "Y_label",
+    "Y_description",
+    "Y_functional_status",
+    "Y_functional_reason",
+    "functional_structure_assessment",
+    "functional_identity_basis",
+    "functional_structure_reason",
+    "factorial_focal_comparison_id",
+    "Y_structure",
+    "factorial_Y_reason",
+    "factorial_component_effects",
+    "Y_evidence_role",
+    "F_code",
+    "F_reason",
+    "Y_interpretation_clarity",
+    "mechanistic_interpretation",
+    "mechanism_clarity",
+    "critical_comparison",
+    "unaware_capacity_claim",
+    "unaware_capacity_evidence_scope",
+    "unaware_capacity",
+    "unaware_capacity_reason",
+    "unaware_capacity_critical_effect",
+    "unaware_capacity_stats_status",
+    "unaware_capacity_stats_reason",
+    "awareness_effect",
+    "awareness_effect_reason",
+    "direction",
+    "awareness_effect_critical_effect",
+    "awareness_effect_estimate",
+    "awareness_effect_estimate_interpretable",
+    "awareness_effect_stats_status",
+    "awareness_effect_stats_reason",
+    "difference_tested",
+    "difference_source_experiment_id",
+    "difference_source_location",
+    "difference_statistic_or_test",
+    "null_evidence_strength",
+    "null_evidence_adequacy",
+    "null_equivalence_margin",
+    "null_equivalence_result",
+    "null_BF01",
+    "null_CI_region",
+    "null_CI_entirely_within_region",
+    "Meyen_role",
+    "Meyen_applicable",
+    "Meyen_status",
+    "Meyen_reason",
+    "stats_status",
+    "stats_flags",
+    "stats_reason",
+    "constraint_summary",
+    "source_pages",
+    "source_figures_tables",
+    "current_status",
+    "notes",
+    "population_scope",
+    "population_scope_reason",
+    "awareness_contrast_type",
+    "unaware_condition_tested",
+    "comparison_validity",
+    "comparison_validity_reason",
+    "difference_analysis_scope",
+    "difference_joint_experiment_ids",
+    "difference_analysis_origin",
+    "difference_derivation",
+    "evidence_strength_reason",
+    "awareness_regime_evidence",
+    "partial_x_residual_status",
+    "partial_x_residual_reason",
+    "partial_x_residual_source_location",
+    "unaware_capacity_regime_keys"
+  ],
+  "properties": {
+    "comparison_id": {
+      "type": "string",
+      "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^P[0-9]{6}_E[0-9]{2}$"
+    },
+    "paper_id": {
+      "type": "string",
+      "pattern": "^P[0-9]{6}$"
+    },
+    "experiment_label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "X_label": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "X_description": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_measure": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_procedure_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "direction-identification",
+            "presence-absence-detection",
+            "localization",
+            "subjective-visibility",
+            "confidence",
+            "mixed",
+            "other",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_evidence_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "subjective",
+            "objective-invisibility",
+            "mixed",
+            "none"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "objective_visibility_test_informative": {
+      "anyOf": [
+        {
+          "enum": [
+            "yes",
+            "no",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "objective_visibility_test_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "A_code": {
+      "anyOf": [
+        {
+          "enum": [
+            "A-direct",
+            "A-validated",
+            "A-transfer-risk",
+            "A-absent"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "A_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_result_reporting": {
+      "description": "Whether a critical awareness result is actually reported for the focal experiment; a described procedure is not a result.",
+      "anyOf": [
+        {
+          "enum": [
+            "reported",
+            "not-reported",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_result_support": {
+      "description": "Whether the reported critical awareness result supports the stated strong-A classification; kept separate from result availability.",
+      "anyOf": [
+        {
+          "enum": [
+            "supports-strong-A",
+            "does-not-support-strong-A",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_result_procedure_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "direction-identification",
+            "presence-absence-detection",
+            "localization",
+            "subjective-visibility",
+            "confidence",
+            "mixed",
+            "other",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_result_description": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_result_source_location": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_result_source_experiment_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^P[0-9]{6}_E[0-9]{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "critical_dependency_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "checked-none",
+            "resolved",
+            "unresolved"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "critical_dependency_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "evidence_bundle_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9._-]+_EB[0-9]{6}$"
+      }
+    },
+    "structural_audit_status": {
+      "enum": [
+        "not-started",
+        "complete",
+        "incomplete"
+      ]
+    },
+    "awareness_effect_route_status": {
+      "enum": [
+        "not-assessed",
+        "viable",
+        "not-viable"
+      ]
+    },
+    "awareness_effect_route_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "unaware_capacity_route_status": {
+      "enum": [
+        "not-assessed",
+        "viable",
+        "not-viable"
+      ]
+    },
+    "unaware_capacity_route_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "null_equivalence_route_status": {
+      "enum": [
+        "not-assessed",
+        "required",
+        "not-required"
+      ]
+    },
+    "null_equivalence_route_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "result_inspection_status": {
+      "enum": [
+        "not-started",
+        "completed-viable-routes",
+        "not-required"
+      ]
+    },
+    "result_inspection_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "first_order_measure": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_code": {
+      "anyOf": [
+        {
+          "enum": [
+            "E-matched",
+            "E-diagnostic",
+            "E-physical-only",
+            "E-uncontrolled"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "E_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_matching_basis": {
+      "anyOf": [
+        {
+          "enum": [
+            "active-matching-or-titration",
+            "equivalence-procedure",
+            "none",
+            "unclear",
+            "post-hoc-performance-matching"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "E_equivalence_margin": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_equivalence_result": {
+      "anyOf": [
+        {
+          "enum": [
+            "supports-equivalence",
+            "does-not-support-equivalence",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "E_competing_account": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_competing_prediction": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_violating_pattern": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_same_Y_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "E_diagnostic_source_locations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "alternative_control_scan_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "not-required",
+            "completed-none-found",
+            "completed-candidate-evaluated",
+            "incomplete-source-missing"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "alternative_control_scan_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "Y_label": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "Y_description": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "Y_functional_status": {
+      "description": "Explicit semantic audit of whether focal Y names a downstream function/mapping rather than merely an observed effect.",
+      "anyOf": [
+        {
+          "enum": [
+            "downstream-function",
+            "coherent-functional-mapping",
+            "effect-only",
+            "function-unclear",
+            "not-assessed"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Y_functional_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "functional_structure_assessment": {
+      "enum": [
+        "not-assessed",
+        "not-applicable",
+        "scalar-justified",
+        "factorial-functional-required"
+      ]
+    },
+    "functional_identity_basis": {
+      "enum": [
+        "not-assessed",
+        "not-applicable-single-effect",
+        "common-operational-mapping",
+        "distinct-downstream-outputs",
+        "distinct-computational-stages",
+        "distinct-input-output-relations",
+        "no-conservative-common-function"
+      ]
+    },
+    "functional_structure_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "factorial_focal_comparison_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Y_structure": {
+      "anyOf": [
+        {
+          "enum": [
+            "scalar",
+            "factorial-functional"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "factorial_Y_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "factorial_component_effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/factorialComponent"
+      }
+    },
+    "Y_evidence_role": {
+      "anyOf": [
+        {
+          "enum": [
+            "downstream-functional-measure",
+            "function-level-unresolved",
+            "mechanistic-support-only",
+            "direct-registration-only",
+            "not-assessed"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "F_code": {
+      "anyOf": [
+        {
+          "enum": [
+            "F-meaningful",
+            "F-ambiguous",
+            "F-not-meaningful"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "F_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "Y_interpretation_clarity": {
+      "anyOf": [
+        {
+          "enum": [
+            "clear",
+            "ambiguous",
+            "unclear"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mechanistic_interpretation": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "mechanism_clarity": {
+      "anyOf": [
+        {
+          "enum": [
+            "clear",
+            "ambiguous",
+            "not-assessed"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "critical_comparison": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "unaware_capacity_claim": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "unaware_capacity_evidence_scope": {
+      "anyOf": [
+        {
+          "enum": [
+            "whole-focal-Y",
+            "component-only",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unaware_capacity": {
+      "anyOf": [
+        {
+          "enum": [
+            "supported",
+            "not-supported",
+            "unclear",
+            "not-tested"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unaware_capacity_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "unaware_capacity_critical_effect": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "unaware_capacity_stats_status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/routeStatsStatus"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unaware_capacity_stats_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_effect": {
+      "anyOf": [
+        {
+          "enum": [
+            "difference-supported",
+            "no-detectable-difference",
+            "equivalence-supported",
+            "unresolved",
+            "not-tested",
+            "null-supported"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_effect_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "direction": {
+      "anyOf": [
+        {
+          "enum": [
+            "aware>unaware",
+            "unaware>aware",
+            "qualitative-change",
+            "no-detectable-difference",
+            "equivalent-within-region",
+            "other"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_effect_critical_effect": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_effect_estimate": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "awareness_effect_estimate_interpretable": {
+      "anyOf": [
+        {
+          "enum": [
+            "yes",
+            "no",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_effect_stats_status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/routeStatsStatus"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awareness_effect_stats_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "difference_tested": {
+      "description": "Whether a direct aware/unaware difference or interaction on this same focal Y was tested; this is recorded independently of E strength.",
+      "anyOf": [
+        {
+          "enum": [
+            "yes",
+            "no",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "difference_source_experiment_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^P[0-9]{6}_E[0-9]{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "difference_source_location": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "difference_statistic_or_test": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "null_evidence_strength": {
+      "anyOf": [
+        {
+          "enum": [
+            "equivalence-testing",
+            "bayesian-evidence",
+            "informative-confidence-intervals",
+            "nonsignificant-only",
+            "mixed",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "null_evidence_adequacy": {
+      "anyOf": [
+        {
+          "enum": [
+            "adequate",
+            "weak",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "null_equivalence_margin": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "null_equivalence_result": {
+      "anyOf": [
+        {
+          "enum": [
+            "supports-equivalence",
+            "does-not-support-equivalence",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "null_BF01": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "null_CI_region": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "null_CI_entirely_within_region": {
+      "anyOf": [
+        {
+          "enum": [
+            "yes",
+            "no",
+            "region-not-stated",
+            "unclear",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Meyen_role": {
+      "anyOf": [
+        {
+          "enum": [
+            "inference-critical",
+            "supplementary",
+            "not-applicable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Meyen_applicable": {
+      "anyOf": [
+        {
+          "enum": [
+            "yes",
+            "no"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Meyen_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "Meyen-satisfied",
+            "Meyen-failed",
+            "Meyen-unassessable"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Meyen_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "stats_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "adequate",
+            "concern",
+            "unclear"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "stats_flags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "none",
+          "difference-not-tested",
+          "weak-null-evidence",
+          "multiple-comparisons",
+          "inappropriate-model",
+          "pseudoreplication",
+          "selective-exclusions",
+          "exploratory-critical-analysis",
+          "other"
+        ]
+      },
+      "not": {
+        "allOf": [
+          {
+            "contains": {
+              "const": "none"
+            }
+          },
+          {
+            "minItems": 2
+          }
+        ]
+      }
+    },
+    "stats_reason": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "constraint_summary": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "source_pages": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "source_figures_tables": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "current_status": {
+      "enum": [
+        "identified",
+        "design-coded",
+        "fully-evaluated",
+        "excluded",
+        "unresolved"
+      ]
+    },
+    "notes": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "population_scope": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "human-target",
+        "linked-other-system",
+        "out-of-scope",
+        "unclear",
+        "not-assessed",
+        null
+      ]
+    },
+    "population_scope_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "awareness_contrast_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "aware-unaware",
+        "graded",
+        "probability-regime",
+        "none",
+        "unclear",
+        "not-assessed",
+        null
+      ]
+    },
+    "unaware_condition_tested": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "yes",
+        "no",
+        "unclear",
+        "not-assessed",
+        null
+      ]
+    },
+    "comparison_validity": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "comparable",
+        "not-comparable",
+        "unclear",
+        "not-applicable",
+        "not-assessed",
+        null
+      ]
+    },
+    "comparison_validity_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "difference_analysis_scope": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "focal-experiment",
+        "joint-analysis",
+        "not-applicable",
+        "unclear",
+        null
+      ]
+    },
+    "difference_joint_experiment_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^P[0-9]{6}_E[0-9]{2}$"
+      },
+      "uniqueItems": true
+    },
+    "difference_analysis_origin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "author-reported",
+        "reviewer-derived",
+        "not-applicable",
+        "unclear",
+        null
+      ]
+    },
+    "difference_derivation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "awareness_regime_evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/awarenessRegimeEvidence"
+      }
+    },
+    "partial_x_residual_status": {
+      "enum": [
+        "supported",
+        "not-supported",
+        "unclear",
+        "not-tested",
+        "not-assessed"
+      ]
+    },
+    "partial_x_residual_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partial_x_residual_source_location": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "promotion_challenge": {
+      "description": "Source-linked checks made before a strong A, meaningful F, diagnostic E, or whole-Y capacity claim is finalized.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "downstream_y": {
+          "$ref": "#/$defs/promotionChallengeCheck"
+        },
+        "same_y_e": {
+          "$ref": "#/$defs/promotionChallengeCheck"
+        },
+        "whole_y_capacity": {
+          "$ref": "#/$defs/promotionChallengeCheck"
+        },
+        "arm_wise_awareness": {
+          "$ref": "#/$defs/promotionChallengeCheck"
+        },
+        "unaware_regime_awareness": {
+          "$ref": "#/$defs/promotionChallengeCheck"
+        }
+      }
+    },
+    "evidence_strength_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "unaware_capacity_regime_keys": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Explicit regime keys to which the assessed whole-Y unaware-capacity claim applies; never inferred from lower-awareness labels."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "F_code": {
+            "const": "F-meaningful"
+          }
+        },
+        "required": [
+          "F_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "promotion_challenge": {
+            "required": [
+              "downstream_y"
+            ],
+            "properties": {
+              "downstream_y": {
+                "properties": {
+                  "verdict": {
+                    "const": "supported"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "promotion_challenge"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "E_code": {
+            "const": "E-diagnostic"
+          }
+        },
+        "required": [
+          "E_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "promotion_challenge": {
+            "required": [
+              "same_y_e"
+            ],
+            "properties": {
+              "same_y_e": {
+                "properties": {
+                  "verdict": {
+                    "const": "supported"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "promotion_challenge"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_capacity": {
+            "const": "supported"
+          }
+        },
+        "required": [
+          "unaware_capacity"
+        ]
+      },
+      "then": {
+        "properties": {
+          "promotion_challenge": {
+            "required": [
+              "whole_y_capacity"
+            ],
+            "properties": {
+              "whole_y_capacity": {
+                "properties": {
+                  "verdict": {
+                    "const": "supported"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "promotion_challenge"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "A_code": {
+            "enum": [
+              "A-direct",
+              "A-validated"
+            ]
+          }
+        },
+        "required": [
+          "A_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "promotion_challenge": {
+            "required": [
+              "arm_wise_awareness"
+            ],
+            "properties": {
+              "arm_wise_awareness": {
+                "properties": {
+                  "verdict": {
+                    "const": "supported"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "promotion_challenge"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "A_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "A_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "A_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "A_code": {
+            "enum": [
+              "A-direct",
+              "A-validated"
+            ]
+          }
+        },
+        "required": [
+          "A_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_evidence_type": {
+            "enum": [
+              "subjective",
+              "objective-invisibility",
+              "mixed"
+            ]
+          },
+          "awareness_measure": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_procedure_type": {
+            "not": {
+              "enum": [
+                "not-applicable",
+                null
+              ]
+            }
+          },
+          "awareness_result_reporting": {
+            "type": "string"
+          },
+          "awareness_result_support": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "A_code": {
+            "const": "A-direct"
+          }
+        },
+        "required": [
+          "A_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_result_reporting": {
+            "const": "reported"
+          },
+          "awareness_result_support": {
+            "const": "supports-strong-A"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_result_reporting": {
+            "const": "reported"
+          }
+        },
+        "required": [
+          "awareness_result_reporting"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_result_support": {
+            "enum": [
+              "supports-strong-A",
+              "does-not-support-strong-A",
+              "unclear"
+            ]
+          },
+          "awareness_result_procedure_type": {
+            "not": {
+              "enum": [
+                "not-applicable",
+                null
+              ]
+            }
+          },
+          "awareness_result_description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_result_source_location": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_result_source_experiment_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_result_reporting": {
+            "const": "not-reported"
+          }
+        },
+        "required": [
+          "awareness_result_reporting"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_result_support": {
+            "const": "not-applicable"
+          },
+          "awareness_result_procedure_type": {
+            "const": "not-applicable"
+          },
+          "awareness_result_description": {
+            "type": "null"
+          },
+          "awareness_result_source_location": {
+            "type": "null"
+          },
+          "awareness_result_source_experiment_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_result_reporting": {
+            "const": "unclear"
+          }
+        },
+        "required": [
+          "awareness_result_reporting"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_result_support": {
+            "const": "unclear"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_result_reporting": {
+            "const": "not-applicable"
+          }
+        },
+        "required": [
+          "awareness_result_reporting"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_result_support": {
+            "const": "not-applicable"
+          },
+          "awareness_result_procedure_type": {
+            "const": "not-applicable"
+          },
+          "awareness_result_description": {
+            "type": "null"
+          },
+          "awareness_result_source_location": {
+            "type": "null"
+          },
+          "awareness_result_source_experiment_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_evidence_type": {
+            "const": "objective-invisibility"
+          }
+        },
+        "required": [
+          "awareness_evidence_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "objective_visibility_test_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_evidence_type": {
+            "const": "objective-invisibility"
+          },
+          "A_code": {
+            "enum": [
+              "A-direct",
+              "A-validated"
+            ]
+          }
+        },
+        "required": [
+          "awareness_evidence_type",
+          "A_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "objective_visibility_test_informative": {
+            "const": "yes"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_evidence_type": {
+            "const": "none"
+          }
+        },
+        "required": [
+          "awareness_evidence_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "objective_visibility_test_informative": {
+            "const": "not-applicable"
+          },
+          "objective_visibility_test_reason": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "critical_dependency_status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "critical_dependency_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "critical_dependency_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect_route_status": {
+            "enum": [
+              "viable",
+              "not-viable"
+            ]
+          }
+        },
+        "required": [
+          "awareness_effect_route_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_effect_route_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_capacity_route_status": {
+            "enum": [
+              "viable",
+              "not-viable"
+            ]
+          }
+        },
+        "required": [
+          "unaware_capacity_route_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "unaware_capacity_route_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "null_equivalence_route_status": {
+            "enum": [
+              "required",
+              "not-required"
+            ]
+          }
+        },
+        "required": [
+          "null_equivalence_route_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "null_equivalence_route_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result_inspection_status": {
+            "enum": [
+              "completed-viable-routes",
+              "not-required"
+            ]
+          }
+        },
+        "required": [
+          "result_inspection_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "result_inspection_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "E_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "E_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "E_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "E_code": {
+            "const": "E-matched"
+          }
+        },
+        "required": [
+          "E_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "E_matching_basis": {
+            "enum": [
+              "active-matching-or-titration",
+              "equivalence-procedure",
+              "post-hoc-performance-matching"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "E_code": {
+            "enum": [
+              "E-diagnostic",
+              "E-physical-only",
+              "E-uncontrolled"
+            ]
+          }
+        },
+        "required": [
+          "E_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "E_matching_basis": {
+            "enum": [
+              "none",
+              "unclear"
+            ]
+          },
+          "alternative_control_scan_status": {
+            "enum": [
+              "completed-none-found",
+              "completed-candidate-evaluated",
+              "incomplete-source-missing"
+            ]
+          },
+          "alternative_control_scan_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "E_code": {
+            "const": "E-matched"
+          }
+        },
+        "required": [
+          "E_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "alternative_control_scan_status": {
+            "const": "not-required"
+          },
+          "alternative_control_scan_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "E_code": {
+            "const": "E-diagnostic"
+          }
+        },
+        "required": [
+          "E_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "E_competing_account": {
+            "type": "string",
+            "minLength": 1
+          },
+          "E_competing_prediction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "E_violating_pattern": {
+            "type": "string",
+            "minLength": 1
+          },
+          "E_same_Y_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "E_diagnostic_source_locations": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "E_matching_basis": {
+            "const": "equivalence-procedure"
+          }
+        },
+        "required": [
+          "E_matching_basis"
+        ]
+      },
+      "then": {
+        "properties": {
+          "E_equivalence_margin": {
+            "type": "string",
+            "minLength": 1
+          },
+          "E_equivalence_result": {
+            "const": "supports-equivalence"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "F_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "F_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "F_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "Y_functional_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "F_code": {
+            "const": "F-meaningful"
+          }
+        },
+        "required": [
+          "F_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "Y_interpretation_clarity": {
+            "const": "clear"
+          },
+          "Y_evidence_role": {
+            "const": "downstream-functional-measure"
+          },
+          "Y_functional_status": {
+            "enum": [
+              "downstream-function",
+              "coherent-functional-mapping"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "F_code": {
+            "const": "F-ambiguous"
+          }
+        },
+        "required": [
+          "F_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "Y_interpretation_clarity": {
+            "const": "ambiguous"
+          },
+          "Y_evidence_role": {
+            "const": "function-level-unresolved"
+          },
+          "Y_functional_status": {
+            "const": "function-unclear"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "F_code": {
+            "const": "F-not-meaningful"
+          }
+        },
+        "required": [
+          "F_code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "Y_evidence_role": {
+            "enum": [
+              "mechanistic-support-only",
+              "direct-registration-only",
+              "not-assessed"
+            ]
+          },
+          "Y_functional_status": {
+            "enum": [
+              "effect-only",
+              "not-assessed"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "functional_structure_assessment": {
+            "const": "not-assessed"
+          }
+        },
+        "required": [
+          "functional_structure_assessment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "functional_identity_basis": {
+            "const": "not-assessed"
+          },
+          "functional_structure_reason": {
+            "type": "null"
+          },
+          "factorial_focal_comparison_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "functional_structure_assessment": {
+            "enum": [
+              "not-applicable",
+              "scalar-justified",
+              "factorial-functional-required"
+            ]
+          }
+        },
+        "required": [
+          "functional_structure_assessment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "functional_structure_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "functional_structure_assessment": {
+            "const": "not-applicable"
+          }
+        },
+        "required": [
+          "functional_structure_assessment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "functional_identity_basis": {
+            "const": "not-applicable-single-effect"
+          },
+          "Y_structure": {
+            "const": "scalar"
+          },
+          "factorial_focal_comparison_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "functional_structure_assessment": {
+            "const": "scalar-justified"
+          }
+        },
+        "required": [
+          "functional_structure_assessment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "functional_identity_basis": {
+            "enum": [
+              "distinct-downstream-outputs",
+              "distinct-computational-stages",
+              "distinct-input-output-relations",
+              "no-conservative-common-function"
+            ]
+          },
+          "Y_structure": {
+            "const": "scalar"
+          },
+          "factorial_focal_comparison_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "functional_structure_assessment": {
+            "const": "factorial-functional-required"
+          }
+        },
+        "required": [
+          "functional_structure_assessment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "functional_identity_basis": {
+            "const": "common-operational-mapping"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "functional_structure_assessment": {
+            "enum": [
+              "not-applicable",
+              "scalar-justified"
+            ]
+          }
+        },
+        "required": [
+          "functional_structure_assessment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "Y_structure": {
+            "const": "scalar"
+          },
+          "factorial_focal_comparison_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "functional_structure_assessment": {
+            "const": "factorial-functional-required"
+          }
+        },
+        "required": [
+          "functional_structure_assessment"
+        ]
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "Y_structure": {
+                "const": "factorial-functional"
+              },
+              "factorial_focal_comparison_id": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "Y_structure",
+              "factorial_focal_comparison_id"
+            ]
+          },
+          {
+            "properties": {
+              "Y_structure": {
+                "const": "scalar"
+              },
+              "factorial_focal_comparison_id": {
+                "type": "string",
+                "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+              }
+            },
+            "required": [
+              "Y_structure",
+              "factorial_focal_comparison_id"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "Y_structure": {
+            "const": "scalar"
+          }
+        },
+        "required": [
+          "Y_structure"
+        ]
+      },
+      "then": {
+        "properties": {
+          "factorial_Y_reason": {
+            "type": "null"
+          },
+          "factorial_component_effects": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "Y_structure": {
+            "const": "factorial-functional"
+          }
+        },
+        "required": [
+          "Y_structure"
+        ]
+      },
+      "then": {
+        "properties": {
+          "factorial_Y_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "factorial_component_effects": {
+            "minItems": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_capacity": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "unaware_capacity"
+        ]
+      },
+      "then": {
+        "properties": {
+          "unaware_capacity_claim": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unaware_capacity_evidence_scope": {
+            "type": "string"
+          },
+          "unaware_capacity_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_capacity": {
+            "const": "supported"
+          }
+        },
+        "required": [
+          "unaware_capacity"
+        ]
+      },
+      "then": {
+        "properties": {
+          "unaware_capacity_evidence_scope": {
+            "const": "whole-focal-Y"
+          },
+          "F_code": {
+            "const": "F-meaningful"
+          },
+          "Y_functional_status": {
+            "enum": [
+              "downstream-function",
+              "coherent-functional-mapping"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_capacity": {
+            "enum": [
+              "supported",
+              "not-supported",
+              "unclear"
+            ]
+          }
+        },
+        "required": [
+          "unaware_capacity"
+        ]
+      },
+      "then": {
+        "properties": {
+          "unaware_capacity_critical_effect": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unaware_capacity_stats_status": {
+            "enum": [
+              "adequate",
+              "concern",
+              "unclear"
+            ]
+          },
+          "unaware_capacity_stats_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_capacity": {
+            "const": "not-tested"
+          }
+        },
+        "required": [
+          "unaware_capacity"
+        ]
+      },
+      "then": {
+        "properties": {
+          "unaware_capacity_evidence_scope": {
+            "const": "not-applicable"
+          },
+          "unaware_capacity_critical_effect": {
+            "type": "null"
+          },
+          "unaware_capacity_stats_status": {
+            "const": "not-applicable"
+          },
+          "unaware_capacity_stats_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "awareness_effect"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_effect_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_stats_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "difference_tested": {
+            "const": "yes"
+          }
+        },
+        "required": [
+          "difference_tested"
+        ]
+      },
+      "then": {
+        "properties": {
+          "difference_source_experiment_id": {
+            "type": "string"
+          },
+          "difference_source_location": {
+            "type": "string",
+            "minLength": 1
+          },
+          "difference_statistic_or_test": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_critical_effect": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate_interpretable": {
+            "enum": [
+              "yes",
+              "no",
+              "unclear"
+            ]
+          },
+          "awareness_effect_stats_status": {
+            "enum": [
+              "adequate",
+              "concern",
+              "unclear"
+            ]
+          },
+          "awareness_effect_stats_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "difference_tested": {
+            "const": "yes"
+          },
+          "awareness_effect_estimate_interpretable": {
+            "enum": [
+              "no",
+              "unclear"
+            ]
+          }
+        },
+        "required": [
+          "difference_tested",
+          "awareness_effect_estimate_interpretable"
+        ]
+      },
+      "then": {
+        "properties": {
+          "awareness_effect": {
+            "const": "unresolved"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "difference_tested": {
+            "enum": [
+              "no",
+              "unclear",
+              "not-applicable"
+            ]
+          }
+        },
+        "required": [
+          "difference_tested"
+        ]
+      },
+      "then": {
+        "properties": {
+          "difference_source_experiment_id": {
+            "type": "null"
+          },
+          "difference_source_location": {
+            "type": "null"
+          },
+          "difference_statistic_or_test": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect": {
+            "const": "difference-supported"
+          }
+        },
+        "required": [
+          "awareness_effect"
+        ]
+      },
+      "then": {
+        "properties": {
+          "difference_tested": {
+            "const": "yes"
+          },
+          "awareness_effect_critical_effect": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate_interpretable": {
+            "const": "yes"
+          },
+          "awareness_effect_stats_status": {
+            "enum": [
+              "adequate",
+              "concern"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect": {
+            "const": "no-detectable-difference"
+          }
+        },
+        "required": [
+          "awareness_effect"
+        ]
+      },
+      "then": {
+        "properties": {
+          "difference_tested": {
+            "const": "yes"
+          },
+          "awareness_effect_critical_effect": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate_interpretable": {
+            "const": "yes"
+          },
+          "awareness_effect_stats_status": {
+            "enum": [
+              "adequate",
+              "concern"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect": {
+            "const": "equivalence-supported"
+          }
+        },
+        "required": [
+          "awareness_effect"
+        ]
+      },
+      "then": {
+        "properties": {
+          "difference_tested": {
+            "const": "yes"
+          },
+          "awareness_effect_critical_effect": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_effect_estimate_interpretable": {
+            "const": "yes"
+          },
+          "awareness_effect_stats_status": {
+            "enum": [
+              "adequate",
+              "concern"
+            ]
+          },
+          "null_evidence_adequacy": {
+            "const": "adequate"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect": {
+            "const": "not-tested"
+          }
+        },
+        "required": [
+          "awareness_effect"
+        ]
+      },
+      "then": {
+        "properties": {
+          "difference_tested": {
+            "const": "not-applicable"
+          },
+          "awareness_effect_critical_effect": {
+            "type": "null"
+          },
+          "awareness_effect_estimate": {
+            "type": "null"
+          },
+          "awareness_effect_estimate_interpretable": {
+            "const": "not-applicable"
+          },
+          "awareness_effect_stats_status": {
+            "const": "not-applicable"
+          },
+          "null_evidence_adequacy": {
+            "const": "not-applicable"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "null_evidence_adequacy": {
+            "const": "not-applicable"
+          }
+        },
+        "required": [
+          "null_evidence_adequacy"
+        ]
+      },
+      "then": {
+        "properties": {
+          "null_evidence_strength": {
+            "const": "not-applicable"
+          },
+          "null_equivalence_margin": {
+            "type": "null"
+          },
+          "null_equivalence_result": {
+            "const": "not-applicable"
+          },
+          "null_BF01": {
+            "type": "null"
+          },
+          "null_CI_region": {
+            "type": "null"
+          },
+          "null_CI_entirely_within_region": {
+            "const": "not-applicable"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "null_evidence_adequacy": {
+            "const": "adequate"
+          }
+        },
+        "required": [
+          "null_evidence_adequacy"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "null_equivalence_result": {
+                "const": "supports-equivalence"
+              },
+              "null_equivalence_margin": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "null_equivalence_result",
+              "null_equivalence_margin"
+            ]
+          },
+          {
+            "properties": {
+              "null_BF01": {
+                "type": "number",
+                "minimum": 3
+              }
+            },
+            "required": [
+              "null_BF01"
+            ]
+          },
+          {
+            "properties": {
+              "null_CI_entirely_within_region": {
+                "const": "yes"
+              },
+              "null_CI_region": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "null_CI_entirely_within_region",
+              "null_CI_region"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "null_evidence_strength": {
+            "const": "nonsignificant-only"
+          }
+        },
+        "required": [
+          "null_evidence_strength"
+        ]
+      },
+      "then": {
+        "properties": {
+          "null_evidence_adequacy": {
+            "const": "weak"
+          },
+          "null_equivalence_margin": {
+            "type": "null"
+          },
+          "null_equivalence_result": {
+            "const": "not-applicable"
+          },
+          "null_BF01": {
+            "type": "null"
+          },
+          "null_CI_region": {
+            "type": "null"
+          },
+          "null_CI_entirely_within_region": {
+            "const": "not-applicable"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "null_evidence_strength": {
+            "const": "unclear"
+          }
+        },
+        "required": [
+          "null_evidence_strength"
+        ]
+      },
+      "then": {
+        "properties": {
+          "null_evidence_adequacy": {
+            "const": "unclear"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "Meyen_role": {
+            "enum": [
+              "inference-critical",
+              "supplementary"
+            ]
+          }
+        },
+        "required": [
+          "Meyen_role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "Meyen_applicable": {
+            "const": "yes"
+          },
+          "Meyen_status": {
+            "enum": [
+              "Meyen-satisfied",
+              "Meyen-failed",
+              "Meyen-unassessable"
+            ]
+          },
+          "Meyen_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "Meyen_role": {
+            "const": "not-applicable"
+          }
+        },
+        "required": [
+          "Meyen_role"
+        ]
+      },
+      "then": {
+        "properties": {
+          "Meyen_applicable": {
+            "const": "no"
+          },
+          "Meyen_status": {
+            "type": "null"
+          },
+          "Meyen_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stats_status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stats_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "stats_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stats_flags": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_status": {
+            "const": "fully-evaluated"
+          }
+        },
+        "required": [
+          "current_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "X_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "X_description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_measure": {
+            "type": "string",
+            "minLength": 1
+          },
+          "awareness_evidence_type": {
+            "type": "string"
+          },
+          "objective_visibility_test_informative": {
+            "type": "string"
+          },
+          "A_code": {
+            "type": "string"
+          },
+          "critical_dependency_status": {
+            "type": "string"
+          },
+          "critical_dependency_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "structural_audit_status": {
+            "const": "complete"
+          },
+          "awareness_effect_route_status": {
+            "enum": [
+              "viable",
+              "not-viable"
+            ]
+          },
+          "awareness_effect_route_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unaware_capacity_route_status": {
+            "enum": [
+              "viable",
+              "not-viable"
+            ]
+          },
+          "unaware_capacity_route_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "null_equivalence_route_status": {
+            "enum": [
+              "required",
+              "not-required"
+            ]
+          },
+          "null_equivalence_route_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "result_inspection_status": {
+            "enum": [
+              "completed-viable-routes",
+              "not-required"
+            ]
+          },
+          "result_inspection_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "first_order_measure": {
+            "type": "string",
+            "minLength": 1
+          },
+          "E_code": {
+            "type": "string"
+          },
+          "E_matching_basis": {
+            "type": "string"
+          },
+          "E_equivalence_result": {
+            "type": "string"
+          },
+          "Y_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "Y_description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "Y_functional_status": {
+            "type": "string"
+          },
+          "Y_functional_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "functional_structure_assessment": {
+            "enum": [
+              "not-applicable",
+              "scalar-justified",
+              "factorial-functional-required"
+            ]
+          },
+          "functional_identity_basis": {
+            "enum": [
+              "not-applicable-single-effect",
+              "common-operational-mapping",
+              "distinct-downstream-outputs",
+              "distinct-computational-stages",
+              "distinct-input-output-relations",
+              "no-conservative-common-function"
+            ]
+          },
+          "functional_structure_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "Y_structure": {
+            "type": "string"
+          },
+          "Y_evidence_role": {
+            "type": "string"
+          },
+          "F_code": {
+            "type": "string"
+          },
+          "Y_interpretation_clarity": {
+            "type": "string"
+          },
+          "mechanistic_interpretation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mechanism_clarity": {
+            "type": "string"
+          },
+          "critical_comparison": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unaware_capacity_claim": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unaware_capacity_evidence_scope": {
+            "type": "string"
+          },
+          "unaware_capacity": {
+            "type": "string"
+          },
+          "unaware_capacity_stats_status": {
+            "type": "string"
+          },
+          "awareness_effect": {
+            "type": "string"
+          },
+          "awareness_effect_stats_status": {
+            "type": "string"
+          },
+          "difference_tested": {
+            "type": "string"
+          },
+          "null_evidence_strength": {
+            "type": "string"
+          },
+          "null_evidence_adequacy": {
+            "type": "string"
+          },
+          "Meyen_role": {
+            "type": "string"
+          },
+          "Meyen_applicable": {
+            "type": "string"
+          },
+          "stats_status": {
+            "type": "string"
+          },
+          "constraint_summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_pages": {
+            "type": "string",
+            "minLength": 1
+          },
+          "population_scope": {
+            "enum": [
+              "human-target",
+              "linked-other-system",
+              "out-of-scope",
+              "unclear"
+            ]
+          },
+          "awareness_contrast_type": {
+            "enum": [
+              "aware-unaware",
+              "graded",
+              "probability-regime",
+              "none",
+              "unclear"
+            ]
+          },
+          "unaware_condition_tested": {
+            "enum": [
+              "yes",
+              "no",
+              "unclear"
+            ]
+          },
+          "comparison_validity": {
+            "enum": [
+              "comparable",
+              "not-comparable",
+              "unclear",
+              "not-applicable"
+            ]
+          },
+          "population_scope_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "comparison_validity_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_strength_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect": {
+            "const": "null-supported"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "difference_tested": {
+            "const": "yes"
+          },
+          "awareness_effect_estimate_interpretable": {
+            "const": "yes"
+          },
+          "awareness_effect_stats_status": {
+            "enum": [
+              "adequate",
+              "concern"
+            ]
+          },
+          "null_evidence_adequacy": {
+            "const": "adequate"
+          },
+          "null_BF01": {
+            "type": "number",
+            "minimum": 3
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "awareness_effect": {
+            "const": "equivalence-supported"
+          }
+        }
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "null_equivalence_margin": {
+                "type": "string",
+                "minLength": 1
+              },
+              "null_equivalence_result": {
+                "const": "supports-equivalence"
+              }
+            }
+          },
+          {
+            "properties": {
+              "null_CI_region": {
+                "type": "string",
+                "minLength": 1
+              },
+              "null_CI_entirely_within_region": {
+                "const": "yes"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "difference_analysis_origin": {
+            "const": "reviewer-derived"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "difference_derivation": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_condition_tested": {
+            "const": "no"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "unaware_capacity": {
+            "enum": [
+              "not-tested",
+              null
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unaware_capacity": {
+            "const": "supported"
+          }
+        },
+        "required": [
+          "unaware_capacity"
+        ]
+      },
+      "then": {
+        "properties": {
+          "unaware_capacity_regime_keys": {
+            "minItems": 1
+          },
+          "promotion_challenge": {
+            "required": [
+              "unaware_regime_awareness"
+            ],
+            "properties": {
+              "unaware_regime_awareness": {
+                "properties": {
+                  "verdict": {
+                    "const": "supported"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "promotionChallengeCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verdict",
+        "reason",
+        "source_locations"
+      ],
+      "properties": {
+        "verdict": {
+          "enum": [
+            "supported",
+            "contradicted",
+            "unresolved"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_locations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "awarenessRegimeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "regime_key",
+        "X_content",
+        "task_or_block",
+        "awareness_measure",
+        "critical_result_status",
+        "critical_result",
+        "source_location",
+        "evidence_origin",
+        "transfer_bundle_id",
+        "transfer_reason",
+        "transfer_limitation",
+        "objective_first_order_result",
+        "reason",
+        "A_code",
+        "A_reason",
+        "awareness_evidence_type",
+        "objective_visibility_test_informative",
+        "objective_visibility_test_reason"
+      ],
+      "properties": {
+        "regime_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "X_content": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_or_block": {
+          "type": "string",
+          "minLength": 1
+        },
+        "awareness_measure": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "critical_result_status": {
+          "enum": [
+            "reported-supports-awareness",
+            "reported-supports-unawareness",
+            "reported-supports-graded-difference",
+            "reported-inconclusive",
+            "not-reported"
+          ]
+        },
+        "critical_result": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "source_location": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "evidence_origin": {
+          "enum": [
+            "focal-task",
+            "same-article-transferred",
+            "external-transferred",
+            "missing"
+          ]
+        },
+        "transfer_bundle_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+_EB[0-9]{6}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transfer_reason": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "transfer_limitation": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "objective_first_order_result": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "A_code": {
+          "anyOf": [
+            {
+              "enum": [
+                "A-direct",
+                "A-validated",
+                "A-transfer-risk",
+                "A-absent"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "A_reason": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "awareness_evidence_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "subjective",
+                "objective-invisibility",
+                "mixed",
+                "none"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "objective_visibility_test_informative": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unclear",
+                "not-applicable"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "objective_visibility_test_reason": {
+          "$ref": "#/$defs/nullableString"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "A_code": {
+                "enum": [
+                  "A-direct",
+                  "A-validated"
+                ]
+              }
+            },
+            "required": [
+              "A_code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "A_reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "awareness_evidence_type": {
+                "enum": [
+                  "subjective",
+                  "objective-invisibility",
+                  "mixed"
+                ]
+              },
+              "awareness_measure": {
+                "type": "string",
+                "minLength": 1
+              },
+              "critical_result_status": {
+                "enum": [
+                  "reported-supports-awareness",
+                  "reported-supports-unawareness",
+                  "reported-supports-graded-difference"
+                ]
+              },
+              "critical_result": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_location": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "A_code": {
+                "const": "A-direct"
+              }
+            },
+            "required": [
+              "A_code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_origin": {
+                "const": "focal-task"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "A_code": {
+                "enum": [
+                  "A-direct",
+                  "A-validated"
+                ]
+              },
+              "awareness_evidence_type": {
+                "const": "objective-invisibility"
+              }
+            },
+            "required": [
+              "A_code",
+              "awareness_evidence_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "objective_visibility_test_informative": {
+                "const": "yes"
+              },
+              "objective_visibility_test_reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "A_code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "A_code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "A_reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "nullableString": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "routeStatsStatus": {
+      "enum": [
+        "adequate",
+        "concern",
+        "unclear",
+        "not-applicable"
+      ]
+    },
+    "factorialComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_id",
+        "X_task_relation",
+        "awareness_condition",
+        "effect_description",
+        "statistical_result",
+        "source_location"
+      ],
+      "properties": {
+        "component_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "X_task_relation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "awareness_condition": {
+          "enum": [
+            "aware",
+            "unaware",
+            "mixed",
+            "not-applicable",
+            "higher-awareness",
+            "lower-awareness"
+          ]
+        },
+        "effect_description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "statistical_result": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "source_location": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

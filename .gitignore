@@ -1,4 +1,7 @@
 .venv/
-__pycache__/
-*.pyc
 runs/
+workspace/
+science/outputs/consolidated/
+__pycache__/
+*.py[cod]
+.DS_Store

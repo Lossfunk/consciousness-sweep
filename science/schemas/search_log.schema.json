@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/consciousness-sweep/search_log.schema.json",
+  "title": "Search log row",
+  "description": "Strict schema for one logical row of search_log.csv. CSV blanks are converted to JSON null before validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "search_id",
+    "run_id",
+    "wave",
+    "execution_phase",
+    "event_type",
+    "discovery_route",
+    "parent_paper_id",
+    "citation_parent_node_status",
+    "citation_parent_bridge_depth",
+    "citation_traversal_basis",
+    "trigger_comparison_id",
+    "normalized_y_label",
+    "query_id",
+    "query_text",
+    "canonical_query",
+    "source_parameters",
+    "publication_cutoff",
+    "requested_max_n",
+    "actual_returned_n",
+    "window_key",
+    "result_set_sha256",
+    "retrieved_at",
+    "window_status",
+    "reused_search_id",
+    "source",
+    "index_direction",
+    "started_at",
+    "completed_at",
+    "results_returned",
+    "new_unique_papers",
+    "status",
+    "reason_or_notes"
+  ],
+  "properties": {
+    "search_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+_S[0-9]{6}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "minLength": 1
+    },
+    "wave": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "execution_phase": {
+      "enum": ["initialization", "principal-discovery", "blind-lane", "reopened-frontiers", "administrative"]
+    },
+    "event_type": {
+      "enum": [
+        "query-search",
+        "backward-citation",
+        "forward-citation",
+        "review-anchor-scan",
+        "fulltext-retrieval",
+        "deduplication",
+        "manual-promotion",
+        "checkpoint",
+        "other"
+      ]
+    },
+    "discovery_route": {
+      "enum": [
+        "empirical-seed",
+        "review-anchor",
+        "backward-citation",
+        "forward-citation",
+        "independent-query",
+        "process-triggered-query",
+        "manual-suggestion",
+        "administrative",
+        "other"
+      ]
+    },
+    "parent_paper_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^P[0-9]{6}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "citation_parent_node_status": {
+      "enum": ["not-applicable", "core", "bridge", "review-anchor", "provisional-core", "fixed-empirical-seed"]
+    },
+    "citation_parent_bridge_depth": {
+      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 1 }, { "type": "null" }]
+    },
+    "citation_traversal_basis": {
+      "enum": ["not-applicable", "core", "strict-bridge", "review-anchor", "provisional-core", "fixed-empirical-seed"]
+    },
+    "trigger_comparison_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "normalized_y_label": { "$ref": "#/$defs/nullableString" },
+    "query_id": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "query_text": {
+      "$ref": "#/$defs/nullableString"
+    },
+    "canonical_query": { "$ref": "#/$defs/nullableString" },
+    "source_parameters": {
+      "type": "object",
+      "propertyNames": { "type": "string", "minLength": 1 },
+      "additionalProperties": {
+        "anyOf": [{ "type": "string" }, { "type": "integer" }, { "type": "number" }, { "type": "boolean" }, { "type": "null" }]
+      }
+    },
+    "publication_cutoff": {
+      "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }]
+    },
+    "requested_max_n": {
+      "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+    },
+    "actual_returned_n": {
+      "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+    },
+    "window_key": {
+      "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
+    },
+    "result_set_sha256": {
+      "anyOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }]
+    },
+    "retrieved_at": {
+      "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
+    },
+    "window_status": {
+      "enum": ["not-applicable", "incomplete", "complete", "failed", "reused"]
+    },
+    "reused_search_id": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[A-Za-z0-9._-]+_S[0-9]{6}$" },
+        { "type": "null" }
+      ]
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "index_direction": {
+      "enum": [
+        "backward",
+        "forward",
+        "not-applicable"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "results_returned": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "new_unique_papers": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "started",
+        "complete",
+        "failed",
+        "skipped",
+        "unresolved"
+      ]
+    },
+    "reason_or_notes": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "discovery_route": {
+            "const": "process-triggered-query"
+          }
+        },
+        "required": [
+          "discovery_route"
+        ]
+      },
+      "then": {
+        "properties": {
+          "trigger_comparison_id": {
+            "type": "string",
+            "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+          },
+          "query_text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "normalized_y_label": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "discovery_route": { "enum": ["independent-query", "process-triggered-query"] } },
+        "required": ["discovery_route"]
+      },
+      "then": {
+        "properties": {
+          "canonical_query": { "type": "string", "minLength": 1 },
+          "requested_max_n": { "type": "integer", "minimum": 1 },
+          "window_key": { "type": "string", "minLength": 1 },
+          "window_status": { "enum": ["incomplete", "complete", "failed", "reused"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "discovery_route": { "const": "independent-query" } }, "required": ["discovery_route"] },
+      "then": { "properties": { "execution_phase": { "const": "blind-lane" } } }
+    },
+    {
+      "if": { "properties": { "window_status": { "const": "complete" } }, "required": ["window_status"] },
+      "then": {
+        "properties": {
+          "status": { "const": "complete" },
+          "actual_returned_n": { "type": "integer", "minimum": 0 },
+          "result_set_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "retrieved_at": { "type": "string", "format": "date-time" },
+          "completed_at": { "type": "string", "format": "date-time" },
+          "reused_search_id": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "window_status": { "const": "reused" } }, "required": ["window_status"] },
+      "then": {
+        "properties": {
+          "status": { "const": "complete" },
+          "reused_search_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+_S[0-9]{6}$" },
+          "result_set_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "backward-citation",
+              "forward-citation"
+            ]
+          }
+        },
+        "required": [
+          "event_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parent_paper_id": {
+            "type": "string",
+            "pattern": "^P[0-9]{6}$"
+          },
+          "citation_parent_bridge_depth": { "type": "integer", "minimum": 0, "maximum": 1 },
+          "citation_parent_node_status": { "enum": ["core", "bridge", "review-anchor", "provisional-core", "fixed-empirical-seed"] },
+          "citation_traversal_basis": { "enum": ["core", "strict-bridge", "review-anchor", "provisional-core", "fixed-empirical-seed"] },
+          "canonical_query": { "type": "string", "minLength": 1 },
+          "window_key": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "window_status": { "enum": ["incomplete", "complete", "failed", "reused"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "citation_traversal_basis": { "const": "fixed-empirical-seed" } }, "required": ["citation_traversal_basis"] },
+      "then": { "properties": {
+        "event_type": { "enum": ["backward-citation", "forward-citation"] },
+        "discovery_route": { "enum": ["backward-citation", "forward-citation"] },
+        "citation_parent_node_status": { "const": "fixed-empirical-seed" },
+        "citation_parent_bridge_depth": { "const": 0 }
+      } }
+    },
+    {
+      "if": { "properties": { "citation_traversal_basis": { "const": "strict-bridge" } }, "required": ["citation_traversal_basis"] },
+      "then": { "properties": {
+        "citation_parent_node_status": { "const": "bridge" },
+        "citation_parent_bridge_depth": { "const": 0 }
+      } }
+    }
+  ],
+  "$defs": {
+    "nullableString": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}
