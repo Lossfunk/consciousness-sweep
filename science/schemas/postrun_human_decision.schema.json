@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Explicit human manuscript-role decision event, version 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "work_key", "role", "origin", "actor", "decided_at", "reason", "article_version", "source_reference", "handoff_id", "item_id", "explicit_user_decision"],
+  "properties": {
+    "event_id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "work_key": {"type": "string", "minLength": 1},
+    "role": {"enum": ["primary", "support", "pending", "declined"]},
+    "origin": {"enum": ["manuscript", "user"]},
+    "actor": {"type": "string", "minLength": 1},
+    "decided_at": {"type": "string", "format": "date-time"},
+    "reason": {"type": "string", "minLength": 1},
+    "article_version": {"type": "string", "minLength": 1},
+    "source_reference": {"type": "string", "minLength": 1},
+    "handoff_id": {"type": ["string", "null"]},
+    "item_id": {"type": ["string", "null"]},
+    "explicit_user_decision": {"type": "boolean"}
+  },
+  "allOf": [
+    {"if": {"properties": {"origin": {"const": "user"}}}, "then": {"properties": {"explicit_user_decision": {"const": true}, "handoff_id": {"type": "string", "minLength": 1}, "item_id": {"type": "string", "minLength": 1}}}},
+    {"if": {"properties": {"origin": {"const": "manuscript"}}}, "then": {"properties": {"explicit_user_decision": {"const": false}, "role": {"enum": ["primary", "support"]}, "handoff_id": {"type": "null"}, "item_id": {"type": "null"}}}}
+  ]
+}

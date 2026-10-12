@@ -1,0 +1,117 @@
+# Frozen prospective configuration. Readiness and an explicit launch remain separate.
+protocol_version: "0.9.14"
+package_version: "package-0.9.14"
+schema_version: "schema-0.9.5"
+registration_status: "frozen"
+
+# Canonical runtime; the locked writer relies on POSIX fcntl.
+runtime:
+  python_minimum: "3.9"
+  platforms: ["posix"]
+
+# Freeze identity-only discovery scope; this conveys no expected scientific result.
+seed_scope:
+  basis: "manuscript-bibliography"
+  authorization: "User-designated complete manuscript v2 bibliography, frozen before execution"
+  identity_manifest_sha256: "3c6ea82aabed4c27d43e27d6e76aa04c8177ae81b2a0d0d6912b695f089f2dbd"
+  original_graph_reference: null
+  distance_convention: "seed-relative; original-graph depth only when independently established"
+
+# Supplied by a registered run invocation; never set during scaffold construction.
+run_id: null
+
+# Deliberately unrestricted: null means no publication-date exclusion, not an unset decision.
+publication_date_policy: "unrestricted"
+publication_cutoff: null
+
+ask_text_batch_size: 10
+
+paths:
+  protocol: "PROTOCOL.md"
+  empirical_seeds: "seeds_empirical.csv"
+  review_seeds: "seeds_reviews.csv"
+  queries: "queries.md"
+  schemas: "schemas"
+  tools: "tools"
+  runs: "runs"
+  consolidated_outputs: "outputs/consolidated"
+
+fulltext:
+  permit_preprints: true
+  require_fulltext_for_final_classification: true
+
+execution:
+  independent_run: true
+  checkpoint_after_each_wave: true
+  route_order: "principal-first-blind-last"
+  supplementary_blind_lane_mandatory: true
+  title_screen_batch_size: 25
+  abstract_screen_batch_size: 10
+  smaller_semantic_batches_allowed: true
+  batch_membership_is_evidence: false
+  semantic_auto_exclusion_mechanisms: []
+  semantic_rescue_instrument: "tools/semantic_rescue.py"
+  demotion_audit_min_stratum_size: 1
+  demotion_audit_sample_per_stratum: 10
+  prohibited_auto_exclusion_mechanisms:
+    - "regex-or-keyword"
+    - "embedding-similarity-threshold"
+    - "citation-count-threshold"
+    - "numerical-LLM-relevance-score"
+    - "hidden-lexical-heuristic"
+
+identifiers:
+  paper_prefix: "P"
+  experiment_separator: "_E"
+  comparison_separator: "_C"
+  decision_separator: "_D"
+  search_separator: "_S"
+  discovery_separator: "_R"
+  auxiliary_separator: "_AUX"
+  evidence_link_separator: "_EL"
+  evidence_bundle_separator: "_EB"
+  evidence_assessment_separator: "_EA"
+  fulltext_asset_separator: "_FT"
+
+search:
+  # Route-specific roles and deterministic fallbacks are specified in queries.md.
+  preferred_sources: ["OpenAlex", "Europe PMC"]
+  fallback_order: ["Europe PMC", "Crossref", "publisher-or-repository-reference-list"]
+  source_strategy:
+    OpenAlex: "primary broad discovery, identity, and citation source"
+    Europe_PMC: "parallel metadata/full-text source and conditional biomedical citation fallback"
+    Crossref: "DOI/bibliographic identity and publisher-deposited backward-reference fallback"
+    publisher_or_repository_reference_list: "last backward-reference fallback; no forward-citation substitute"
+  conservative_execution:
+    supplementary_blind_lane:
+      mandatory: true
+      order: "after provisional satisfaction of every principal frontier"
+      sources: ["OpenAlex", "Europe PMC"]
+      active_families: ["QREV6-ATTN", "QREV6-META", "QREV6-BIND", "QREV6-MEM", "QREV6-DEC", "QREV6-AFFECT", "QREV6-EXPERIENCE", "QREV6-SOCIAL", "QREV6-LEARN", "QREV6-LANGUAGE", "QREV6-PAIN", "QREV6-HEDONIC", "QREV6-MOTIVATION", "QREV6-OPEN"]
+      disabled_families: ["QCAL4-LEARN"]
+      learning_blind_block_decision: "historical-renderings-retired; QREV6 vocabulary prospectively specified; live retrieval quality check pending"
+      max_results_per_source_family: 40
+      max_windows_per_source_family: 1
+      second_page_or_cursor: false
+      redistribute_unused_quota: false
+      screen_every_return: true
+    process_trigger:
+      sources: ["OpenAlex", "Europe PMC"]
+      max_results_per_source_y: 50
+      max_windows_per_source_y: 1
+      second_page_or_cursor: false
+      redistribute_unused_quota: false
+      same_normalized_y_retrigger: false
+      genuinely_new_y_recursion_only: true
+    completed_window_resume_policy: "reuse-durable-snapshot; retry-only-failed-or-incomplete"
+
+evidence_reuse:
+  scientific_bundles_are_classificatory: true
+  execution_assessments_propagate_scientific_codes: false
+  require_exact_regime_fingerprint_for_assessment_reuse: true
+
+fulltext_cache:
+  one_verified_asset_per_paper_version: true
+  reuse_hash: true
+  reuse_extraction_by_tool_version: true
+  article_version_mismatch_blocks_reuse: true

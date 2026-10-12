@@ -1,0 +1,32 @@
+{
+  "verified_at": "2026-10-12",
+  "codex": {
+    "reference": "https://learn.chatgpt.com/docs/developer-commands?surface=cli",
+    "implementation_reference": "sweep/adapters.py",
+    "configuration_reference": "https://learn.chatgpt.com/docs/config-file/config-reference",
+    "context_reference": "https://learn.chatgpt.com/docs/config-file/config-sample",
+    "context": "codex_context=standard preserves the ordinary CLI base context. Explicit source-only-v1 uses model_instructions_file with a hash-bound operational base and documented feature disabling; accepted scientific instruction bytes remain in the task prompt. Token reduction and scientific quality require separate measured qualification.",
+    "compatibility_note": "The local CLI rejects the documented tools.view_image key under strict config; this optional toggle is omitted. Observed external/tool activity still invalidates a source-only response. Unknown CLI config errors are retained as sanitized operational diagnostics.",
+    "billing": "Signed-in ChatGPT only; forced login method and ambient API configuration removal.",
+    "validation": "Mock adapter tests; live deployment qualification is separate."
+  },
+  "claude": {
+    "reference": "https://code.claude.com/docs/en/cli-reference",
+    "requires": "CLI 2.1.293 or later, --safe-mode and --restricted, native --effort and --json-schema. --bare is deliberately absent because it disables subscription auth.",
+    "billing": "Subscription authMethod claude.ai/oauth_token plus operator confirmation of disabled extra usage/usage credits required; no API fallback or Fable credit-only model.",
+    "billing_reference": "https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans",
+    "headless_reference": "https://code.claude.com/docs/en/headless",
+    "model_reference": "https://code.claude.com/docs/en/model-config",
+    "validation": "Mock adapter tests only; no scientific qualification asserted."
+  },
+  "openclaw": {
+    "reference": "https://docs.openclaw.ai/cli/agent",
+    "status": "Use manual exchange or an explicit reviewed command wrapper. No built-in alias claims source-only isolation or billing verification.",
+    "reason": "Agent execution can enable tools and configured runtime behavior; a wrapper must establish a compatible source-only result contract."
+  },
+  "openai-compatible": {
+    "reference": "https://platform.openai.com/docs/api-reference/chat/create",
+    "status": "Explicit JSON-compatible Chat Completions endpoint; provider compatibility and model qualification are separate.",
+    "limitations": "No fallback to another response format, model, endpoint or billing route. Remote endpoints require HTTPS and spending authorization."
+  }
+}

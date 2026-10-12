@@ -1,0 +1,837 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Post-run authored prospect handoff, version 0.5.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sidecar_version",
+    "handoff_id",
+    "created_at",
+    "status",
+    "input_runs",
+    "adjudication_manifest",
+    "items"
+  ],
+  "properties": {
+    "sidecar_version": {
+      "const": "0.5.0"
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "enum": [
+        "final",
+        "provisional"
+      ]
+    },
+    "input_runs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "run_dir"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "run_dir": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "adjudication_manifest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "first_read",
+        "by_tier"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_tier": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_id",
+        "run_id",
+        "paper_id",
+        "tier",
+        "first_read",
+        "manuscript_contribution",
+        "evidence_level_comparison",
+        "X",
+        "Y",
+        "result_direction",
+        "claim",
+        "claim_basis",
+        "claim_comparison_id",
+        "measured_outcome",
+        "comparison_ids",
+        "asset_id",
+        "source_location",
+        "limitation",
+        "reason",
+        "redundancy_note",
+        "claim_review",
+        "claim_review_reason",
+        "reviewed_by",
+        "request_reason",
+        "request_priority"
+      ],
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paper_id": {
+          "type": "string",
+          "pattern": "^P[0-9]{6}$"
+        },
+        "tier": {
+          "enum": [
+            "profile-prospect",
+            "qualified-primary-prospect",
+            "valuable-support",
+            "conditional-check-read",
+            "backup-context",
+            "unresolved-source-request"
+          ]
+        },
+        "first_read": {
+          "type": "boolean"
+        },
+        "manuscript_contribution": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_level_comparison": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Authored comparison with manuscript primary/support evidence: scoped contribution, relevant awareness/control strength and decisive limitation. An unavailable baseline is disclosed, never inferred. This is an editorial assessment, not a scientific gate or numerical score."
+        },
+        "X": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Y": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result_direction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim_basis": {
+          "enum": [
+            "awareness-linked-change",
+            "preserved-capacity",
+            "qualified-awareness-support",
+            "context",
+            "unresolved-source"
+          ],
+          "description": "Named question or claim route, separate from scientific exports and human acceptance. A prospect uses it to identify the tentative inference for vetting. Certified preserved-capacity claims retain positive whole-Y unaware use and directly tested awareness nondifference/null requirements."
+        },
+        "claim_comparison_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "One claim-bearing comparison among comparison_ids; authored X/Y must match its labels exactly. Required for evidence and conditional recommendations."
+        },
+        "measured_outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "\\S",
+          "description": "Source-reviewed measured outcome, stated separately from the mental function Y and its proposed mechanism."
+        },
+        "comparison_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+          }
+        },
+        "experiment_group_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^P[0-9]{6}_E[0-9]{2}$"
+          }
+        },
+        "asset_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_location": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limitation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "redundancy_note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim_review": {
+          "enum": [
+            "verified",
+            "unresolved"
+          ]
+        },
+        "claim_review_reason": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Source-located reasoning about X, function, outcome and the claim-bearing analysis. Prospects remain unresolved for human vetting; a located design is not certification of the inference."
+        },
+        "reviewed_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "request_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "request_priority": {
+          "enum": [
+            "ask-text-high",
+            "ask-text-medium",
+            "unavailable-low-priority",
+            null
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "work_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "article_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bound_comparison": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/boundComparison"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Generated-only receipt of the current selected comparison and verified source; authors cannot supply or override it."
+        },
+        "source_review": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "decision_id",
+                "scientific_review_decision_id",
+                "reviewer",
+                "binding_sha256",
+                "scientific_regime_fingerprint",
+                "claim_sha256"
+              ],
+              "properties": {
+                "decision_id": {
+                  "type": "string"
+                },
+                "scientific_review_decision_id": {
+                  "type": "string"
+                },
+                "reviewer": {
+                  "type": "string"
+                },
+                "binding_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "scientific_regime_fingerprint": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "claim_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          ],
+          "description": "Generated receipt of the independently checked exact recommendation. Cannot be supplied in authored input."
+        },
+        "human_review": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "event_id",
+                "article_version",
+                "source_reference"
+              ],
+              "properties": {
+                "role": {
+                  "enum": [
+                    "primary",
+                    "support",
+                    "pending",
+                    "declined"
+                  ]
+                },
+                "event_id": {
+                  "type": "string"
+                },
+                "article_version": {
+                  "type": "string"
+                },
+                "source_reference": {
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "description": "Generated from existing explicit canonical human decision history; never inferred from recommendation or model agreement."
+        },
+        "decisive_evidence": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Located source observations supporting why this same-X awareness/use-of-Y comparison is a plausible prospect, distinguished from the tentative inference."
+        },
+        "human_question": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "The specific question human reading should resolve about relevance, inference, scope or evidence strength."
+        },
+        "tentative_role": {
+          "enum": [
+            "primary",
+            "support",
+            "undetermined"
+          ],
+          "description": "Optional-strength judgment for human vetting, never a certified scientific classification or inclusion gate."
+        },
+        "prospect_relation": {
+          "enum": [
+            "comparison-located",
+            "comparison-unresolved"
+          ],
+          "description": "Whether the same-function awareness design is located or a core relevance premise is unresolved. This does not certify an effect or require a reported direct statistical test."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": "unresolved-source-request"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "claim_basis": {
+                "const": "unresolved-source"
+              },
+              "claim_comparison_id": {
+                "type": "null"
+              },
+              "measured_outcome": {
+                "type": "null"
+              },
+              "asset_id": {
+                "type": "null"
+              },
+              "request_reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "request_priority": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "enum": [
+                  "profile-prospect",
+                  "qualified-primary-prospect",
+                  "valuable-support",
+                  "conditional-check-read",
+                  "backup-context"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "asset_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "request_reason": {
+                "type": "null"
+              },
+              "request_priority": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": "backup-context"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "claim_basis": {
+                "const": "context"
+              },
+              "first_read": {
+                "const": false
+              }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "comparison_ids": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "required": [
+                  "experiment_group_ids"
+                ],
+                "properties": {
+                  "experiment_group_ids": {
+                    "minItems": 1
+                  }
+                }
+              }
+            ]
+          },
+          "else": {
+            "properties": {
+              "experiment_group_ids": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "enum": [
+                  "profile-prospect",
+                  "qualified-primary-prospect",
+                  "valuable-support",
+                  "conditional-check-read"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "claim_comparison_id": {
+                "type": "string"
+              },
+              "measured_outcome": {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              "comparison_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": "qualified-primary-prospect"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "claim_basis": {
+                "enum": [
+                  "awareness-linked-change",
+                  "preserved-capacity"
+                ]
+              },
+              "claim_review": {
+                "const": "verified"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": "valuable-support"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "claim_basis": {
+                "const": "qualified-awareness-support"
+              },
+              "claim_review": {
+                "const": "verified"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": "conditional-check-read"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "claim_basis": {
+                "enum": [
+                  "awareness-linked-change",
+                  "preserved-capacity",
+                  "qualified-awareness-support"
+                ]
+              },
+              "claim_review": {
+                "const": "unresolved"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "enum": [
+                  "profile-prospect",
+                  "conditional-check-read"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "decisive_evidence",
+              "human_question",
+              "tentative_role",
+              "prospect_relation"
+            ],
+            "properties": {
+              "claim_review": {
+                "const": "unresolved"
+              },
+              "claim_basis": {
+                "enum": [
+                  "awareness-linked-change",
+                  "preserved-capacity",
+                  "qualified-awareness-support"
+                ]
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "decisive_evidence"
+                  ]
+                },
+                {
+                  "required": [
+                    "human_question"
+                  ]
+                },
+                {
+                  "required": [
+                    "tentative_role"
+                  ]
+                },
+                {
+                  "required": [
+                    "prospect_relation"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "boundComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_id",
+        "experiment_id",
+        "X_label",
+        "Y_label",
+        "difference_tested",
+        "difference_analysis_scope",
+        "difference_source_experiment_id",
+        "difference_joint_experiment_ids",
+        "difference_source_location",
+        "difference_statistic_or_test",
+        "difference_analysis_origin",
+        "difference_derivation",
+        "awareness_effect",
+        "awareness_effect_estimate",
+        "awareness_effect_estimate_interpretable",
+        "awareness_effect_stats_status",
+        "awareness_effect_stats_reason",
+        "unaware_capacity",
+        "unaware_capacity_critical_effect",
+        "unaware_capacity_stats_status",
+        "unaware_capacity_stats_reason",
+        "A_code",
+        "A_reason",
+        "E_code",
+        "E_reason",
+        "F_code",
+        "F_reason",
+        "comparison_validity",
+        "comparison_validity_reason",
+        "evidence_strength_reason",
+        "comparison_sha256",
+        "source_asset_id",
+        "source_sha256",
+        "awareness_regime_evidence",
+        "unaware_capacity_regime_keys"
+      ],
+      "properties": {
+        "comparison_id": {
+          "type": "string",
+          "pattern": "^P[0-9]{6}_E[0-9]{2}_C[0-9]{2}$"
+        },
+        "experiment_id": {
+          "type": "string",
+          "pattern": "^P[0-9]{6}_E[0-9]{2}$"
+        },
+        "X_label": {
+          "type": "string"
+        },
+        "Y_label": {
+          "type": "string"
+        },
+        "difference_tested": {
+          "type": "string"
+        },
+        "difference_analysis_scope": {
+          "type": "string"
+        },
+        "difference_joint_experiment_ids": {
+          "type": "string",
+          "description": "Generated CSV JSON-array cell naming all contributors to a joint analysis; semantic and reference checks reuse the existing scientific provenance rules."
+        },
+        "difference_source_experiment_id": {
+          "type": "string"
+        },
+        "difference_source_location": {
+          "type": "string"
+        },
+        "difference_statistic_or_test": {
+          "type": "string"
+        },
+        "difference_analysis_origin": {
+          "type": "string"
+        },
+        "difference_derivation": {
+          "type": "string"
+        },
+        "awareness_effect": {
+          "type": "string"
+        },
+        "awareness_effect_estimate": {
+          "type": "string"
+        },
+        "awareness_effect_estimate_interpretable": {
+          "type": "string"
+        },
+        "awareness_effect_stats_status": {
+          "type": "string"
+        },
+        "awareness_effect_stats_reason": {
+          "type": "string"
+        },
+        "unaware_capacity": {
+          "type": "string"
+        },
+        "unaware_capacity_critical_effect": {
+          "type": "string"
+        },
+        "unaware_capacity_stats_status": {
+          "type": "string"
+        },
+        "unaware_capacity_stats_reason": {
+          "type": "string"
+        },
+        "A_code": {
+          "type": "string"
+        },
+        "A_reason": {
+          "type": "string"
+        },
+        "E_code": {
+          "type": "string"
+        },
+        "E_reason": {
+          "type": "string"
+        },
+        "F_code": {
+          "type": "string"
+        },
+        "F_reason": {
+          "type": "string"
+        },
+        "comparison_validity": {
+          "type": "string"
+        },
+        "comparison_validity_reason": {
+          "type": "string"
+        },
+        "evidence_strength_reason": {
+          "type": "string"
+        },
+        "comparison_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_asset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "awareness_regime_evidence": {
+          "type": "string"
+        },
+        "unaware_capacity_regime_keys": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
