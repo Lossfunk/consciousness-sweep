@@ -154,6 +154,9 @@ CREATE TABLE IF NOT EXISTS papers(id TEXT PRIMARY KEY,doi TEXT,biblio TEXT,statu
 CREATE UNIQUE INDEX IF NOT EXISTS paper_doi ON papers(doi) WHERE doi IS NOT NULL;
 CREATE INDEX IF NOT EXISTS paper_biblio ON papers(biblio);
 CREATE INDEX IF NOT EXISTS paper_status ON papers(status,id);
+CREATE TABLE IF NOT EXISTS identity_aliases(alias TEXT NOT NULL,paper_id TEXT NOT NULL REFERENCES papers(id),PRIMARY KEY(alias,paper_id));
+CREATE TABLE IF NOT EXISTS identity_links(left_id TEXT NOT NULL REFERENCES papers(id),right_id TEXT NOT NULL REFERENCES papers(id),
+ relation TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(left_id,right_id,relation));
 CREATE TABLE IF NOT EXISTS encounters(id INTEGER PRIMARY KEY AUTOINCREMENT,
  paper_id TEXT NOT NULL REFERENCES papers(id),at REAL NOT NULL,provenance TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS encounter_paper ON encounters(paper_id,id);
@@ -167,6 +170,10 @@ CREATE INDEX IF NOT EXISTS job_ready ON jobs(state,stage,available_at,priority D
 CREATE INDEX IF NOT EXISTS job_priority ON jobs(state,priority DESC,id,available_at,stage);
 CREATE INDEX IF NOT EXISTS job_owner ON jobs(owner,state);
 CREATE INDEX IF NOT EXISTS job_projection ON jobs(state,projected,id);
+CREATE INDEX IF NOT EXISTS job_source_paper ON jobs(json_extract(payload,'$.paper_id'),stage);
+CREATE TABLE IF NOT EXISTS job_supersessions(job_id TEXT PRIMARY KEY REFERENCES jobs(id),
+ replacement_job_id TEXT REFERENCES jobs(id),reason TEXT NOT NULL,created_at REAL NOT NULL,
+ CHECK(job_id != replacement_job_id));
 CREATE TABLE IF NOT EXISTS dependencies(job_id TEXT NOT NULL REFERENCES jobs(id),
  dependency_id TEXT NOT NULL REFERENCES jobs(id),PRIMARY KEY(job_id,dependency_id),
  CHECK(job_id != dependency_id));
@@ -182,6 +189,13 @@ CREATE INDEX IF NOT EXISTS reservation_job ON reservations(job_id,created_at DES
 CREATE TABLE IF NOT EXISTS budget_totals(id INTEGER PRIMARY KEY CHECK(id=1),
  calls REAL NOT NULL,tokens REAL NOT NULL,cost_usd REAL NOT NULL,unknown_outcomes INTEGER NOT NULL);
 INSERT OR IGNORE INTO budget_totals VALUES(1,0,0,0,0);
+CREATE TABLE IF NOT EXISTS native_scientific_ids(
+ id TEXT PRIMARY KEY,kind TEXT NOT NULL CHECK(kind IN ('experiment','comparison')),
+ paper_id TEXT NOT NULL REFERENCES papers(id),experiment_key TEXT NOT NULL,
+ comparison_key TEXT NOT NULL,experiment_id TEXT NOT NULL,
+ actor TEXT NOT NULL,reason TEXT NOT NULL,created_at REAL NOT NULL,
+ UNIQUE(paper_id,experiment_key,comparison_key));
+CREATE INDEX IF NOT EXISTS native_ids_paper ON native_scientific_ids(paper_id,kind);
 """
 
 
@@ -254,6 +268,173 @@ class Store:
         with self._transaction() as conn:
             self._require_initialized(conn)
             return self._event(conn, kind, payload)
+
+    @staticmethod
+    def _native_key(value, name):
+        if (not isinstance(value, str) or not value.strip() or value != value.strip()
+                or len(value) > 500 or any(unicodedata.category(c) == "Cc" for c in value)):
+            raise ValueError(name + " must be a nonempty stable key without surrounding whitespace or control characters")
+        return value
+
+    @staticmethod
+    def _native_next(conn, paper_id, experiment_id=None):
+        """Reconcile a counter against durable reservations and accepted own-run rows."""
+        scope = "native-comparison:" + experiment_id if experiment_id else "native-experiment:" + paper_id
+        pattern = (re.escape(experiment_id) + r"_C([0-9]{2})" if experiment_id
+                   else re.escape(paper_id) + r"_E([0-9]{2})")
+        greatest = 0
+        for row in conn.execute("SELECT id,experiment_id FROM native_scientific_ids WHERE paper_id=?", (paper_id,)):
+            for value in row:
+                match = re.fullmatch(pattern, value)
+                if match:
+                    greatest = max(greatest, int(match[1]))
+        # An older accepted native record may predate the portable reservation
+        # interface. Never reuse its identifiers or silently assign them a key.
+        saved = conn.execute("SELECT value FROM meta WHERE key=?", ("state:native-assessment:" + paper_id,)).fetchone()
+        if saved:
+            assessment = json.loads(saved[0])
+            values = []
+            for group in assessment.get("groups", []):
+                values.extend([group.get("experiment_id"), *group.get("linked_comparison_ids", [])])
+            for activation in assessment.get("process_activations", []):
+                comparison = activation.get("comparison", {})
+                values.extend([comparison.get("experiment_id"), comparison.get("comparison_id")])
+            for value in values:
+                match = re.fullmatch(pattern, value or "")
+                if match:
+                    greatest = max(greatest, int(match[1]))
+        row = conn.execute("SELECT next_value FROM counters WHERE kind=?", (scope,)).fetchone()
+        number = max(greatest + 1, row[0] if row else 1)
+        if number > 99:
+            raise StoreError("Native identifier scope exhausted at 99; keep the unit unresolved under the frozen schema")
+        conn.execute("INSERT OR REPLACE INTO counters(kind,next_value) VALUES(?,?)", (scope, number + 1))
+        return number
+
+    def allocate_native_ids(self, paper_id, experiment_key, *, comparison_key=None, actor, reason):
+        """Reserve scientific identities; this does not create or certify scientific rows.
+
+        Stable source-defined keys are idempotent across processes and restarts.
+        The write lock commits IDs, counters and provenance before returning.
+        A comparison key optionally reserves a child of the physical experiment.
+        """
+        if not isinstance(paper_id, str) or not re.fullmatch(r"P[0-9]{6}", paper_id):
+            raise ValueError("Native allocation requires an allocated logical paper ID")
+        experiment_key = self._native_key(experiment_key, "experiment_key")
+        if comparison_key is not None:
+            comparison_key = self._native_key(comparison_key, "comparison_key")
+        if not isinstance(actor, str) or not actor.strip() or not isinstance(reason, str) or not reason.strip():
+            raise ValueError("Native allocation requires actor and reason")
+        with self._transaction() as conn:
+            self._require_initialized(conn)
+            if not conn.execute("SELECT 1 FROM papers WHERE id=?", (paper_id,)).fetchone():
+                raise StoreError("Native allocation requires an existing logical paper")
+            def reserve(key, kind, parent=None):
+                row = conn.execute("SELECT * FROM native_scientific_ids WHERE paper_id=? AND experiment_key=? AND comparison_key=?",
+                                   (paper_id, experiment_key, key)).fetchone()
+                if row:
+                    if row["kind"] != kind or (parent and row["experiment_id"] != parent):
+                        raise StoreError("Native reservation key has an incompatible identity")
+                    return row["id"]
+                number = self._native_next(conn, paper_id, parent)
+                identity = "%s_C%02d" % (parent, number) if parent else "%s_E%02d" % (paper_id, number)
+                created_at = time.time()
+                self._event(conn, "native_scientific_id_reserved", {"id": identity, "kind": kind,
+                    "paper_id": paper_id, "experiment_key": experiment_key, "comparison_key": key or None,
+                    "experiment_id": parent or identity, "actor": actor, "reason": reason, "created_at": created_at})
+                conn.execute("INSERT INTO native_scientific_ids VALUES(?,?,?,?,?,?,?,?,?)",
+                    (identity, kind, paper_id, experiment_key, key, parent or identity, actor, reason, created_at))
+                return identity
+            experiment_id = reserve("", "experiment")
+            comparison_id = reserve(comparison_key, "comparison", experiment_id) if comparison_key is not None else None
+            return {"paper_id": paper_id, "experiment_key": experiment_key, "experiment_id": experiment_id,
+                    "comparison_key": comparison_key, "comparison_id": comparison_id}
+
+    def require_native_ids(self, paper_id, groups, comparisons=(), *, conn=None):
+        """Reject invented/foreign/duplicate submitted IDs without judging evidence."""
+        groups, comparisons = list(groups), list(comparisons)
+        if conn is None:
+            with self._connection() as connection:
+                return self.require_native_ids(paper_id, groups, comparisons, conn=connection)
+        reservations = {row["id"]: dict(row) for row in conn.execute(
+            "SELECT * FROM native_scientific_ids WHERE paper_id=?", (paper_id,))}
+        seen_groups, seen_links, seen_comparisons = set(), set(), set()
+        for group in groups:
+            eid = group.get("experiment_id")
+            row = reservations.get(eid)
+            if group.get("paper_id") != paper_id or not row or row["kind"] != "experiment":
+                raise StoreError("Native group requires its reserved focal-paper experiment ID; use native-allocate")
+            if eid in seen_groups:
+                raise StoreError("Native physical experiment IDs must be unique")
+            seen_groups.add(eid)
+            for cid in group.get("linked_comparison_ids", []):
+                child = reservations.get(cid)
+                if not child or child["kind"] != "comparison" or child["experiment_id"] != eid or cid in seen_links:
+                    raise StoreError("Native group links require unique reserved comparisons of that physical experiment")
+                seen_links.add(cid)
+        for comparison in comparisons:
+            cid, eid = comparison.get("comparison_id"), comparison.get("experiment_id")
+            row = reservations.get(cid)
+            if (comparison.get("paper_id") != paper_id or not row or row["kind"] != "comparison"
+                    or row["experiment_id"] != eid or eid not in seen_groups or cid not in seen_links):
+                raise StoreError("Native comparison requires its reserved focal-paper ID and physical-group link")
+            if cid in seen_comparisons:
+                raise StoreError("Native comparison IDs must be unique")
+            seen_comparisons.add(cid)
+
+    def native_id_errors(self, conn=None):
+        """Check reservation identity, parent/counter consistency and event binding."""
+        if conn is None:
+            with self._connection() as connection:
+                return self.native_id_errors(connection)
+        errors, maxima = [], {}
+        rows = {row["id"]: dict(row) for row in conn.execute("SELECT * FROM native_scientific_ids")}
+        events = {}
+        for event in conn.execute("SELECT payload FROM events WHERE kind='native_scientific_id_reserved'"):
+            try:
+                payload = json.loads(event[0])
+                if not isinstance(payload, dict) or not isinstance(payload.get("id"), str):
+                    raise ValueError("Invalid native reservation event")
+                events.setdefault(payload["id"], []).append(payload)
+            except (ValueError, TypeError):
+                errors.append("Invalid native reservation event")
+        for identity, row in rows.items():
+            try:
+                pid, eid, kind = row["paper_id"], row["experiment_id"], row["kind"]
+                self._native_key(row["experiment_key"], "experiment_key")
+                if not conn.execute("SELECT 1 FROM papers WHERE id=?", (pid,)).fetchone():
+                    raise ValueError("Native reservation references an unknown paper")
+                if kind == "experiment":
+                    pattern, scope = re.escape(pid) + r"_E([0-9]{2})", "native-experiment:" + pid
+                    if eid != identity or row["comparison_key"] != "":
+                        raise ValueError("Native experiment reservation has invalid parent/key")
+                elif kind == "comparison":
+                    self._native_key(row["comparison_key"], "comparison_key")
+                    parent = rows.get(eid, {})
+                    if (parent.get("kind") != "experiment" or parent.get("paper_id") != pid
+                            or parent.get("experiment_key") != row["experiment_key"]):
+                        raise ValueError("Native comparison reservation has incompatible experiment parent")
+                    pattern, scope = re.escape(eid) + r"_C([0-9]{2})", "native-comparison:" + eid
+                else:
+                    raise ValueError("Invalid native reservation kind")
+                match = re.fullmatch(pattern, identity)
+                if not re.fullmatch(r"P[0-9]{6}", pid) or not match or int(match[1]) == 0:
+                    raise ValueError("Invalid native identifier format")
+                maxima[scope] = max(maxima.get(scope, 0), int(match[1]))
+                if not row["actor"].strip() or not row["reason"].strip():
+                    raise ValueError("Native reservation lacks actor/reason")
+                expected = {key: row[key] for key in ("id", "kind", "paper_id", "experiment_key", "experiment_id", "actor", "reason", "created_at")}
+                expected["comparison_key"] = row["comparison_key"] or None
+                if events.get(identity) != [expected]:
+                    raise ValueError("Native reservation differs from its unique append-first reservation event")
+            except (ValueError, TypeError, AttributeError) as exc:
+                errors.append(identity + ": " + str(exc))
+        for identity in events.keys() - rows.keys():
+            errors.append(identity + ": Native reservation event has no durable registry identity")
+        for scope, greatest in maxima.items():
+            counter = conn.execute("SELECT next_value FROM counters WHERE kind=?", (scope,)).fetchone()
+            if not counter or type(counter[0]) is not int or counter[0] <= greatest:
+                errors.append(scope + ": Next native identifier does not exceed all durable IDs")
+        return errors
 
     def get_state(self, key, default=None):
         with self._connection() as conn:
@@ -352,11 +533,15 @@ class Store:
             matches = conn.execute("SELECT id FROM papers WHERE biblio=? LIMIT 2", (biblio,)).fetchall()
             if len(matches) == 1:
                 existing = matches[0]
+                prior = json.loads(conn.execute("SELECT record FROM papers WHERE id=?", (existing[0],)).fetchone()[0])
+                if record.get("arxiv_id") and prior.get("arxiv_id") and record["arxiv_id"] != prior["arxiv_id"]:
+                    existing = None  # Explicitly different versions await adjudication.
         is_new = existing is None
         paper_id = self._id(conn, "paper", "P") if is_new else existing[0]
         if is_new:
             now = time.time()
             value = dict(record, paper_id=paper_id)
+            value.update(metadata_revision=1, source_generation=1)
             if doi:
                 value["doi"] = doi
             value.setdefault("status", "discovered")
@@ -364,12 +549,101 @@ class Store:
                                              "reason": "New logical work by deterministic identity"})
             conn.execute("INSERT INTO papers VALUES(?,?,?,?,?,?,?)",
                          (paper_id, doi, biblio, value["status"], _json(value), now, now))
+        else:
+            self._enrich_metadata(conn, paper_id, record, provenance)
+        self._identity_links(conn, paper_id, record, doi, biblio)
         self._event(conn, "discovery_encounter", {"paper_id": paper_id, "is_new": is_new,
                                                   "reason": "new identity" if is_new else "matching DOI or complete bibliography",
                                                   "provenance": provenance})
         conn.execute("INSERT INTO encounters(paper_id,at,provenance) VALUES(?,?,?)",
                      (paper_id, time.time(), _json(provenance)))
         return paper_id, is_new
+
+    def _enrich_metadata(self, conn, paper_id, incoming, provenance):
+        """Retain source revisions without importing another run's decisions."""
+        row = conn.execute("SELECT record FROM papers WHERE id=?", (paper_id,)).fetchone()
+        current = json.loads(row[0])
+        changes = {}
+        acquisition = {"url", "urls", "fulltext_url", "fulltext_urls", "pdf_url", "open_access_url",
+                       "provided_paths", "fulltext_path", "pdf_path", "local_path", "pmcid", "pmid", "openalex_id", "epmc_id", "epmc_source", "source_locations"}
+        scalar = {"abstract", "authors", "author", "year", "publication_year", "arxiv_id", "journal", "venue", "type",
+                  "publication_date", "language", "volume", "issue", "pages", "publication_status", "version", "version_of", "relation"} | acquisition
+        lists = {"urls", "fulltext_urls", "provided_paths", "version_relations", "source_locations"}
+        for key in scalar | lists:
+            value = incoming.get(key)
+            if value in (None, "", [], {}):
+                continue
+            old = current.get(key)
+            if key in lists:
+                old_values = old if isinstance(old, list) else [old] if old else []
+                new_values = value if isinstance(value, list) else [value]
+                combined = list(old_values)
+                for item in new_values:
+                    if item not in combined:
+                        combined.append(item)
+                if combined != old_values:
+                    changes[key] = combined
+            elif key == "abstract" and value != old:
+                changes[key] = value
+            elif old in (None, "", [], {}) and value != old:
+                changes[key] = value
+        if not changes:
+            return
+        changed = sorted(changes)
+        changes.update(metadata_revision=current.get("metadata_revision", 1) + 1,
+                       metadata_changed_fields=changed)
+        if "abstract" in changed:
+            changes["screening_revision_pending"] = True
+        if acquisition.intersection(changed):
+            changes.update(source_generation=current.get("source_generation", 1) + 1,
+                           retrieval_revision_pending=True)
+        self._event(conn, "paper_metadata_enriched", {"paper_id": paper_id, "changes": changes,
+                    "previous": {key: current.get(key) for key in changes}, "provenance": provenance,
+                    "reason": "Rediscovery supplied new metadata or decision-relevant abstract evidence; existing decisions require explicit reconciliation"})
+        current.update(changes)
+        conn.execute("UPDATE papers SET record=?,biblio=?,updated_at=? WHERE id=?",
+                     (_json(current), _bibliographic_key(current), time.time(), paper_id))
+
+    def _identity_links(self, conn, paper_id, record, doi, biblio):
+        """Index exact identifiers and flag related records; never fuzzy-merge."""
+        aliases = []
+        if doi:
+            aliases.append("doi:" + doi)
+            aliases.append("version-doi:" + doi)
+        def relation_dois(value):
+            if isinstance(value, dict):
+                for item in value.values():
+                    yield from relation_dois(item)
+            elif isinstance(value, list):
+                for item in value:
+                    yield from relation_dois(item)
+            elif isinstance(value, str) and re.fullmatch(r"10\.\d{4,9}/\S+", normalize_doi(value)):
+                yield normalize_doi(value)
+        for target in relation_dois([record.get("version_relations"), record.get("relation"), record.get("version_of")]):
+            aliases.append("version-doi:" + target)
+        arxiv = re.sub(r"^https?://arxiv\.org/(?:abs|pdf)/", "", str(record.get("arxiv_id") or "")).removesuffix(".pdf")
+        if arxiv:
+            aliases.append("arxiv:" + re.sub(r"v\d+$", "", arxiv))
+        candidates = set()
+        if biblio:
+            candidates.update(row[0] for row in conn.execute("SELECT id FROM papers WHERE biblio=? AND id!=?", (biblio, paper_id)))
+        for alias in aliases:
+            candidates.update(row[0] for row in conn.execute("SELECT paper_id FROM identity_aliases WHERE alias=? AND paper_id!=?", (alias, paper_id)))
+            conn.execute("INSERT OR IGNORE INTO identity_aliases VALUES(?,?)", (alias, paper_id))
+        for candidate in candidates:
+            left, right = sorted((paper_id, candidate))
+            reason = "Exact bibliography, base arXiv identifier, or source-declared version relationship links these records; retain both until adjudication"
+            cursor = conn.execute("INSERT OR IGNORE INTO identity_links VALUES(?,?,?,?)", (left, right, "possible-version-or-duplicate", reason))
+            if cursor.rowcount:
+                self._event(conn, "possible_duplicate_linked", {"paper_ids": [left, right], "reason": reason})
+        relations = record.get("version_relations") or record.get("relation")
+        if relations:
+            self._event(conn, "version_relationship_observed", {"paper_id": paper_id, "relationships": relations,
+                         "reason": "Source-supplied relationship retained as metadata, not proof that versions have identical evidence"})
+
+    def identity_relationships(self, paper_id):
+        with self._connection() as conn:
+            return [dict(row) for row in conn.execute("SELECT * FROM identity_links WHERE left_id=? OR right_id=? ORDER BY left_id,right_id", (paper_id, paper_id))]
 
     def paper(self, paper_id):
         with self._connection() as conn:
@@ -423,6 +697,45 @@ class Store:
             self._event(conn, "job_enqueued", {"job_id": job_id, "stage": stage, "key": key,
                                                "payload_sha256": hashlib.sha256(encoded.encode()).hexdigest(), "dependencies": deps})
             return job_id
+
+    @staticmethod
+    def _supersede_job(conn, job_id, replacement_job_id, reason):
+        if not str(reason).strip() or job_id == replacement_job_id:
+            raise ValueError("Execution supersession requires another input/job and a reason")
+        original = conn.execute("SELECT state FROM jobs WHERE id=?", (job_id,)).fetchone()
+        if original is None or (replacement_job_id is not None and not conn.execute("SELECT 1 FROM jobs WHERE id=?", (replacement_job_id,)).fetchone()):
+            raise ValueError("Unknown superseded or replacement job")
+        cursor = conn.execute("INSERT OR IGNORE INTO job_supersessions VALUES(?,?,?,?)",
+                              (job_id, replacement_job_id, reason, time.time()))
+        if cursor.rowcount:
+            Store._event(conn, "job_superseded", {"job_id": job_id, "replacement_job_id": replacement_job_id,
+                "previous_state": original[0], "reason": reason,
+                "scope": "execution-only; original result, running worker and budget remain unchanged"})
+        return bool(cursor.rowcount)
+
+    def supersede_job(self, job_id, replacement_job_id, reason):
+        """Retire obsolete inputs from admission, preserving every prior record.
+
+        Running work is not cancelled. A caller abandoning a not-yet-dispatched
+        claim must release its own lease through defer; admitted work finishes.
+        """
+        with self._transaction() as conn:
+            return self._supersede_job(conn, job_id, replacement_job_id, reason)
+
+    def supersede_source_jobs(self, paper_id, generation, manifest_sha256, replacement_job_id, reason):
+        with self._transaction() as conn:
+            current = conn.execute("SELECT record FROM papers WHERE id=?", (paper_id,)).fetchone()
+            if current is None or json.loads(current[0]).get("source_generation", 1) != generation:
+                raise ValueError("Source supersession must target the current paper generation")
+            count = 0
+            for row in conn.execute("SELECT id,stage,payload FROM jobs WHERE json_extract(payload,'$.paper_id')=? AND stage IN ('reader','retrieval') AND id!=?", (paper_id, replacement_job_id)).fetchall():
+                payload = json.loads(row["payload"])
+                stale = payload.get("source_generation", 1) < generation
+                stale = stale or (row["stage"] == "retrieval" and payload.get("source_generation", 1) == generation
+                                  and payload.get("source_manifest_sha256") != manifest_sha256)
+                if stale:
+                    count += self._supersede_job(conn, row["id"], replacement_job_id, reason)
+            return count
 
     def retry_failed(self, old_id, reason, actor, evidence):
         """Create one explicitly supervised successor without refunding the past.
@@ -508,7 +821,7 @@ class Store:
             self._require_initialized(conn)
             self._register_owner(conn, owner, os.getpid(), socket.gethostname())
             placeholders = ",".join("?" for _ in stages)
-            rows = conn.execute("SELECT j.* FROM jobs j WHERE j.state='pending' AND j.stage IN (" + placeholders + ") AND j.available_at<=? AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete') ORDER BY j.priority DESC,j.id LIMIT ?",
+            rows = conn.execute("SELECT j.* FROM jobs j WHERE j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND j.stage IN (" + placeholders + ") AND j.available_at<=? AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete') ORDER BY j.priority DESC,j.id LIMIT ?",
                                 list(stages) + [now, limit]).fetchall()
             result = []
             for row in rows:
@@ -820,12 +1133,13 @@ class Store:
     def status(self):
         with self._connection() as conn:
             stages = {}
-            for row in conn.execute("SELECT stage,state,count(*) AS n FROM jobs WHERE NOT EXISTS (SELECT 1 FROM retry_links r WHERE r.parent_id=jobs.id) GROUP BY stage,state"):
+            for row in conn.execute("SELECT stage,state,count(*) AS n FROM jobs WHERE NOT EXISTS (SELECT 1 FROM retry_links r WHERE r.parent_id=jobs.id) AND (state='running' OR NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=jobs.id)) GROUP BY stage,state"):
                 stages.setdefault(row["stage"], {})[row["state"]] = row["n"]
             papers = {r[0]: r[1] for r in conn.execute("SELECT status,count(*) FROM papers GROUP BY status")}
             return {"jobs": stages, "papers": papers,
-                    "unfinished": conn.execute("SELECT count(*) FROM jobs WHERE state IN ('pending','running')").fetchone()[0],
-                    "failed": conn.execute("SELECT count(*) FROM jobs WHERE state='failed' AND NOT EXISTS (SELECT 1 FROM retry_links r WHERE r.parent_id=jobs.id)").fetchone()[0],
+                    "unfinished": conn.execute("SELECT count(*) FROM jobs WHERE state='running' OR (state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=jobs.id))").fetchone()[0],
+                    "failed": conn.execute("SELECT count(*) FROM jobs WHERE state='failed' AND NOT EXISTS (SELECT 1 FROM retry_links r WHERE r.parent_id=jobs.id) AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=jobs.id)").fetchone()[0],
+                    "superseded_jobs": conn.execute("SELECT count(*) FROM job_supersessions").fetchone()[0],
                     "historical_failed": conn.execute("SELECT count(*) FROM jobs WHERE state='failed'").fetchone()[0],
                     "retried_failed": conn.execute("SELECT count(*) FROM retry_links").fetchone()[0],
                     "encounters": conn.execute("SELECT count(*) FROM encounters").fetchone()[0],
@@ -858,13 +1172,13 @@ class Store:
             with self._connection() as conn:
                 conn.execute("BEGIN")
                 manifest["last_event_id"] = conn.execute("SELECT coalesce(max(id),0) FROM events").fetchone()[0]
-                for table in ("papers", "jobs", "encounters", "events", "reservations", "retry_links"):
+                for table in ("papers", "jobs", "encounters", "events", "reservations", "retry_links", "job_supersessions", "native_scientific_ids"):
                     destination = directory / (table + ".jsonl")
                     fd, name = tempfile.mkstemp(prefix="." + table + "-", dir=str(directory))
                     temp_paths.append(name)
                     digest, count = hashlib.sha256(), 0
                     with os.fdopen(fd, "wb") as output:
-                        for row in conn.execute("SELECT * FROM " + table + " ORDER BY " + ("parent_id" if table == "retry_links" else "id")):
+                        for row in conn.execute("SELECT * FROM " + table + " ORDER BY " + ("parent_id" if table == "retry_links" else "job_id" if table == "job_supersessions" else "id")):
                             item = dict(row)
                             for key in ("record", "payload", "provenance", "result", "estimate", "usage", "evidence"):
                                 if key in item and item[key] is not None:

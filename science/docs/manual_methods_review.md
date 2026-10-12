@@ -12,7 +12,7 @@ Read `METHODS.md` alone. Ask whether a researcher could reproduce what enters th
 
 ## Pass 3: scientific fidelity
 
-Read `METHODS.md` beside `PROTOCOL.md`. Check that simplification has not changed eligibility; comparison atomization; A, E, or F; result classification; statistics; Meyen; evidence transfer; screening; CORE or bridge eligibility; K=1 depth; function-targeted or blind search; source/window bounds; recursion; or stopping. Confirm that function-targeted search is clearly cross-referenced to historical process-triggered/QDYN terminology and that all eleven prepared windows and the distinction between retired QCAL4-LEARN and new QCAL5-LEARN are accurately represented.
+Read `METHODS.md` beside `PROTOCOL.md`. Check that simplification has not changed eligibility; comparison atomization; A, E, or F; result classification; statistics; Meyen; evidence transfer; screening; CORE or bridge eligibility; K=1 depth; function-targeted or blind search; source/window bounds; recursion; or stopping. Confirm that function-targeted search is clearly cross-referenced to historical process-triggered/QDYN terminology and that all fourteen prepared QREV6 families and the separation from historical QCAL4/QCAL5 snapshots are accurately represented.
 
 ## Pass 4: execution and reproducibility fidelity
 

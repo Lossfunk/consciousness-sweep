@@ -9,42 +9,100 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
+import re
 import time
 
-from . import frontiers, sources
+from . import citation_depth, frontiers, sources
 from .common import canonical, digest, file_hash, inside, save_json, science_root
 
 STATE = "discovery_frontiers"
+
+
+def _deadline_expired(c):
+    deadline = getattr(c, "session_deadline", None)
+    return deadline is not None and time.monotonic() >= deadline
+
+
+def _packet_is_current(paper):
+    generation = paper.get("source_generation", 1)
+    return (type(generation) is int and generation >= 1 and bool(paper.get("packet_path"))
+            and type(paper.get("packet_source_generation")) is int
+            and paper["packet_source_generation"] == generation)
+
+
+def _native_source_wait(paper):
+    if _packet_is_current(paper):
+        return None
+    if (paper.get("source_generation", 1) > 1 or paper.get("packet_path")
+            or paper.get("status") == "retrieval-pending"):
+        return "The latest source generation has no verified packet; historical native evidence remains historical"
+    return None
+
+
+def _saved_native_is_current(c, paper, saved):
+    return (_packet_is_current(paper) and saved.get("source_generation") == paper.get("source_generation", 1)
+            and digest(json.loads(inside(c.run_dir / paper["packet_path"], c.run_dir).read_text())) == saved["packet_sha256"])
+
+
+def source_job_key(payload):
+    """Bridge provenance is not part of the source retrieval identity."""
+    return digest({key: value for key, value in payload.items() if key != "child_bridge_depth"})
 
 
 def _change(c, function, reason):
     return c.store.mutate_state_compact(STATE, function, reason, history_field="history")
 
 
-def _ingest_once(c, key, record, provenance):
+def _sync_citation_depths(c):
+    """Refresh affected eligible parents in bounded batches; resume is idempotent."""
+    while True:
+        with c.store._transaction() as conn:
+            citation_depth.ensure_tables(conn)
+            rows = conn.execute("SELECT p.paper_id,p.depth,p.origin FROM citation_depth_sync s JOIN citation_paths p ON p.paper_id=s.paper_id LIMIT 1000").fetchall()
+        if not rows:
+            return
+        paths = {row[0]: {"depth": row[1], "origin": json.loads(row[2])} for row in rows}
+        state = c.store.get_state(STATE)
+        eligible = {pid: path for pid, path in paths.items() if state and any(pid + ":" + d in state["citation_obligations"] for d in ("backward", "forward"))}
+        if eligible:
+            _change(c, lambda s: frontiers.refresh_citation_depths(s, eligible,
+                    reason="Indexed encounter paths lowered these eligible parents' ordinary citation distance"), "Eligible parent citation distances reconciled")
+        with c.store._transaction() as conn:
+            # A concurrent further improvement must remain pending for replay.
+            conn.executemany("DELETE FROM citation_depth_sync WHERE paper_id=? AND EXISTS(SELECT 1 FROM citation_paths p WHERE p.paper_id=? AND p.depth=?)",
+                             [(pid, pid, path["depth"]) for pid, path in paths.items()])
+
+
+def _ingest_once(c, key, record, provenance, *, defer_depth_sync=False):
     """One atomic source encounter per saved snapshot ordinal, including restart."""
     marker = "state:encounter:" + key
     with c.store._transaction() as conn:
         old = conn.execute("SELECT value FROM meta WHERE key=?", (marker,)).fetchone()
         if old:
-            return tuple(json.loads(old[0]))
-        record = dict(record, discovery_bridge_depths=[provenance.get("bridge_depth", 0)])
-        result = c.store._add_paper(conn, record, provenance)
-        retained = json.loads(conn.execute("SELECT record FROM papers WHERE id=?", (result[0],)).fetchone()[0])
-        depths = sorted(set(retained.get("discovery_bridge_depths", []) + [provenance.get("bridge_depth", 0)]))
-        if retained.get("discovery_bridge_depths") != depths:
-            retained["discovery_bridge_depths"] = depths
-            c.store._event(conn, "bridge_lineage_encounter", {"paper_id": result[0], "depths": depths, "provenance": provenance})
-            conn.execute("UPDATE papers SET record=?,updated_at=? WHERE id=?", (canonical(retained), time.time(), result[0]))
-        conn.execute("INSERT INTO meta VALUES(?,?)", (marker, canonical(result)))
-        return result
+            result = tuple(json.loads(old[0]))
+        else:
+            record = {name: value for name, value in record.items() if name not in {"citation_depth", "citation_origin"}}
+            record = dict(record, discovery_bridge_depths=[provenance.get("bridge_depth", 0)])
+            result = c.store._add_paper(conn, record, provenance)
+            retained = json.loads(conn.execute("SELECT record FROM papers WHERE id=?", (result[0],)).fetchone()[0])
+            depths = sorted(set(retained.get("discovery_bridge_depths", []) + [provenance.get("bridge_depth", 0)]))
+            if retained.get("discovery_bridge_depths") != depths:
+                retained["discovery_bridge_depths"] = depths
+                c.store._event(conn, "bridge_lineage_encounter", {"paper_id": result[0], "depths": depths, "provenance": provenance})
+                conn.execute("UPDATE papers SET record=?,updated_at=? WHERE id=?", (canonical(retained), time.time(), result[0]))
+            conn.execute("INSERT INTO meta VALUES(?,?)", (marker, canonical(result)))
+        citation_depth.record(conn, c.store, result[0], provenance)
+    if not defer_depth_sync:
+        _sync_citation_depths(c)
+    return result
 
 
 def initialize_discovery(c):
     if c.plan.get("mode") != "discovery":
         raise ValueError("Discovery initialization requires an explicitly selected discovery run")
     if c.store.get_state(STATE) is None:
-        c.store.set_state(STATE, frontiers.initial_state(), "Frozen principal-first discovery obligations initialized")
+        c.store.set_state(STATE, frontiers.initial_state(max_citation_depth=c.plan.get("resources", {}).get("max_citation_depth")),
+                          "Frozen principal-first discovery obligations initialized with the selected execution depth boundary")
     for filename, role in (("seeds_empirical.csv", "empirical-seed"), ("seeds_reviews.csv", "review-anchor")):
         path = science_root() / filename
         source_hash = file_hash(path)
@@ -53,16 +111,20 @@ def initialize_discovery(c):
         # Validate every identity before allocating an ID from this input.
         if any(not row.get("title", "").strip() for row in rows):
             raise ValueError("Frozen seed identity lacks title")
+        seed_screen_ids = []
         for ordinal, record in enumerate(rows):
             record = {k: record.get(k) for k in ("title", "authors", "year", "doi", "url")}
             record["status"] = "discovery-anchor" if role == "review-anchor" else "discovered"
+            record["seed_role"] = role
             key = "seed:" + source_hash + ":" + str(ordinal)
             pid, _ = _ingest_once(c, key, record, {"route": role, "source_sha256": source_hash, "ordinal": ordinal, "bridge_depth": 0})
             paper = c.store.paper(pid)
             _change(c, lambda s, p=paper: frontiers.add_anchor(s, p, role=role, reason="Frozen seed/anchor identity initializes the principal route"), "Principal seed obligation recorded")
             if role == "empirical-seed" and paper["status"] == "discovered":
-                c._enqueue_batch("title", [pid], key_prefix=key + ":")
-                c.store.update_paper(pid, {"status": "title-pending"}, "Frozen empirical seed enters source-specific semantic screening")
+                seed_screen_ids.append(pid)
+        c._enqueue_batch("title", seed_screen_ids, key_prefix="seed:" + source_hash + ":")
+        for pid in seed_screen_ids:
+            c.store.update_paper(pid, {"status": "title-pending"}, "Frozen empirical seed enters bounded paper-specific semantic screening")
     _change(c, lambda s: frontiers.initialize_principal(s, seeds_complete=True, anchors_complete=True,
               reason="All frozen empirical seeds and review anchors indexed"), "Principal input initialization complete")
     c.store.set_state("discovery_initialized", True, "Frozen discovery seed initialization complete")
@@ -88,9 +150,15 @@ def _pending_semantic(c):
 def discovery_tick(c):
     if c.plan.get("mode") != "discovery":
         return None
+    if _deadline_expired(c):
+        return {"status": "session-checkpoint", "scheduled_source_jobs": 0,
+                "native_scientific_completion": False}
     state = c.store.get_state(STATE)
     if state is None:
         return initialize_discovery(c)
+    if state.get("max_citation_depth") != c.plan.get("resources", {}).get("max_citation_depth"):
+        raise ValueError("Discovery state and immutable execution plan have different citation depth limits")
+    _sync_citation_depths(c)
     # Reconcile one bounded indexed page of completed reader jobs, not a scan
     # of the potentially 450k-paper corpus on every scheduler tick. The normal
     # reader projection hook queues immediately; this is restart repair only.
@@ -107,14 +175,23 @@ def discovery_tick(c):
     state = c.store.get_state(STATE)
     scheduled = 0
     for obligation in frontiers.due_obligations(state):
+        if _deadline_expired(c):
+            break
         if obligation.get("task") == "replay-citation-provenance":
             _replay_lineage(c, obligation)
             continue
         if obligation.get("task"):
             continue
         payload = {k: obligation.get(k) for k in ("source", "query", "limit", "cursor", "kind", "parent", "phase", "window_key", "obligation_id", "child_bridge_depth")}
-        key = digest(payload)
-        if c.store.job_by_key("search", key) is not None:
+        if obligation.get("coverage_generation"):
+            payload["coverage_generation"] = obligation["coverage_generation"]
+        key = source_job_key(payload)
+        old = c.store.job_by_key("search", key)
+        while old and c.store.get_state("depth-deferred-search:" + old["id"]):
+            payload = dict(payload, depth_resume_from=old["id"])
+            key = source_job_key(payload)
+            old = c.store.job_by_key("search", key)
+        if old is not None:
             continue
         c.store.enqueue("search", key, payload, priority=10)
         scheduled += 1
@@ -134,7 +211,7 @@ def queue_native_after_reader(c, paper_id):
         return
     if existing and existing["status"] not in {"provisional-core", "not-assessable-missing-fulltext"}:
         saved = c.store.get_state("native-assessment:" + paper_id)
-        if saved and paper.get("packet_path") and digest(json.loads((c.run_dir / paper["packet_path"]).read_text())) == saved["packet_sha256"]:
+        if saved and _saved_native_is_current(c, paper, saved):
             return
     ids = [a["asset_id"] for a in paper.get("retrieval", {}).get("assets", [])]
     _change(c, lambda s: frontiers.require_native_assessment(s, paper_id,
@@ -145,17 +222,75 @@ def queue_native_after_missing_source(c, paper_id):
     if c.plan.get("mode") != "discovery":
         return
     state = c.store.get_state(STATE)
-    if state and paper_id not in state["nodes"] and paper_id not in state["native_assessment_pending"]:
+    paper = c.store.paper(paper_id)
+    saved = c.store.get_state("native-assessment:" + paper_id)
+    replacement_unresolved = bool(saved and not _saved_native_is_current(c, paper, saved))
+    if state and (paper_id not in state["nodes"] or replacement_unresolved) and paper_id not in state["native_assessment_pending"]:
         _change(c, lambda s: frontiers.require_native_assessment(s, paper_id,
+            "Replacement source generation remains unavailable; retain historical judgments and defer its current native audit." if replacement_unresolved else
             "Full text remains unavailable; assess explicit abstract-based provisional CORE and record missing-text priority. Missing text cannot establish BRIDGE."), "Missing-source/provisional-node audit queued")
 
 
+def _citation_block(c, payload):
+    if payload.get("kind") not in {"backward", "forward"}:
+        return None
+    state = c.store.get_state(STATE) or {}
+    if state.get("max_citation_depth") != c.plan.get("resources", {}).get("max_citation_depth"):
+        raise ValueError("Discovery state and immutable execution plan have different citation depth limits")
+    obligation = state.get("citation_obligations", {}).get(payload.get("obligation_id"))
+    if obligation is None:
+        return "depth-unresolved" if c.plan.get("resources", {}).get("max_citation_depth") is not None else None
+    return frontiers.citation_fetch_block(state, obligation)
+
+
+def _native_paper(paper, scientific_state):
+    """Scientific submissions cannot replace execution-derived path metadata."""
+    result = dict(paper, **scientific_state)
+    for key in ("citation_depth", "citation_origin"):
+        if key in paper:
+            result[key] = paper[key]
+        else:
+            result.pop(key, None)
+    return result
+
+
 def execute_search(c, job, client=None):
-    client = client or sources.SourceClient()
     payload = job["payload"]
+    state = c.store.get_state(STATE) or {}
+    obligation = state.get("citation_obligations", {}).get(payload.get("obligation_id"))
+    if obligation and payload.get("coverage_generation", 0) != obligation.get("coverage_generation", 0):
+        result = {"retrieval_status": "superseded", "reason": "An explicit coverage generation replaced this queued request",
+                  "snapshot_path": None, "snapshot_sha256": None}
+        c.store.complete(job["id"], job["owner"], job["token"], result)
+        return result
+    block = _citation_block(c, payload)
+    if block:
+        result = {"retrieval_status": block, "snapshot_path": None, "snapshot_sha256": None,
+                  "reason": "The current ordinary citation distance blocks this queued retrieval; the scientific frontier remains pending"}
+        c.store.complete(job["id"], job["owner"], job["token"], result)
+        return result
+    deadline = getattr(c, "session_deadline", None)
+    client = client or sources.SourceClient(**({"deadline": deadline} if deadline is not None else {}))
     path = c.run_dir / "searches" / (job["id"] + ".json")
+    if not path.exists() and payload.get("depth_resume_from"):
+        previous = c.store.job(payload["depth_resume_from"])
+        result = previous.get("result") or {}
+        if result.get("snapshot_path"):
+            if any(previous["payload"].get(k) != payload.get(k) for k in ("source", "query", "limit", "cursor", "kind", "parent")):
+                raise ValueError("Depth continuation cannot change an existing citation request")
+            saved = inside(c.run_dir / result["snapshot_path"], c.run_dir)
+            if file_hash(saved) != result["snapshot_sha256"]:
+                raise ValueError("Depth continuation snapshot changed")
+            sources.save_snapshot(path, sources.load_snapshot(saved))
     if path.exists():
-        snapshot = sources.load_snapshot(path)
+        try:
+            snapshot = sources.load_snapshot(path)
+        except (ValueError, OSError) as exc:
+            result = {"retrieval_status": "incomplete", "snapshot_path": None, "snapshot_sha256": None,
+                      "failure": {"status": "incomplete", "reason": "Stored response requires quarantine: " + str(exc),
+                                  "quarantined_path": str(path.relative_to(c.run_dir))}}
+            c.store.complete(job["id"], job["owner"], job["token"], result)
+            return result
     else:
         snapshot = client.search(payload["source"], payload.get("query") or "", payload.get("limit") or 100,
                                  payload.get("cursor"), kind=payload["kind"], parent=payload.get("parent"))
@@ -192,6 +327,23 @@ def project_discovery(c, job):
     if c.store.get_state(marker):
         c.store.mark_projected(job["id"])
         return
+    state = c.store.get_state(STATE) or {}
+    obligation = state.get("citation_obligations", {}).get(payload.get("obligation_id"))
+    if result["retrieval_status"] == "superseded" or obligation and payload.get("coverage_generation", 0) != obligation.get("coverage_generation", 0):
+        c.store.set_state("quarantined-search:" + job["id"], {"status": "superseded", "job_id": job["id"],
+            "snapshot_path": result.get("snapshot_path"), "snapshot_sha256": result.get("snapshot_sha256"),
+            "reason": "Earlier-generation response retained without changing the active citation coverage generation"}, "Obsolete citation response retained")
+        c.store.set_state(marker, True, "Obsolete request disposed without source failure or coverage promotion")
+        c.store.mark_projected(job["id"])
+        return
+    block = _citation_block(c, payload)
+    if block or result["retrieval_status"] in {"depth-limited", "depth-unresolved"}:
+        c.store.set_state("depth-deferred-search:" + job["id"], {"status": block or result["retrieval_status"],
+                          "reason": "Operational depth prevents projection/expansion; saved snapshots remain available for an eligible shorter-path continuation"},
+                          "Citation retrieval deferred without closing or failing its scientific obligation")
+        c.store.set_state(marker, True, "Execution job deferred at citation depth boundary; scientific frontier remains pending")
+        c.store.mark_projected(job["id"])
+        return
     if result["retrieval_status"] != "complete":
         if payload.get("obligation_id"):
             _change(c, lambda s: frontiers.citation_failure(s, payload["obligation_id"], result["failure"],
@@ -204,26 +356,71 @@ def project_discovery(c, job):
         if file_hash(path) != result["snapshot_sha256"]:
             raise ValueError("Saved source snapshot changed after publication")
         snapshot = sources.load_snapshot(path)
+        # Coverage must be checked before publishing any result into the candidate
+        # pool. An immutable bad response is retained, not replayed forever.
+        state = c.store.get_state(STATE)
+        obligation = state["citation_obligations"].get(payload.get("obligation_id"))
+        already = obligation and any(p["request_sha256"] == snapshot["request_sha256"] and
+                    p.get("coverage_generation", 0) == obligation.get("coverage_generation", 0)
+                    for p in obligation["pages"])
+        try:
+            if obligation and not already:
+                if payload.get("coverage_generation", 0) != obligation.get("coverage_generation", 0):
+                    raise ValueError("Response belongs to an obsolete citation coverage generation")
+                frontiers.citation_page(state, payload["obligation_id"], snapshot,
+                    snapshot_path=result["snapshot_path"], reason="Validate response before candidate publication")
+            elif not obligation:
+                frontiers.complete_window(state, payload["window_key"], snapshot,
+                    snapshot_path=result["snapshot_path"], reason="Validate response before candidate publication")
+        except ValueError as exc:
+            failure = {"status": "incomplete", "reason": str(exc), "quarantined_job_id": job["id"],
+                       "snapshot_path": result["snapshot_path"], "snapshot_sha256": result["snapshot_sha256"]}
+            c.store.set_state("quarantined-search:" + job["id"], failure,
+                              "Inconsistent response retained without publishing candidates or closing coverage")
+            if obligation:
+                _change(c, lambda s: frontiers.citation_failure(s, payload["obligation_id"], failure,
+                    reason="Coverage inconsistency requires explicit same-request retry or new coverage generation"), "Citation response quarantined")
+            else:
+                c.store.set_state("source-resolution:" + job["id"], {"task": "resolve-required-source-window",
+                    "task_id": "source:" + job["id"], "job_id": job["id"], "request": payload,
+                    "failure": failure, "reason": str(exc)}, "Bounded window response quarantined")
+            c.store.set_state(marker, True, "Quarantine disposition completes execution projection; scientific obligation remains unresolved")
+            c.store.mark_projected(job["id"])
+            return
         ingested = []
+        depth_encounters = []
+        state = c.store.get_state(STATE)
+        obligation = state["citation_obligations"].get(payload.get("obligation_id"))
         for index, record in enumerate(snapshot["results"]):
             key = job["id"] + ":" + str(index)
             provenance = {"route": payload["phase"], "search_job_id": job["id"], "snapshot_sha256": result["snapshot_sha256"],
-                          "result_rank": index + 1, "source": payload["source"], "bridge_depth": payload.get("child_bridge_depth") or 0}
+                          "result_rank": index + 1, "source": payload["source"],
+                          "bridge_depth": obligation["child_bridge_depth"] if obligation else payload.get("child_bridge_depth") or 0,
+                          "parent_paper_id": obligation["parent"]["paper_id"] if obligation else None,
+                          "parent_obligation": payload.get("obligation_id"), "window_key": payload.get("window_key"),
+                          "citation_depth": obligation.get("child_citation_depth") if obligation else 0,
+                          "citation_origin": obligation.get("citation_origin") if obligation else {"route": payload["phase"]}}
             if not record.get("title", "").strip():
                 c.store.set_state("identity-resolution:" + key, {"task": "bibliographic-identity-resolution", "task_id": "identity:" + key,
                     "record": record, "provenance": provenance, "reason": "Source encountered this result, but identity lacks a title; do not drop it or invent one"}, "Encounter awaits bibliographic identity resolution")
                 continue
-            pid, new = _ingest_once(c, key, record, provenance)
+            pid, new = _ingest_once(c, key, record, provenance, defer_depth_sync=True)
             ingested.append((pid, new))
+            depth_encounters.append((pid, provenance))
+        if hasattr(c, "reconcile_metadata"):
+            c.reconcile_metadata([pid for pid, _ in ingested])
+        _sync_citation_depths(c)
+        for pid, provenance in depth_encounters:
             # A known bridge can gain a new eligible depth-zero lineage even
             # when semantic screening is properly reused for the same work.
             saved = c.store.get_state("native-assessment:" + pid)
             if saved:
                 retained = c.store.paper(pid)
-                if not retained.get("packet_path") or digest(json.loads((c.run_dir / retained["packet_path"]).read_text())) != saved["packet_sha256"]:
-                    raise ValueError("Native node reuse requires unchanged decision-relevant source evidence")
+                if not _saved_native_is_current(c, retained, saved):
+                    queue_native_after_reader(c, pid)
+                    continue
                 _change(c, lambda s, p=retained, v=saved, d=provenance["bridge_depth"]: frontiers.record_node(s,
-                    dict(p, **v["paper_state"]), v["groups"], encounter_depth=d,
+                    _native_paper(p, v["paper_state"]), v["groups"], encounter_depth=d,
                     reason="Rediscovery reuses unchanged source-bound native eligibility with new lineage"), "Native node lineage reconciled")
         _schedule_new(c, ingested, "search:" + job["id"] + ":")
         # A crash after ingestion is harmless: ordinal publication above is
@@ -231,7 +428,8 @@ def project_discovery(c, job):
         state = c.store.get_state(STATE)
         if payload.get("obligation_id"):
             obligation = state["citation_obligations"][payload["obligation_id"]]
-            already = any(p["request_sha256"] == snapshot["request_sha256"] for p in obligation["pages"])
+            already = any(p["request_sha256"] == snapshot["request_sha256"] and
+                          p.get("coverage_generation", 0) == obligation.get("coverage_generation", 0) for p in obligation["pages"])
             if not already:
                 _change(c, lambda s: frontiers.citation_page(s, payload["obligation_id"], snapshot,
                          snapshot_path=result["snapshot_path"], reason="Frozen citation page ingested with complete encounter provenance"), "Citation page advanced")
@@ -245,8 +443,12 @@ def project_discovery(c, job):
 def _replay_lineage(c, task):
     """CORE revisions add new lineage encounters from existing source snapshots."""
     for page_index, page in enumerate(task["pages"]):
+        if _deadline_expired(c):
+            return
         snapshot = sources.load_snapshot(inside(c.run_dir / page["path"], c.run_dir))
         for index, record in enumerate(snapshot["results"]):
+            if _deadline_expired(c):
+                return
             key = "lineage:" + task["obligation_id"] + ":" + str(page_index) + ":" + str(index)
             provenance = {"route": "core-lineage-replay", "parent_obligation": task["obligation_id"],
                           "snapshot_path": page["path"], "result_rank": index + 1, "bridge_depth": 0,
@@ -255,13 +457,14 @@ def _replay_lineage(c, task):
                 c.store.set_state("identity-resolution:" + key, {"task": "bibliographic-identity-resolution", "task_id": "identity:" + key,
                     "record": record, "provenance": provenance, "reason": "Replayed source identity remains unresolved"}, "CORE lineage replay retained unresolved encountered identity")
                 continue
-            pid, _ = _ingest_once(c, key, record, provenance)
+            pid, _ = _ingest_once(c, key, record, provenance, defer_depth_sync=True)
             saved = c.store.get_state("native-assessment:" + pid)
             paper = c.store.paper(pid)
-            if saved and paper.get("packet_path") and digest(json.loads((c.run_dir / paper["packet_path"]).read_text())) == saved["packet_sha256"]:
-                _change(c, lambda s, p=paper, v=saved: frontiers.record_node(s, dict(p, **v["paper_state"]),
+            if saved and _saved_native_is_current(c, paper, saved):
+                _change(c, lambda s, p=paper, v=saved: frontiers.record_node(s, _native_paper(p, v["paper_state"]),
                     v["groups"], encounter_depth=0, reason="CORE parent revision supplies a new depth-zero encounter from an unchanged snapshot"), "Replayed eligible lineage reconciled")
-    _change(c, lambda s: frontiers.complete_lineage_replay(s, task["obligation_id"], reason="Every retained snapshot result replayed with depth-zero provenance"), "CORE lineage replay complete")
+    _sync_citation_depths(c)
+    _change(c, lambda s: frontiers.complete_lineage_replay(s, task["obligation_id"], reason="Every retained snapshot result replayed with bridge-depth-zero provenance; ordinary hop distance retained"), "CORE lineage replay complete")
 
 
 def _resolution_tasks(c):
@@ -270,51 +473,166 @@ def _resolution_tasks(c):
     return [json.loads(row["value"]) for row in rows if not json.loads(row["value"]).get("resolved")]
 
 
-def next_native_task(c):
+def _hydrate_native_task(c, task):
+    task = dict(task)
+    if task.get("paper_id"):
+        paper = c.store.paper(task["paper_id"])
+        task["paper"] = paper
+        task["packet_path"] = paper.get("packet_path") if _packet_is_current(paper) else None
+        task["source_generation"] = paper.get("source_generation", 1)
+        task["schema_paths"] = {name: str(science_root() / "schemas" / (name + ".schema.json"))
+                                for name in ("experiment_groups", "experiments")}
+        task["submission_contract"] = {"source_generation": "Echo the current task source_generation; older packet generations cannot be submitted",
+            "identifier_allocation": "Before authoring groups, call native-allocate --paper-id ID --experiment-key STABLE_LABEL [--comparison-key STABLE_X_Y_KEY] --actor WORKER --reason REASON; reuse returned IDs. Reservation is not scientific certification.",
+            "paper_state": "native fulltext_status/current_status/bridge_empirical_status",
+            "groups": "complete typed physical experiment-group records", "source_locations": "[{asset_id, unit_id, observation}]",
+            "process_audit": "{status: no-eligible-comparison | eligible-comparisons-recorded | unresolved, reason}",
+            "process_activations": "[{comparison: complete typed native row, variants: provenance-bearing lexical variants, normalization_reason}]",
+            "reason": "source-grounded eligibility reasoning; no prospect-label substitution"}
+        waiting = _native_source_wait(paper)
+        if waiting:
+            task.update(task="native-source-generation-pending", deferred_for_source_generation=waiting)
+            task["submission_contract"] = {"waiting": "Obtain/verify the latest source generation before a new native judgment; retain earlier activations as historical provenance"}
+        elif not _packet_is_current(paper):
+            task["task"] = "missing-source-provisional-node-audit"
+            task["submission_contract"] = {"missing_source_audit": {
+                "decision": "provisional-core | not-established | unresolved", "priority": "high | medium | low",
+                "reason": "Abstract-source reasoning and missing-text request priority",
+                "ingredients": "For provisional-core: specific_x, awareness_attempt, functional_y; each {status:'present',source_observation:'exact located abstract evidence'}"},
+                "reason": "Why provisional expansion is or is not established; missing text never establishes a strict bridge"}
+    elif task.get("obligation_id") and task.get("source") == "publisher-or-repository-reference-list":
+        paper = c.store.paper(task["parent"]["paper_id"])
+        task["packet_path"] = paper.get("packet_path") if _packet_is_current(paper) else None
+        task["source_generation"] = paper.get("source_generation", 1)
+        task["submission_contract"] = dict(task.get("submission_contract", {}),
+            source_generation="Echo this source generation with extracted-reference-list proof from its current verified packet")
+    return task
+
+
+def _native_candidates(c, *, hydrate=True):
     state = c.store.get_state(STATE)
     if not state:
-        return None
-    resolutions = _resolution_tasks(c)
-    if resolutions:
-        return resolutions[0]
+        return []
+    result = _resolution_tasks(c)
     for task in frontiers.due_obligations(state):
         if task.get("task"):
             task = dict(task)
             if task.get("obligation_id"):
                 task["task_id"] = "citation-source:" + task["obligation_id"]
-                task["submission_contract"] = {"action": "retry-same-request | extracted-reference-list",
+                task["submission_contract"] = {"action": "retry-same-request | restart-citation-window | resolve-parent-identity | extracted-reference-list",
+                    "identity": "For resolve-parent-identity: source-specific service ID fields; supply source_location and identity_reason",
                     "reason": "What resolved access/coverage, or why the reference list is complete",
                     "records": "For extracted-reference-list only: every reference identity in source order",
                     "source_locations": "For extracted-reference-list: source-bound asset/unit observations",
                     "exhaustion_evidence": "For extracted-reference-list: location of complete reference-list boundaries"}
-            if task.get("paper_id"):
-                paper = c.store.paper(task["paper_id"])
-                task["paper"] = paper
-                task["packet_path"] = paper.get("packet_path")
-                task["schema_paths"] = {name: str(science_root() / "schemas" / (name + ".schema.json"))
-                                        for name in ("experiment_groups", "experiments")}
-                task["submission_contract"] = {"paper_state": "native fulltext_status/current_status/bridge_empirical_status",
-                    "groups": "complete typed physical experiment-group records", "source_locations": "[{asset_id, unit_id, observation}]",
-                    "process_audit": "{status: no-eligible-comparison | eligible-comparisons-recorded | unresolved, reason}",
-                    "process_activations": "[{comparison: complete typed native row, variants: provenance-bearing lexical variants, normalization_reason}]",
-                    "reason": "source-grounded eligibility reasoning; no prospect-label substitution"}
-                if not paper.get("packet_path"):
-                    task["task"] = "missing-source-provisional-node-audit"
-                    task["submission_contract"] = {"missing_source_audit": {
-                        "decision": "provisional-core | not-established | unresolved", "priority": "high | medium | low",
-                        "reason": "Abstract-source reasoning and missing-text request priority",
-                        "ingredients": "For provisional-core: specific_x, awareness_attempt, functional_y; each {status:'present',source_observation:'exact located abstract evidence'}"},
-                        "reason": "Why provisional expansion is or is not established; missing text never establishes a strict bridge"}
-            return task
-    if not _pending_semantic(c) and not any(o["status"] != "complete" for o in state["citation_obligations"].values()) and not any(w["status"] != "complete" for w in state["process_windows"].values()):
-        return {"task": "citation-wave-and-frontier-audit", "task_id": "wave-audit", "state": state,
-                "instructions": "Reconcile the complete backward/forward wave, deduplication, all title/abstract/rescue/audit decisions and missing text requests. Submit wave_id, obligation_ids, new_potentially_relevant, screening_complete, reason. A zero yield is a factual post-screening count, not an assumption from an empty queue. After a current zero-yield wave, enter the mandatory blind lane; do not claim native certification."}
-    return None
+            if hydrate:
+                task = _hydrate_native_task(c, task)
+            elif task.get("paper_id"):
+                with c.store._connection() as conn:
+                    row = conn.execute("SELECT json_extract(record,'$.source_generation'),json_extract(record,'$.packet_source_generation'),json_extract(record,'$.packet_path'),json_extract(record,'$.status') FROM papers WHERE id=?", (task["paper_id"],)).fetchone()
+                source = dict(zip(("source_generation","packet_source_generation","packet_path","status"), row)) if row else {}
+                if source.get("source_generation") is None:
+                    source["source_generation"] = 1
+                waiting = _native_source_wait(source)
+                if waiting:
+                    task["deferred_for_source_generation"] = waiting
+            task.setdefault("task_id", task.get("paper_id"))
+            result.append(task)
+    if not result and not _pending_semantic(c) and not any(o["status"] != "complete" for o in state["citation_obligations"].values()) and not any(w["status"] != "complete" for w in state["process_windows"].values()):
+        result.append({"task": "citation-wave-and-frontier-audit", "task_id": "wave-audit", "state": state,
+                "instructions": "Reconcile the complete backward/forward wave, deduplication, all title/abstract/rescue/audit decisions and missing text requests. Submit wave_id, obligation_ids, new_potentially_relevant, screening_complete, reason. A zero yield is a factual post-screening count, not an assumption from an empty queue. After a current zero-yield wave, enter the mandatory blind lane; do not claim native certification."})
+    return result
+
+
+def _native_controls(conn):
+    conn.execute("CREATE TABLE IF NOT EXISTS native_task_control(task_id TEXT PRIMARY KEY,owner TEXT,token INTEGER NOT NULL DEFAULT 0,lease_until REAL,available_at REAL NOT NULL DEFAULT 0,last_served REAL NOT NULL DEFAULT 0,reason TEXT,binding TEXT)")
+
+
+def _native_binding(c, task):
+    pid = task.get("paper_id")
+    if pid:
+        paper = c.store.paper(pid)
+        packet = paper.get("packet_path")
+        return digest({"task_id": task["task_id"], "source_generation": paper.get("source_generation", 1),
+            "packet_source_generation": paper.get("packet_source_generation"),
+            "source": file_hash(inside(c.run_dir / packet, c.run_dir)) if packet and _packet_is_current(paper) else digest(paper.get("abstract"))})
+    return digest({key: value for key, value in task.items() if key not in {"control", "native_lease"}})
+
+
+def list_native_tasks(c, *, limit=100, include_deferred=False):
+    if type(limit) is not int or not 1 <= limit <= 1000:
+        raise ValueError("Native task list limit must be 1..1000")
+    candidates = _native_candidates(c, hydrate=False)
+    with c.store._transaction() as conn:
+        _native_controls(conn)
+        controls = {row["task_id"]: dict(row) for row in conn.execute("SELECT * FROM native_task_control")}
+    now = time.time()
+    tasks = []
+    for index, task in enumerate(candidates):
+        control = controls.get(task["task_id"], {})
+        if not include_deferred and (task.get("deferred_for_source_generation") or control.get("owner") or control.get("available_at", 0) > now):
+            continue
+        task = dict(task, control=control)
+        tasks.append((control.get("last_served", 0), index, task))
+    return [_hydrate_native_task(c, task) for _, _, task in sorted(tasks)[:limit]]
+
+
+def next_native_task(c, *, owner=None, lease_seconds=900):
+    if owner is None:
+        tasks = list_native_tasks(c, limit=1)
+        return tasks[0] if tasks else None
+    if not isinstance(owner, str) or not owner.strip() or type(lease_seconds) is not int or not 1 <= lease_seconds <= 86400:
+        raise ValueError("Native reservation requires an owner and lease_seconds in 1..86400")
+    candidates = _native_candidates(c, hydrate=False)
+    with c.store._transaction() as conn:
+        _native_controls(conn)
+        controls = {row["task_id"]: dict(row) for row in conn.execute("SELECT * FROM native_task_control")}
+        now = time.time()
+        choices = []
+        for index, task in enumerate(candidates):
+            control = controls.get(task["task_id"], {})
+            # Expiration alone is not evidence that another worker died.
+            if task.get("deferred_for_source_generation") or control.get("owner") not in {None, owner} or control.get("available_at", 0) > now:
+                continue
+            choices.append((0 if control.get("owner") == owner else 1, control.get("last_served", 0), index, task, control))
+        if not choices:
+            return None
+        _, _, _, task, control = min(choices, key=lambda value: value[:3])
+        task = _hydrate_native_task(c, task)
+        token = control.get("token", 0) if control.get("owner") == owner else control.get("token", 0) + 1
+        until = now + lease_seconds
+        binding = control.get("binding") if control.get("owner") == owner else _native_binding(c, task)
+        conn.execute("INSERT OR REPLACE INTO native_task_control VALUES(?,?,?,?,?,?,?,?)",
+                     (task["task_id"], owner, token, until, 0, now, "Explicit native worker reservation", binding))
+        c.store._event(conn, "native_task_reserved", {"task_id": task["task_id"], "owner": owner,
+                       "token": token, "lease_until": until, "task_sha256": digest(task)})
+        return dict(task, native_lease={"owner": owner, "token": token, "lease_until": until})
+
+
+def defer_native_task(c, task_id, *, actor, reason, delay_seconds=300, lease_token=None):
+    if not str(actor).strip() or not str(reason).strip() or type(delay_seconds) is not int or not 0 <= delay_seconds <= 604800:
+        raise ValueError("Native deferral requires actor/reason and delay_seconds in 0..604800")
+    if task_id not in {task["task_id"] for task in _native_candidates(c, hydrate=False)}:
+        raise ValueError("Unknown or already completed native task")
+    with c.store._transaction() as conn:
+        _native_controls(conn)
+        row = conn.execute("SELECT * FROM native_task_control WHERE task_id=?", (task_id,)).fetchone()
+        old = dict(row) if row else {}
+        if old.get("owner") and (old["owner"] != actor or old["token"] != lease_token):
+            raise ValueError("Only the reserving owner with its token may defer/release this native task")
+        now = time.time()
+        conn.execute("INSERT OR REPLACE INTO native_task_control VALUES(?,?,?,?,?,?,?,?)",
+                     (task_id, None, old.get("token", 0), None, now + delay_seconds, now, reason, None))
+        c.store._event(conn, "native_task_deferred", {"task_id": task_id, "actor": actor,
+                       "reason": reason, "available_at": now + delay_seconds})
+    return {"task_id": task_id, "status": "deferred", "available_at": now + delay_seconds}
 
 
 def _source_proof(c, paper, payload):
-    if not paper.get("packet_path"):
-        raise ValueError("Native full-text decisions need a verified source packet")
+    if not _packet_is_current(paper):
+        raise ValueError("Native full-text decisions need a verified packet for the current source generation")
+    if type(payload.get("source_generation")) is not int or payload["source_generation"] != paper.get("source_generation", 1):
+        raise ValueError("Native submission source_generation does not match the current verified packet")
     packet = json.loads(inside(c.run_dir / paper["packet_path"], c.run_dir).read_text())
     units = {s["asset_id"]: {u["unit_id"] for u in s["units"]} for s in packet["sources"]}
     locations = payload.get("source_locations") or []
@@ -327,10 +645,41 @@ def _source_proof(c, paper, payload):
 
 
 def submit_native(c, paper_id, payload, actor):
+    candidates = {task["task_id"]: task for task in _native_candidates(c, hydrate=False)}
+    binding = _native_binding(c, candidates[paper_id]) if paper_id in candidates else None
+    with c.store._transaction() as conn:
+        _native_controls(conn)
+        row = conn.execute("SELECT * FROM native_task_control WHERE task_id=?", (paper_id,)).fetchone()
+        lease = payload.get("native_lease") or {}
+        if row and row["owner"]:
+            if lease.get("owner") != row["owner"] or lease.get("token") != row["token"] or actor != row["owner"]:
+                raise ValueError("Native submission requires the current owner and reservation token")
+            if row["binding"] != binding:
+                raise ValueError("Native task source changed since reservation; release and re-read the new evidence")
+        elif lease:
+            raise ValueError("Native reservation was released or superseded")
+    result = _submit_native(c, paper_id, payload, actor)
+    with c.store._transaction() as conn:
+        conn.execute("UPDATE native_task_control SET owner=NULL,lease_until=NULL,last_served=? WHERE task_id=?", (time.time(), paper_id))
+        c.store._event(conn, "native_task_submission_finished", {"task_id": paper_id, "actor": actor, "lease": lease})
+    return result
+
+
+def _submit_native(c, paper_id, payload, actor):
     if not str(actor).strip() or not str(payload.get("reason", "")).strip():
         raise ValueError("Native submission requires actor and reason")
     if paper_id.startswith("source:") or paper_id.startswith("citation-source:"):
         return _submit_source_resolution(c, paper_id, payload, actor)
+    if paper_id.startswith("process:"):
+        paper_id = paper_id[len("process:"):]
+        saved = c.store.get_state("native-assessment:" + paper_id)
+        if not saved:
+            raise ValueError("Process audit requires an existing source-bound native assessment")
+        paper = c.store.paper(paper_id)
+        if _saved_native_is_current(c, paper, saved):
+            payload = dict(saved, **payload)
+        elif not all(key in payload for key in ("groups", "paper_state", "source_locations", "source_generation")):
+            raise ValueError("A changed source generation requires a fresh full native assessment before process-only continuation")
     if paper_id == "wave-audit":
         if _pending_semantic(c) or _resolution_tasks(c):
             raise ValueError("Pending semantic/source-identity work prevents a completed wave audit")
@@ -347,12 +696,23 @@ def submit_native(c, paper_id, payload, actor):
         if not record.get("title") or not payload.get("source_location"):
             raise ValueError("Identity resolution needs actual title and source pointer")
         value = _ingest_once(c, key, record, dict(task["provenance"], identity_resolution_reason=payload["reason"], identity_source=payload["source_location"]))
+        if hasattr(c, "reconcile_metadata"):
+            c.reconcile_metadata(value[0])
         _schedule_new(c, [value], "resolved:" + key + ":")
+        saved = c.store.get_state("native-assessment:" + value[0])
+        if saved:
+            paper = c.store.paper(value[0])
+            if _saved_native_is_current(c, paper, saved):
+                _change(c, lambda s: frontiers.record_node(s, _native_paper(paper, saved["paper_state"]), saved["groups"],
+                    encounter_depth=min(paper.get("discovery_bridge_depths") or [0]),
+                    reason="Resolved rediscovery restores independently eligible bridge lineage"), "Resolved identity lineage reconciled")
         c.store.set_state("identity-resolution:" + key, dict(task, resolved=True), "Bibliographic identity resolved by " + actor)
     else:
         paper = c.store.paper(paper_id)
         if not paper:
             raise ValueError("Unknown paper")
+        if _native_source_wait(paper):
+            raise ValueError("Native judgment deferred: the current source generation has no verified packet")
         if "missing_source_audit" in payload:
             if paper.get("packet_path"):
                 raise ValueError("Available full text requires the ordinary source-based native audit")
@@ -365,14 +725,13 @@ def submit_native(c, paper_id, payload, actor):
         process = payload.get("process_audit", {})
         if process.get("status") not in {"no-eligible-comparison", "eligible-comparisons-recorded", "unresolved"} or not str(process.get("reason", "")).strip():
             raise ValueError("Native audit must separately resolve independently earned process searches")
-        if process["status"] == "unresolved":
-            c.store.event("native_route_unresolved", {"paper_id": paper_id, "actor": actor, "payload": payload, "packet_sha256": packet_hash})
-            return {"status": "unresolved", "reason": process["reason"], "native_scientific_completion": False}
-        native_paper = dict(paper, **payload["paper_state"])
+        native_paper = _native_paper(paper, payload["paper_state"])
         if native_paper["paper_id"] != paper_id:
             raise ValueError("Cannot replace native focal paper identity")
         activations = payload.get("process_activations", [])
-        if (process["status"] == "eligible-comparisons-recorded") != bool(activations):
+        c.store.require_native_ids(paper_id, payload["groups"],
+                                  comparisons=[a["comparison"] for a in activations])
+        if process["status"] != "unresolved" and (process["status"] == "eligible-comparisons-recorded") != bool(activations):
             raise ValueError("Process audit and activation records disagree")
         def apply(state):
             result = frontiers.record_node(state, native_paper, payload["groups"],
@@ -381,6 +740,12 @@ def submit_native(c, paper_id, payload, actor):
                 if activation["comparison"]["paper_id"] != paper_id:
                     raise ValueError("Process trigger belongs to another paper")
                 result = frontiers.activate_process(result, activation["comparison"], activation["variants"], normalization_reason=activation["normalization_reason"])
+            pending = result.setdefault("process_assessment_pending", {})
+            if process["status"] == "unresolved":
+                pending[paper_id] = {"task": "process-search-audit", "task_id": "process:" + paper_id,
+                                     "paper_id": paper_id, "reason": process["reason"]}
+            else:
+                pending.pop(paper_id, None)
             return result
         _change(c, apply, "Source-bound native discovery assessment submitted by " + actor)
         c.store.set_state("native-assessment:" + paper_id, dict(payload, packet_sha256=packet_hash, actor=actor), "Native route judgment and source identity retained for lineage reuse")
@@ -405,11 +770,50 @@ def _submit_source_resolution(c, task_id, payload, actor):
         request = {"source": obligation["source"], "query": "", "limit": 100, "cursor": obligation["cursor"],
                    "kind": obligation["direction"], "parent": obligation["parent"], "phase": "citation",
                    "obligation_id": obligation_id, "child_bridge_depth": obligation["child_bridge_depth"], "window_key": None}
+        if obligation.get("coverage_generation"):
+            request["coverage_generation"] = obligation["coverage_generation"]
+    if _citation_block(c, request):
+        raise ValueError("Operational citation depth boundary blocks source-resolution retrieval; the obligation remains pending")
     generation_key = "source-resolution-generation:" + task_id
     generation = c.store.get_state(generation_key, 0) + 1
     action = payload.get("action")
-    if action not in {"retry-same-request", "extracted-reference-list"}:
-        raise ValueError("Source resolution requires retry-same-request or extracted-reference-list")
+    if action not in {"retry-same-request", "restart-citation-window", "resolve-parent-identity", "extracted-reference-list"}:
+        raise ValueError("Unsupported source-resolution action")
+    if action in {"restart-citation-window", "resolve-parent-identity"}:
+        if not obligation_id:
+            raise ValueError("Only citation windows support coverage generations and parent identities")
+        if action == "resolve-parent-identity":
+            identity = payload.get("identity") or {}
+            source = payload.get("source")
+            if not str(payload.get("source_location", "")).strip() or not str(payload.get("identity_reason", "")).strip():
+                raise ValueError("Parent identity requires source_location and a title/author/year matching reason")
+            if source == "OpenAlex":
+                if set(identity) != {"openalex_id"} or not re.fullmatch(r"(?:https://openalex.org/)?W\d+", str(identity.get("openalex_id", ""))):
+                    raise ValueError("OpenAlex identity must contain one verified W identifier")
+                identity = {"openalex_id": "https://openalex.org/" + identity["openalex_id"].rsplit("/", 1)[-1]}
+            elif source == "Europe PMC":
+                if set(identity) != {"epmc_id", "epmc_source"} or not all(re.fullmatch(r"[A-Za-z0-9._-]+", str(identity.get(k, ""))) for k in identity):
+                    raise ValueError("Europe PMC identity requires verified epmc_id and epmc_source")
+            else:
+                raise ValueError("Parent identity may resolve OpenAlex or Europe PMC only")
+            pid = obligation["parent"]["paper_id"]
+            c.store.set_state("citation-identity:" + pid + ":" + source,
+                {"identity": identity, "source": source, "source_location": payload["source_location"],
+                 "identity_reason": payload["identity_reason"], "actor": actor},
+                "Agent independently corroborated citation service identity without changing the logical work")
+            c.store.update_paper(pid, identity, "Verified citation-service identity: " + payload["identity_reason"], actor=actor)
+            def resolve(s):
+                for direction in ("backward", "forward"):
+                    key = pid + ":" + direction
+                    if key in s["citation_obligations"] and s["citation_obligations"][key]["status"] != "complete":
+                        s = frontiers.restart_citation(s, key, reason=payload["reason"], identity=identity, source=source)
+                return s
+            _change(c, resolve, "Source identity resolution reopens only unfinished citation directions")
+        else:
+            _change(c, lambda s: frontiers.restart_citation(s, obligation_id, reason=payload["reason"]),
+                    "Explicit new citation coverage generation retains earlier pages and encounters")
+        c.store.event("source_resolution_submitted", {"task_id": task_id, "actor": actor, "action": action, "reason": payload["reason"]})
+        return discovery_tick(c)
     if action == "extracted-reference-list":
         if not obligation_id or request["source"] != "publisher-or-repository-reference-list" or request["kind"] != "backward":
             raise ValueError("Extracted reference list is the last backward fallback, never a forward substitute")
@@ -449,6 +853,21 @@ def discovery_status(c):
     checked = frontiers.readiness(state, pending_semantic_jobs=_pending_semantic(c), missing_texts_current=False, durable_validation_passed=False)
     task = next_native_task(c)
     task_summary = {key: task.get(key) for key in ("task", "task_id", "paper_id", "reason") if task.get(key) is not None} if task else None
+    windows = {**state["blind_windows"], **state["process_windows"]}
+    completed_windows = [w for w in windows.values() if w["status"] == "complete"]
+    ranked_coverage = {"required_windows": len(windows), "completed_windows": len(completed_windows),
+        "returned_encounters": sum(w.get("returned_count", 0) for w in completed_windows),
+        "reported_hits_across_windows": sum(w.get("reported_total", 0) for w in completed_windows),
+        "truncated_windows": sum(w.get("truncated") is True for w in completed_windows),
+        "truncated_window_ids": sorted(w["window_key"] for w in completed_windows if w.get("truncated") is True),
+        "source_exhausted_windows": sum(w.get("source_exhausted") is True for w in completed_windows),
+        "meaning": "Completing a ranked window covers its authorized return only; truncated windows do not establish source exhaustion. Totals count cross-window overlap."}
     return {"initialized": True, "phase": state["phase"], "pending_agent_task": task_summary,
+            "ranked_query_coverage": ranked_coverage,
+            "max_citation_depth": state.get("max_citation_depth"),
+            "depth_limited_obligations": sum(o["status"] == "depth-limited" for o in state["citation_obligations"].values()),
+            "depth_unresolved_obligations": sum(o["status"] == "depth-unresolved" for o in state["citation_obligations"].values()),
+            "deepest_discovered_citation_depth": citation_depth.summary(c.store),
+            "hop_depth_convention": "Ordinary citation hops from frozen seeds/anchors or separately labelled independent process/blind query roots at depth 0; CORE resets only bridge lineage",
             "frontier_checks": checked, "native_scientific_completion": False,
             "reason": "Portable discovery orchestrates prospects; certification still requires the frozen native ledger and validator"}

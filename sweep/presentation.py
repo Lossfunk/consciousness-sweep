@@ -1,4 +1,5 @@
 """Human-readable views of stored claims; never an additional classifier."""
+import json
 from html import escape
 from urllib.parse import quote
 
@@ -9,6 +10,28 @@ def shell(title, body):
     return '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>' + escape(title) + '</title><style>' + STYLE + '</style><body>' + body + '</body></html>'
 
 
+def depth_limit_notice(discovery):
+    """Show the commissioned search boundary without implying saturation."""
+    coverage = discovery.get("ranked_query_coverage", {})
+    completed = coverage.get("completed_windows", 0)
+    notice = ""
+    if completed:
+        notice = '<p class="meta" id="ranked-query-scope">' + escape("Ranked search windows: %s complete; %s returned encounters; %s windows truncated by the frozen result cap. A completed ranked window is not a saturation claim; hit totals overlap across windows." % (completed, coverage.get("returned_encounters", 0), coverage.get("truncated_windows", 0))) + '</p>'
+    limit = discovery.get("max_citation_depth")
+    if limit is None:
+        return notice
+    count = discovery.get("depth_limited_obligations", 0)
+    text = "Citation depth limit: %s hops from each seed or independent query root. " % limit
+    text += "Papers at the limit still receive normal screening and reading. "
+    if count:
+        text += "%s further citation directions are deferred by this limit; the search has not reached scientific saturation. " % count
+    else:
+        text += "No further citation directions are currently deferred by this limit. "
+    if discovery.get("depth_unresolved_obligations"):
+        text += "Some citation directions also await verified depth provenance. "
+    return notice + '<p class="meta" id="citation-depth-scope">' + escape(text) + '</p>'
+
+
 def paper_page(paper):
     assessment = paper["assessment"]
     body = '<a href="../index.html">Reading queue</a><h1>' + escape(paper["title"]) + '</h1>'
@@ -16,8 +39,21 @@ def paper_page(paper):
     if paper.get("doi"):
         body += '<p><a href="https://doi.org/' + quote(paper["doi"], safe='/') + '">Open article by DOI</a></p>'
     body += '<p>' + escape(assessment["paper_reason"]) + '</p>'
+    packet = paper.get("retrieval", {}).get("packet", {})
+    gaps = packet.get("acquisition_gaps", [])
+    if gaps:
+        body += '<h2>Acquisition limitations</h2><ul>'
+        for gap in gaps:
+            body += '<li>' + escape(gap if isinstance(gap, str) else json.dumps(gap, ensure_ascii=False, sort_keys=True)) + '</li>'
+        body += '</ul>'
+    relations = {key: paper[key] for key in ("version_relations", "relation", "version_of", "possible_duplicates") if paper.get(key)}
+    if relations:
+        body += '<h2>Related versions / possible copies</h2><p>' + escape(json.dumps(relations, ensure_ascii=False, sort_keys=True)) + '</p><p>Resolve these relationships before treating copies as independent evidence.</p>'
+    if paper.get("publication_status"):
+        body += '<p class="meta">Publication status: ' + escape(str(paper["publication_status"])) + '</p>'
     for claim in assessment["claims"]:
         body += '<article><h2>' + escape(claim["comparison"]) + '</h2><dl>'
+        body += '<dt>Claim disposition</dt><dd>' + escape(claim["decision"]) + '</dd>'
         for key, label in (("supported_claim", "Supported claim"), ("x_and_existence", "X and evidence it exists"),
                            ("awareness_evidence", "Awareness evidence"), ("downstream_use", "How Y uses X"),
                            ("contribution_reasoning", "Why this contributes"), ("remaining_alternative", "Remaining alternative"),

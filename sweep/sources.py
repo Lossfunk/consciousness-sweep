@@ -21,6 +21,7 @@ import shutil
 import signal
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 import unicodedata
@@ -83,6 +84,38 @@ class SourceError(RuntimeError):
         self.attempts, self.retry_after = list(attempts), retry_after
 
 
+def _remaining(deadline, maximum):
+    if deadline is None:
+        return maximum
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise SourceError("deferred", "Execution deadline reached; source work remains pending")
+    return min(maximum, remaining)
+
+
+def _page_consistency(rows, total, limit, *, offset=0, exact=True):
+    if type(total) is not int or total < 0 or not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise SourceError("incomplete", "Source response has invalid total or records")
+    if type(offset) is not int or offset < 0 or offset > total:
+        raise SourceError("incomplete", "Source page offset is outside its reported total")
+    expected = min(limit, total - offset)
+    if len(rows) > limit or len(rows) > total or (exact and len(rows) != expected):
+        raise SourceError("incomplete", "Source page/window returned count is inconsistent with the reported total and requested size")
+
+
+def source_record_key(record, source):
+    stable = record.get("openalex_id") if source == "OpenAlex" else record.get("source_stable_id")
+    if stable:
+        return str(source) + ":" + str(stable)
+    if record.get("epmc_id") and record.get("epmc_source"):
+        return "Europe PMC:" + str(record["epmc_source"]) + ":" + str(record["epmc_id"])
+    if normalize_doi(record.get("doi")):
+        return "doi:" + normalize_doi(record["doi"])
+    if record.get("title") and record.get("authors") and record.get("year"):
+        return "bibliography:" + digest([normalize_title(record["title"]), record["authors"], str(record["year"])])
+    return None
+
+
 class _Redirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         safe_url(newurl)
@@ -90,21 +123,89 @@ class _Redirect(urllib.request.HTTPRedirectHandler):
 
 
 def public_transport(url, *, timeout, headers, max_bytes=64 * 1024 * 1024):
+    deadline = time.monotonic() + timeout
     safe_url(url)
     request = urllib.request.Request(url, headers=headers)
     opener = urllib.request.build_opener(_Redirect())
+    def read_bounded(response):
+        body = bytearray()
+        while len(body) <= max_bytes:
+            remaining = _remaining(deadline, timeout)
+            sock = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+            if sock is not None:
+                sock.settimeout(remaining)
+            chunk = (getattr(response, "read1", None) or response.read)(min(65536, max_bytes + 1 - len(body)))
+            if not chunk:
+                return bytes(body)
+            body.extend(chunk)
+        raise SourceError("deferred", "Source exceeds operational download byte limit; no truncated source accepted")
     try:
-        with opener.open(request, timeout=timeout) as response:
+        with opener.open(request, timeout=_remaining(deadline, timeout)) as response:
             length = response.headers.get("Content-Length")
             if length and length.isdigit() and int(length) > max_bytes:
                 raise SourceError("deferred", "Source exceeds operational download byte limit; increase authorized resources or supply a local file")
-            body = response.read(max_bytes + 1)
+            body = read_bounded(response)
             if len(body) > max_bytes:
                 raise SourceError("deferred", "Source exceeds operational download byte limit; no truncated source accepted")
             return {"status": response.status, "headers": dict(response.headers),
                     "body": body, "url": response.url}
     except urllib.error.HTTPError as exc:
-        return {"status": exc.code, "headers": dict(exc.headers), "body": exc.read(max_bytes + 1), "url": url}
+        return {"status": exc.code, "headers": dict(exc.headers), "body": read_bounded(exc), "url": url}
+
+
+def _credential_url(url, openalex_key_env):
+    if urllib.parse.urlsplit(url).hostname == "api.openalex.org" and openalex_key_env:
+        key = os.environ.get(openalex_key_env)
+        if key:
+            return url + ("&" if "?" in url else "?") + urllib.parse.urlencode({"api_key": key})
+    return url
+
+
+def _source_transport_worker(request_path, result_path, body_path):
+    """Child entry point: credentials stay in the inherited environment."""
+    request = json.loads(Path(request_path).read_text())
+    try:
+        url = _credential_url(request.pop("url"), request.pop("openalex_key_env"))
+        result = public_transport(url, **request)
+        Path(body_path).write_bytes(result.pop("body"))
+        envelope = {"result": result}
+    except SourceError as exc:
+        envelope = {"error": {"status": exc.status, "reason": exc.reason}}
+    except Exception:
+        envelope = {"error": {"status": "deferred", "reason": "Isolated source transport failed; no response was accepted"}}
+    Path(result_path).write_bytes(canonical_bytes(envelope))
+
+
+_SOURCE_TRANSPORT_CODE = ("import sys;sys.path.insert(0,sys.argv[1]);"
+                          "from sweep.sources import _source_transport_worker;"
+                          "_source_transport_worker(*sys.argv[2:])")
+
+
+def _bounded_public_transport(url, *, deadline, openalex_key_env, **kwargs):
+    """The process bound includes DNS, redirects, connection and full body."""
+    with tempfile.TemporaryDirectory(prefix="sweep-source-http-") as temporary:
+        directory = Path(temporary)
+        request, result, body = (directory / name for name in ("request.json", "result.json", "body"))
+        request.write_bytes(canonical_bytes(dict(kwargs, url=url, openalex_key_env=openalex_key_env)))
+        try:
+            done = _run_extraction_process([sys.executable, "-c", _SOURCE_TRANSPORT_CODE,
+                    str(Path(__file__).resolve().parent.parent), str(request), str(result), str(body)],
+                    timeout=_remaining(deadline, kwargs["timeout"]), max_output_bytes=65536)
+            if done.returncode or not result.is_file():
+                raise SourceError("deferred", "Isolated source transport exited without a response")
+            envelope = json.loads(result.read_text())
+            if envelope.get("error"):
+                raise SourceError(envelope["error"]["status"], envelope["error"]["reason"])
+            response = envelope["result"]
+            if body.stat().st_size > kwargs["max_bytes"]:
+                raise SourceError("deferred", "Source exceeds operational byte allowance; no truncated evidence accepted")
+            response["body"] = body.read_bytes()
+            _remaining(deadline, kwargs["timeout"])
+            return response
+        except subprocess.TimeoutExpired as exc:
+            raise SourceError("deferred", "Source transport deadline reached; source work remains pending") from exc
+        except (OSError, ValueError, KeyError) as exc:
+            raise SourceError("deferred", "Isolated source response could not be verified") from exc
 
 
 def _retry_after(headers):
@@ -122,7 +223,7 @@ def _retry_after(headers):
 
 class SourceClient:
     def __init__(self, transport=None, *, timeout=30, max_attempts=3, sleep=time.sleep,
-                 openalex_key_env="OPENALEX_API_KEY", max_download_bytes=64 * 1024 * 1024):
+                 openalex_key_env="OPENALEX_API_KEY", max_download_bytes=64 * 1024 * 1024, deadline=None):
         if timeout <= 0 or not 1 <= max_attempts <= 3:
             raise ValueError("Positive timeout and one to three attempts required")
         self.transport = transport or public_transport
@@ -132,21 +233,24 @@ class SourceClient:
         if not isinstance(max_download_bytes, int) or max_download_bytes < 1:
             raise ValueError("Positive operational download byte limit required")
         self.max_download_bytes = max_download_bytes
+        self.deadline = deadline
 
     def get(self, url, *, json_response=False):
         safe_url(url, resolve=False)
         attempts = []
         for number in range(self.max_attempts):
+            timeout = _remaining(self.deadline, self.timeout)
             retry = None
             try:
-                request_url = url
-                if urllib.parse.urlsplit(url).hostname == "api.openalex.org" and self.openalex_key_env:
-                    key = os.environ.get(self.openalex_key_env)
-                    if key:
-                        request_url += ("&" if "?" in url else "?") + urllib.parse.urlencode({"api_key": key})
-                response = self.transport(request_url, timeout=self.timeout, max_bytes=self.max_download_bytes, headers={
+                options = {"timeout": timeout, "max_bytes": self.max_download_bytes, "headers": {
                     "User-Agent": "consciousness-sweep/1.0 (public scholarly metadata)",
-                    "Accept": "application/json" if json_response else "application/xml,application/pdf,text/plain;q=0.8,*/*;q=0.1"})
+                    "Accept": "application/json" if json_response else "application/xml,application/pdf,text/plain;q=0.8,*/*;q=0.1"}}
+                if self.deadline is not None and self.transport is public_transport:
+                    response = _bounded_public_transport(url, deadline=self.deadline,
+                        openalex_key_env=self.openalex_key_env, **options)
+                else:
+                    response = self.transport(_credential_url(url, self.openalex_key_env), **options)
+                _remaining(self.deadline, self.timeout)
                 code = response["status"]
                 body = response["body"]
                 if isinstance(body, str):
@@ -180,6 +284,8 @@ class SourceClient:
             if number + 1 == self.max_attempts or delay > 20:
                 raise SourceError("deferred", "Transient source failure; retain obligation for continuation",
                                   attempts=attempts, retry_after=delay)
+            if self.deadline is not None and delay >= _remaining(self.deadline, delay + 1):
+                raise SourceError("deferred", "Retry backoff exceeds remaining execution time", attempts=attempts, retry_after=delay)
             self.sleep(delay)
         raise AssertionError("unreachable")
 
@@ -189,7 +295,7 @@ class SourceClient:
         Citation source exhaustion is independent of resource budgets. A cursor
         is an opaque service cursor (or offset for deposited reference lists).
         """
-        if not isinstance(limit, int) or limit < 1 or limit > 100:
+        if type(limit) is not int or limit < 1 or limit > 100:
             raise ValueError("Page/window size must be between 1 and 100")
         if kind == "query" and cursor is not None:
             raise ValueError("Frozen bounded query windows have no second page")
@@ -212,12 +318,23 @@ class SourceClient:
             if kind in {"forward", "backward"}:
                 if source == "OpenAlex" and kind == "backward":
                     result["reported_total"] = len(raw[0]["response"]["referenced_works"])
+                    result["reference_list_sha256"] = digest(raw[0]["response"]["referenced_works"])
                 elif source == "OpenAlex":
                     result["reported_total"] = raw[-1]["response"]["meta"]["count"]
                 elif source in {"Europe PMC", "EuropePMC"}:
                     result["reported_total"] = raw[-1]["response"]["hitCount"]
                 elif source == "Crossref":
                     result["reported_total"] = len(raw[0]["response"]["message"]["reference"])
+                    result["reference_list_sha256"] = digest(raw[0]["response"]["message"]["reference"])
+            elif kind == "query":
+                result["reported_total"] = (raw[-1]["response"]["meta"]["count"] if source == "OpenAlex"
+                                            else raw[-1]["response"]["hitCount"])
+            else:
+                result["reported_total"] = len(records)
+            result["returned_count"] = len(records)
+            result["truncated"] = kind == "query" and result["reported_total"] > len(records)
+            if kind == "query":
+                result["exhausted"] = not result["truncated"]
             result["result_set_sha256"] = digest(records)
             result["request_sha256"] = digest(request)
             return result
@@ -229,8 +346,40 @@ class SourceClient:
         finally:
             _SEARCH_RESPONSES.reset(token)
 
+    def identity_candidates(self, paper, source="OpenAlex", limit=5):
+        """Bibliographic lookup proposes candidates; it never chooses a work."""
+        if not paper.get("title") or type(limit) is not int or not 1 <= limit <= 10:
+            raise ValueError("Identity lookup needs a title and one to ten candidates")
+        query = paper["title"]
+        captured = []
+        token = _SEARCH_RESPONSES.set(captured)
+        try:
+            if source == "OpenAlex":
+                data, receipt = self._json(OPENALEX + "/works?" + urllib.parse.urlencode({"search": query, "per_page": limit}))
+                rows = data.get("results")
+                _page_consistency(rows, data.get("meta", {}).get("count"), limit)
+                candidates = [normalize_openalex(row) for row in rows]
+            elif source in {"Europe PMC", "EuropePMC"}:
+                query = 'TITLE:"' + str(paper["title"]).replace('"', ' ') + '"'
+                data, receipt = self._json(EPMC + "/search?" + urllib.parse.urlencode({"query": query, "format": "json", "resultType": "core", "pageSize": limit}))
+                rows = data.get("resultList", {}).get("result")
+                _page_consistency(rows, data.get("hitCount"), limit)
+                candidates = [normalize_epmc(row) for row in rows]
+            else:
+                raise ValueError("Bibliographic candidate lookup supports OpenAlex or Europe PMC")
+            return {"status": "complete", "source": source, "query": query, "candidates": candidates,
+                    "proposed_identity": None, "requires_confirmation": True, "raw_responses": [receipt],
+                    "reason": "Compare title, authors, year and version evidence before explicitly approving any source identifier"}
+        except SourceError as exc:
+            return {"status": exc.status, "source": source, "query": query, "candidates": [], "proposed_identity": None,
+                    "requires_confirmation": True, "raw_responses": captured, "reason": exc.reason}
+        finally:
+            _SEARCH_RESPONSES.reset(token)
+
     def _json(self, url):
         data, receipt = self.get(url, json_response=True)
+        if not isinstance(data, dict):
+            raise SourceError("incomplete", "Bibliographic source JSON must be an object")
         clean = {k: v for k, v in receipt.items() if k != "raw_body"} | {"response": data, "response_json_sha256": digest(data)}
         captured = _SEARCH_RESPONSES.get()
         if captured is not None:
@@ -249,6 +398,8 @@ class SourceClient:
         data, raw = self._json(OPENALEX + "/works/" + urllib.parse.quote(identifier, safe=""))
         if not isinstance(data, dict) or not data.get("id"):
             raise SourceError("incomplete", "OpenAlex parent response lacks identity")
+        if re.search(r"(?:^|/)W\d+$", identifier) and data["id"].rsplit("/", 1)[-1] != identifier.rsplit("/", 1)[-1]:
+            raise SourceError("unavailable", "OpenAlex returned a different source work identifier")
         expected = normalize_doi(parent.get("doi"))
         if expected and normalize_doi(data.get("doi")) != expected:
             raise SourceError("unavailable", "OpenAlex parent DOI identity is not corroborated")
@@ -264,6 +415,8 @@ class SourceClient:
                     raise SourceError("incomplete", "OpenAlex reference coverage absent")
                 offset = int(cursor or 0)
                 ids = data["referenced_works"]
+                if offset < 0 or offset > len(ids) or any(not isinstance(i, str) or not re.search(r"(?:^|/)W\d+$", i) for i in ids) or len(ids) != len(set(ids)):
+                    raise SourceError("incomplete", "OpenAlex reference list identity/order is inconsistent")
                 wanted = ids[offset:offset + limit]
                 records = []
                 # Preserve source reference-list order even if API list order differs.
@@ -272,7 +425,7 @@ class SourceClient:
                     params = {"filter": "openalex_id:" + "|".join(i.rsplit("/", 1)[-1] for i in chunk), "per_page": len(chunk)}
                     found, receipt = self._json(OPENALEX + "/works?" + urllib.parse.urlencode(params))
                     raw.append(receipt)
-                    if not isinstance(found.get("results"), list):
+                    if not isinstance(found.get("results"), list) or len(found["results"]) != len(chunk):
                         raise SourceError("incomplete", "OpenAlex reference identities unresolved")
                     by_id = {r.get("id"): r for r in found["results"]}
                     if any(identifier not in by_id for identifier in chunk):
@@ -292,21 +445,35 @@ class SourceClient:
             raise ValueError("Unsupported OpenAlex operation")
         data, receipt = self._json(OPENALEX + "/works?" + urllib.parse.urlencode(params))
         raw.append(receipt)
-        if not isinstance(data.get("results"), list) or not isinstance(data.get("meta", {}).get("count"), int):
+        if not isinstance(data, dict):
             raise SourceError("incomplete", "OpenAlex response is missing results/count")
+        _page_consistency(data.get("results"), data.get("meta", {}).get("count"), limit,
+                          exact=kind == "query" or cursor is None)
         records = [normalize_openalex(r) for r in data["results"]]
         nxt = data["meta"].get("next_cursor") if kind != "query" else None
         if kind != "query" and nxt == (cursor or "*"):
             raise SourceError("incomplete", "OpenAlex cursor did not advance")
         if kind != "query" and not records and nxt:
             raise SourceError("incomplete", "OpenAlex empty page advertises continuation")
+        if kind != "query" and nxt and len(records) != limit:
+            raise SourceError("incomplete", "OpenAlex short page advertises further results")
+        if kind != "query" and cursor is None and nxt is None and len(records) != data["meta"]["count"]:
+            raise SourceError("incomplete", "OpenAlex first page omits results without a continuation cursor")
         return records, nxt, nxt is None, raw
 
     def _epmc_parent(self, parent):
         if not parent:
             raise SourceError("unavailable", "Europe PMC citation parent is missing")
         if parent.get("epmc_id") and parent.get("epmc_source"):
-            return parent["epmc_source"], parent["epmc_id"], []
+            if not normalize_doi(parent.get("doi")):
+                return parent["epmc_source"], parent["epmc_id"], []
+            query = 'EXT_ID:"{}" AND SRC:"{}"'.format(parent["epmc_id"], parent["epmc_source"])
+            data, raw = self._json(EPMC + "/search?" + urllib.parse.urlencode({"query": query, "format": "json", "resultType": "core"}))
+            matching = [r for r in data.get("resultList", {}).get("result", []) if str(r.get("id")) == str(parent["epmc_id"])
+                        and r.get("source") == parent["epmc_source"] and normalize_doi(r.get("doi")) == normalize_doi(parent.get("doi"))]
+            if len(matching) != 1:
+                raise SourceError("unavailable", "Europe PMC service identity conflicts with the known parent DOI")
+            return parent["epmc_source"], parent["epmc_id"], [raw]
         doi = normalize_doi(parent.get("doi"))
         pmcid = parent.get("pmcid")
         query = 'DOI:"{}"'.format(doi) if doi else "EXT_ID:" + str(pmcid) if pmcid else None
@@ -314,7 +481,7 @@ class SourceClient:
             raise SourceError("unavailable", "Europe PMC citation parent has no resolvable identity")
         data, raw = self._json(EPMC + "/search?" + urllib.parse.urlencode({"query": query, "format": "json", "resultType": "core"}))
         rows = data.get("resultList", {}).get("result", [])
-        matching = [r for r in rows if (doi and normalize_doi(r.get("doi")) == doi) or (pmcid and r.get("pmcid") == pmcid)]
+        matching = [r for r in rows if (doi and normalize_doi(r.get("doi")) == doi) or (not doi and pmcid and r.get("pmcid") == pmcid)]
         if len(matching) != 1:
             raise SourceError("unavailable", "Europe PMC parent identity/coverage unavailable")
         return matching[0]["source"], matching[0]["id"], [raw]
@@ -329,11 +496,10 @@ class SourceClient:
             raw.append(receipt)
             count = data.get("hitCount")
             rows = data.get(list_key, {}).get(item_key)
-            if not isinstance(count, int) or (rows is None and count):
+            if type(count) is not int or (rows is None and count):
                 raise SourceError("incomplete", "Europe PMC citation response lacks count/records")
             rows = rows or []
-            if not isinstance(rows, list) or (not rows and (page - 1) * limit < count):
-                raise SourceError("incomplete", "Europe PMC citation pagination is inconsistent")
+            _page_consistency(rows, count, limit, offset=(page - 1) * limit)
             nxt = str(page + 1) if page * limit < count else None
             return [normalize_epmc(r) for r in rows], nxt, nxt is None, raw
         if kind not in {"query", "identity"}:
@@ -343,8 +509,9 @@ class SourceClient:
         params = {"query": query, "format": "json", "resultType": "core", "pageSize": limit,
                   "cursorMark": "*", "synonym": "false"}
         data, raw = self._json(EPMC + "/search?" + urllib.parse.urlencode(params))
-        if not isinstance(data.get("hitCount"), int) or not isinstance(data.get("resultList", {}).get("result"), list):
+        if not isinstance(data, dict):
             raise SourceError("incomplete", "Europe PMC response lacks results/count")
+        _page_consistency(data.get("resultList", {}).get("result"), data.get("hitCount"), limit)
         return [normalize_epmc(r) for r in data["resultList"]["result"]], None, True, [raw]
 
     def _crossref(self, query, limit, cursor, kind, parent):
@@ -362,7 +529,10 @@ class SourceClient:
         if not isinstance(record.get("reference"), list):
             raise SourceError("unavailable", "Publisher has not deposited a Crossref reference list")
         offset = int(cursor or 0)
+        if offset < 0 or offset > len(record["reference"]):
+            raise SourceError("incomplete", "Crossref reference offset exceeds the source list")
         rows = record["reference"][offset:offset + limit]
+        _page_consistency(rows, len(record["reference"]), limit, offset=offset)
         records = [normalize_crossref(r, reference=True) for r in rows]
         nxt = str(offset + len(rows)) if offset + len(rows) < len(record["reference"]) else None
         return records, nxt, nxt is None, [raw]
@@ -380,7 +550,10 @@ def normalize_openalex(row):
             "doi": normalize_doi(row.get("doi")), "title": row.get("title") or row.get("display_name") or "",
             "authors": [a.get("author", {}).get("display_name", "") for a in row.get("authorships", [])],
             "year": row.get("publication_year"), "abstract": abstract, "fulltext_urls": urls,
-            "url": row.get("id"), "referenced_works": row.get("referenced_works")}
+            "url": row.get("id"), "referenced_works": row.get("referenced_works"),
+            "type": row.get("type"), "publication_status": row.get("publication_status") or row.get("type"),
+            "version_relations": row.get("version_relations") or row.get("relation"),
+            "source_locations": [{k: loc.get(k) for k in ("landing_page_url", "pdf_url", "version", "is_accepted", "is_published")} for loc in locations if loc]}
 
 
 def normalize_epmc(row):
@@ -392,7 +565,8 @@ def normalize_epmc(row):
             "authors": [a.get("fullName", "") for a in authors] or row.get("authorString", ""),
             "year": row.get("pubYear"), "abstract": row.get("abstractText"),
             "fulltext_urls": [u["url"] for u in fulltexts if u.get("url") and u.get("availability") in {"Open access", "Free"}],
-            "url": "https://europepmc.org/article/{}/{}".format(row.get("source", "MED"), row.get("id", ""))}
+            "url": "https://europepmc.org/article/{}/{}".format(row.get("source", "MED"), row.get("id", "")),
+            "publication_status": row.get("pubType") or row.get("pubTypeList"), "version_relations": row.get("versionList") or row.get("relation")}
 
 
 def normalize_crossref(row, reference=False):
@@ -405,6 +579,7 @@ def normalize_crossref(row, reference=False):
             "title": title or "", "authors": row.get("author") or [],
             "year": row.get("year") if reference else issued[0] if issued else None,
             "abstract": row.get("abstract"), "fulltext_urls": [], "unstructured_reference": row.get("unstructured"),
+            "relation": row.get("relation"), "publication_status": row.get("type"),
             "identity_resolution_required": reference and not bool(doi or title),
             "url": "https://doi.org/" + urllib.parse.quote(doi, safe="/") if doi else None}
 
@@ -453,7 +628,10 @@ def _run_extraction_process(argv, timeout, max_output_bytes=64 * 1024 * 1024):
     Output goes to temporary files to avoid pipe deadlocks; oversized output is
     rejected in full, never returned as a silently shortened source.
     """
-    executable = str(Path(shutil.which(argv[0]) or argv[0]).resolve())
+    # Resolving an environment's python symlink selects the base interpreter
+    # and loses its installed dependencies. Preserve the invoked path (and
+    # thus pyvenv.cfg discovery) while still giving posix_spawn an absolute path.
+    executable = os.path.abspath(shutil.which(argv[0]) or argv[0])
     argv = [executable] + list(argv[1:])
     with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err, open(os.devnull, "rb") as inp:
         if os.name == "posix":
@@ -499,34 +677,62 @@ def _run_extraction_process(argv, timeout, max_output_bytes=64 * 1024 * 1024):
                     child.wait()
 
 
-def _extract(data, suffix):
-    if data.lstrip().startswith(b"%PDF") or suffix.lower() == ".pdf":
+def _bounded_extraction_process(argv, timeout, **kwargs):
+    try:
+        return _run_extraction_process(argv, timeout=timeout, **kwargs)
+    except subprocess.TimeoutExpired as exc:
+        raise SourceError("deferred", "Extraction deadline reached; source work remains pending") from exc
+
+
+def _extract(data, suffix, *, deadline=None):
+    _remaining(deadline, 120)
+    is_pdf = data.lstrip().startswith(b"%PDF") or suffix.lower() == ".pdf"
+    if deadline is not None and not is_pdf:
+        # XML parsing and text normalization are CPU work too; a service/session
+        # deadline must also cover a large or malformed non-PDF source.
+        with tempfile.TemporaryDirectory(prefix="sweep-text-extract-") as directory:
+            source = Path(directory) / "source"
+            source.write_bytes(data)
+            code = ("import json,sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);"
+                    "from sweep.sources import _extract;"
+                    "print(json.dumps(_extract(Path(sys.argv[2]).read_bytes(),sys.argv[3])))")
+            done = _bounded_extraction_process([sys.executable, "-c", code, str(Path(__file__).resolve().parent.parent), str(source), suffix],
+                                          timeout=_remaining(deadline, 120))
+            if done.returncode:
+                raise ValueError("Isolated text/XML extraction failed; source remains unreadable")
+            result = json.loads(done.stdout)
+            _remaining(deadline, 120)
+            return tuple(result)
+    if is_pdf:
         tool = shutil.which("pdftotext")
         if tool:
             with tempfile.TemporaryDirectory(prefix="sweep-extract-") as directory:
                 file = Path(directory) / "article.pdf"
                 file.write_bytes(data)
-                done = _run_extraction_process([tool, "-layout", str(file), "-"], timeout=120)
+                done = _bounded_extraction_process([tool, "-layout", str(file), "-"], timeout=_remaining(deadline, 120))
                 if done.returncode:
                     raise ValueError("pdftotext could not extract this source")
                 pages = done.stdout.decode("utf-8", errors="replace").split("\f")
                 if pages and not pages[-1].strip():
                     pages.pop()
             try:
-                probe = _run_extraction_process([tool, "-v"], timeout=10, max_output_bytes=65536)
+                probe = _bounded_extraction_process([tool, "-v"], timeout=_remaining(deadline, 10), max_output_bytes=65536)
                 lines = (probe.stderr or probe.stdout).decode(errors="replace").strip().splitlines()
                 version = lines[0] if lines and probe.returncode == 0 else "version unavailable"
             except (OSError, ValueError, subprocess.SubprocessError):
                 version = "version unavailable"
         else:
-            try:
-                import io
-                import pypdf
-            except ImportError as exc:
-                raise ValueError("PDF extraction requires pdftotext or pypdf; install the declared optional dependency") from exc
-            reader = pypdf.PdfReader(io.BytesIO(data))
-            pages = [page.extract_text() or "" for page in reader.pages]
-            version = "pypdf " + pypdf.__version__
+            # Isolate parser work so malformed/large PDFs cannot ignore the
+            # admitted session deadline inside the coordinator process.
+            with tempfile.TemporaryDirectory(prefix="sweep-pypdf-") as directory:
+                file = Path(directory) / "article.pdf"
+                file.write_bytes(data)
+                script = "import json,sys,pypdf; r=pypdf.PdfReader(sys.argv[1]); print(json.dumps({'pages':[p.extract_text() or '' for p in r.pages],'version':'pypdf '+pypdf.__version__}))"
+                done = _bounded_extraction_process([sys.executable, "-c", script, str(file)], timeout=_remaining(deadline, 120))
+                if done.returncode:
+                    raise ValueError("PDF extraction requires working pdftotext or pypdf")
+                result = json.loads(done.stdout)
+                pages, version = result["pages"], result["version"]
         units = [{"unit_id": "page:{}".format(i + 1), "content": page} for i, page in enumerate(pages)]
         return units, {"tool": "pdftotext" if tool else "pypdf", "version": version}, {}, []
     if suffix.lower() in {".xml", ".nxml"} or data.lstrip().startswith((b"<?xml", b"<article")):
@@ -586,25 +792,28 @@ def _identity(paper, units, extracted):
     return "unclear", "Insufficient bibliographic corroboration; source identity requires resolution"
 
 
-def _asset(paper, data, label, directory, *, role="article", association=None):
+def _asset(paper, data, label, directory, *, role="article", association=None, deadline=None):
+    _remaining(deadline, 120)
     sha = digest(data)
     directory.mkdir(parents=True, exist_ok=True)
     extraction_cache = directory / (sha + ".extraction.json")
     if extraction_cache.exists():
         cached = json.loads(extraction_cache.read_text())
+        _remaining(deadline, 120)
         payload = cached["payload"]
         if cached.get("sha256") != digest(payload) or payload.get("source_sha256") != sha:
             raise ValueError("Cached extraction integrity mismatch")
         units, extraction, identity, supplements = (payload[k] for k in ("units", "extraction", "identity", "supplements"))
     else:
-        units, extraction, identity, supplements = _extract(data, Path(urllib.parse.urlsplit(label).path).suffix)
+        units, extraction, identity, supplements = _extract(data, Path(urllib.parse.urlsplit(label).path).suffix, deadline=deadline)
         payload = {"units": units, "extraction": extraction, "identity": identity,
                    "supplements": supplements, "source_sha256": sha}
         extraction_cache.write_bytes(canonical_bytes({"payload": payload, "sha256": digest(payload)}))
     if not units or not any(u["content"].strip() for u in units):
         raise ValueError("Extraction contains no readable source text; OCR/manual source required")
     status, reason = _identity(paper, units, identity)
-    if role == "supplement" and association:
+    source_identity = {"status": status, "reason": reason, **identity}
+    if role == "supplement" and association and not identity.get("doi") and not identity.get("title"):
         status, reason = "match", association
     asset_id = "asset-" + sha[:20]
     content = "\n\n".join("[{}]\n{}".format(u["unit_id"], u["content"]) for u in units)
@@ -614,16 +823,21 @@ def _asset(paper, data, label, directory, *, role="article", association=None):
     paths = {"original_path": directory / (sha + suffix), "text_path": directory / (sha + ".extracted.txt"),
              "map_path": directory / (sha + ".map.json")}
     for key, payload in [("original_path", data), ("text_path", content.encode()), ("map_path", canonical_bytes(mapping))]:
+        _remaining(deadline, 120)
         if paths[key].exists() and paths[key].read_bytes() != payload:
             raise ValueError("Immutable cached source/extraction changed")
         if not paths[key].exists():
             paths[key].write_bytes(payload)
+    _remaining(deadline, 120)
     asset = {"asset_id": asset_id, "source": label, "kind": "main" if role == "article" else "additional",
              "source_role": role, "identity": {"status": status, "reason": reason, **identity},
              "sha256": sha, "text_sha256": digest(content.encode()), "map_sha256": digest(mapping),
              "content_sha256": digest(content.encode()), "units": mapping, "content": content,
              "extraction": extraction, **{k: str(v) for k, v in paths.items()},
              "limits": "Extracted text; graphical pixels and unprovided supplements are not supplied."}
+    if role == "supplement":
+        asset["association"] = {"reason": association, "source_identity": source_identity,
+                                "status": "asserted" if association else "unresolved"}
     return asset, supplements
 
 
@@ -635,14 +849,16 @@ def _provided_bytes(entry):
     return data
 
 
-def retrieve(paper, output_dir, provided_paths=(), *, client=None):
+def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None):
     """Acquire a verified main source plus explicitly associated supplements.
 
     Supplied entries may be paths or {path, role:'supplement', association_reason}.
     Source claims of complete reading never imply that unavailable graphics or
     unprovided supplements were examined. All extraction content is retained.
     """
-    client = client or SourceClient()
+    client = client or SourceClient(deadline=deadline)
+    if deadline is not None and isinstance(client, SourceClient):
+        client.deadline = min(client.deadline, deadline) if client.deadline is not None else deadline
     directory = Path(output_dir)
     directory.mkdir(parents=True, exist_ok=True)
     attempts, assets, gaps, candidates = [], [], [], []
@@ -682,47 +898,63 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None):
         candidates.append({"url": paper["pdf_url"]})
     if paper.get("open_access_url"):
         candidates.append({"url": paper["open_access_url"]})
-    if not candidates and paper.get("doi"):
-        found = client.search("OpenAlex", normalize_doi(paper["doi"]), 1, kind="identity")
-        attempts.append({"kind": "identity-discovery", "source": "OpenAlex", "status": found["status"],
-                         "reason": found["reason"], "raw_responses": found.get("raw_responses", [])})
-        for record in found.get("results", []):
-            candidates.extend({"url": u} for u in record.get("fulltext_urls", []))
     unresolved = []
     supplemental_links = []
     seen = set()
-    for candidate in candidates:
-        label = candidate.get("path") or candidate.get("url")
-        if not label or label in seen:
-            continue
-        seen.add(label)
-        try:
-            if candidate.get("path"):
-                data = _provided_bytes(candidate)
-                receipt = {"route": "provided-file", "path": label, "at": now()}
-            else:
-                data, raw = client.get(label)
-                receipt = {k: v for k, v in raw.items() if k != "raw_body"}
-            asset, supplemental_links = _asset(paper, data, label, directory)
-            attempts.append({"source": label, "status": asset["identity"]["status"], "receipt": receipt,
-                             "reason": asset["identity"]["reason"]})
-            if asset["identity"]["status"] == "match":
-                assets.append(asset)
-                break
-            unresolved.append(asset)
-        except SourceError as exc:
-            attempts.append({"source": label, "status": exc.status, "reason": exc.reason,
-                             "attempts": exc.attempts, "retry_after": exc.retry_after})
-        except (OSError, ValueError, ET.ParseError, subprocess.SubprocessError) as exc:
-            attempts.append({"source": label, "status": "unreadable", "reason": str(exc)})
+    # Exhaust the supplied/known locations before trying a second metadata
+    # provider. An explicit local bundle remains an offline acquisition route.
+    stages = [candidates, None] if paper.get("doi") and not local_available else [candidates]
+    main_base = None
+    for stage in stages:
+        if assets:
+            break
+        if stage is None:
+            found = client.search("OpenAlex", normalize_doi(paper["doi"]), 1, kind="identity")
+            attempts.append({"kind": "identity-discovery", "source": "OpenAlex", "status": found["status"],
+                             "reason": found["reason"], "raw_responses": found.get("raw_responses", [])})
+            stage = [{"url": u} for record in found.get("results", [])
+                     if normalize_doi(record.get("doi")) == normalize_doi(paper["doi"])
+                     for u in record.get("fulltext_urls", [])]
+        for candidate in stage:
+            label = candidate.get("path") or candidate.get("url")
+            if not label or label in seen:
+                continue
+            seen.add(label)
+            try:
+                _remaining(deadline, 120)
+                if candidate.get("path"):
+                    data = _provided_bytes(candidate)
+                    receipt = {"route": "provided-file", "path": label, "at": now()}
+                else:
+                    data, raw = client.get(label)
+                    receipt = {k: v for k, v in raw.items() if k != "raw_body"}
+                asset, links = _asset(paper, data, label, directory, deadline=deadline)
+                attempts.append({"source": label, "status": asset["identity"]["status"], "receipt": receipt,
+                                 "reason": asset["identity"]["reason"]})
+                if asset["identity"]["status"] == "match":
+                    assets.append(asset)
+                    supplemental_links = links
+                    main_base = receipt.get("url") if not candidate.get("path") else None
+                    break
+                unresolved.append(asset)
+            except SourceError as exc:
+                attempts.append({"source": label, "status": exc.status, "reason": exc.reason,
+                                 "attempts": exc.attempts, "retry_after": exc.retry_after})
+            except (OSError, ValueError, ET.ParseError, subprocess.SubprocessError) as exc:
+                attempts.append({"source": label, "status": "unreadable", "reason": str(exc)})
     if not assets:
         status = "identity-unresolved" if unresolved or any(a["status"] == "identity-unresolved" for a in attempts) else "deferred" if any(a["status"] == "deferred" for a in attempts) else "missing"
         return {"status": status, "packet": None, "assets": unresolved, "attempts": attempts,
                 "gaps": ["No verified readable main article"], "reason": "No source has yet passed identity and extraction verification"}
     for link in supplemental_links:
         href = link.get("href")
-        if href and urllib.parse.urlsplit(href).scheme in {"http", "https"}:
-            supplied_supplements.append({"url": href, "association_reason": "Explicit supplementary-material link in verified main article"})
+        resolved = urllib.parse.urljoin(main_base, href) if main_base and href else href
+        if resolved and urllib.parse.urlsplit(resolved).scheme in {"http", "https"}:
+            try:
+                safe_url(resolved, resolve=False)
+                supplied_supplements.append({"url": resolved, "association_reason": "Explicit supplementary-material link in verified main article"})
+            except ValueError as exc:
+                gaps.append("Supplement link cannot be safely resolved: {} ({})".format(href, exc))
         else:
             gaps.append("Supplement requires acquisition/association: " + str(href or link.get("description") or "unnamed supplement"))
     for supplement in supplied_supplements:
@@ -730,11 +962,15 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None):
         try:
             if not supplement.get("association_reason"):
                 raise ValueError("Supplied supplemental source needs an explicit association reason")
+            _remaining(deadline, 120)
             data = _provided_bytes(supplement) if supplement.get("path") else client.get(label)[0]
-            asset, _ = _asset(paper, data, label, directory, role="supplement", association=supplement["association_reason"])
-            if asset["asset_id"] not in {a["asset_id"] for a in assets}:
+            asset, _ = _asset(paper, data, label, directory, role="supplement", association=supplement["association_reason"], deadline=deadline)
+            attempts.append({"source": label, "status": asset["identity"]["status"], "reason": asset["identity"]["reason"]})
+            if asset["identity"]["status"] != "match":
+                unresolved.append(asset)
+                gaps.append("Supplement identity/version unresolved: {} ({})".format(label, asset["identity"]["reason"]))
+            elif asset["asset_id"] not in {a["asset_id"] for a in assets}:
                 assets.append(asset)
-            attempts.append({"source": label, "status": "match", "reason": asset["identity"]["reason"]})
         except (SourceError, OSError, ValueError, ET.ParseError, subprocess.SubprocessError) as exc:
             gaps.append("Supplement unavailable: {} ({})".format(label, exc))
             attempts.append({"source": label, "status": getattr(exc, "status", "unreadable"), "reason": str(exc)})
@@ -749,5 +985,5 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None):
     packet = {"paper": {k: paper.get(k) for k in ("paper_id", "title", "authors", "year", "doi")},
               "sources": [{k: v for k, v in a.items() if k not in {"original_path", "text_path", "map_path"}} for a in assets],
               "acquisition_gaps": gaps}
-    return {"status": "verified", "packet": packet, "assets": assets, "attempts": attempts, "gaps": gaps,
+    return {"status": "verified", "packet": packet, "assets": assets, "unresolved_assets": unresolved, "attempts": attempts, "gaps": gaps,
             "reason": "Main identity verified; source-located extraction retained with explicit acquisition limits"}

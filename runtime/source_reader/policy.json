@@ -1,15 +1,16 @@
 {
-  "protocol_version": "0.9.13",
-  "package_version": "package-0.9.13",
+  "protocol_version": "0.9.14",
+  "package_version": "package-0.9.14",
   "schema_version": "schema-0.9.5",
   "authority": "PROTOCOL.md",
   "authority_source": "development/current/PROTOCOL.md",
-  "protocol_sha256": "6a3e1c7974e956420d2870e7b039f421d6c617e97bf61a327f90d5557ec0731c",
-  "brief_sha256": "5cea843cea4dd7fb74a30a69cc8705a271edb4d64a021608f292dd8edfa635a6",
+  "protocol_sha256": "a60f55d060a326952551d3593b9403cf95061db918269d7c804e298d286b920a",
+  "brief_sha256": "6a4e405d79ff9a312a012e8b083dc8b752ff6f2096ba2072070c5b74359f280b",
   "reading_aid": "reading_instructions.txt",
-  "scope": "Source-grounded concise prospect assessment and commissioned delivery; native scientific certification, discovery eligibility and whole-sweep stopping remain separate. No scientific eligibility or discovery-rule changes.",
+  "scope": "Source-grounded concise prospect assessment; scientific gates unchanged. Version 0.9.14 revises screening execution, search coverage and operational integrity. Native certification remains separate.",
   "prospect_contract_version": "commissioned-prospect-delivery-v1",
   "prospect_contract_source": "development/prospect_contract_v1.md",
   "prospect_contract_sha256": "7940a69a378a49b18d130be127cbde180d8653ac4e819751a4a524a08af91fcd",
-  "output_contract_version": "concise-decision-trail-v1"
+  "output_contract_version": "concise-decision-trail-v1",
+  "scientific_gate_origin": "0.9.13; empirical eligibility and reader instructions byte-preserved"
 }

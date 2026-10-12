@@ -12,66 +12,38 @@ AWARENESS_TERMS = (
     "visible", "invisible", "unseen", "subliminal", "nonconscious",
 )
 
-# The original QCAL4 families retain their previously prepared vocabulary.
-# The new coverage windows use phrases that survived the PREFREEZE_DIAG_QCAL5_001
-# comparison without the visible-light, generic mindfulness, and trait-awareness
-# flooding caused by the broad single-word rendering.
-CALIBRATED_AWARENESS_TERMS = (
+# Discovery inventory, not an eligibility taxonomy. Distinct windows keep pain,
+# hedonic experience and motivation from competing for a single affect quota.
+# Broader awareness vocabulary is deliberately tested prospectively; no historical
+# calibration is claimed for these revised exact strings.
+CALIBRATED_AWARENESS_TERMS = AWARENESS_TERMS + (
     "conscious awareness", "without awareness", "outside awareness", "below awareness",
-    "unaware", "subliminal", "nonconscious", "non-conscious",
-    "unconscious processing", "unconscious perception", "awareness threshold",
+    "non-conscious", "unconscious processing", "unconscious perception", "awareness threshold",
     "perceptual awareness",
 )
-
 COMPACT_PROCESS_TERMS = {
-    "QCAL4-ATTN": (
-        "attentional control", "inhibitory control", "distractor interference",
-        "attentional capture",
-    ),
-    "QCAL4-META": (
-        "metacognitive sensitivity", "confidence accuracy", "error monitoring",
-        "metacognitive control",
-    ),
-    "QCAL4-BIND": (
-        "feature binding", "object integration", "event integration", "object updating",
-    ),
-    "QCAL4-MEM": (
-        "working memory maintenance", "working memory updating", "episodic encoding",
-        "memory retrieval",
-    ),
-    "QCAL4-DEC": (
-        "action selection", "response selection", "rule-guided behavior",
-        "rule-guided behaviour", "flexible control",
-    ),
+    "QREV6-ATTN": ("attentional control", "inhibitory control", "distractor interference", "attentional capture"),
+    "QREV6-META": ("metacognitive sensitivity", "confidence accuracy", "error monitoring", "metacognitive control"),
+    "QREV6-BIND": ("feature binding", "object integration", "event integration", "object updating", "perceptual organization", "perceptual adaptation"),
+    "QREV6-MEM": ("working memory maintenance", "working memory updating", "episodic encoding", "memory retrieval"),
+    "QREV6-DEC": ("action selection", "response selection", "rule-guided behavior", "rule-guided behaviour", "flexible control", "motor control"),
+    "QREV6-AFFECT": ("affective appraisal", "emotion regulation", "emotional processing", "affective priming", "emotional evaluation"),
+    "QREV6-EXPERIENCE": ("interoception", "body ownership", "bodily self", "sense of agency", "homeostatic regulation", "autonomic regulation"),
+    "QREV6-SOCIAL": ("social inference", "theory of mind", "social learning", "empathy", "social evaluation"),
+    "QREV6-LEARN": ("perceptual learning", "implicit learning", "sequence learning", "statistical learning", "conditioning", "reinforcement learning"),
+    "QREV6-LANGUAGE": ("semantic integration", "semantic priming", "sentence comprehension", "language comprehension", "language production"),
+    "QREV6-PAIN": ("pain", "nociception", "unpleasantness", "aversive", "analgesia"),
+    "QREV6-HEDONIC": ("pleasure", "hedonic", "liking", "pleasantness", "enjoyment"),
+    "QREV6-MOTIVATION": ("motivation", "wanting", "reward", "incentive", "effort allocation"),
 }
-
-COMPACT_PROCESS_TERMS.update({
-    "QCAL5-AFFECT": (
-        "affective appraisal", "implicit emotion regulation", "automatic emotion regulation",
-        "motivational valuation", "reward valuation",
-    ),
-    "QCAL5-EXPERIENCE": ("pain perception", "interoception", "body ownership", "bodily self"),
-    "QCAL5-SOCIAL": (
-        "social inference", "implicit theory of mind", "implicit social learning",
-        "empathy for pain", "pain empathy", "subliminal social evaluation",
-        "unconscious social evaluation",
-    ),
-    "QCAL5-LEARN": ("perceptual learning", "implicit learning", "sequence learning", "statistical learning", "conditioning"),
-    "QCAL5-LANGUAGE": ("semantic integration", "sentence comprehension", "language comprehension", "language production"),
-})
-BLIND_QUERY_FAMILIES = tuple(COMPACT_PROCESS_TERMS) + ("QCAL5-OPEN",)
+BLIND_QUERY_FAMILIES = tuple(COMPACT_PROCESS_TERMS) + ("QREV6-OPEN",)
 
 
 def render_blind_query(source: str, family: str) -> str:
-    """Render the targeted families or the function-agnostic awareness window."""
+    """Render an independently budgeted coverage cell or unrestricted window."""
     if family in COMPACT_PROCESS_TERMS:
-        awareness_terms = (
-            CALIBRATED_AWARENESS_TERMS if family.startswith("QCAL5-") else AWARENESS_TERMS
-        )
-        return render_title_abstract_query(
-            source, COMPACT_PROCESS_TERMS[family], awareness_terms=awareness_terms,
-        )
-    if family != "QCAL5-OPEN":
+        return render_title_abstract_query(source, COMPACT_PROCESS_TERMS[family], awareness_terms=CALIBRATED_AWARENESS_TERMS)
+    if family != "QREV6-OPEN":
         raise ValueError(f"unknown blind family: {family}")
     if source == "OpenAlex":
         return "filter=title_and_abstract.search:(" + _openalex_clause(CALIBRATED_AWARENESS_TERMS) + ")"

@@ -9,6 +9,8 @@ from dataclasses import asdict
 import csv
 import hashlib
 import json
+import math
+import shutil
 import os
 from pathlib import Path
 import threading
@@ -150,24 +152,72 @@ class Coordinator:
             initialize_discovery(coordinator)
         return coordinator
 
-    def _enqueue_batch(self, stage, ids, origin=None, key_prefix="", source_records=None):
+    def _enqueue_batch(self, stage, ids, origin=None, key_prefix="", source_records=None, targets=None):
         ids = list(dict.fromkeys(ids))
         snapshots = {p["paper_id"]: p for p in (source_records or [])}
+        jobs = []
         for batch in chunks(ids, 25 if stage == "title" else 10):
-            papers = []
+            papers, revisions, evidence_bindings = [], {}, {}
             for pid in batch:
-                paper = snapshots.get(pid) or self.store.paper(pid)
+                current = self.store.paper(pid)
+                paper = snapshots.get(pid) or current
                 if paper is None:
                     raise ValueError("A semantic job references an unknown paper: " + pid)
                 metadata = {key: paper.get(key) for key in ("paper_id", "title", "year", "authors", "doi")}
                 if stage != "title":
                     metadata["abstract"] = paper.get("abstract") or None
                 papers.append(metadata)
-            payload = {"paper_ids": batch, "source_records": papers, "source_sha256": digest(papers)}
+                revisions[pid] = paper.get("metadata_revision", current.get("metadata_revision", 1))
+                evidence_bindings[pid] = digest({key: current.get(key) or None for key in ("title", "abstract")})
+            payload = {"paper_ids": batch, "source_records": papers, "source_sha256": digest(papers),
+                       "metadata_revisions": revisions, "screen_evidence_bindings": evidence_bindings}
             if origin:
                 payload["origin"] = origin
+            if targets:
+                payload["screen_targets"] = {pid: targets[pid] for pid in batch}
             key = key_prefix + digest(payload)
-            self.store.enqueue(stage, key, payload)
+            jobs.append(self.store.enqueue(stage, key, payload, priority={"title": 0, "abstract": 10, "rescue": 20, "audit": 20}[stage]))
+        return jobs
+
+    def reconcile_metadata(self, pid):
+        """Schedule genuinely enriched evidence, preserving a full-reader result."""
+        from .source_intake import queue_retrieval
+        pending = []
+        for identity in dict.fromkeys([pid] if isinstance(pid, str) else pid):
+            paper = self.store.paper(identity)
+            # Frozen discovery anchors supply citations; a metadata rediscovery
+            # does not turn them into new empirical candidates. Explicit source
+            # attachment remains available and preserves its own provenance.
+            if paper.get("seed_role") == "review-anchor":
+                if paper.get("retrieval_revision_pending") or paper.get("screening_revision_pending"):
+                    self.store.update_paper(identity, {"retrieval_revision_pending": False, "screening_revision_pending": False},
+                        "Frozen discovery-anchor identity retained; metadata enrichment alone does not commission empirical screening")
+                continue
+            if paper.get("retrieval_revision_pending"):
+                already_retained = (paper.get("status") in {"retrieval-pending", "reader-pending", "source-missing", "assessed", "reading-incomplete"}
+                                    or bool(paper.get("retrieval") or paper.get("packet_path") or paper.get("assessment")))
+                if already_retained:
+                    queue_retrieval(self, identity, "New acquisition locations require a newly bound source attempt")
+                else:
+                    self.store.update_paper(identity, {"retrieval_revision_pending": False},
+                        "Acquisition metadata retained for the normal full-text stage; a new URL does not bypass semantic screening")
+                paper = self.store.paper(identity)
+            if not paper.get("screening_revision_pending"):
+                continue
+            if not paper.get("assessment") and not paper.get("packet_path") and paper.get("abstract"):
+                pending.append(identity)
+            else:
+                self.store.update_paper(identity, {"screening_revision_pending": False},
+                                        "Metadata enrichment does not supersede an existing full-source reading")
+        # Persist a bounded batch before clearing its reconciliation flags, so a
+        # crash can replay the same immutable request rather than lose the work.
+        self._enqueue_batch("abstract", pending, key_prefix="metadata:")
+        for identity in pending:
+            self.store.update_paper(identity, {"status": "abstract-pending", "screening_revision_pending": False},
+                                    "New abstract evidence reopens screening without repeating the title")
+            screening.sync_exclusion(self.store, self.store.paper(identity), self.plan.get("audit_seed", "portable-v1"))
+            self.store.mutate_state("screen_revision", lambda value: value + 1,
+                                   "New abstract evidence supersedes the terminal screening state", default=0)
 
     def import_corpus(self, path):
         import tempfile
@@ -229,7 +279,8 @@ class Coordinator:
                             "url", "urls", "fulltext_url", "fulltext_urls", "pdf_url", "open_access_url",
                             "provided_paths", "fulltext_path", "pdf_path", "local_path", "pmcid", "pmid", "openalex_id",
                             "source", "source_stable_id", "arxiv_id", "journal", "venue", "type", "publication_date",
-                            "language", "volume", "issue", "pages"}
+                            "language", "volume", "issue", "pages", "relation", "version_relations", "version_of",
+                            "publication_status", "version", "source_locations"}
                         row = {key: value for key, value in row.items() if key in allowed_metadata}
                         if not row.get("year") and row.get("publication_year"):
                             row["year"] = row["publication_year"]
@@ -339,6 +390,7 @@ class Coordinator:
                 self.store._event(conn, "control_updated", {"key": source_key, "previous": current, "value": offset,
                     "reason": "Durable intake position after exact scheduling replay"})
                 conn.execute("INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)", ("state:" + source_key, canonical(offset)))
+        self.reconcile_metadata([pid for pid, _ in receipt["values"]])
         return receipt["new_papers"] if fresh else 0
 
     def close_intake(self):
@@ -405,6 +457,8 @@ class Coordinator:
         self.project_results()
         owner = owner or "agent-" + uuid.uuid4().hex
         jobs = self.store.claim(list(MODEL_STAGES), owner, lease_seconds=3600, limit=1)
+        while jobs and (self._retire_superseded_source_job(jobs[0]) or self._retire_superseded_screen_job(jobs[0])):
+            jobs = self.store.claim(list(MODEL_STAGES), owner, lease_seconds=3600, limit=1)
         if not jobs:
             if self.plan["mode"] == "discovery":
                 from .discovery import discovery_tick, next_native_task
@@ -459,7 +513,32 @@ class Coordinator:
             return reading.validate(result, source)
         return screening.validate(result, job["stage"], source["papers"])
 
+    def _retire_superseded_source_job(self, job):
+        """Do not dispatch a claimed old source generation; retain its history."""
+        if job["stage"] not in {"reader", "retrieval"} or not job["payload"].get("paper_id"):
+            return False
+        payload = job["payload"]
+        paper = self.store.paper(payload["paper_id"])
+        if paper is None:
+            return False  # Ordinary validation reports the broken reference.
+        stale = payload.get("source_generation", 1) != paper.get("source_generation", 1)
+        if job["stage"] == "reader":
+            stale = stale or payload.get("packet_path") != paper.get("packet_path")
+        else:
+            bound, current = payload.get("source_manifest_sha256"), paper.get("current_source_manifest_sha256")
+            stale = stale or bool(bound and current and bound != current)
+        if not stale:
+            return False
+        from .source_intake import queue_retrieval
+        reason = "This source-bound task was superseded before dispatch; no scientific judgment or provider call is made"
+        replacement = queue_retrieval(self, paper["paper_id"], reason)
+        self.store.supersede_job(job["id"], replacement, reason)
+        self.store.defer(job["id"], job["owner"], job["token"], reason, delay_seconds=0)
+        return True
+
     def execute_job(self, job):
+        if self._retire_superseded_source_job(job) or self._retire_superseded_screen_job(job):
+            return
         from .adapters import execute
         from .sources import retrieve
         stage = job["stage"]
@@ -467,10 +546,18 @@ class Coordinator:
             from .discovery import execute_search
             return execute_search(self, job)
         if stage == "retrieval":
-            paper = self.store.paper(job["payload"]["paper_id"])
-            directory = self.run_dir / "sources" / paper["paper_id"]
-            result = retrieve(paper, directory, provided_paths=paper.get("provided_paths", []))
+            from .source_intake import source_manifest
+            payload = job["payload"]
+            paper = payload.get("source_manifest") or source_manifest(self.store.paper(payload["paper_id"]))
+            if payload.get("source_manifest_sha256") and digest(paper) != payload["source_manifest_sha256"]:
+                raise ValueError("Retrieval source manifest binding changed")
+            directory = self.run_dir / "sources" / payload["paper_id"]
+            result = retrieve(paper, directory, provided_paths=paper.get("provided_paths", []),
+                              deadline=getattr(self, "session_deadline", None))
             if result["status"] == "deferred":
+                self.store.event("retrieval_deferred", {"job_id": job["id"],
+                    "paper_id": payload["paper_id"], "source_manifest_sha256": payload.get("source_manifest_sha256"),
+                    "result": result})
                 self.store.defer(job["id"], job["owner"], job["token"], result.get("reason", "Transient retrieval failure"), delay_seconds=60)
             else:
                 self.store.complete(job["id"], job["owner"], job["token"], result)
@@ -490,7 +577,8 @@ class Coordinator:
                 reservation = self.store.reserve_budget(job["id"], job["owner"], job["token"], estimate,
                                                         "dispatch-" + str(job["token"]))
                 self.store.admit_attempt(reservation, job["owner"], job["token"], max_attempts=profile.get("max_attempts", 1))
-            result = execute(profile, prompt, schema, directory / "execution", before_dispatch=admit)
+            result = execute(profile, prompt, schema, directory / "execution", before_dispatch=admit,
+                             deadline=getattr(self, "session_deadline", None))
             if reservation is None and result.get("status") == "completed":
                 prior = self.store.reservation_for_job(job["id"])
                 if prior and prior["state"] != "released":
@@ -534,8 +622,32 @@ class Coordinator:
                     pass
             self.store.fail(job["id"], job["owner"], job["token"], type(exc).__name__ + ": " + str(exc))
 
+    def _retire_superseded_screen_job(self, job):
+        """Avoid paying for obsolete screening while retaining its exact input."""
+        if job["stage"] not in {"title", "abstract", "rescue", "audit"}:
+            return False
+        payload = job["payload"]
+        records = {p["paper_id"]: p for p in payload.get("source_records", [])}
+        active = []
+        for pid in payload["paper_ids"]:
+            paper = self.store.paper(pid)
+            if paper and paper.get("seed_role") != "review-anchor" and self._screen_is_current(paper, job, records.get(pid) or paper):
+                active.append(pid)
+        if active == payload["paper_ids"]:
+            return False
+        successors = self._enqueue_batch(job["stage"], active, payload.get("origin"),
+            key_prefix="current-members:" + job["id"] + ":", source_records=list(records.values()),
+            targets={pid: payload["screen_targets"][pid] for pid in active} if payload.get("screen_targets") else None)
+        reason = "Newer source or completed richer assessment superseded these screening inputs before provider admission"
+        self.store.supersede_job(job["id"], successors[0] if successors else None, reason)
+        self.store.defer(job["id"], job["owner"], job["token"], reason, delay_seconds=0)
+        return True
+
     def project_results(self):
         for job in self.store.unprojected_results(limit=100):
+            deadline = getattr(self, "session_deadline", None)
+            if deadline is not None and time.monotonic() >= deadline:
+                return
             if job["stage"] == "search":
                 from .discovery import project_discovery
                 project_discovery(self, job)
@@ -544,148 +656,221 @@ class Coordinator:
             elif job["stage"] == "retrieval":
                 self._project_retrieval(job)
             elif job["stage"] == "reader":
-                pid = job["payload"]["paper_id"]
-                result = job["result"]["assessment"]
-                status = "assessed" if result["assessment_status"] == "complete" else "reading-incomplete"
-                self.store.update_paper(pid, {"status": status, "assessment": result, "reader_job": job["id"]}, result["paper_reason"], job["result"]["actor"])
-                if self.plan["mode"] == "discovery":
-                    from .discovery import queue_native_after_reader
-                    queue_native_after_reader(self, pid)
+                self._project_reader(job)
             else:
                 continue
             self.store.mark_projected(job["id"])
 
+    def _projection_superseded(self, job, pid, reason):
+        self.store.event("result_projection_superseded", {"job_id": job["id"], "paper_id": pid,
+                          "stage": job["stage"], "reason": reason})
+
+    def _screen_is_current(self, paper, job, source):
+        stage, payload = job["stage"], job["payload"]
+        current = paper.get("screening_current", {})
+        if paper.get("assessment") or paper.get("packet_path"):
+            return False
+        binding = payload.get("screen_evidence_bindings", {}).get(paper["paper_id"])
+        if binding and binding != digest({key: paper.get(key) or None for key in ("title", "abstract")}):
+            return False
+        if current.get("job_id") == job["id"]:
+            return True
+        revision = payload.get("metadata_revisions", {}).get(paper["paper_id"], 1)
+        if revision != paper.get("metadata_revision", 1):
+            # A bibliographic enrichment alone need not invalidate identical
+            # scientific evidence; changed title/abstract always does.
+            keys = ("title", "abstract") if stage != "title" else ("title",)
+            if any((source.get(key) or None) != (paper.get(key) or None) for key in keys):
+                return False
+        target = payload.get("screen_targets", {}).get(paper["paper_id"])
+        if target and current.get("job_id") != target:
+            return False
+        if current:
+            incoming_rank = (2 if source.get("abstract") else 1, int(stage in {"rescue", "audit"}))
+            current_rank = tuple(current.get("evidence_rank", [0, 0]))
+            if revision <= current.get("metadata_revision", 1) and incoming_rank < current_rank:
+                return False
+            if revision <= current.get("metadata_revision", 1) and incoming_rank == current_rank and job["id"] < current["job_id"]:
+                return False
+        return True
+
     def _project_screen(self, job):
+        from .source_intake import queue_retrieval
         stage, payload = job["stage"], job["payload"]
         original = payload.get("origin", stage)
-        retained, rescues = [], []
-        changed = False
+        if original not in {"title", "abstract"}:
+            original = "abstract" if stage != "title" else "title"
+        snapshots = {p["paper_id"]: p for p in payload.get("source_records", [])}
+        retained, rescues, rescue_targets = [], [], {}
         for decision in job["result"]["assessment"]["decisions"]:
             pid = decision["paper_id"]
             paper = self.store.paper(pid)
-            record, route = screening.rescue_record(paper, decision, stage, digest(self.plan["profiles"]))
+            source = snapshots.get(pid) or paper
+            if not self._screen_is_current(paper, job, source):
+                self._projection_superseded(job, pid, "A newer or richer source decision supersedes this screening result")
+                continue
+            record, route = screening.rescue_record(source, decision, stage, digest(self.plan["profiles"]))
+            prior_current = paper.get("screening_current", {})
             history = dict(paper.get("screening", {}))
             history[stage] = {"decision": decision, "route": route, "record": record, "job_id": job["id"], "origin": original}
+            # Cohorts depend only on source stage/discovery route, not a first
+            # screener's feature assertions or fine-grained relevance signature.
+            cohort = prior_current.get("cohort") if stage in {"rescue", "audit"} else None
+            cohort = cohort or screening.discovery_cohort(self.store, pid, original)
+            current = {"job_id": job["id"], "stage": stage, "origin": original,
+                       "decision": decision["decision"], "cohort": cohort,
+                       "source_sha256": digest(source),
+                       "audit_binding_sha256": prior_current.get("audit_binding_sha256", prior_current.get("source_sha256", digest(source)))
+                           if stage == "audit" else digest(source),
+                       "metadata_revision": payload.get("metadata_revisions", {}).get(pid, 1),
+                       "evidence_rank": [2 if stage != "title" and source.get("abstract") else 1,
+                                         int(stage in {"rescue", "audit"})]}
             if decision["decision"] == "exclude":
-                if stage in {"title", "abstract"} and route["strongest_agent_review_required"]:
+                scientific_exclusion = screening.exclusion_basis(decision, stage) == "scientific"
+                legacy_title_rescue = stage == "title" and route["strongest_agent_review_required"]
+                if stage in {"title", "abstract"} and (scientific_exclusion or legacy_title_rescue):
                     status = "rescue-pending"
                     rescues.append(pid)
+                    rescue_targets[pid] = job["id"]
                 else:
                     status = original + "-excluded"
             else:
-                status = "abstract-pending" if original == "title" and paper.get("abstract") else "retrieval-pending"
-                retained.append(pid)
+                # A rescue/audit which already consumed the abstract completes
+                # that stage. It does not send identical text for a second read.
+                needs_abstract = stage == "title" and bool(paper.get("abstract"))
+                status = "abstract-pending" if needs_abstract else "retrieval-pending"
+                retained.append((pid, needs_abstract))
                 if stage == "audit":
-                    prior = paper.get("screening", {}).get(original)
-                    if prior:
-                        signature = digest({"label": prior["route"]["local_label"], "lanes": prior["route"]["lanes"], "risks": prior["route"]["risk_signatures"]})
-                        self.store.set_state("audit-miss:" + original + ":" + signature, True, "Independent audit retained a previously demoted work; affected cumulative group must reopen")
-            prior_job = paper.get("screening", {}).get(stage, {}).get("job_id")
-            if prior_job != job["id"]:
-                self.store.update_paper(pid, {"status": status, "screening": history}, decision["reason"], job["result"]["actor"])
-                changed = True
+                    self.store.set_state("audit-miss:" + cohort, True,
+                        "Independent source-only audit retained an excluded work; reopen current cohort")
+            if prior_current.get("job_id") != job["id"]:
+                self.store.update_paper(pid, {"status": status, "screening": history, "screening_current": current},
+                                        decision["reason"], job["result"]["actor"])
+            screening.sync_exclusion(self.store, self.store.paper(pid), self.plan.get("audit_seed", "portable-v1"))
         if rescues:
-            self._enqueue_batch("rescue", rescues, original, "from:" + job["id"] + ":")
-        # Routing is derived from this immutable decision, not a later status.
-        # Replaying the projection after a crash must enqueue identical work.
-        abstracts = [pid for pid in retained if original == "title" and self.store.paper(pid).get("abstract")]
-        self._enqueue_batch("abstract", abstracts, key_prefix="from:" + job["id"] + ":")
-        for pid in retained:
-            if pid not in abstracts:
-                self.store.enqueue("retrieval", pid, {"paper_id": pid})
-        if changed:
-            self.store.mutate_state("screen_revision", lambda value: value + 1,
-                                    "New semantic screening decisions invalidate the cumulative audit checkpoint", default=0)
+            self._enqueue_batch("rescue", rescues, original, "from:" + job["id"] + ":", targets=rescue_targets)
+        self._enqueue_batch("abstract", [pid for pid, needed in retained if needed], key_prefix="from:" + job["id"] + ":")
+        for pid, needs_abstract in retained:
+            if not needs_abstract:
+                retrieval_id = queue_retrieval(self, pid, "Source-specific screening retained this work for full-text assessment")
+                completed = self.store.job(retrieval_id)
+                if completed["state"] == "complete":
+                    self._project_retrieval(completed)
+        # The projection receipt and revision advance commit together; a crash
+        # after paper updates cannot silently leave the audit checkpoint current.
+        with self.store._transaction() as conn:
+            key = "state:screen-projected:" + job["id"]
+            if not conn.execute("SELECT 1 FROM meta WHERE key=?", (key,)).fetchone():
+                row = conn.execute("SELECT value FROM meta WHERE key='state:screen_revision'").fetchone()
+                revision = json.loads(row[0]) if row else 0
+                self.store._event(conn, "screen_projection_checkpoint", {"job_id": job["id"], "revision": revision + 1})
+                conn.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('state:screen_revision',?)", (canonical(revision + 1),))
+                conn.execute("INSERT INTO meta(key,value) VALUES(?,?)", (key, canonical(True)))
+
+    def _project_reader(self, job):
+        pid, payload = job["payload"]["paper_id"], job["payload"]
+        paper = self.store.paper(pid)
+        generation = payload.get("source_generation", 1)
+        if generation != paper.get("source_generation", 1) or payload["packet_path"] != paper.get("packet_path"):
+            self._projection_superseded(job, pid, "Reader result belongs to a superseded source generation or packet")
+            return
+        result = job["result"]["assessment"]
+        status = "assessed" if result["assessment_status"] == "complete" else "reading-incomplete"
+        self.store.update_paper(pid, {"status": status, "assessment": result, "reader_job": job["id"],
+            "assessment_source_generation": generation, "assessment_packet_sha256": payload.get("packet_sha256")},
+            result["paper_reason"], job["result"]["actor"])
+        screening.sync_exclusion(self.store, self.store.paper(pid), self.plan.get("audit_seed", "portable-v1"))
+        if self.plan["mode"] == "discovery":
+            from .discovery import queue_native_after_reader
+            queue_native_after_reader(self, pid)
 
     def _project_retrieval(self, job):
         pid, result = job["payload"]["paper_id"], job["result"]
         current = self.store.paper(pid)
+        generation = job["payload"].get("source_generation", 1)
+        manifest_hash = job["payload"].get("source_manifest_sha256")
+        current_manifest = current.get("current_source_manifest_sha256")
+        if (generation != current.get("source_generation", 1)
+                or manifest_hash and current_manifest and manifest_hash != current_manifest):
+            self._projection_superseded(job, pid, "Retrieval result belongs to a superseded source generation or manifest")
+            return
         if result["status"] == "verified" and result.get("packet"):
             packet = dict(result["packet"], paper_id=pid)
-            path = self.run_dir / "sources" / pid / (digest(packet) + ".packet.json")
+            packet_hash = digest(packet)
+            path = self.run_dir / "sources" / pid / (packet_hash + ".packet.json")
             save_json(path, packet)
             relative = str(path.relative_to(self.run_dir))
-            if current.get("retrieval_job") != job["id"]:
-                self.store.update_paper(pid, {"status": "reader-pending", "packet_path": relative, "retrieval": result, "retrieval_job": job["id"]}, "Verified source version available for full-paper assessment")
-            self.store.enqueue("reader", pid + ":" + digest(packet), {"paper_id": pid, "packet_path": relative, "packet_sha256": digest(packet)})
+            if current.get("retrieval_job") != job["id"] or current.get("status") == "retrieval-pending":
+                self.store.update_paper(pid, {"status": "reader-pending", "packet_path": relative, "retrieval": result,
+                    "retrieval_job": job["id"], "assessment": None, "reader_job": None, "packet_source_generation": generation},
+                    "Verified source version available for full-paper assessment")
+            reader_id = self.store.enqueue("reader", pid + ":" + str(generation) + ":" + packet_hash,
+                {"paper_id": pid, "packet_path": relative, "packet_sha256": packet_hash, "source_generation": generation}, priority=30)
+            completed = self.store.job(reader_id)
+            if completed["state"] == "complete":
+                self._project_reader(completed)
         else:
-            if current.get("retrieval_job") != job["id"]:
-                self.store.update_paper(pid, {"status": "source-" + result["status"], "retrieval": result, "retrieval_job": job["id"]}, result.get("reason", "Source retrieval unresolved"))
+            if current.get("retrieval_job") != job["id"] or current.get("status") == "retrieval-pending":
+                self.store.update_paper(pid, {"status": "source-" + result["status"], "retrieval": result,
+                    "retrieval_job": job["id"]}, result.get("reason", "Source retrieval unresolved"))
             if self.plan["mode"] == "discovery":
                 from .discovery import queue_native_after_missing_source
                 queue_native_after_missing_source(self, pid)
+        screening.sync_exclusion(self.store, self.store.paper(pid), self.plan.get("audit_seed", "portable-v1"))
 
     def audit(self):
-        """Streaming cumulative demotion audit using the frozen stratum/hash rule."""
+        """Independent cumulative sampling of indexed, current terminal exclusions."""
         revision = self.store.get_state("screen_revision", 0)
-        strata = {}
-        cursor = None
-        while True:
-            page = self.store.papers(limit=1000, after_id=cursor)
-            if not page:
-                break
-            for paper in page:
-                for stage in ("title", "abstract"):
-                    item = paper.get("screening", {}).get(stage)
-                    if not item or item["decision"]["decision"] != "exclude":
-                        continue
-                    route = item["route"]
-                    # Match semantic_rescue._digest (ASCII canonical JSON).
-                    signature = digest({"label": route["local_label"], "lanes": route["lanes"], "risks": route["risk_signatures"]})
-                    key = stage + ":" + signature
-                    state = strata.setdefault(key, {"count": 0, "chosen": [], "population": hashlib.sha256()})
-                    state["count"] += 1
-                    state["population"].update(canonical([paper["paper_id"], route["evidence_binding_sha256"]]).encode() + b"\n")
-                    rank = digest([self.plan.get("audit_seed", "portable-v1"), signature, paper["paper_id"], route["evidence_binding_sha256"]])
-                    state["chosen"].append((rank, paper["paper_id"]))
-                    state["chosen"] = sorted(state["chosen"])[:10]
-            cursor = page[-1]["paper_id"]
         scheduled = 0
-        for key, state in strata.items():
-            if state["count"] < 20:
-                continue
-            stage, signature = key.split(":", 1)
-            selected = [pid for _, pid in state["chosen"]]
-            manifest = {"stage": stage, "stratum": signature, "population_size": state["count"],
-                        "ordered_population_stream_sha256": state["population"].hexdigest(),
-                        "sampled_paper_ids": selected, "sample_rule": "frozen-semantic-rescue-hash-ranking"}
-            self.store.event("cumulative_audit_manifest", manifest)
-            # Reopen a discovered failing stratum without a resource-dependent cap.
-            if self.store.get_state("audit-miss:" + key, False):
-                cursor = None
-                selected = []
-                while True:
-                    page = self.store.papers(limit=1000, after_id=cursor)
-                    if not page:
-                        break
-                    for paper in page:
-                        item = paper.get("screening", {}).get(stage)
-                        if not item or item["decision"]["decision"] != "exclude":
-                            continue
-                        r = item["route"]
-                        sig = digest({"label": r["local_label"], "lanes": r["lanes"], "risks": r["risk_signatures"]})
-                        if sig == signature:
-                            self._enqueue_batch("audit", [paper["paper_id"]], stage, "audit:" + key + ":")
-                            scheduled += 1
-                    cursor = page[-1]["paper_id"]
-            else:
-                for pid in selected:
-                    self._enqueue_batch("audit", [pid], stage, "audit:" + key + ":")
-                    scheduled += 1
-        self.store.set_state("audit_snapshot", self.store.status()["papers"], "Cumulative audit scheduled for current screening state")
-        self.store.set_state("audit_revision", revision, "Cumulative selection covers this durable semantic screening revision")
+        for cohort in screening.audit_cohorts(self.store):
+            deadline = getattr(self, "session_deadline", None)
+            if deadline is not None and time.monotonic() >= deadline:
+                return scheduled
+            key = cohort["cohort"]
+            reopen = self.store.get_state("audit-miss:" + key, False)
+            after = None
+            while True:
+                selected = screening.audit_candidates(self.store, key, reopen=reopen, after=after)
+                if not selected:
+                    break
+                for batch in chunks(selected, 10):
+                    if deadline is not None and time.monotonic() >= deadline:
+                        return scheduled
+                    ids = [row["paper_id"] for row in batch]
+                    targets = {row["paper_id"]: row["job_id"] for row in batch}
+                    job_ids = self._enqueue_batch("audit", ids, key.split(":", 1)[0], "audit:" + key + ":", targets=targets)
+                    screening.mark_audit_scheduled(self.store, batch, job_ids[0])
+                    scheduled += len(batch)
+                    # Bounded manifest per batch, never an entire corpus in memory.
+                    self.store.event("cumulative_audit_manifest", {"cohort": key,
+                        "population_size": cohort["population_size"], "sampled_paper_ids": ids,
+                        "screening_job_ids": targets, "audit_job_id": job_ids[0],
+                        "sample_rule": "reopen-current-cohort" if reopen else "lowest-10-stable-source-hashes-including-small-cohorts"})
+                if not reopen:
+                    break
+                after = selected[-1]["paper_id"]
+        deadline = getattr(self, "session_deadline", None)
+        if deadline is not None and time.monotonic() >= deadline:
+            return scheduled
+        self.store.set_state("audit_snapshot", self.store.status()["papers"], "Cumulative audit scheduled for current terminal exclusions")
+        self.store.set_state("audit_revision", revision, "Current exclusion index sampled at this durable screening revision")
         return scheduled
 
     def run(self, *, max_seconds=None, progress=None, automatic_models=True, watch=False):
+        from .validation import require_integrity, validate
+        require_integrity(self)
         owner = "worker-" + uuid.uuid4().hex
         resources = self.plan.get("resources", {})
         model_workers = max(1, resources.get("model_workers", 1))
         retrieval_workers = max(1, resources.get("retrieval_workers", 2))
         started = time.monotonic()
-        if max_seconds is not None and max_seconds <= 0:
+        if max_seconds is not None and (isinstance(max_seconds, bool) or not isinstance(max_seconds, (int, float)) or not math.isfinite(max_seconds) or max_seconds <= 0):
             raise ValueError("Run duration must be positive")
         ceiling = resources.get("max_wall_seconds") or 3600
         max_seconds = min(max_seconds, ceiling) if max_seconds is not None else ceiling
+        deadline = started + max_seconds
+        cleanup_reserve = min(30.0, max_seconds * 0.2)
+        self.session_deadline = deadline - cleanup_reserve
         stop = self.run_dir / "STOP"
         automated = [stage for stage in MODEL_STAGES if automatic_models and self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]["adapter"] != "manual"]
         last_report = 0
@@ -698,7 +883,7 @@ class Coordinator:
                 if self.store.job(job["id"])["state"] == "running":
                     self.store.fail(job["id"], job["owner"], job["token"], "Local worker failure: " + str(exc))
         with ThreadPoolExecutor(max_workers=model_workers + retrieval_workers) as pool:
-            while not stop.exists() and time.monotonic() - started < max_seconds:
+            while not stop.exists() and time.monotonic() < self.session_deadline:
                 self.project_results()
                 if self.plan.get("mode") == "discovery":
                     from .discovery import discovery_tick
@@ -712,7 +897,7 @@ class Coordinator:
                         for job in self.store.claim(stages, owner, lease_seconds=1800, limit=capacity):
                             active[pool.submit(self.execute_job, job)] = (job, kind)
                 if active:
-                    finished, _ = wait(active, timeout=0.5, return_when=FIRST_COMPLETED)
+                    finished, _ = wait(active, timeout=max(0, min(0.5, self.session_deadline - time.monotonic())), return_when=FIRST_COMPLETED)
                     for future in finished:
                         job, _ = active.pop(future)
                         finish(future, job)
@@ -724,7 +909,7 @@ class Coordinator:
                     if self.store.count_jobs() == before:
                         stages = network + ([] if capped else automated)
                         with self.store._connection() as conn:
-                            row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND stage IN (" + ",".join("?" for _ in stages) + ")", stages).fetchone()
+                            row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND id NOT IN (SELECT job_id FROM job_supersessions) AND stage IN (" + ",".join("?" for _ in stages) + ")", stages).fetchone()
                         next_at = row[0] if row else None
                         if not watch or next_at is None:
                             if capped:
@@ -732,7 +917,7 @@ class Coordinator:
                             break
                         # No polling call or sleep exceeds 30 seconds. Watch
                         # waits for documented operational backoff, not science.
-                        delay = min(30, max(1, next_at - time.time()), max_seconds - (time.monotonic() - started))
+                        delay = min(30, max(1, next_at - time.time()), self.session_deadline - time.monotonic())
                         if delay > 0:
                             time.sleep(delay)
                 if progress and time.monotonic() - last_report >= 30:
@@ -743,16 +928,25 @@ class Coordinator:
                 finish(future, job)
         if stop.exists():
             exit_reason = "Graceful pause requested; admitted requests were persisted"
-        elif time.monotonic() - started >= max_seconds:
+        elif time.monotonic() >= self.session_deadline:
             exit_reason = "Authorized execution-session duration reached; remaining tasks stay pending"
         self.store.event("execution_session_finished", {"owner": owner, "seconds": time.monotonic() - started,
                                                         "reason": exit_reason, "watch": watch})
-        self.project_results()
-        if self.store.get_state("audit_revision") != self.store.get_state("screen_revision", 0):
-            self.audit()
-        from .validation import validate
-        validate(self)
-        self.deliver()
+        try:
+            self.session_deadline = deadline
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Checkpoint deferred by the commissioned session deadline")
+            self.project_results()
+            if self.store.get_state("audit_revision") != self.store.get_state("screen_revision", 0):
+                self.audit()
+            report = validate(self, deadline=deadline)
+            if not report["ok"]:
+                require_integrity(self)
+            self.deliver(deadline=deadline)
+        except TimeoutError:
+            self.store.event("checkpoint_deferred", {"reason": "Session deadline reached; durable results retained, validation/delivery await a quiet continuation"})
+        finally:
+            self.session_deadline = None
         return self.status()
 
     def status(self):
@@ -771,38 +965,63 @@ class Coordinator:
         if self.plan.get("mode") == "discovery":
             from .discovery import discovery_status
             status["discovery"] = discovery_status(self)
+            info = status["discovery"]
+            status["citation_expansion_status"] = (
+                "depth-limited" if info.get("depth_limited_obligations") else
+                "depth-provenance-unresolved" if info.get("depth_unresolved_obligations") else
+                "within-limit" if self.plan["resources"].get("max_citation_depth") is not None else "unbounded")
         return status
 
-    def deliver(self):
-        from .presentation import paper_page, index_row, INDEX_START, INDEX_END
+    def deliver(self, *, deadline=None):
+        from .validation import require_integrity
+        require_integrity(self)
+        def check_deadline():
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError("Delivery checkpoint deadline reached; existing index preserved")
+        check_deadline()
+        from .presentation import paper_page, index_row, depth_limit_notice, INDEX_START, INDEX_END
         directory = self.run_dir / "delivery"
         directory.mkdir(exist_ok=True)
-        (directory / "papers").mkdir(exist_ok=True)
-        tmp = directory / ".prospects.jsonl.tmp"
-        cursor, count = None, 0
-        index_tmp = directory / ".index.html.tmp"
-        with tmp.open("w") as out, index_tmp.open("w") as index:
-            index.write(INDEX_START)
-            while True:
-                page = self.store.papers(limit=1000, after_id=cursor)
-                if not page:
-                    break
-                for paper in page:
-                    assessment = paper.get("assessment")
-                    if not assessment:
-                        continue
-                    row = {k: paper.get(k) for k in ("paper_id", "title", "doi", "year", "status", "packet_path", "reader_job")}
-                    row.update(assessment=assessment, human_decision=paper.get("human_decision", "pending"),
-                               in_reading_queue=assessment["paper_decision"] in {"prospect", "unresolved"} and paper.get("human_decision") != "declined")
-                    out.write(canonical(row) + "\n")
-                    (directory / "papers" / (paper["paper_id"] + ".html")).write_text(paper_page(paper))
-                    index.write(index_row(paper, row["in_reading_queue"]))
-                    count += 1
-                cursor = page[-1]["paper_id"]
-            index.write(INDEX_END)
-        os.replace(tmp, directory / "prospects.jsonl")
-        os.replace(index_tmp, directory / "index.html")
-        summary = dict(self.status(), delivered_assessments=count)
-        save_json(directory / "status.json", summary)
-        self.store.event("delivery_checkpoint", {"assessments": count, "sha256": file_hash(directory / "prospects.jsonl"), "status": summary["status"]})
-        return summary
+        generation = "generation-" + uuid.uuid4().hex
+        staging = directory / generation
+        staging.mkdir()
+        committed = False
+        try:
+            (staging / "papers").mkdir()
+            tmp = staging / "prospects.jsonl"
+            cursor, count = None, 0
+            index_tmp = staging / "index.html"
+            with tmp.open("w") as out, index_tmp.open("w") as index:
+                scope = self.status().get("discovery", {}) if self.plan.get("mode") == "discovery" else {}
+                index.write(INDEX_START.replace('<button id="all">', depth_limit_notice(scope) + '<button id="all">'))
+                while True:
+                    check_deadline()
+                    page = self.store.papers(limit=1000, after_id=cursor)
+                    if not page:
+                        break
+                    for paper in page:
+                        paper["possible_duplicates"] = self.store.identity_relationships(paper["paper_id"])
+                        assessment = paper.get("assessment")
+                        if not assessment:
+                            continue
+                        row = {k: paper.get(k) for k in ("paper_id", "title", "doi", "year", "status", "packet_path", "reader_job", "source_generation", "publication_status", "version", "version_of", "relation", "version_relations", "possible_duplicates")}
+                        row.update(acquisition_gaps=paper.get("retrieval", {}).get("packet", {}).get("acquisition_gaps", []), assessment=assessment, human_decision=paper.get("human_decision", "pending"),
+                                   in_reading_queue=assessment["paper_decision"] in {"prospect", "unresolved"} and paper.get("human_decision") != "declined")
+                        out.write(canonical(row) + "\n")
+                        check_deadline()
+                        (staging / "papers" / (paper["paper_id"] + ".html")).write_text(paper_page(paper).replace('href="../index.html"', 'href="../../index.html"'))
+                        index.write(index_row(paper, row["in_reading_queue"]).replace('href="papers/', 'href="' + generation + '/papers/'))
+                        count += 1
+                    cursor = page[-1]["paper_id"]
+                index.write(INDEX_END)
+            check_deadline()
+            os.replace(tmp, directory / "prospects.jsonl")
+            os.replace(index_tmp, directory / "index.html")
+            committed = True
+            summary = dict(self.status(), delivered_assessments=count)
+            save_json(directory / "status.json", summary)
+            self.store.event("delivery_checkpoint", {"assessments": count, "sha256": file_hash(directory / "prospects.jsonl"), "status": summary["status"]})
+            return summary
+        finally:
+            if not committed:
+                shutil.rmtree(staging, ignore_errors=True)

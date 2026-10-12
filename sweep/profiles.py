@@ -187,7 +187,7 @@ def recommend(inventory: dict) -> dict:
             "resources": {"authorized": False, "cpu_workers": max(1, min(2, int(cores))), "model_workers": 2,
                           "retrieval_workers": 4, "memory_limit_bytes": int(memory * 0.5) if memory else None,
                           "gpu_memory_limit_bytes": None, "max_calls": 20, "max_tokens": None,
-                          "max_spend_usd": 0, "max_wall_seconds": 3600},
+                          "max_spend_usd": 0, "max_wall_seconds": 3600, "max_citation_depth": None},
             "reason": note, "remote_resources": "Ask only for additional hosts/quotas and permitted use; no inference performed."}
 
 
@@ -208,11 +208,17 @@ def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict 
     for key in ("max_spend_usd", "max_wall_seconds"):
         r.setdefault(key, None)
         _number(r[key], key, minimum=0)
+    r.setdefault("max_citation_depth", None)
+    depth = r["max_citation_depth"]
+    if depth is not None and (type(depth) is not int or depth < 0):
+        raise ValueError("max_citation_depth must be null or a nonnegative integer; seeds are depth 0")
     if r["max_wall_seconds"] is not None and r["max_wall_seconds"] <= 0:
         raise ValueError("max_wall_seconds must be positive when supplied")
     cores = inventory.get("cpu", {}).get("usable_cores")
     memory = inventory.get("memory", {}).get("usable_limit_bytes")
     warnings = []
+    if depth is not None:
+        warnings.append("Citation expansion is bounded at depth %d from each seed or independent query root. Papers at the boundary remain screenable; deferred expansion is not scientific saturation." % depth)
     if cores and r["cpu_workers"] > max(1, math.ceil(cores)):
         warnings.append("CPU workers exceed observed usable cores; use only if calibration establishes a benefit.")
     if memory and r["memory_limit_bytes"] and r["memory_limit_bytes"] > memory:

@@ -4,6 +4,12 @@ A portable, resumable literature pipeline for finding studies that help explain
 how awareness of an entity X relates to its use by a downstream function Y.
 Its deliverable is a source-grounded prospect queue for scientific review.
 
+The frozen seed scope covers the 60 logical works in the manuscript v2
+bibliography: 18 empirical seeds and 42 review/discovery anchors. This includes
+McCormick (1997), Klein et al. (2007), Dali and Hester (2022), Dali et al. (2023),
+Murphy and Bloom (2015), and the contextual Shapiro et al. (1997) reference.
+Seeds supply identities for independent reading, without expected evidence tiers.
+
 Download this repository, open it in your coding agent, and say:
 
 > Follow AGENTS.md. Inspect the available system and model access, recommend one
@@ -11,6 +17,10 @@ Download this repository, open it in your coding agent, and say:
 
 The agent handles configuration and evaluation work. You do not need to compare
 every model in the candidate catalog or label a new benchmark.
+At startup you can also specify a citation depth limit, such as “go two citation
+hops from the seeds.” The agent expands eligible links automatically within that
+limit. Seeds are depth 0; papers reached at the limit are still screened and read.
+The run reports further expansion as depth-limited, without claiming saturation.
 
 ## Start
 
@@ -165,6 +175,15 @@ authorized configuration using the profile/resource fields in `EXECUTION.md`:
 .venv/bin/python -B -m sweep native-work --run-id discovery-sweep
 ```
 
+To commission a depth-bounded run, add `--max-citation-depth 2` to `plan`, or
+set `resources.max_citation_depth` in the configuration. Omit it or use JSON
+`null` for no depth cap; `0` limits citation discovery to the initial roots.
+Independent process/blind-query results start their own labeled citation roots,
+so query-origin depth is kept distinct from distance to the manuscript seeds.
+The status output and review page show any deferred expansion. Those obligations
+remain open and prevent a false saturation or completion claim. The selected
+depth limit is part of the saved plan; resume uses the same limit.
+
 Native work units ask the agent for source-located experiment-group, citation,
 earned-function or wave-audit evidence. Submit the requested JSON with
 `native-submit --paper-id TASK_ID --input RESPONSE_PATH --actor AGENT_AND_MODEL`.
@@ -243,3 +262,5 @@ python3 bootstrap.py --verify-only
 
 See [AGENTS.md](AGENTS.md) for the agent contract and [EXECUTION.md](EXECUTION.md)
 for operational details and current limitations.
+
+The current operational revision uses fourteen documented coverage families, immutable source generations, independently checked exclusions and recoverable citation snapshots. Read the prepared one-hour commissioning test in [EXECUTION.md](EXECUTION.md) before launching a large sweep. Software readiness and live commissioning are separate; the package does not start either automatically.

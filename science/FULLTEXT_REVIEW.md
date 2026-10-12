@@ -39,8 +39,8 @@ uses `python tools/render_fulltext_review.py render`. Any changed authority
 requires regeneration and prospective revision validation before use in a new
 registered run. Do not edit this generated file by hand.
 
-- `PROTOCOL.md` SHA-256: `6a3e1c7974e956420d2870e7b039f421d6c617e97bf61a327f90d5557ec0731c`
-- `AGENTS.md` SHA-256: `d5558018da803f70e3be1276318b7ecf20b08d31e081f923cf58d9bfca034f6f`
+- `PROTOCOL.md` SHA-256: `a60f55d060a326952551d3593b9403cf95061db918269d7c804e298d286b920a`
+- `AGENTS.md` SHA-256: `acfd2b75cda4a320a878ded71a9df447fed5992ba74959d549855e4612a032b2`
 
 # Scientific instructions (verbatim authority excerpts)
 

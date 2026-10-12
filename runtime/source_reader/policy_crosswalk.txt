@@ -1,6 +1,6 @@
 Concise decision-trail policy crosswalk — contract concise-decision-trail-v1
 
-Authority: development/current/PROTOCOL.md, version 0.9.13. These instructions
+Authority: development/current/PROTOCOL.md, version 0.9.14 (scientific gates retained from 0.9.13). These instructions
 are a derived reading aid, not an amendment to scientific eligibility. The full
 protocol is not reproduced in the model prompt. Runtime bindings fingerprint
 this aid and the operative authorities; identifiers, source hashes, attempt

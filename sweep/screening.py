@@ -32,40 +32,15 @@ state what the full text needs to establish. Distinguish this from a source that
 positively establishes different or absent content, or an incompatible awareness
 measure. Neither missing detail nor a named possible alternative settles that
 distinction. Screening uncertainty does not certify an unconscious-content claim.
-Provide sparse source-grounded semantic feature assertions using the allowed
-names. Include plausible as well as present features even if your decision is
-exclude, because these drive an independent rescue check. Include relevant
-domains and structured patterns, not just the main design. Omitted features
-remain unassessed. State title or abstract as the source location; do not invent
-full-paper evidence. Use retain, uncertain or exclude; no numerical relevance score.
-An assertion value describes the named feature: if its reason says there is no
-downstream Y, distinct_y is absent, never present. exact_x_awareness requires a
-measure about the chosen content; successful performance alone does not supply
-it. awareness_invariant_y means a comparable Y effect across awareness levels,
-not the presence or absence of a wholly unaware group. direct_vs_indirect_measure_sensitivity
-means a comparison of measurement sensitivity, not simply two different tasks.
-shifted_threshold_and_effect means a structured relationship between an awareness
-threshold and a Y effect, not merely comparing two stimulus strengths. Use only
-features the source actually motivates, and check that every value agrees with
-its reason. These assertions route review; they do not certify eligibility.
-distinct_y is a function using X, not simply the process generating or detecting
-X. A title's silence about a feature is normally unclear, not evidence of absence.
-The same applies to omitted abstract details: absent needs source evidence of
-absence, not a failure to mention the feature. rapid_chase_priming requires
-evidence for that specific response/trajectory time-course pattern; generic
-masked-prime response-time facilitation motivates response_priming, not rapid
-chase. aware_effect and positive_aware_use require a reported effect or use
-under awareness; merely including a visible comparison arm does not establish
-either. Use a positive assertion only when the source supplies the relevant
-observation or a concrete reason that the named feature is plausible. Do not
-fill a feature from a neighboring construct. Omit unsupported features.
-Source availability is supplied by code; do not infer it from whether scientific
-evidence is missing. abstract_unavailable is not a model-authored feature.
-explicit_alternative_control requires a located test or manipulation addressing
-a named competing explanation. Merely stating a confound, or that a variable
-was uncontrolled, is not a control of it. Prefer a few decision-relevant or
-review-routing features; do not pad the record with unrelated absent/unclear
-domains. Missing assertions remain unassessed.
+Use retain, uncertain or exclude; do not supply feature checklists or numerical
+relevance scores. Exclusion requires positive source evidence of irrelevance;
+missing awareness, signal-control, representation or functional detail remains
+uncertain and proceeds to full-text assessment. For an exclusion, distinguish
+outside-scope (an obvious subject unrelated to this endeavor) from scientific
+(a judgment about whether a mental/perceptual study supplies a useful design,
+comparison or discovery connection). Use not-applicable for a retained or
+uncertain decision. Scientific exclusions receive a fresh source-only review;
+the first reader's feature vocabulary does not determine access to that review.
 """
 
 TITLE_INSTRUCTIONS = """Screen each supplied title separately for relevance to a literature
@@ -80,17 +55,12 @@ capacity studies and reviews can be useful discovery anchors or near-neighbors.
 Do not decide whether an experiment qualifies from its title.
 Return one decision and a brief paper-specific reason for every ID. No numerical
 relevance score or date, language or publication-type exclusion. Only titles
-are available; every source_location must be title.
-Include a few source-motivated semantic feature assertions useful for routing
-review. Use plausible for a concretely suggested feature not yet established.
-Omit unsupported features; title silence does not establish absence. Values must
-agree with their reasons. Do not substitute a nearby concept for the named
-feature: a possible confound is not its control, an experimental arm is not a
-positive effect, and a generic prime is not a specific rapid-chase pattern.
-Source availability is code-owned and must not be asserted by the model.
+are available. Return only the ID, decision and reason. No feature checklist is
+required. Ambiguous titles proceed to the abstract when available; missing
+abstracts proceed to retrieval. Do not guess what an unavailable abstract says.
 """
 
-def schema(paper_ids):
+def legacy_schema(paper_ids):
     names = sorted(scientific_module("semantic_rescue").KNOWN_FEATURES - CODE_OWNED_FEATURES)
     text = {"type": "string", "minLength": 1}
     assertion = {"type": "object", "additionalProperties": False,
@@ -106,6 +76,22 @@ def schema(paper_ids):
     return {"type": "object", "additionalProperties": False, "required": ["decisions"],
             "properties": {"decisions": {"type": "array", "items": item,
                                             "minItems": len(paper_ids), "maxItems": len(paper_ids)}}}
+
+
+def schema(paper_ids, stage="title"):
+    """Small source-specific output; routing does not require semantic features."""
+    item = {"type": "object", "additionalProperties": False,
+            "required": ["paper_id", "decision", "reason"],
+            "properties": {"paper_id": {"type": "string", "enum": paper_ids},
+              "decision": {"type": "string", "enum": ["retain", "uncertain", "exclude"]},
+              "reason": {"type": "string", "minLength": 1, "pattern": r"\S"}}}
+    if stage != "title":
+        item["required"].append("exclusion_basis")
+        item["properties"]["exclusion_basis"] = {"type": "string", "enum":
+            ["outside-scope", "scientific", "not-applicable"]}
+    return {"type": "object", "additionalProperties": False, "required": ["decisions"],
+            "properties": {"decisions": {"type": "array", "items": item,
+                "minItems": len(paper_ids), "maxItems": len(paper_ids)}}}
 
 def prepare(stage, papers):
     if stage not in {"title", "abstract", "rescue", "audit"}:
@@ -123,7 +109,7 @@ def prepare(stage, papers):
     instructions = TITLE_INSTRUCTIONS if stage == "title" else INSTRUCTIONS
     if stage in {"rescue", "audit"}:
         instructions += "\nIndependently reassess these sources; no previous decisions are supplied.\n"
-    return instructions + "\nSOURCE RECORDS\n" + canonical(request), schema([p["paper_id"] for p in papers])
+    return instructions + "\nSOURCE RECORDS\n" + canonical(request), schema([p["paper_id"] for p in papers], stage)
 
 def _abstract_for_stage(paper, stage):
     """Availability of this exact input, not a scientific missing-evidence claim."""
@@ -131,28 +117,36 @@ def _abstract_for_stage(paper, stage):
     return abstract if isinstance(abstract, str) and abstract.strip() else None
 
 def validate(result, stage, papers):
-    Draft202012Validator(schema([p["paper_id"] for p in papers])).validate(result)
+    # Existing fixture/manual records remain readable. New prepared model tasks
+    # expose only the minimal stage schema; legacy assertions never gate rescue.
+    legacy = any("assertions" in item for item in result.get("decisions", []))
+    output_schema = legacy_schema([p["paper_id"] for p in papers]) if legacy else schema([p["paper_id"] for p in papers], stage)
+    Draft202012Validator(output_schema).validate(result)
     ids = [item["paper_id"] for item in result["decisions"]]
     if len(set(ids)) != len(ids) or set(ids) != {p["paper_id"] for p in papers}:
         raise ValueError("Screening response must cover every work exactly once")
     inputs = {paper["paper_id"]: paper for paper in papers}
     for item in result["decisions"]:
-        features = [x["feature"] for x in item["assertions"]]
+        assertions = item.get("assertions", [])
+        if not legacy and stage != "title":
+            if (item["decision"] == "exclude") == (item["exclusion_basis"] == "not-applicable"):
+                raise ValueError("Exclusion basis must describe an exclusion only")
+        features = [x["feature"] for x in assertions]
         if len(set(features)) != len(features):
             raise ValueError("Repeated semantic assertion")
-        if not item["reason"].strip() or any(not a["reason"].strip() for a in item["assertions"]):
+        if not item["reason"].strip() or any(not a["reason"].strip() for a in assertions):
             raise ValueError("Blank screening rationale")
-        if stage == "title" and any(a["source_location"] != "title" for a in item["assertions"]):
+        if stage == "title" and any(a["source_location"] != "title" for a in assertions):
             raise ValueError("Title-only decision cites unavailable abstract")
         if _abstract_for_stage(inputs[item["paper_id"]], stage) is None and any(
-                a["source_location"] == "abstract" for a in item["assertions"]):
+                a["source_location"] == "abstract" for a in assertions):
             raise ValueError("Screening assertion cites an abstract not supplied to this stage")
     return result["decisions"]
 
 def rescue_record(paper, decision, stage, review_fingerprint):
     module = scientific_module("semantic_rescue")
     assertions = {a["feature"]: module.FeatureAssertion(a["value"], a["reason"], a["source_location"])
-                  for a in decision["assertions"] if a["feature"] not in CODE_OWNED_FEATURES}
+                  for a in decision.get("assertions", []) if a["feature"] not in CODE_OWNED_FEATURES}
     abstract = _abstract_for_stage(paper, stage)
     # Derive both states, even for legacy/raw responses containing a contrary
     # assertion. Keep the original model decision untouched as history. This is
@@ -171,3 +165,78 @@ def rescue_record(paper, decision, stage, review_fingerprint):
         local_label="low" if decision["decision"] == "exclude" else "medium",
         local_label_reason=decision["reason"])
     return asdict(record), asdict(module.route_paper(record))
+
+
+def exclusion_basis(decision, stage):
+    # A legacy abstract exclusion lacks the explicit clear-scope assertion and
+    # therefore receives the conservative scientific rescue route.
+    return decision.get("exclusion_basis", "outside-scope" if stage == "title" else "scientific")
+
+
+def _audit_tables(conn):
+    conn.execute("""CREATE TABLE IF NOT EXISTS screening_exclusions (
+        paper_id TEXT PRIMARY KEY, cohort TEXT NOT NULL, binding TEXT NOT NULL,
+        job_id TEXT NOT NULL, rank TEXT NOT NULL, reviewed INTEGER NOT NULL DEFAULT 0,
+        scheduled_job TEXT)""")
+    conn.execute("CREATE INDEX IF NOT EXISTS screening_exclusion_rank ON screening_exclusions(cohort,rank,paper_id)")
+
+
+def sync_exclusion(store, paper, seed):
+    """Incremental current-state index; never sample a historical exclusion."""
+    current = paper.get("screening_current", {})
+    active = (current.get("decision") == "exclude" and current.get("stage") != "rescue"
+              and paper.get("status") in {"title-excluded", "abstract-excluded"})
+    with store._transaction() as conn:
+        _audit_tables(conn)
+        if not active:
+            conn.execute("DELETE FROM screening_exclusions WHERE paper_id=?", (paper["paper_id"],))
+            return
+        cohort = current["cohort"]
+        binding = current.get("audit_binding_sha256", current["source_sha256"])
+        rank = digest([seed, cohort, paper["paper_id"], binding])
+        # A clean rescue already independently reviewed this scientific exclusion.
+        reviewed = int(current["stage"] in {"rescue", "audit"})
+        prior = conn.execute("SELECT job_id FROM screening_exclusions WHERE paper_id=?", (paper["paper_id"],)).fetchone()
+        if prior and prior[0] == current["job_id"]:
+            return
+        conn.execute("""INSERT OR REPLACE INTO screening_exclusions
+            (paper_id,cohort,binding,job_id,rank,reviewed,scheduled_job) VALUES(?,?,?,?,?,?,NULL)""",
+            (paper["paper_id"], cohort, binding, current["job_id"], rank, reviewed))
+
+
+def audit_cohorts(store):
+    with store._transaction() as conn:
+        _audit_tables(conn)
+        return [dict(row) for row in conn.execute(
+            "SELECT cohort,COUNT(*) AS population_size FROM screening_exclusions GROUP BY cohort ORDER BY cohort")]
+
+
+def audit_candidates(store, cohort, *, reopen=False, after=None, limit=1000):
+    with store._connection() as conn:
+        if reopen:
+            rows = conn.execute("""SELECT * FROM screening_exclusions
+                WHERE cohort=? AND reviewed=0 AND scheduled_job IS NULL AND paper_id>?
+                ORDER BY paper_id LIMIT ?""", (cohort, after or "", limit))
+        else:
+            # Rank across the complete current cohort, including previously
+            # reviewed/scheduled members: repeated audits do not drift into a census.
+            rows = conn.execute("""SELECT * FROM (SELECT * FROM screening_exclusions
+                WHERE cohort=? ORDER BY rank,paper_id LIMIT 10)
+                WHERE reviewed=0 AND scheduled_job IS NULL ORDER BY rank,paper_id""", (cohort,))
+        return [dict(row) for row in rows]
+
+
+def mark_audit_scheduled(store, candidates, job_id):
+    with store._transaction() as conn:
+        for row in candidates:
+            conn.execute("""UPDATE screening_exclusions SET scheduled_job=?
+                WHERE paper_id=? AND job_id=?""", (job_id, row["paper_id"], row["job_id"]))
+
+
+def discovery_cohort(store, paper_id, stage):
+    """First encounter source/route is code-owned and independent of the screener."""
+    with store._connection() as conn:
+        row = conn.execute("SELECT provenance FROM encounters WHERE paper_id=? ORDER BY id LIMIT 1", (paper_id,)).fetchone()
+    provenance = json.loads(row[0]) if row else {}
+    route = {"route": provenance.get("route", "unrecorded"), "source": provenance.get("source", "unspecified")}
+    return stage + ":" + digest(route)

@@ -61,7 +61,7 @@ def _file_sha(path):
     return digest.hexdigest()
 
 
-def _operational_diagnostic(stderr):
+def _operational_diagnostic(stderr, stdout=""):
     """Retain recognizable CLI failure categories, never raw source or reasoning."""
     for line in stderr.splitlines():
         stripped = line.strip()
@@ -79,7 +79,29 @@ def _operational_diagnostic(stderr):
                     "summary": "Selected CLI rejected a required command-line argument."}
         if stripped.startswith("Error loading config.toml:"):
             return {"category": "configuration-error", "summary": "Selected CLI could not load the requested configuration; raw values omitted."}
-    return {"category": "unclassified-cli-failure", "summary": "CLI failure was not recognized safely; stderr fingerprint retained, raw output omitted."}
+    # Codex emits structured execution errors on stdout. Inspect only explicit
+    # error events, never assistant messages/reasoning, and retain static labels.
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(event, dict) or event.get("type") not in {"error", "turn.failed"}:
+            continue
+        error = event.get("error", event)
+        if not isinstance(error, dict):
+            continue
+        message = str(error.get("message", "")).lower()
+        for terms, category, summary in (
+            (("stream disconnected", "connection reset", "transport", "connection closed"), "transport-interrupted", "CLI reported an interrupted provider connection; admission remains uncertain."),
+            (("rate limit", "rate_limit", "usage limit", "quota"), "provider-limit", "CLI reported a provider usage or rate limit; no billing fallback is permitted."),
+            (("context length", "context_length", "too many tokens"), "context-limit", "CLI reported a context limit; source content was not truncated."),
+            (("unauthorized", "authentication", "not logged in"), "authentication", "CLI reported an authentication failure; no credential values retained."),
+        ):
+            if any(term in message for term in terms):
+                return {"category": category, "summary": summary}
+        return {"category": "structured-cli-error", "summary": "CLI emitted a structured failure event; its raw message is omitted to protect source and credential data."}
+    return {"category": "unclassified-cli-failure", "summary": "CLI failure was not recognized safely; output fingerprints retained, raw output omitted."}
 
 
 def _now():
@@ -209,7 +231,11 @@ def _capture(argv, env, timeout=10):
         return result["exit_code"], out.read_text(errors="replace"), err.read_text(errors="replace")
 
 
-def _cli(profile):
+def _remaining(deadline, ceiling):
+    return ceiling if deadline is None else max(0.0, min(ceiling, deadline - time.monotonic()))
+
+
+def _cli(profile, deadline=None):
     name = profile["adapter"]
     path = profile.get("cli_path") or shutil.which(name)
     if not path and name == "codex" and Path(CODEX_APP_CLI).is_file():
@@ -221,12 +247,12 @@ def _cli(profile):
     if name == "claude":
         if not profile.get("subscription_extra_usage_disabled"):
             return None, "Subscription-only operation requires confirming usage credits/extra usage are disabled in the Claude account; the CLI cannot establish that account setting."
-        code, version_text, _ = _capture([path, "--version"], env)
+        code, version_text, _ = _capture([path, "--version"], env, timeout=_remaining(deadline, 10))
         match = re.search(r"\b(\d+)\.(\d+)\.(\d+)\b", version_text)
         if code != 0 or not match or tuple(map(int, match.groups())) < (2, 1, 293):
             return None, "Claude CLI 2.1.293 or later is required for the documented isolated subscription profile; no inference was attempted."
     auth_argv = [path, "login", "status"] if name == "codex" else [path, "auth", "status"]
-    code, stdout, stderr = _capture(auth_argv, env)
+    code, stdout, stderr = _capture(auth_argv, env, timeout=_remaining(deadline, 10))
     if name == "codex":
         if code != 0 or "chatgpt" not in (stdout + stderr).lower():
             return None, "Signed-in ChatGPT authentication was not established; API fallback is prohibited."
@@ -375,8 +401,39 @@ def _http(profile, prompt, schema):
                       "reason": "Provider transport or output failed (" + type(exc).__name__ + "); assessment remains unavailable."}
 
 
-def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_dispatch=None) -> dict:
+
+def _bounded_http(profile, prompt, schema, deadline):
+    """A process deadline also bounds DNS and responses that trickle indefinitely.
+
+    Credentials remain in the inherited environment, never the request file or
+    command line. Killing an admitted process leaves cost/admission unknown.
+    """
+    with tempfile.TemporaryDirectory(prefix="sweep-http-") as temporary:
+        root = Path(temporary)
+        inp, out, err = root / "request", root / "response", root / "error"
+        inp.write_bytes(_bytes([profile, prompt, schema]))
+        code = ("import sys,json;sys.path.insert(0,sys.argv[1]);"
+                "from sweep.adapters import _http;"
+                "print(json.dumps(_http(*json.load(sys.stdin))))")
+        outcome = _run([sys.executable, "-c", code, str(Path(__file__).resolve().parent.parent)],
+                       inp, out, err, env=dict(os.environ), cwd=root,
+                       timeout=_remaining(deadline, profile["timeout_seconds"]))
+        if outcome["timed_out"]:
+            return None, {"status": "deferred", "admission": "unknown", "timed_out": True,
+                          "reason": "Session/provider deadline reached; possible admission remains unknown; no automatic retry."}
+        try:
+            if outcome["exit_code"] != 0:
+                raise ValueError("HTTP worker failed")
+            return json.loads(out.read_text())
+        except (OSError, ValueError):
+            return None, {"status": "deferred", "admission": "unknown",
+                          "reason": "Isolated HTTP worker failed; assessment remains unavailable."}
+
+
+def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_dispatch=None, deadline=None) -> dict:
     """Execute or recover one request; result.json is also the manual handoff."""
+    if deadline is not None and (isinstance(deadline, bool) or not isinstance(deadline, (int, float)) or not math.isfinite(deadline)):
+        raise ValueError("Deadline must be a finite monotonic timestamp")
     p = validate_profile(profile)
     if not isinstance(prompt, str):
         raise ValueError("Prompt must be complete UTF-8 text")
@@ -459,14 +516,18 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
                 # explicitly by the coordinator in a new request directory.
                 # An uncertain/live dispatch is never silently duplicated here.
                     return dict(prior) if prior else finish(admission="unknown", reason="A dispatch was reserved without a terminal receipt; reconcile it before any new request.")
+            if _remaining(deadline, p["timeout_seconds"]) <= 0:
+                return finish(reason="Session deadline reached before dispatch; request not admitted.")
             executable = None
             if p["adapter"] in {"codex", "claude"}:
-                executable, problem = _cli(p)
+                executable, problem = _cli(p) if deadline is None else _cli(p, deadline=deadline)
                 if problem:
                     return finish(reason=problem)
                 receipt["executable_sha256"] = _file_sha(executable)
             if p["adapter"] == "openai-compatible" and p.get("credential_env") and not os.environ.get(p["credential_env"]):
                 return finish(reason="Configured credential environment variable is unset.")
+            if _remaining(deadline, p["timeout_seconds"]) <= 0:
+                return finish(reason="Session deadline reached during local admission checks; request not admitted.")
             if before_dispatch is not None:
                 # The coordinator commits its lifetime attempt and budget lease
                 # after local admission checks, before any possible provider call.
@@ -476,7 +537,7 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
             receipt.update(admission="unknown", reason="A bounded request was dispatched; result pending.")
             _write(root / "receipt.json", receipt)
             if p["adapter"] == "openai-compatible":
-                result, metadata = _http(p, prompt, schema)
+                result, metadata = _http(p, prompt, schema) if deadline is None else _bounded_http(p, prompt, schema, deadline)
                 receipt.update(metadata)
                 if result is None:
                     return finish()
@@ -508,7 +569,7 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
                         argv = [arg.format(**values) for arg in p["argv"]]
                     receipt["command_sha256"] = _sha(_bytes(argv))
                     try:
-                        outcome = _run(argv, root / "prompt.txt", out, err, env=_environment(p), cwd=temp, timeout=p["timeout_seconds"])
+                        outcome = _run(argv, root / "prompt.txt", out, err, env=_environment(p), cwd=temp, timeout=_remaining(deadline, p["timeout_seconds"]))
                         receipt.update(outcome, stdout_sha256=_sha(out.read_bytes()), stderr_sha256=_sha(err.read_bytes()))
                         # Retain usage even when an error result exits nonzero.
                         if out.read_bytes():
@@ -518,7 +579,7 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
                         if outcome["timed_out"]:
                             return finish(status="deferred", reason="Model deadline reached; possible admission remains unknown and no automatic retry occurs.")
                         if outcome["exit_code"] != 0:
-                            diagnostic = _operational_diagnostic(err.read_text(errors="replace"))
+                            diagnostic = _operational_diagnostic(err.read_text(errors="replace"), out.read_text(errors="replace"))
                             return finish(status="deferred", operational_diagnostic=diagnostic,
                                           reason=diagnostic["summary"] + " No fallback, exclusion, or automatic retry performed.")
                         receipt.update(admission="admitted")

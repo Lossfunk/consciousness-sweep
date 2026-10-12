@@ -35,7 +35,10 @@ configuration/run when those inputs change.
    Unknown quotas are not unlimited. Do not inspect or print credential values.
 3. Recommend one available configuration. Ask the user only for the permitted
    resources, additional remote access not observable locally, and material
-   workload/deadline preferences. Do not ask them to evaluate the model catalog.
+   workload/deadline preferences, including whether citation expansion should
+   have a maximum depth. Seeds are depth 0; independent process/blind-query
+   results start their own labeled citation roots. Use no depth cap only when
+   that matches the commissioned scope. Do not ask them to evaluate the model catalog.
 4. Explain estimates and their uncertainty. Title calls alone require at least
    `ceil(logical_papers / 25)`; abstract, rescue, audit and reading add calls.
    Do not extrapolate a full-sweep ETA from a few full-text reads without stage
@@ -68,6 +71,12 @@ The coordinator owns stable IDs, leases, budget reservations, append-first
 events, source encounters and projection. Model workers return concise
 schema-valid judgments. Let code write repetitive bookkeeping. A paper-specific
 reason and source location remain mandatory even within a batch.
+Citation expansion proceeds automatically after the supervising agent records
+the source-based discovery judgment. Respect `resources.max_citation_depth`:
+screen and read papers at that depth, but leave further citation expansion
+explicitly deferred. Report a depth-limited checkpoint, never saturation or a
+complete registered sweep, when the bound leaves obligations pending. Do not
+reset ordinary hop depth when a CORE node resets its separate bridge counter.
 At quiet checkpoints, especially after manual task completion, run `validate`,
 inspect and resolve integrity errors, then run `deliver` and `status`. The
 browser review entry point is `runs/RUN_ID/delivery/index.html`. A successful
@@ -77,8 +86,8 @@ For agent work exchange, `work` returns a leased model task. Read its complete
 `prompt.txt`, `schema.json` and supplied source evidence, then write a JSON answer
 and `submit` it with the returned job ID. Do not read prior/human labels, borrow
 batch-neighbor evidence, truncate source packets, or invent unread content.
-For discovery decisions, use `native-work` and the returned submission contract;
-submit with `native-submit`. Perform this work yourself or through authorized
+For discovery decisions, use `native-work --owner WORKER` and the returned owner/token submission contract;
+submit with `native-submit`. Before authoring experiment groups, use `native-allocate` with stable paper-local experiment/comparison keys and reuse the returned identifiers; do not invent identifiers. Perform this work yourself or through authorized
 workers rather than asking the user to fill schemas.
 Automatic headless model workers do not replace those native discovery tasks.
 Use bounded `run --watch` periods when waiting for deferred work; continue native
@@ -135,3 +144,5 @@ spam. At a handoff, report what completed, what remains unresolved, whether the
 run can continue, and which exact command resumes it. Do not overstate tests:
 mocked interfaces, live provider execution and scientific reading checks establish
 different things.
+
+Before work or delivery, respect any failed integrity checkpoint and repair/revalidate it. Follow the minimal screening, current-exclusion audit, immutable source-generation and native task lease/recovery procedures in EXECUTION.md. Do not run a fresh abstract pass when source-only rescue already assessed it. Preserve acquisition gaps, claim-specific dispositions and uncertain version relationships in the handoff. For a commissioned timed test, keep one total wall-clock deadline across invocations; never reset the clock on resume.

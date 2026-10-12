@@ -233,13 +233,176 @@ def abstract_evidence_errors(row: dict[str, Any]) -> list[str]:
     return []
 
 
+def _screen_digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=True,
+                                    separators=(",", ":")).encode()).hexdigest()
+
+
+def _screen_events(decisions):
+    return [event for event in decisions if event.get("entity_type") == "paper"
+            and event.get("field") == "semantic_screen"]
+
+
+def semantic_screen_event_errors(papers, decisions, *, run_complete=False,
+                                 expected_scientific_regime=None):
+    """Validate minimal, source-bound screening without a feature inventory."""
+    errors, latest, by_id = [], {}, {}
+    for event in _screen_events(decisions):
+        pid, event_id, data = event.get("entity_id"), event.get("decision_id"), event.get("new_value")
+        if not isinstance(data, dict):
+            errors.append(f"{pid}: semantic_screen must contain a source-bound object")
+            continue
+        required_text = ("reason", "reviewer", "source_location", "discovery_route")
+        if any(not isinstance(data.get(key), str) or not data[key].strip() for key in required_text):
+            errors.append(f"{pid}: minimal screening needs reason, reviewer, source and discovery route")
+        for key in ("title_sha256", "scientific_regime_fingerprint", "review_regime_fingerprint"):
+            if not isinstance(data.get(key), str) or not re.fullmatch(r"[a-f0-9]{64}", data[key]):
+                errors.append(f"{pid}: invalid minimal screening {key}")
+        if data.get("abstract_sha256") is not None and not re.fullmatch(r"[a-f0-9]{64}", str(data["abstract_sha256"])):
+            errors.append(f"{pid}: invalid minimal screening abstract hash")
+        if expected_scientific_regime is not None and data.get("scientific_regime_fingerprint") != expected_scientific_regime:
+            errors.append(f"{pid}: minimal screening regime differs from frozen inputs")
+        stage, decision = data.get("stage"), data.get("decision")
+        if stage not in {"title", "abstract", "rescue", "audit"} or decision not in {"retain", "uncertain", "exclude"}:
+            errors.append(f"{pid}: invalid minimal screening stage or decision")
+        if data.get("origin_stage") not in {"title", "abstract"}:
+            errors.append(f"{pid}: minimal screening requires title/abstract origin")
+        if stage in {"title", "abstract"} and data.get("origin_stage") != stage:
+            errors.append(f"{pid}: initial screening origin must match its stage")
+        if stage == "abstract" and data.get("abstract_sha256") is None:
+            errors.append(f"{pid}: abstract screening requires the supplied abstract hash")
+        if data.get("exclusion_basis") not in ({"outside-scope", "scientific"} if decision == "exclude" else {"not-applicable"}):
+            errors.append(f"{pid}: exclusion basis disagrees with decision")
+        if stage == "title" and (data.get("abstract_sha256") is not None or data.get("exclusion_basis") == "scientific"):
+            errors.append(f"{pid}: title screening cannot claim abstract evidence or a scientific exclusion")
+        prior = latest.get(pid)
+        target = data.get("supersedes_decision_id")
+        if (prior is None and target is not None) or (prior is not None and target != prior.get("decision_id")):
+            errors.append(f"{pid}: minimal screening must explicitly supersede the current decision")
+        if prior and prior["new_value"].get("abstract_sha256") is not None and data.get("abstract_sha256") is None:
+            errors.append(f"{pid}: lower-information screening cannot supersede an abstract decision")
+        if stage in {"rescue", "audit"}:
+            if not prior or data.get("source_only") is not True:
+                errors.append(f"{pid}: independent review needs a current source-only target")
+            elif prior["new_value"].get("decision") != "exclude":
+                errors.append(f"{pid}: independent review target is not a current exclusion")
+            elif data.get("origin_stage") != prior["new_value"].get("origin_stage") or data.get("discovery_route") != prior["new_value"].get("discovery_route"):
+                errors.append(f"{pid}: independent review changed its source cohort")
+        latest[pid], by_id[event_id] = event, event
+    for paper in papers:
+        pid = paper["paper_id"]
+        event = latest.get(pid)
+        if event is None:
+            continue
+        data = event["new_value"]
+        if data.get("title_sha256") != hashlib.sha256(paper["title"].encode()).hexdigest():
+            errors.append(f"{pid}: minimal screening title hash is stale")
+        if data.get("abstract_sha256") is not None and data["abstract_sha256"] != paper.get("abstract_sha256"):
+            errors.append(f"{pid}: minimal screening abstract hash is stale")
+        if data.get("discovery_route") != paper.get("first_discovery_route"):
+            errors.append(f"{pid}: minimal screening discovery cohort differs from first-discovery route")
+        pending_rescue = (data.get("stage") == "abstract" and data.get("decision") == "exclude"
+                          and data.get("exclusion_basis") == "scientific")
+        if pending_rescue:
+            if run_complete or paper.get("abstract_screen") == "screen-out":
+                errors.append(f"{pid}: scientific exclusion lacks fresh source-only rescue")
+            continue
+        if data.get("stage") == "title" or data.get("abstract_sha256") is None:
+            expected = "exclude" if data.get("decision") == "exclude" else "retain"
+            if paper.get("title_screen") != expected:
+                errors.append(f"{pid}: current title state differs from minimal source decision")
+        else:
+            expected = {"retain": "screen-in", "uncertain": "screen-uncertain", "exclude": "screen-out"}.get(data.get("decision"))
+            if paper.get("abstract_screen") != expected:
+                errors.append(f"{pid}: current abstract state differs from minimal source decision")
+    return errors
+
+
+def semantic_screen_audit_payload(decisions, *, audit_seed, sample_size=10):
+    """Recomputable current-exclusion frame with stable pre-audit rank anchors."""
+    latest, anchors, misses = {}, {}, set()
+    for event in _screen_events(decisions):
+        data = event.get("new_value")
+        if not isinstance(data, dict):
+            continue
+        pid = event.get("entity_id")
+        cohort = (str(data.get("origin_stage")), str(data.get("discovery_route")))
+        prior = latest.get(pid)
+        if data.get("stage") == "audit" and prior:
+            if data.get("decision") != "exclude":
+                misses.add(cohort)
+        else:
+            anchors[pid] = _screen_digest({key: data.get(key) for key in
+                ("title_sha256", "abstract_sha256", "scientific_regime_fingerprint", "review_regime_fingerprint")})
+        latest[pid] = event
+    groups = {}
+    for pid, event in sorted(latest.items()):
+        data = event["new_value"]
+        if data.get("decision") != "exclude" or data.get("stage") == "rescue" or data.get("exclusion_basis") != "outside-scope":
+            continue
+        cohort = (str(data.get("origin_stage")), str(data.get("discovery_route")))
+        rank = _screen_digest([audit_seed, list(cohort), pid, anchors.get(pid)])
+        groups.setdefault(cohort, []).append((rank, pid, event["decision_id"]))
+    cohorts = []
+    for cohort, rows in sorted(groups.items()):
+        selected = sorted(rows) if cohort in misses else sorted(rows)[:sample_size]
+        cohorts.append({"origin_stage": cohort[0], "discovery_route": cohort[1],
+                        "current_decision_ids": [row[2] for row in sorted(rows, key=lambda row: row[1])],
+                        "sampled_decision_ids": [row[2] for row in selected], "reopened": cohort in misses})
+    return {"audit_seed": audit_seed, "sample_size": sample_size, "cohorts": cohorts}
+
+
+def semantic_screen_audit_errors(decisions, *, run_complete=False, execution_config=None):
+    errors, seen, snapshots = [], [], []
+    for event in decisions:
+        if event.get("field") == "semantic_screen" and event.get("entity_type") == "paper":
+            seen.append(event)
+        if event.get("field") != "semantic_screen_audit_manifest" or event.get("entity_type") != "run":
+            continue
+        payload = event.get("new_value")
+        snapshots.append((event, len(seen)))
+        if not isinstance(payload, dict) or not isinstance(payload.get("audit_seed"), str) or not payload["audit_seed"].strip():
+            errors.append("minimal screening audit requires a nonempty fixed audit seed")
+            continue
+        size = (execution_config or {}).get("demotion_audit_sample_per_stratum", 10)
+        if payload.get("sample_size") != size:
+            errors.append("minimal screening sample size differs from frozen configuration")
+        if len(snapshots) > 1 and payload.get("audit_seed") != snapshots[0][0].get("new_value", {}).get("audit_seed"):
+            errors.append("minimal screening audit seed changed across checkpoints")
+        expected = semantic_screen_audit_payload(seen, audit_seed=payload["audit_seed"], sample_size=size)
+        if payload != expected:
+            errors.append("minimal screening audit differs from current source-bound exclusion frame")
+    if not seen:
+        return errors
+    # Even an empty current frame has a checkpoint proving that superseded
+    # exclusions were considered; no historical decision is silently resurrected.
+    if not snapshots or snapshots[-1][1] != len(seen):
+        errors.append("minimal screening decisions lack a current cumulative audit manifest")
+        return errors
+    if run_complete:
+        payload = snapshots[-1][0].get("new_value", {})
+        by_id = {event.get("decision_id"): event for event in seen}
+        if not isinstance(payload, dict) or not isinstance(payload.get("audit_seed"), str):
+            return errors
+        current = semantic_screen_audit_payload(seen, audit_seed=payload["audit_seed"],
+            sample_size=(execution_config or {}).get("demotion_audit_sample_per_stratum", 10))
+        for cohort in current["cohorts"]:
+            for event_id in cohort["sampled_decision_ids"]:
+                data = by_id.get(event_id, {}).get("new_value", {})
+                if data.get("stage") != "audit" or data.get("source_only") is not True:
+                    errors.append(f"{event_id}: current sampled exclusion lacks independent source-only audit")
+    return errors
+
+
 def semantic_route_event_errors(
     papers: list[dict[str, Any]], decisions: list[dict[str, Any]],
     fulltext_assets: list[dict[str, Any]], *, run_complete: bool = False,
     expected_scientific_regime: str | None = None,
 ) -> list[str]:
     """Verify current route evidence and require reviewed rescues before screen-out."""
-    errors: list[str] = []
+    errors = semantic_screen_event_errors(papers, decisions, run_complete=run_complete,
+        expected_scientific_regime=expected_scientific_regime)
+    minimal_papers = {event.get("entity_id") for event in _screen_events(decisions)}
     routes: dict[str, dict[str, Any]] = {}
     reviews: dict[str, dict[str, Any]] = {}
     for event in decisions:
@@ -254,11 +417,11 @@ def semantic_route_event_errors(
         assets_by_paper.setdefault(asset["paper_id"], set()).add(asset["file_sha256"])
     for paper in papers:
         pid = paper["paper_id"]
-        needs_route = (paper.get("title_screen") == "retain"
-                       and paper.get("abstract_status") in {"available", "unavailable"})
+        needs_route = (paper.get("title_screen") in {"retain", "exclude"}
+                       or paper.get("abstract_screen") in {"screen-in", "screen-uncertain", "screen-out"})
         event = routes.get(pid)
-        if needs_route and event is None:
-            errors.append(f"{pid}: retained abstract stage lacks semantic_route event")
+        if needs_route and event is None and pid not in minimal_papers:
+            errors.append(f"{pid}: retained abstract stage lacks source-bound semantic_screen or semantic_route event")
             continue
         if event is None:
             continue
@@ -371,7 +534,8 @@ def semantic_global_audit_errors(
     execution_config: dict[str, Any] | None = None,
 ) -> list[str]:
     """Require a cumulative, hash-bound demotion audit across routing batches."""
-    errors: list[str] = []
+    errors = semantic_screen_audit_errors(decisions, run_complete=run_complete,
+                                          execution_config=execution_config)
     latest: dict[str, dict[str, Any]] = {}
     snapshots: list[dict[str, Any]] = []
     computed: dict[str, Any] = {}

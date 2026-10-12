@@ -57,14 +57,17 @@ def blind_windows(science_root=None):
     return windows
 
 
-def initial_state(science_root=None):
+def initial_state(science_root=None, *, max_citation_depth=None):
     root = _root(science_root)
+    if max_citation_depth is not None and (type(max_citation_depth) is not int or max_citation_depth < 0):
+        raise ValueError("max_citation_depth must be null or a nonnegative integer")
     return {"version": "portable-discovery-frontiers-v1", "science_config_sha256": digest((root / "config.yaml").read_bytes()),
+            "max_citation_depth": max_citation_depth,
             "phase": "principal", "principal_provisionally_satisfied": False,
             "seed_initialization_complete": False, "anchor_initialization_complete": False,
             "blind_windows": {w["window_key"]: w for w in blind_windows(root)},
             "process_windows": {}, "citation_obligations": {}, "nodes": {},
-            "activated_y": {}, "native_assessment_pending": {}, "history": [],
+            "activated_y": {}, "native_assessment_pending": {}, "process_assessment_pending": {}, "history": [],
             "lineage_replay_pending": {}, "citation_wave_audits": [], "validation": None}
 
 
@@ -72,6 +75,56 @@ def _invalidate(state):
     state["validation"] = None
     if state["phase"] in {"complete", "final-validation", "supplementary-blind"}:
         state["phase"] = "reopened-frontiers"
+
+
+def citation_fetch_block(state, obligation):
+    """An execution boundary is never evidence of scientific saturation."""
+    limit = state.get("max_citation_depth")
+    if limit is None:
+        return None
+    depth = obligation.get("parent_citation_depth")
+    if type(depth) is not int or depth < 0:
+        return "depth-unresolved"
+    return "depth-limited" if depth >= limit else None
+
+
+def _refresh_citation_depth(state, obligation, path=None):
+    if path:
+        obligation["parent_citation_depth"] = path["depth"]
+        obligation["child_citation_depth"] = path["depth"] + 1
+        obligation["citation_origin"] = copy.deepcopy(path["origin"])
+    else:
+        obligation.setdefault("parent_citation_depth", None)
+        obligation.setdefault("child_citation_depth", None)
+        obligation.setdefault("citation_origin", None)
+    block = citation_fetch_block(state, obligation)
+    if obligation["status"] == "complete":
+        return
+    if block:
+        if obligation["status"] not in {"depth-limited", "depth-unresolved"}:
+            obligation["depth_deferred_status"] = obligation["status"]
+        obligation["status"] = block
+        obligation["depth_limit_reason"] = ("Citation retrieval is paused at the configured operational hop boundary; "
+                                             "screening and reading remain required, and this is not a zero-yield wave")
+    elif obligation["status"] in {"depth-limited", "depth-unresolved"}:
+        obligation["status"] = obligation.pop("depth_deferred_status", "pending")
+        obligation.pop("depth_limit_reason", None)
+
+
+def refresh_citation_depths(state, paths, *, reason):
+    """Refresh only eligible parents whose indexed ordinary distance improved."""
+    result = copy.deepcopy(state)
+    changed = []
+    for paper_id, path in paths.items():
+        for direction in ("backward", "forward"):
+            obligation = result["citation_obligations"].get(paper_id + ":" + direction)
+            if obligation:
+                _refresh_citation_depth(result, obligation, path)
+                changed.append(obligation["obligation_id"])
+    if changed:
+        _invalidate(result)
+        _event(result, "citation-distance-reconciled", reason, obligation_ids=changed)
+    return result
 
 
 def initialize_principal(state, *, seeds_complete, anchors_complete, reason):
@@ -96,6 +149,8 @@ def require_native_assessment(state, paper_id, reason, *, source_asset_ids=()):
 
 def _citation_obligations(state, paper, status, depths, reason):
     contract = scientific_module("execution_contract")
+    depth = paper.get("citation_depth")
+    path = {"depth": depth, "origin": paper.get("citation_origin")} if type(depth) is int and depth >= 0 else None
     if status == "bridge" and 0 not in depths:
         return
     if status not in {"core", "bridge", "review-anchor", "empirical-seed", "provisional-core"}:
@@ -104,6 +159,7 @@ def _citation_obligations(state, paper, status, depths, reason):
         key = paper["paper_id"] + ":" + direction
         if key in state["citation_obligations"]:
             existing = state["citation_obligations"][key]
+            _refresh_citation_depth(state, existing, path)
             if existing["parent_node_status"] == "bridge" and status == "core":
                 existing["parent_node_status"] = "core"
                 existing["child_bridge_depth"] = 0
@@ -126,7 +182,8 @@ def _citation_obligations(state, paper, status, depths, reason):
             "obligation_id": key, "parent": identity, "parent_node_status": status,
             "direction": direction, "status": "pending", "source": "OpenAlex", "cursor": None,
             "parent_bridge_depth": 0, "child_bridge_depth": contract.citation_child_bridge_depth(status, 0),
-            "pages": [], "source_failures": [], "seen_cursors": [], "reason": reason}
+            "pages": [], "coverage_generation": 0, "source_failures": [], "seen_cursors": [], "reason": reason}
+        _refresh_citation_depth(state, state["citation_obligations"][key], path)
         _invalidate(state)
 
 
@@ -136,6 +193,7 @@ def add_anchor(state, paper, *, role, reason):
     if not paper.get("paper_id"):
         raise ValueError("Anchor requires its allocated logical paper ID")
     result = copy.deepcopy(state)
+    paper = dict(paper, citation_depth=0, citation_origin={"route": role, "root_paper_id": paper["paper_id"]})
     _citation_obligations(result, paper, role, [0], reason)
     _event(result, "principal-anchor", reason, paper_id=paper["paper_id"], role=role)
     return result
@@ -226,7 +284,7 @@ def due_obligations(state):
     """Return source tasks and native work units without closing any frontier."""
     result = []
     for obligation in state["citation_obligations"].values():
-        if obligation["status"] != "complete":
+        if obligation["status"] != "complete" and not citation_fetch_block(state, obligation):
             task = copy.deepcopy(obligation)
             task.update(kind=obligation["direction"], limit=100, phase="citation", query="")
             if obligation["source"] == "publisher-or-repository-reference-list":
@@ -238,6 +296,7 @@ def due_obligations(state):
     if state["principal_provisionally_satisfied"]:
         result.extend(copy.deepcopy(w) for w in state["blind_windows"].values() if w["status"] != "complete")
     result.extend(copy.deepcopy(w) for w in state["native_assessment_pending"].values())
+    result.extend(copy.deepcopy(w) for w in state.get("process_assessment_pending", {}).values())
     result.extend(copy.deepcopy(w) for w in state.get("lineage_replay_pending", {}).values())
     return result
 
@@ -265,10 +324,19 @@ def complete_window(state, key, snapshot, *, snapshot_path, reason):
         raise ValueError("Snapshot request does not match frozen window")
     if snapshot.get("next_cursor") is not None:
         raise ValueError("Bounded query window must not schedule another page")
+    returned = len(snapshot["results"])
+    total = snapshot.get("reported_total")
+    if type(total) is not int or total < 0 or returned != min(window["limit"], total):
+        raise ValueError("Bounded query response count differs from its reported total and requested window")
+    truncated = total > returned
+    if snapshot.get("returned_count", returned) != returned or snapshot.get("truncated", truncated) is not truncated:
+        raise ValueError("Bounded query truncation metadata differs from its ordered response")
     if window["status"] == "complete" and window.get("result_set_sha256") != snapshot["result_set_sha256"]:
         raise ValueError("Completed window results are immutable")
     window.update(status="complete", result_set_sha256=snapshot["result_set_sha256"],
-                  snapshot_path=str(snapshot_path), retrieved_at=snapshot["retrieved_at"])
+                  snapshot_path=str(snapshot_path), retrieved_at=snapshot["retrieved_at"],
+                  reported_total=total, returned_count=returned, truncated=truncated,
+                  source_exhausted=not truncated)
     _event(result, "window-completed", reason, window_key=key, result_set_sha256=snapshot["result_set_sha256"])
     return result
 
@@ -276,6 +344,8 @@ def complete_window(state, key, snapshot, *, snapshot_path, reason):
 def citation_page(state, obligation_id, snapshot, *, snapshot_path, reason):
     result = copy.deepcopy(state)
     obligation = result["citation_obligations"][obligation_id]
+    if citation_fetch_block(result, obligation):
+        raise ValueError("Citation page is outside the configured operational depth boundary")
     if snapshot.get("status") != "complete" or snapshot.get("result_set_sha256") != digest(snapshot.get("results")):
         raise ValueError("Failed citation page cannot advance/close an obligation")
     if obligation["status"] == "complete":
@@ -293,20 +363,63 @@ def citation_page(state, obligation_id, snapshot, *, snapshot_path, reason):
     total = snapshot.get("reported_total")
     if not isinstance(total, int) or total < 0:
         raise ValueError("Citation snapshot requires the source's reported coverage count")
-    same_source_pages = [p for p in obligation["pages"] if p["source"] == obligation["source"]]
+    generation = obligation.get("coverage_generation", 0)
+    same_source_pages = [p for p in obligation["pages"] if p["source"] == obligation["source"] and p.get("coverage_generation", 0) == generation]
     if same_source_pages and any(p.get("reported_total") != total for p in same_source_pages):
         raise ValueError("Citation count changed during pagination; snapshot is inconsistent and needs explicit resolution")
     encountered = sum(p["result_count"] for p in same_source_pages) + len(snapshot["results"])
     if encountered > total or (snapshot["exhausted"] and encountered != total):
         raise ValueError("Citation result count does not match demonstrated source exhaustion")
+    identities = citation_identity_keys(snapshot)
+    prior = {key for page in same_source_pages for key in page.get("source_identity_keys", [])}
+    if len(identities) != len(set(identities)) or prior.intersection(identities):
+        raise ValueError("Citation pagination repeats a source identity; coverage requires explicit resolution")
+    manifest = snapshot.get("reference_list_sha256")
+    if manifest and any(p.get("reference_list_sha256") not in {None, manifest} for p in same_source_pages):
+        raise ValueError("Citation reference list changed during pagination; restart requires an explicit new generation")
     obligation["pages"].append({"path": str(snapshot_path), "result_set_sha256": snapshot["result_set_sha256"],
                                 "request_sha256": snapshot["request_sha256"], "source": obligation["source"],
                                 "result_count": len(snapshot["results"]), "reported_total": total,
-                                "cursor": obligation["cursor"], "retrieved_at": snapshot["retrieved_at"]})
+                                "cursor": obligation["cursor"], "retrieved_at": snapshot["retrieved_at"],
+                                "coverage_generation": generation, "source_identity_keys": identities,
+                                "reference_list_sha256": manifest})
     obligation["seen_cursors"].append(obligation["cursor"])
     obligation["cursor"] = nxt
     obligation["status"] = "complete" if snapshot["exhausted"] else "pending"
     _event(result, "citation-page", reason, obligation_id=obligation_id, exhausted=snapshot["exhausted"])
+    return result
+
+
+def citation_identity_keys(snapshot):
+    """Source-record identities detect shifted pages, independently of bibliographic merging."""
+    source = snapshot["request"]["source"]
+    keys = []
+    for record in snapshot["results"]:
+        identifier = record.get("source_stable_id") or record.get("openalex_id")
+        if not identifier and record.get("epmc_id"):
+            identifier = str(record.get("epmc_source")) + ":" + str(record["epmc_id"])
+        # Deposited reference keys distinguish legitimately repeated citations.
+        identifier = identifier or record.get("doi") or digest(record)
+        keys.append(source + ":" + str(identifier))
+    return keys
+
+
+def restart_citation(state, obligation_id, *, reason, identity=None, source=None):
+    """Preserve prior encounters/pages while explicitly opening a new coverage generation."""
+    result = copy.deepcopy(state)
+    obligation = result["citation_obligations"][obligation_id]
+    if obligation["status"] == "complete":
+        raise ValueError("A completed citation window is immutable")
+    if identity:
+        obligation["parent"].update(copy.deepcopy(identity))
+    if source:
+        obligation["source"] = source
+    obligation["coverage_generation"] = obligation.get("coverage_generation", 0) + 1
+    obligation.update(cursor=None, seen_cursors=[], status="pending")
+    _refresh_citation_depth(result, obligation)
+    _invalidate(result)
+    _event(result, "citation-window-restarted", reason, obligation_id=obligation_id,
+           coverage_generation=obligation["coverage_generation"], identity=identity, source=source)
     return result
 
 
@@ -372,9 +485,11 @@ def principal_errors(state, *, pending_semantic_jobs=0):
         errors.append("Frozen empirical seeds and review anchors have not both been initialized")
     if any(w["status"] != "complete" for w in state["citation_obligations"].values()):
         errors.append("Citation directions/eligible one-hop bridges remain incomplete")
+    if any(citation_fetch_block(state, w) for w in state["citation_obligations"].values() if w["status"] != "complete"):
+        errors.append("Operational citation depth boundary leaves eligible expansions pending; it is not scientific saturation")
     if any(w["status"] != "complete" for w in state["process_windows"].values()):
         errors.append("Independently earned process windows remain incomplete")
-    if state["native_assessment_pending"] or state.get("lineage_replay_pending") or pending_semantic_jobs:
+    if state["native_assessment_pending"] or state.get("process_assessment_pending") or state.get("lineage_replay_pending") or pending_semantic_jobs:
         errors.append("Source reading, screening, or native eligibility audits remain pending")
     audits = state["citation_wave_audits"]
     if not audits or audits[-1]["new_potentially_relevant"] != 0 or audits[-1]["obligations_sha256"] != digest(state["citation_obligations"]):

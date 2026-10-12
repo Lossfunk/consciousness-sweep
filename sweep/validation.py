@@ -15,6 +15,7 @@ from jsonschema.exceptions import ValidationError, SchemaError
 
 from . import reading, screening, sources
 from .common import canonical, digest, file_hash, save_json
+from .store import StoreError
 
 MODEL_STAGES = {"title", "abstract", "rescue", "audit", "reader"}
 SCREEN_FIELDS = {"paper_id", "title", "year", "authors", "doi", "abstract"}
@@ -48,15 +49,34 @@ def current(coordinator):
         return False
 
 
-def validate(coordinator):
+def require_integrity(coordinator):
+    """A failed check stays binding until a successful explicit quiet audit."""
+    with coordinator.store._connection() as conn:
+        row = conn.execute("SELECT payload FROM events WHERE kind='operational_validation' ORDER BY id DESC LIMIT 1").fetchone()
+    failed = row is not None and json.loads(row[0]).get("ok") is False
+    path = Path(coordinator.run_dir) / "delivery" / "validation.json"
+    if path.exists():
+        report = json.loads(path.read_text())
+        failed = failed or (report.get("ok") is False and not report.get("incomplete"))
+    if failed:
+        raise ValueError("Operational integrity check failed. Repair the recorded errors and run validate before execution or delivery; previous delivery is preserved.")
+
+
+def validate(coordinator, *, deadline=None):
     root, store = Path(coordinator.run_dir).resolve(), coordinator.store
     errors, checks, error_count = [], {}, 0
     started = time.time()
 
+    def deadline_check():
+        if deadline is not None and time.monotonic() >= deadline:
+            raise TimeoutError("Checkpoint deadline reached; validation remains incomplete")
+
     def checked(name, amount=1):
+        deadline_check()
         checks[name] = checks.get(name, 0) + amount
 
     def error(code, entity, reason):
+        deadline_check()
         nonlocal error_count
         error_count += 1
         if len(errors) < 100:
@@ -77,7 +97,15 @@ def validate(coordinator):
 
     def hash_file(path, expected):
         require(isinstance(expected, str) and re.fullmatch(r"[0-9a-f]{64}", expected), "Missing/malformed SHA-256 binding")
-        require(file_hash(local(path)) == expected, "Stored file no longer matches its immutable hash")
+        hasher = hashlib.sha256()
+        with local(path).open("rb") as stream:
+            while True:
+                deadline_check()
+                block = stream.read(1024 * 1024)
+                if not block:
+                    break
+                hasher.update(block)
+        require(hasher.hexdigest() == expected, "Stored file no longer matches its immutable hash")
         checked("file_hashes")
 
     def packet_valid(packet):
@@ -108,6 +136,7 @@ def validate(coordinator):
     try:
         with store._connection() as conn:
             conn.execute("PRAGMA temp_store=FILE")
+            conn.set_progress_handler(lambda: int(deadline is not None and time.monotonic() >= deadline), 10000)
             conn.execute("BEGIN")
             snapshot_event_id = conn.execute("SELECT coalesce(max(id),0) FROM events").fetchone()[0]
             for row in conn.execute("PRAGMA integrity_check"):
@@ -132,7 +161,7 @@ def validate(coordinator):
                     require(isinstance(payload, dict), "Audit event payload must be an object")
                     kind = row["kind"]
                     key, value = None, None
-                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt"}:
+                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt", "job_superseded"}:
                         key, value = payload["job_id"], payload
                     elif kind == "job_retry_authorized":
                         key, value = payload["parent_id"], payload
@@ -157,6 +186,10 @@ def validate(coordinator):
                     if not re.fullmatch(prefix + r"\d{6,}", row[0]):
                         error("identifier_format", row[0], "Unexpected durable identifier format")
                 checked("identifier_counters")
+
+            for issue in coordinator.store.native_id_errors(conn):
+                error("native_identifier_registry", "native", issue)
+            checked("native_identifier_registry")
 
             for row in conn.execute("SELECT * FROM jobs ORDER BY id"):
                 jid = row["id"]
@@ -192,6 +225,9 @@ def validate(coordinator):
                         conn.execute("INSERT OR IGNORE INTO audit_packets VALUES(?,?)", (expected, payload["paper_id"]))
                         prompt, schema = reading.prepare(source)
                     elif stage == "retrieval" and row["state"] == "complete":
+                        if "source_manifest" in payload:
+                            require(digest(payload["source_manifest"]) == payload.get("source_manifest_sha256"), "Acquisition manifest differs from immutable job hash")
+                            require(payload["source_manifest"].get("paper_id") == payload["paper_id"], "Acquisition manifest belongs to another paper")
                         if result["status"] == "verified":
                             packet_valid(result["packet"])
                             for asset in result["assets"]:
@@ -257,6 +293,7 @@ def validate(coordinator):
                 except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError, AssertionError, ValidationError, SchemaError) as exc:
                     error("job_binding", jid, exc)
 
+            has_exclusion_index = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='screening_exclusions'").fetchone() is not None
             for row in conn.execute("SELECT id,status,record FROM papers ORDER BY id"):
                 pid = row["id"]
                 try:
@@ -268,14 +305,34 @@ def validate(coordinator):
                     if paper.get("assessment") is not None or paper["status"] in {"assessed", "reading-incomplete"}:
                         saved = conn.execute("SELECT stage,state,payload,result FROM jobs WHERE id=?", (paper.get("reader_job"),)).fetchone()
                         require(saved is not None and saved["stage"] == "reader" and saved["state"] == "complete", "Current assessment lacks a completed reader job")
-                        require(json.loads(saved["payload"])["paper_id"] == pid, "Assessment reader job belongs to another paper")
+                        reader_payload = json.loads(saved["payload"])
+                        require(reader_payload["paper_id"] == pid, "Assessment reader job belongs to another paper")
+                        require(reader_payload.get("packet_path") == paper.get("packet_path"), "Current assessment belongs to a superseded source packet")
+                        require(reader_payload.get("source_generation", 0) == paper.get("source_generation", 0), "Current assessment belongs to a superseded source generation")
+                        require(paper.get("assessment_packet_sha256") == reader_payload.get("packet_sha256"), "Current assessment packet hash binding is missing or stale")
+                        require(paper.get("assessment_source_generation") == paper.get("source_generation", 0), "Current assessment generation binding is missing or stale")
                         require(json.loads(saved["result"])["assessment"] == paper.get("assessment"), "Current assessment differs from its reader result")
                     for stage, decision in paper.get("screening", {}).items():
                         saved = conn.execute("SELECT stage,state,result FROM jobs WHERE id=?", (decision.get("job_id"),)).fetchone()
                         require(saved is not None and saved["state"] == "complete" and saved["stage"] == stage, "Current screening lacks a completed source-specific job")
                         matches = [d for d in json.loads(saved["result"])["assessment"]["decisions"] if d["paper_id"] == pid]
                         require(len(matches) == 1 and matches[0] == decision.get("decision"), "Current screening differs from its durable job result")
+                    latest = paper.get("screening_current", {})
+                    active_exclusion = (latest.get("decision") == "exclude" and latest.get("stage") != "rescue"
+                                        and paper["status"] in {"title-excluded", "abstract-excluded"})
+                    cached = conn.execute("SELECT * FROM screening_exclusions WHERE paper_id=?", (pid,)).fetchone() if has_exclusion_index else None
+                    require(bool(cached) == active_exclusion, "Current-exclusion audit index omits an exclusion or retains a superseded one")
+                    if cached:
+                        binding = latest.get("audit_binding_sha256", latest["source_sha256"])
+                        require(cached["job_id"] == latest["job_id"] and cached["cohort"] == latest["cohort"] and cached["binding"] == binding,
+                                "Current-exclusion cache differs from current source-bound screening")
+                        require(cached["rank"] == digest([coordinator.plan.get("audit_seed", "portable-v1"), latest["cohort"], pid, binding]), "Audit sampling rank differs from its deterministic source binding")
+                        require(cached["reviewed"] == int(latest["stage"] == "audit"), "Audit completion differs from actual source review")
+                        if cached["scheduled_job"]:
+                            audit_job = conn.execute("SELECT stage,payload FROM jobs WHERE id=?", (cached["scheduled_job"],)).fetchone()
+                            require(audit_job is not None and audit_job["stage"] == "audit" and pid in json.loads(audit_job["payload"])["paper_ids"], "Exclusion audit reservation has no corresponding job")
                     if "human_decision" in paper:
+                        require(isinstance(paper["human_decision"], str) and paper["human_decision"] in {"accepted-support", "accepted-primary", "declined", "pending"}, "Human disposition must be a supported CLI decision string")
                         event = history("human_decision", pid)
                         require(event is not None and event.get("actor") == "human-explicit" and event.get("changes", {}).get("human_decision") == paper["human_decision"], "Human disposition lacks an explicit attributed history event")
                     checked("papers")
@@ -293,10 +350,37 @@ def validate(coordinator):
                         event = history("control_updated", row["key"][len("state:"):])
                         require(event is not None and event.get("value") == value, "Native discovery judgment differs from its explicit submission history")
                         pid = row["key"].split("state:native-assessment:", 1)[1]
+                        coordinator.store.require_native_ids(pid, value["groups"],
+                            [a["comparison"] for a in value.get("process_activations", [])], conn=conn)
                         require(conn.execute("SELECT 1 FROM audit_packets WHERE hash=? AND paper_id=?", (value["packet_sha256"], pid)).fetchone() is not None, "Native discovery judgment is not bound to a supplied reader packet")
                         checked("native_source_bindings")
-                except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError) as exc:
+                except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError, StoreError) as exc:
                     error("control_binding", row["key"], exc)
+
+            from .discovery_validation import validate_discovery
+            validate_discovery(coordinator, conn, error, checked)
+
+            for row in conn.execute("SELECT * FROM job_supersessions ORDER BY job_id"):
+                try:
+                    event = history("job_superseded", row["job_id"])
+                    require(event is not None and event.get("replacement_job_id") == row["replacement_job_id"] and event.get("reason") == row["reason"] and str(row["reason"]).strip(), "Job supersession differs from its durable reason/history")
+                    require(event.get("scope") == "execution-only; original result, running worker and budget remain unchanged", "Job supersession lacks its execution-only scope")
+                    saved = conn.execute("SELECT payload,stage FROM jobs WHERE id=?", (row["job_id"],)).fetchone()
+                    require(saved is not None, "Superseded job is missing")
+                    if row["replacement_job_id"]:
+                        require(row["replacement_job_id"] != row["job_id"] and conn.execute("SELECT 1 FROM jobs WHERE id=?", (row["replacement_job_id"],)).fetchone() is not None, "Supersession replacement is invalid")
+                    if saved["stage"] in {"reader", "retrieval"}:
+                        payload = json.loads(saved["payload"])
+                        current_row = conn.execute("SELECT record FROM papers WHERE id=?", (payload["paper_id"],)).fetchone()
+                        require(current_row is not None, "Superseded source job paper is missing")
+                        paper = json.loads(current_row[0])
+                        changed = payload.get("source_generation", 1) != paper.get("source_generation", 1)
+                        changed = changed or (saved["stage"] == "reader" and payload.get("packet_path") != paper.get("packet_path"))
+                        changed = changed or (saved["stage"] == "retrieval" and payload.get("source_manifest_sha256") != paper.get("current_source_manifest_sha256"))
+                        require(changed, "Superseded source job still has current inputs")
+                    checked("job_supersessions")
+                except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                    error("job_supersession", row["job_id"], exc)
 
             from .recovery import validate_retries
             validate_retries(coordinator, conn, error, checked, history)
@@ -318,9 +402,13 @@ def validate(coordinator):
                 if not math.isclose(total, aggregate[key], rel_tol=1e-9, abs_tol=1e-9):
                     error("budget_aggregate", key, "Durable aggregate differs from all reservations")
             checked("budget_aggregate")
+    except TimeoutError:
+        raise
     except (sqlite3.Error, ValueError, KeyError, TypeError, AttributeError, IndexError, OSError) as exc:
+        deadline_check()
         error("validation_snapshot", "database", exc)
 
+    deadline_check()
     report = {"ok": error_count == 0, "errors": errors, "error_count": error_count, "checks": checks,
               "scope": "operational-not-native-scientific", "snapshot_event_id": snapshot_event_id,
               "elapsed_seconds": round(time.time() - started, 3), "native_scientific_certification": False,
