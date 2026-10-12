@@ -4,16 +4,143 @@ A portable, resumable literature pipeline for finding studies that help explain
 how awareness of an entity X relates to its use by a downstream function Y.
 Its deliverable is a source-grounded prospect queue for scientific review.
 
+This repository accompanies **Sushrut Thorat and Paras Chopra,
+[Towards a full-stack functionalist theory of consciousness: Identifying its
+functional profile](https://arxiv.org/abs/2609.33366)** (2026). The manuscript
+sets out the scientific motivation; this repository supplies an agent-assisted
+way to extend the literature search and keep an auditable trail of its decisions.
+
+Start with [Quick start](#quick-start-with-a-coding-agent), or read about
+[the scientific workflow](#how-the-search-and-screening-work),
+[running discovery](#discover-literature), and [reviewing results](#review-and-resume).
+
+## Why this repository exists
+
+A functional account of consciousness needs empirical constraints: what changes
+when a system is aware of some information, and what remains possible without
+that awareness? The paper approaches this through a specific question:
+
+> For an information-bearing content **X**, does awareness of X change whether,
+> or how well, X is used by a mental or bodily process **Y**?
+
+For example, X might be the location of a distracting stimulus and Y the control
+of its influence on a later task. The relevant evidence concerns how that
+information is used. Simply showing better detection of a more visible stimulus
+does not, by itself, answer the functional question. Stronger information can
+also improve performance, so awareness, signal strength and the measured use
+need to be distinguished.
+X can also be internally generated or concern affective or bodily information.
+A physiological outcome needs a justified interpretation as a functional use of
+X; a bodily change alone is not sufficient.
+
+Manual citation searches identified an initial empirical profile. This pipeline
+is intended to find additional studies that those searches may have missed,
+including informative differences, preserved capacities and carefully scoped
+negative results. Those findings can constrain proposals about the processes
+associated with consciousness. They do not, on their own, determine a complete
+theory or a unique mechanism.
+
+## What the pipeline produces
+
+The main output is a reviewable collection of **prospects**. Each reading states
+what X is, how awareness is assessed, how Y uses X, the decisive source evidence,
+the remaining alternative and why the study deserves attention. It also records
+which source material was unavailable or left a question unresolved.
+
+The compact reader uses three dispositions:
+
+| Disposition | Meaning |
+|---|---|
+| **Prospect** | A located, potentially useful contribution warrants scientific review, with its limitations stated. |
+| **Context** | The work supplies background or related evidence without an adequate awareness–use comparison for this prospect queue. It can still matter to discovery. |
+| **Unresolved** | Missing, ambiguous or conflicting evidence prevents a settled judgment. |
+
+Primary/support/undetermined roles are tentative. A human reviewer decides what
+to include in an empirical profile; those decisions are stored separately from
+the model's original judgment. A paper can contain several claims with different
+dispositions. The queue preserves the actual contribution and its scope rather
+than assigning one undifferentiated quality score to a paper.
+
+The software handles retrieval, queues, identifiers, source hashes, budgets,
+parallel workers, checkpointing and exports. A supervising coding agent reads
+the protocol, manages execution and resolves the scientific discovery tasks.
+It is an agent-operated research workflow, not an unattended command that
+automatically certifies a finished systematic review.
+
+## How the search and screening work
+
+1. **Start from the frozen bibliography.** Index the empirical seeds and
+   review/discovery anchors without treating prior inclusion as an answer key.
+2. **Find related literature.** Search references and citing papers. Eligible
+   empirical nodes continue citation expansion; strict near-neighbors have a
+   bounded one-hop bridge route. Independently established functions can activate
+   function-specific searches.
+3. **Screen titles, then abstracts.** Titles exclude only clear irrelevance.
+   Abstracts retain plausible comparisons, supporting evidence and useful
+   discovery connections. Missing detail is not treated as demonstrated absence;
+   uncertainty advances to full text. Scientific abstract exclusions receive a
+   fresh source-only review, and current exclusions are audited under the protocol.
+4. **Acquire and read full texts.** Retrieve accessible sources, verify their
+   identity, extract source-located text, include available relevant supplements,
+   and assess the concrete experimental claim.
+5. **Check wider coverage.** Once the principal frontiers provisionally finish,
+   execute the mandatory supplementary search families on OpenAlex and Europe
+   PMC. New eligible papers or functions reopen the relevant searches.
+6. **Deliver and continue.** Save provisional prospects and their decision trails
+   at validated checkpoints. Stop only at the agreed resource/depth boundary or
+   when the applicable search obligations are satisfied; these are distinct states.
+
+The fourteen supplementary coverage families are defined in
+[science/queries.md](science/queries.md). They include affective and bodily
+domains and are coverage checks, not an exhaustive taxonomy of consciousness or
+a whitelist of acceptable functions. Full discovery and stopping rules live in
+[science/PROTOCOL.md](science/PROTOCOL.md).
+
+At full text, the reader aligns the content X with the actual awareness measure
+and a defensible downstream function Y. It checks the reported awareness result,
+the comparability of the conditions, the possible explanation by differences in
+information strength, and the actual outcome. Physical stimulus matching alone
+does not guarantee equal internal evidence. A useful support can have incomplete
+control, but naming a confound does not turn an otherwise uninformative contrast
+into a contribution. Supporting experiments and supplements must be integrated
+with an explicit reason that their evidence applies.
+
+Graded awareness and informative null results are allowed. Bayesian analyses are
+not mandatory. A nonsignificant result is not automatically equivalence, and
+successful processing without awareness does not automatically show equal
+performance with awareness. The reader states the supported claim before its
+tentative role; [science/PROTOCOL_BRIEF.md](science/PROTOCOL_BRIEF.md) gives a
+short guide to the detailed scientific rules.
+
+## Starting literature
+
 The frozen seed scope covers the 60 logical works in the manuscript v2
 bibliography: 18 empirical seeds and 42 review/discovery anchors. This includes
 McCormick (1997), Klein et al. (2007), Dali and Hester (2022), Dali et al. (2023),
 Murphy and Bloom (2015), and the contextual Shapiro et al. (1997) reference.
 Seeds supply identities for independent reading, without expected evidence tiers.
+The seed files freeze the supplied manuscript v2 bibliography; the arXiv version
+may lag that manuscript. See [science/seeds_empirical.csv](science/seeds_empirical.csv)
+and [science/seeds_reviews.csv](science/seeds_reviews.csv) for the actual identities.
 
-Download this repository, open it in your coding agent, and say:
+## Quick start with a coding agent
 
-> Follow AGENTS.md. Inspect the available system and model access, recommend one
-> configuration, agree a resource allowance with me, and start a bounded run.
+Download the `main` branch using GitHub's **Code → Download ZIP**, or clone it:
+
+```sh
+git clone https://github.com/Lossfunk/consciousness-sweep.git
+cd consciousness-sweep
+```
+
+If repository access is restricted, the operator must first have access through
+GitHub. Open the downloaded directory as the coding agent's workspace and say:
+
+> Follow AGENTS.md and README.md. I want a discovery sweep from the supplied
+> seeds. Inspect the available system and model access, recommend a configuration
+> and a bounded commissioning allowance, and confirm my resource and citation
+> depth limits before starting. Manage the screening, native discovery tasks,
+> retrieval, checkpoints and prospect delivery yourself. Keep decisions grounded
+> in the supplied sources and report anything that needs my scientific judgment.
 
 The agent handles configuration and evaluation work. You do not need to compare
 every model in the candidate catalog or label a new benchmark.
@@ -22,7 +149,7 @@ hops from the seeds.” The agent expands eligible links automatically within th
 limit. Seeds are depth 0; papers reached at the limit are still screened and read.
 The run reports further expansion as depth-limited, without claiming saturation.
 
-## Start
+## Install and choose resources
 
 Python 3.9 or newer is required. From this directory:
 
@@ -36,6 +163,19 @@ Bootstrap creates an isolated environment and installs the pinned dependencies.
 It does not call a model, purchase credits, or start a literature run. The
 inventory records hardware, installed tools and observable access facts without
 printing credentials. Unknown model access or quotas stay unknown.
+
+You also need network access for scholarly retrieval and usable access to the
+selected model harness. A GPU is not required for subscription-based cloud
+workers. Local model endpoints require their own sufficient memory and compute;
+the agent inspects what is available instead of assuming it. Check the actual
+account allowance before a long run. The pipeline cannot infer unlimited quota
+from an installed CLI or silently purchase additional capacity.
+
+Choose **discovery mode** to search outward from the bibliography, or **corpus
+mode** to screen a list you already have. `plan` defaults to corpus mode; use
+`--mode discovery` explicitly for the literature sweep described above. The
+commands below are for the supervising agent to operate; you do not need to
+write JSON responses or coordinate workers yourself.
 
 The default plan uses agent work exchange, which works with Codex, Claude Code,
 OpenClaw or another agent able to read files and run these commands:
@@ -163,17 +303,26 @@ work. Validation checks integrity and provenance, not scientific correctness.
 ## Discover literature
 
 A plan with `"mode": "discovery"` initializes the frozen empirical seeds and
-review anchors. For a separate discovery run, have the agent prepare an
-authorized configuration using the profile/resource fields in `EXECUTION.md`:
+review anchors. After agreeing the allowance, this example creates a bounded
+Codex commissioning run with two workers, twenty admitted calls, a one-hour
+execution-session limit and two citation hops:
 
 ```sh
-.venv/bin/python -B -m sweep plan --config workspace/discovery-configuration.json \
+.venv/bin/python -B -m sweep plan --preset codex --mode discovery --authorize \
+  --workers 2 --max-calls 20 --max-seconds 3600 --max-citation-depth 2 \
   --output workspace/discovery-plan.json
 .venv/bin/python -B -m sweep init --plan workspace/discovery-plan.json --run-id discovery-sweep
-.venv/bin/python -B -m sweep discovery-init --run-id discovery-sweep
 .venv/bin/python -B -m sweep run --run-id discovery-sweep
-.venv/bin/python -B -m sweep native-work --run-id discovery-sweep
+.venv/bin/python -B -m sweep native-work --run-id discovery-sweep --owner AGENT_AND_MODEL
 ```
+
+These numbers illustrate a small commissioning allowance, not the estimated cost
+of a complete sweep. Use `--preset manual` for agent work exchange, or the Claude
+preset and account attestation described above. For a custom configuration,
+use `plan --config workspace/discovery-configuration.json --mode discovery`
+with the profile/resource fields in [EXECUTION.md](EXECUTION.md). Initialization
+already creates the seed obligations; `discovery-init` is an idempotent explicit
+initialization command when needed.
 
 To commission a depth-bounded run, add `--max-citation-depth 2` to `plan`, or
 set `resources.max_citation_depth` in the configuration. Omit it or use JSON
@@ -185,16 +334,60 @@ remain open and prevent a false saturation or completion claim. The selected
 depth limit is part of the saved plan; resume uses the same limit.
 
 Native work units ask the agent for source-located experiment-group, citation,
-earned-function or wave-audit evidence. Submit the requested JSON with
-`native-submit --paper-id TASK_ID --input RESPONSE_PATH --actor AGENT_AND_MODEL`.
+earned-function or wave-audit evidence. Submit the requested JSON with:
+
+```sh
+.venv/bin/python -B -m sweep native-submit --run-id discovery-sweep \
+  --paper-id TASK_ID --input RESPONSE_PATH --actor AGENT_AND_MODEL
+```
+
 Here `TASK_ID` may be a paper ID or a returned source/wave task identifier.
 These handoffs are agent work, not an assignment for the user to evaluate models.
 The supervising agent must keep servicing them. Automatic headless reader
 workers do not independently complete every native discovery judgment.
+The agent must follow the returned task's owner/lease-token submission contract;
+preserve the returned `native_lease` in the response JSON and use the same owner
+as `--actor`. It must not invent identifiers or submit another worker's leased task.
 
 Discovery follows the frozen principal-first, blind-last rules. Retrieval
 failures, unresolved identities and resource exhaustion leave obligations open.
 A prospect label does not establish citation eligibility or an earned process Y.
+
+## Full texts, missing sources and article versions
+
+Acquisition uses supplied local files, Europe PMC full-text XML, available PDF
+or open-access locations, and OpenAlex fallback information. Available linked
+or explicitly supplied supplements are associated with their main article.
+The pipeline verifies source identity and stores immutable source hashes so
+later judgments can be traced to the version actually read.
+
+Some papers will remain inaccessible, unreadable, or incomplete. Paywalls,
+missing supplements and figure-only evidence can require agent investigation or
+a user-supplied copy. These are recorded gaps, not automatic scientific
+exclusions. To supply a main article and supplement, create a JSON array such as
+`workspace/source-set.json` with paths relative to that file:
+
+```json
+[
+  {"path":"papers/article.pdf","role":"main"},
+  {"path":"papers/supplement.pdf","role":"supplement","association_reason":"Publisher-linked supplement for this article"}
+]
+```
+
+Then have the agent attach the complete main/supplement set to the existing ID:
+
+```sh
+.venv/bin/python -B -m sweep source --run-id discovery-sweep --paper-id PAPER_ID \
+  --manifest workspace/source-set.json --reason "Previously missing full text supplied"
+.venv/bin/python -B -m sweep run --run-id discovery-sweep
+```
+
+Clear duplicate identities are deduplicated while all discovery encounters are
+preserved. Different DOIs, preprints and revised versions can remain separate
+with possible-version or duplicate links. The pipeline surfaces those
+relationships for adjudication; it does not automatically decide that every
+preprint is interchangeable with its published version. Unresolved versions
+must not count as independent corroborating studies.
 
 ## Review and resume
 
@@ -246,6 +439,16 @@ compute. A long run needs an operator-managed persistent terminal or supervisor.
 
 ## Scope and integrity
 
+The code and reader were checked before handoff with 302 software tests,
+23 live full-text readings and four boundary-case repeats. A separate three-call
+check passed all 13 expected useful papers through the deployed title and
+abstract stages into the retrieval queue. Complete-cycle and recovery tests use
+controlled fixtures; earlier live commissioning exercised discovery through
+depth two. These checks establish bounded execution and known-paper retention.
+They do not measure exhaustive recall, establish live Claude equivalence, or
+substitute for reviewing new prospects. Evaluation papers and answer keys are
+kept out of this downloadable package.
+
 [science/PROTOCOL.md](science/PROTOCOL.md) defines the science. The portable
 coordinator maintains a separate operational prospect ledger. Its completion
 status does **not** certify the frozen native comparison ledger, native CSV
@@ -263,4 +466,29 @@ python3 bootstrap.py --verify-only
 See [AGENTS.md](AGENTS.md) for the agent contract and [EXECUTION.md](EXECUTION.md)
 for operational details and current limitations.
 
-The current operational revision uses fourteen documented coverage families, immutable source generations, independently checked exclusions and recoverable citation snapshots. Read the prepared one-hour commissioning test in [EXECUTION.md](EXECUTION.md) before launching a large sweep. Software readiness and live commissioning are separate; the package does not start either automatically.
+Read the prepared commissioning procedure in [EXECUTION.md](EXECUTION.md) before
+launching a large sweep. Setup and verification do not start a search or model
+call. A time limit or exhausted allowance creates a resumable checkpoint, not a
+claim that the literature has been exhausted.
+
+## Repository guide
+
+| Path | Purpose |
+|---|---|
+| [AGENTS.md](AGENTS.md) | Startup, execution, evidence and handoff responsibilities for the supervising agent. |
+| [CLAUDE.md](CLAUDE.md) | Claude Code entry instructions, referring to the same scientific and execution contracts. |
+| [EXECUTION.md](EXECUTION.md) | Configuration, model adapters, resource accounting, discovery tasks and recovery details. |
+| [science/PROTOCOL.md](science/PROTOCOL.md) | Authority on scientific eligibility, evidence interpretation, discovery and stopping. |
+| [science/PROTOCOL_BRIEF.md](science/PROTOCOL_BRIEF.md) | Short scientific reading and discovery guide. |
+| [science/queries.md](science/queries.md) | Frozen query families and search windows. |
+| [sweep/](sweep/) | Portable coordinator, adapters, acquisition, storage and delivery code. |
+| [runtime/source_reader/](runtime/source_reader/) | Compact reader contract; deployed clarification also lives in `sweep/reading.py`. |
+| `workspace/` | Local plans, optional corpus inputs and supplied files; ignored by Git. |
+| `runs/RUN_ID/` | One run's ledger, jobs, sources, receipts and review outputs; ignored by Git. |
+| [DISTRIBUTION_MANIFEST.json](DISTRIBUTION_MANIFEST.json) | Hashes of the distributed static files. |
+
+Keep each independent sweep's data and judgments separate. Changing a frozen
+scientific input or model configuration requires a separately configured run;
+do not edit a running experiment into a different one. For the scientific
+motivation and manuscript citation, use the
+[arXiv paper](https://arxiv.org/abs/2609.33366).

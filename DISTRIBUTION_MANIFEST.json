@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-12T10:12:52.002340+00:00",
+  "created_at": "2026-10-12T11:26:44.066331+00:00",
   "excluded": [
     "source PDFs",
     "run history",
@@ -14,7 +14,7 @@
     "AGENTS.md": "2dae4fe979b70451eeb9a133ebc8cbb92b425c49f0c5bb11fb94bc85ab3229bf",
     "CLAUDE.md": "150b2c2074d4c6752f7b97c58f102cdf004efa720fc315f9933536e0a31567b3",
     "EXECUTION.md": "50a212fe95154bd655652077f5340ef89330d2d25c68e865002a61fed9ae7d45",
-    "README.md": "00ccfec036358d79e9690f8584bf391a54f29ecf01097d945b8e01d06ecf9dd3",
+    "README.md": "e91a60ea9b80750cb3d701ab7871f825e36e2126bc4773a82e62543037b703f2",
     "agent_candidates.json": "228e62b5abce865d06c4024543bd9e01b159c5579255a858f06e85c7e5c60472",
     "bootstrap.py": "453a92a7bd78989bc0480fb01a6d38667c7f2cab641e6c88212978d6884381ad",
     "development/prospect_contract_v1.md": "7940a69a378a49b18d130be127cbde180d8653ac4e819751a4a524a08af91fcd",
