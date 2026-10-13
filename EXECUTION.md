@@ -483,13 +483,11 @@ bound hashes. A new source generation, including an explicit `source-retry`,
 starts fresh endpoint history and preserves the old receipts. There is no new
 attempt limit, scientific exclusion or saturation rule.
 
-The r21 operational repair does not migrate runs initialized by earlier runtimes.
-Ordinary resume checks the saved scientific and runtime fingerprints before
-opening a writable store. Keep an affected older run paused in its original
-release. Applying a successor requires a separately implemented and reviewed
-continuation mechanism that preserves its original plan, results, history,
-source bindings, resource agreement and execution provenance; editing the saved
-fingerprint or copying new code into the active release is unsupported.
+This release is intended for fresh runs. Ordinary resume checks the saved
+scientific and runtime fingerprints before opening a writable store. Older runs
+retain their original release and data. No existing-run migration is provided:
+do not edit a saved fingerprint, copy an old ledger into a new run, or replace
+code in an active release. Use a new run ID with the new release.
 
 Keep uncertain preprint/published matches separate and preserve supplied version
 relations/publication status. Use the source text to resolve identity. Never count

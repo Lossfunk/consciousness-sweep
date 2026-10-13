@@ -146,9 +146,9 @@ GitHub. Open the downloaded directory as the coding agent's workspace and say:
 Keep that release directory for the lifetime of its runs. Download updates into
 a new directory; do not pull changed code or instructions into an active run.
 Existing runs retain their original package, sources and recorded configuration.
-This release does not migrate existing runs. A run paused under an earlier
-runtime needs an explicit, reviewed continuation mechanism before it can use
-the scheduler repair; replacing its files and resuming is unsupported.
+Start a fresh run with this release. Existing runs remain bound to their original
+release and are not migrated. Use a new run ID; do not copy an old database or
+replace files inside its active release. See the startup instructions below.
 
 The agent reads the repository instructions, inspects the machine and its active
 harness/model access, recommends workers and stage profiles, and asks once about

@@ -265,7 +265,7 @@ def validate(coordinator, *, deadline=None):
         hash_file(asset["original_path"], asset["sha256"])
         hash_file(asset["text_path"], asset["text_sha256"])
         hash_file(asset["map_path"], asset["map_sha256"])
-        require(local(asset["text_path"]).read_text(encoding="utf-8") == asset["content"], "Extracted text differs from reader asset content")
+        require(local(asset["text_path"]).read_bytes().decode("utf-8") == asset["content"], "Extracted text differs from reader asset content")
         require(load(asset["map_path"]) == asset["units"], "Source unit map differs from recorded asset")
         require(asset["content_sha256"] == hashlib.sha256(asset["content"].encode()).hexdigest(), "Asset content hash mismatch")
         cache = local(asset["original_path"]).parent / (asset["sha256"] + ".extraction.json")
