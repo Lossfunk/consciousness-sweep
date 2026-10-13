@@ -23,6 +23,12 @@ def active_blocks(coordinator_or_store):
         for row in rows:
             value = json.loads(row["value"])
             if value and value.get("active"):
+                # A source-scoped rejection belongs to that retired request.
+                # Preserve its receipt, but do not ask operators to unblock it.
+                # Profile/budget blocks still apply to replacement work.
+                if value.get("scope") == "job" and conn.execute(
+                        "SELECT 1 FROM job_supersessions WHERE job_id=?", (value.get("job_id"),)).fetchone():
+                    continue
                 result.append(dict(value, block_key=row["key"][len("state:"):]))
         return result
 

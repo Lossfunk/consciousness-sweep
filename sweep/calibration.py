@@ -15,6 +15,7 @@ from pathlib import Path
 from .common import digest, inside, save_json
 from .profiles import profile_fingerprint, validate_profile
 from .store import normalize_doi
+from .transactions import atomic_operation
 
 REFERENCE_PATH = Path(__file__).with_name("calibration_reference.json")
 DIMENSIONS = ("same_x", "awareness_alignment", "downstream_use", "actual_contrast",
@@ -210,8 +211,12 @@ def reconcile(c):
         if second:
             observation["second_read"] = second
             observation["second_read_identity"] = second_read_identity(second)
-            if second.get("packet_sha256") == observation["bindings"]["packet_sha256"] and second.get("assessment"):
+            if (second.get("packet_sha256") == observation["bindings"]["packet_sha256"]
+                    and second.get("source_generation", 1) == observation["bindings"]["current_source_generation"]
+                    and second.get("assessment")):
                 observation["second_read_check"] = assess(paper, "reader", second["assessment"], reference=reference)
+            else:
+                observation["stale_second_read"] = True
         adjudication = c.store.get_state("seed_calibration_adjudication:" + paper["paper_id"])
         if adjudication:
             if adjudication["bindings"] == observation["bindings"]:
@@ -326,7 +331,7 @@ def pending_tasks(c):
         if not case["expected"]["expected_claims"] or case["semantic_status"] in {"consistent-with-reference", "source-supported-departure"}:
             continue
         first = case.get("observed") or {}
-        second = (case.get("second_read") or {}).get("assessment") or {}
+        second = {} if case.get("stale_second_read") else (case.get("second_read") or {}).get("assessment") or {}
         if not first or (not any(read.get("assessment_status") == "complete" and read.get("source_identity", {}).get("status") == "match"
                                 for read in (first, second)) and case["source_coverage"]["status"] != "needs-source-check"):
             continue
@@ -335,7 +340,8 @@ def pending_tasks(c):
             continue
         tasks.append({"task": "seed-calibration-comparison", "task_id": "calibration:" + case["paper_id"],
                       "focal_paper_id": case["paper_id"], "bindings": case["bindings"],
-                      "expected": case["expected"], "observed": first, "second_read": case.get("second_read"),
+                      "expected": case["expected"], "observed": first, "second_read": None if case.get("stale_second_read") else case.get("second_read"),
+                      "historical_second_read": case.get("second_read") if case.get("stale_second_read") else None,
                       "source_coverage": case["source_coverage"],
                       "packet_path": paper["packet_path"], "template": adjudication_template(c, case["paper_id"]),
                       "instructions": "First check source coverage: distinguish unavailable main/supplementary/borrowed premise evidence from a reader's failure to use supplied text. Do not infer a weak model from missing evidence. Record source_coverage as sufficient-for-reassessment, additional-source-needed or unresolved with a reason and current source pointers where available; sufficient-for-reassessment clears the prerequisite for an explicitly authorized independent read even when the overall comparison remains unresolved. Then compare each represented claim, all seven semantic dimensions and the approved reference. Expected claims are a comparison baseline, not answers to force. Inspect the original source packet at packet_path within this run; baseline page pointers belong to the baseline version. Supply current asset/unit locations. Preserve a defensible source-supported departure or unresolved gap. A paper-level prospect match alone is insufficient. The optional independent read remains separate from the ordinary assessment; an incomplete ordinary reading cannot become complete just because the independent read matches. Submit the completed template through native-submit for this task, preserving its native lease, or defer with a specific unresolved reason."})
@@ -418,10 +424,15 @@ def record_adjudication(c, paper_id, review):
     A reviewer may find a source-supported departure from the reference; the
     reference is a calibration aid, never a scientific ground-truth override.
     """
+    _commit_adjudication(c, paper_id, review)
+    return reconcile(c)
+
+
+@atomic_operation
+def _commit_adjudication(c, paper_id, review):
     _validate_adjudication(c, paper_id, review)
     c.store.set_state("seed_calibration_adjudication:" + paper_id, deepcopy(review),
                       "Explicit source-grounded comparison with the approved reference; scientific judgments remain unchanged")
-    return reconcile(c)
 
 
 def validate_records(c, conn):

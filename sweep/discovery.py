@@ -7,8 +7,6 @@ The frozen native ledger/validator remains the authority for certification.
 from __future__ import annotations
 
 import csv
-from contextlib import contextmanager
-from copy import copy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -487,7 +485,11 @@ def _hydrate_native_task(c, task):
     task = dict(task)
     if task.get("paper_id"):
         paper = c.store.paper(task["paper_id"])
-        task["paper"] = paper
+        from .source_intake import source_manifest
+        # A fresh native reader receives bibliography and source evidence only.
+        # Prior screening, reader, human and calibration judgments stay in the ledger.
+        task["paper"] = dict(source_manifest(paper), abstract=paper.get("abstract"))
+        task["execution_role"] = "source-only-native-reader"
         task["packet_path"] = paper.get("packet_path") if _packet_is_current(paper) else None
         task["source_generation"] = paper.get("source_generation", 1)
         task["schema_paths"] = {name: str(science_root() / "schemas" / (name + ".schema.json"))
@@ -568,38 +570,9 @@ def _native_controls(conn):
 
 
 def _native_transaction_view(c, conn):
-    """Reuse one write snapshot throughout a native submission.
-
-    Native submissions perform local source checks and durable scheduling, not
-    network/model calls. Their nested Store transactions become savepoints, so
-    all scientific records/frontier changes either commit together against the
-    checked source generation or roll back together. Other workers cannot change
-    that generation or claim/release this native task between its checks/writes.
-    """
-    view, store = copy(c), copy(c.store)
-    counter = 0
-
-    @contextmanager
-    def connection():
-        yield conn
-
-    @contextmanager
-    def transaction():
-        nonlocal counter
-        counter += 1
-        name = "native_nested_" + str(counter)
-        conn.execute("SAVEPOINT " + name)
-        try:
-            yield conn
-            conn.execute("RELEASE SAVEPOINT " + name)
-        except BaseException:
-            conn.execute("ROLLBACK TO SAVEPOINT " + name)
-            conn.execute("RELEASE SAVEPOINT " + name)
-            raise
-
-    store._connection, store._transaction = connection, transaction
-    view.store = store
-    return view
+    # Native leases and all nested writes share the same atomic source snapshot.
+    from .transactions import transaction_view
+    return transaction_view(c, conn)
 
 
 def _native_binding(c, task):

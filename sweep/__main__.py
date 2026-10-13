@@ -56,7 +56,7 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
         if name in {"ingest", "submit", "native-submit", "calibration-review"}:
@@ -97,6 +97,13 @@ def main(argv=None):
             cmd.add_argument("--reason", required=True)
             cmd.add_argument("--delay-seconds", type=int, default=300)
             cmd.add_argument("--lease-token", type=int)
+        if name == "fetch-source":
+            cmd.add_argument("--paper-id", required=True)
+            cmd.add_argument("--url", required=True)
+            cmd.add_argument("--role", choices=["main", "supplement"], default="main")
+            cmd.add_argument("--association-reason")
+            cmd.add_argument("--reason", required=True)
+            cmd.add_argument("--actor", default="supervising-agent")
         if name == "source-retry":
             cmd.add_argument("--paper-id", required=True)
             cmd.add_argument("--reason", required=True)
@@ -247,6 +254,10 @@ def main(argv=None):
                 elif args.command == "human-decision":
                     result = coordinator.store.update_paper(args.paper_id, {"human_decision": args.decision}, args.reason, "human-explicit")
                     coordinator.deliver()
+                elif args.command == "fetch-source":
+                    from .downloads import fetch
+                    result = fetch(coordinator, args.paper_id, args.url, role=args.role,
+                        association_reason=args.association_reason, reason=args.reason, actor=args.actor)
                 elif args.command == "source-retry":
                     from .source_intake import queue_retrieval
                     result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}

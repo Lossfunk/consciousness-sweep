@@ -20,6 +20,7 @@ import uuid
 
 from .common import ROOT, canonical, digest, file_hash, regime, save_json, scientific_module
 from .store import Store, BudgetExceeded
+from .transactions import atomic_operation
 from . import screening, reading
 
 MODEL_STAGES = ("title", "abstract", "rescue", "audit", "reader")
@@ -963,6 +964,7 @@ class Coordinator:
                 return False
         return True
 
+    @atomic_operation
     def _project_screen(self, job):
         from .source_intake import queue_retrieval
         stage, payload = job["stage"], job["payload"]
@@ -1038,6 +1040,7 @@ class Coordinator:
                 conn.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('state:screen_revision',?)", (canonical(revision + 1),))
                 conn.execute("INSERT INTO meta(key,value) VALUES(?,?)", (key, canonical(True)))
 
+    @atomic_operation
     def _project_reader(self, job):
         pid, payload = job["payload"]["paper_id"], job["payload"]
         paper = self.store.paper(pid)
@@ -1074,6 +1077,7 @@ class Coordinator:
             from .discovery import queue_native_after_reader
             queue_native_after_reader(self, pid)
 
+    @atomic_operation
     def _project_retrieval(self, job):
         pid, result = job["payload"]["paper_id"], job["result"]
         current = self.store.paper(pid)

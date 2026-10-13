@@ -691,3 +691,60 @@ or frontier records. Historical native-submission events that stored task IDs
 under `paper_id` are interpreted without rewriting history; unknown tasks,
 unresolved bindings and absent real papers still fail. A failed sanity cursor
 is retained until a successful check, so full validation alone does not clear it.
+
+
+## Routine source acquisition and recovery
+
+The run request authorizes public metadata/paper/supplement downloads in scope.
+The supervising agent performs routine acquisition and identity checks without
+per-paper user confirmation. Host permissions remain independently enforced.
+All downloads stay in the selected repository/run root; never scatter them in
+Downloads or temporary personal folders. Automatic retrieval writes under
+`runs/RUN_ID/sources/`. For a public URL located by the agent:
+
+```sh
+.venv/bin/python -B -m sweep fetch-source --run-id RUN_ID --paper-id P000001 \
+  --url 'https://publisher.example/article.pdf' --reason 'Located publisher main article'
+.venv/bin/python -B -m sweep fetch-source --run-id RUN_ID --paper-id P000001 \
+  --url 'https://publisher.example/supplement.pdf' --role supplement \
+  --association-reason 'Linked as supplementary information by the article landing page' \
+  --reason 'Obtain methods needed for source coverage'
+```
+
+Each invocation saves a request receipt before dispatch, then a separate outcome
+receipt under `intake/downloads/PAPER_ID/`. File names are content hashes; receipt
+identities are unique. The command uses public-URL/redirect checks, a 30-second
+request timeout, a 60-second total deadline and the existing 64 MiB per-download
+safeguard. It performs one attempt; failures remain explicit. No model allowance
+is consumed. Cookies and response headers other than content type are omitted.
+A request receipt without an outcome means interruption/unknown, not success.
+The result's `source_entry` is a candidate manifest entry, not a verified asset.
+
+Verify title, authors, DOI/article version and supplement association against the
+source. Combine all intended current main/SI entries in a JSON array under the
+run directory, then use `source --manifest FILE --reason REASON`. Entries include
+`path`, `role`, `expected_sha256` and, for supplements, `association_reason`.
+Do not replace the main paper with a poster, wrong article, landing page or
+unverified version. Source attachment preserves immutable bytes, advances the
+source generation and retires only old current projections; prior readings and
+costs remain historical. Concurrent publication cannot restore an old reading as
+current. Identical bytes alone do not revive an older calibration generation.
+
+| Observed condition | Agent action within the existing agreement |
+|---|---|
+| Public download unavailable/403/404 | Record the receipt; seek another public copy or a protocol-approved fallback; defer and continue independent work if still missing. |
+| Citation response partial or identity unresolved | Preserve the incomplete window and resolve using source metadata/native tasks. Do not turn a failed response into zero results or silently alter frozen queries. |
+| Canonical metadata incomplete | `ingest` source-grounded enrichment with provenance; retain rediscovery history. |
+| New main/SI evidence | Verify identity and `source --manifest` the complete set; do not overwrite source files or completed reads. |
+| Worker exited | Use `recover` or `native-recover` with observed termination evidence, then the newly fenced lease. Expiration alone is insufficient. |
+| Confirmed authentication/quota repair | `resume --resolve-access-blocks --reason REASON` under unchanged settings; do not loop on an unchanged denial. |
+| Unknown/admitted model failure | Preserve its charge and receipt; `retry` only when termination is established and another charged attempt fits the existing agreement. |
+| Input too large or budget exhausted | Surface the exact block. Do not truncate text, raise a bound limit, switch model/billing route or call it completion. |
+| Integrity/storage failure | Stop admissions, preserve diagnostics, investigate read-only and validate using the bound release. No in-run code/database repair. |
+| Calibration disagreement | Check source coverage, compare claims and reasons, preserve departures and unresolved evidence. Use only an already authorized isolated alternative reader. |
+
+Fresh native source-reading tasks expose bibliographic identity, abstract, source
+bindings and lease information, without prior screening, reader or human verdicts.
+Evaluator-only calibration tasks remain separate. A retired source-scoped access
+block stays in history but is not an action on its replacement; profile and budget
+blocks remain in force across source replacement.

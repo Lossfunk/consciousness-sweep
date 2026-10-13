@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 from .common import file_hash, digest
+from .transactions import atomic_operation
 
 MANIFEST_FIELDS = ("paper_id", "title", "authors", "author", "year", "publication_year", "doi", "arxiv_id",
                    "pmcid", "pmid", "epmc_id", "epmc_source", "openalex_id", "url", "urls", "fulltext_url",
@@ -15,6 +16,7 @@ def source_manifest(paper):
     return {key: paper[key] for key in MANIFEST_FIELDS if key in paper}
 
 
+@atomic_operation
 def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
     """Bind acquisition to immutable inputs; explicit retries preserve old jobs."""
     if not str(reason).strip():
@@ -86,6 +88,11 @@ def attach(coordinator, paper_id, entries, reason, base=None):
             normalized.append(item)
         finally:
             temporary.unlink(missing_ok=True)
+    return _commit_sources(coordinator, paper_id, normalized, reason)
+
+
+@atomic_operation
+def _commit_sources(coordinator, paper_id, normalized, reason):
     paper = coordinator.store.paper(paper_id)
     if paper.get("provided_paths") != normalized:
         coordinator.store.update_paper(paper_id, {"provided_paths": normalized,
