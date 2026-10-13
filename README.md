@@ -4,12 +4,11 @@ A portable, resumable literature pipeline for finding studies that help explain
 how awareness of an entity X relates to its use by a downstream function Y.
 Its deliverable is a source-grounded prospect queue for scientific review.
 
-**Current release: portable 1.0.0-r21**, for supervised use. This revision repairs
-retrieval starvation observed in a paused run: fresh work and supplied local
-sources receive reserved turns, and repeated failures retain endpoint history
-with increasing retry delays. Scientific files and reader instructions are
-unchanged. See [Scope and integrity](#scope-and-integrity) for the engineering
-checks and source-reading evidence.
+**Current release: portable 1.0.0-r22**, for supervised use. This revision adds
+storage-location checks and preserves SQLite failure diagnostics, building on
+r21's retrieval fairness and retry repairs. Scientific files and reader
+instructions are unchanged. See [Scope and integrity](#scope-and-integrity) for
+the engineering checks and source-reading evidence.
 
 This repository accompanies **Sushrut Thorat and Paras Chopra,
 [Towards a full-stack functionalist theory of consciousness: Identifying its
@@ -187,6 +186,30 @@ known session facts with `--harness codex` or `--harness claude`, `--model ID`,
 `--effort LEVEL`, and repeated `--available-model ID` flags. Availability and
 scientific qualification remain separate; unknown quota is recorded as unknown.
 An installed Codex CLI never takes precedence over a known active Claude session.
+
+Keep the live run database on a local disk outside folders managed by Google
+Drive, iCloud, OneDrive or similar sync clients. Initialization rejects recognized
+sync-managed locations; source PDFs may still be supplied from those folders and
+copied into the run. This is an operational storage constraint, not a scientific
+eligibility rule. The doctor reports the selected storage path and known risks;
+an unrecognized path is not certified safe. Initialization also performs a small
+temporary SQLite WAL/write/reopen/checkpoint check before creating the run. This
+uses no model calls and is not a scientific commissioning run.
+
+If the package is in a synchronized folder, choose a separate local run root.
+Place the global `--root` option before **every** command for that run:
+
+```sh
+.venv/bin/python -B -m sweep --root "$HOME/consciousness-sweep-work" doctor
+.venv/bin/python -B -m sweep --root "$HOME/consciousness-sweep-work" init \
+  --plan workspace/plan.json --run-id first-sweep
+.venv/bin/python -B -m sweep --root "$HOME/consciousness-sweep-work" run \
+  --run-id first-sweep
+```
+
+Create and authorize the plan as described below before running `init`. This
+example selects storage for a new run; it does not relocate an existing run.
+Keep the selected root unchanged through work, submission, validation and resume.
 
 Network access is needed for literature retrieval. A GPU is not required for
 subscription cloud workers. If local models are selected, the agent checks their
@@ -492,21 +515,38 @@ The command-line worker runs while its process and host are available. It does
 not install a background service, keep a sleeping laptop awake, or buy remote
 compute. A long run needs an operator-managed persistent terminal or supervisor.
 
+If SQLite reports an I/O or other database error, execution stops admitting work
+and prints structured diagnostics to stderr, including the database path,
+operation phase and exact SQLite code/name when the Python runtime supplies them.
+Unknown codes remain null. Already admitted work may finish; do not launch a
+second runner, erase WAL/SHM files or automatically replay a call or uncertain
+commit. Resolve storage access, reconcile worker leases and validate with the
+bound release before resuming. Preserve complete error output. A successful
+startup probe cannot rule out later hardware, filesystem or synchronization faults.
+
 ## Scope and integrity
 
 The **13 October 2026 maintainer audit** supports supervised handoff without
 requiring a full scientific sweep as a commissioning step. Its evidence separates
 engineering behavior from scientific reading quality:
 
-- **Packaged software:** 480 tests passed against r21 with zero skips,
+- **Packaged software:** 514 tests passed against r22 with zero skips,
   errors or failures. They cover startup, finite and unbounded settings, durable
   access/budget blocks, crashes, competing and stale workers, source revisions,
   calibration review, stopping and reopening. The earlier r19/r20 suites had
-  431 tests; the 49 added regressions cover the reported retrieval starvation,
+  431 tests; r21 added 49 regressions covering the reported retrieval starvation,
   endpoint cooldown/history, acquisition accounting, and refusal of incompatible
   resumes before database mutation. The incident was reproduced with controlled
   failures plus actual extraction of a synthetic local PDF. No additional live
   model readings were needed for this operational repair.
+- **Storage failures:** r22 adds 34 regressions for SQLite cleanup, original-error
+  preservation, stopping further admission after database faults, diagnostic
+  output and new-run storage checks. Real SQLite disk-full behavior was exercised
+  with a bounded database-size fixture; I/O faults were injected. A local scratch
+  check retained all 500 encounters from four processes and four threads with
+  valid IDs, WAL, integrity and references. The original generic I/O error arose
+  during connection setup in a Google Drive location; its underlying cause
+  remains unconfirmed. No live sweep or model call was used for this investigation.
 - **Offline scale:** 2,500 logical papers and 5,000 encounters exercise concurrent
   persistence, 100 screening batches, 2,500 retrieval obligations and backpressure
   over 1,000 citation obligations. Downstream drain is a synthetic fixture, not

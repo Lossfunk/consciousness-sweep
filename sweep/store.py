@@ -35,6 +35,41 @@ class BudgetExceeded(StoreError):
     pass
 
 
+def _annotate_storage_error(exc, path, phase):
+    """Preserve SQLite's original exception/type/code with operational context."""
+    if isinstance(exc, sqlite3.Error):
+        try:
+            if not hasattr(exc, "sweep_storage_phase"):
+                exc.sweep_storage_phase = phase
+            if not hasattr(exc, "sweep_db_path"):
+                exc.sweep_db_path = str(Path(path).absolute())
+        except (AttributeError, TypeError, OSError, ValueError):
+            pass  # An exception implementation may not allow extra attributes.
+
+
+def _record_cleanup_error(primary, cleanup, path, phase):
+    """A cleanup failure is secondary evidence, never a replacement diagnosis."""
+    _annotate_storage_error(cleanup, path, phase)
+    try:
+        details = list(getattr(primary, "sweep_cleanup_errors", []))
+        details.append({"phase": phase, "type": type(cleanup).__name__, "reason": str(cleanup),
+                        "sqlite_errorcode": getattr(cleanup, "sqlite_errorcode", None),
+                        "sqlite_errorname": getattr(cleanup, "sqlite_errorname", None)})
+        primary.sweep_cleanup_errors = details
+    except (AttributeError, TypeError):
+        pass
+
+
+def _close_connection(conn, path, primary):
+    try:
+        conn.close()
+    except BaseException as exc:
+        if primary is None:
+            _annotate_storage_error(exc, path, "connection-close")
+            raise
+        _record_cleanup_error(primary, exc, path, "connection-close")
+
+
 def _json(value):
     return json.dumps(value, sort_keys=True, ensure_ascii=True,
                       separators=(",", ":"), allow_nan=False)
@@ -218,44 +253,75 @@ class Store:
         path = Path(run_dir).resolve() / "state.sqlite3"
         if not path.is_file():
             raise StoreError("Run is not initialized")
-        conn = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=30)
+        conn, primary, phase = None, None, "read-plan-connect"
         try:
+            conn = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=30)
+            phase = "read-plan"
             row = conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()
             if not row:
                 raise StoreError("Run is not initialized")
             return json.loads(row[0])
+        except BaseException as exc:
+            primary = exc
+            _annotate_storage_error(exc, path, phase)
+            raise
         finally:
-            conn.close()
+            if conn is not None:
+                _close_connection(conn, path, primary)
 
     def __init__(self, run_dir):
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.path = self.run_dir / "state.sqlite3"
         with self._connection() as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.executescript(_SCHEMA)
+            phase = "journal-mode-setup"
+            try:
+                conn.execute("PRAGMA journal_mode=WAL")
+                phase = "schema-setup"
+                conn.executescript(_SCHEMA)
+            except sqlite3.Error as exc:
+                _annotate_storage_error(exc, self.path, phase)
+                raise
 
     @contextmanager
     def _connection(self):
-        conn = sqlite3.connect(str(self.path), timeout=30, isolation_level=None)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys=ON")
-        conn.execute("PRAGMA synchronous=FULL")
-        conn.execute("PRAGMA busy_timeout=30000")
+        conn, primary, phase = None, None, "connect"
         try:
+            conn = sqlite3.connect(str(self.path), timeout=30, isolation_level=None)
+            phase = "connection-setup:row-factory"
+            conn.row_factory = sqlite3.Row
+            for pragma in ("foreign_keys=ON", "synchronous=FULL", "busy_timeout=30000"):
+                phase = "connection-setup:" + pragma
+                conn.execute("PRAGMA " + pragma)
+            phase = "connection-use"
             yield conn
+        except BaseException as exc:
+            primary = exc
+            _annotate_storage_error(exc, self.path, phase)
+            raise
         finally:
-            conn.close()
+            if conn is not None:
+                _close_connection(conn, self.path, primary)
 
     @contextmanager
     def _transaction(self):
         with self._connection() as conn:
-            conn.execute("BEGIN IMMEDIATE")
+            phase = "transaction-begin"
             try:
+                conn.execute("BEGIN IMMEDIATE")
+                phase = "transaction-body"
                 yield conn
+                phase = "transaction-commit"
                 conn.execute("COMMIT")
-            except BaseException:
-                conn.execute("ROLLBACK")
+            except BaseException as exc:
+                _annotate_storage_error(exc, self.path, phase)
+                try:
+                    # SQLite may already roll back after FULL/IOERR. A second
+                    # ROLLBACK would replace that error with "no transaction".
+                    if conn.in_transaction:
+                        conn.execute("ROLLBACK")
+                except BaseException as cleanup:
+                    _record_cleanup_error(exc, cleanup, self.path, "transaction-rollback")
                 raise
 
     @staticmethod

@@ -308,6 +308,31 @@ window sizes, source families, inclusion criteria or scientific stopping rules.
 Use `python -m sweep COMMAND --help` for required arguments. `--root DIRECTORY`
 is a global option placed before the command; run directories go beneath it.
 
+For a new run, use a local, nonsynchronized storage root. The package may remain
+elsewhere, but the live SQLite database, WAL and SHM must stay together outside
+sync-managed folders. `doctor` reports the actual selected `ROOT/runs` path,
+resolved parent, directory/writability observations, disk capacity, versions and
+recognized sync-path risks without writing a test file. `init` rejects recognized
+sync locations and performs a temporary WAL/write/reopen/checkpoint probe in the
+selected filesystem before creating `RUN_ID`. A successful probe is one current
+I/O check, not a guarantee against later faults or a scientific commissioning run.
+No unknown filesystem is certified by the absence of a recognized path marker.
+
+For example, use `python -m sweep --root "$HOME/consciousness-sweep-work" doctor`,
+then the same global option for plan/init/run/work/submit/status/validate/resume.
+This selects a new run location explicitly; it does not move historical runs or
+change source paths, judgments, resource agreements or executable fingerprints.
+
+SQLite exceptions terminate new admission rather than becoming ordinary failed
+paper/model jobs. Already admitted bounded work can finish. CLI stderr retains
+the failing storage phase, path and available SQLite extended error code/name;
+Python versions without those attributes report null. A cleanup/rollback error
+must not replace the original failure, and uncertain commits are never retried
+automatically. Preserve the diagnostics and database/WAL/SHM. Resolve the storage
+problem and reconcile actual worker termination before recovery, then validate
+under the bound release. A reported generic disk I/O error alone cannot establish
+which filesystem operation or external process caused it.
+
 For manual `work`/`submit`, `task.json` and the returned task envelope name the
 intended profile and execution role. Dispatch each reading to a fresh worker
 without inherited supervisor history. Supply only the task prompt/schema/source

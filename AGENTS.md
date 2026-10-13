@@ -41,6 +41,12 @@ hidden total-call/time cap.
    Prefer the current harness; an installed Codex binary does not override a
    Claude Code session. Unknown models, quotas and remote resources stay unknown.
    Never inspect or print credential values or send speculative access probes.
+   Inspect its run-storage report. Place new run databases on a local disk outside
+   sync-managed folders; select a separate global `--root` when the package is in
+   Google Drive/iCloud/OneDrive. Keep that root on every invocation. Initialization
+   rejects recognized sync paths and checks a scratch SQLite database before
+   creating the run. This is local I/O verification, with no model calls or
+   scientific commissioning requirement; it does not certify long-term storage.
 3. Recommend one configuration using observed CPU/RAM, retrieval tools, usable
    model access and concurrency. Ask once about any missing resource allowance
    and citation depth: a nonnegative number of hops, or **unbounded**. Confirm
@@ -76,6 +82,13 @@ Use the `python -m sweep` commands in `README.md`. Each run writes only inside
 its own `runs/RUN_ID/` directory. Do not inspect another run's classifications or
 dynamic result sets. Do not manually edit `state.sqlite3`, replace snapshots,
 reset attempt counters or reconstruct provenance from memory.
+
+On a SQLite/storage error, stop new admissions and preserve the error diagnostics,
+database/WAL/SHM, receipts and reservations. Do not blindly retry writes or model
+calls, delete journal files or silently relocate a run. Resolve storage access,
+reconcile interrupted workers using the existing termination-evidence rules, and
+validate with the bound release before continuing. Available error code/name and
+operation phase are diagnostic evidence; unknown values are not inferred.
 
 The coordinator owns stable IDs, leases, budget reservations, append-first
 events, source encounters and projection. Model workers return concise

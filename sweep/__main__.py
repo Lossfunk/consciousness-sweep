@@ -4,8 +4,10 @@ import argparse
 import json
 from pathlib import Path
 import sys
+import sqlite3
 
 from .common import ROOT, canonical, safe_run, save_json
+from .storage import StorageError
 
 
 def optional_limit(value):
@@ -280,6 +282,26 @@ def main(argv=None):
         if args.command in {"validate", "sanity"} and not result.get("ok"):
             return 2
         return 0
+    except StorageError as exc:
+        print(json.dumps({"error": type(exc).__name__, "reason": str(exc), "storage": exc.report},
+                         ensure_ascii=False, default=str), file=sys.stderr)
+        return 2
+    except sqlite3.Error as exc:
+        # The database may be unable to record its own failure. Always retain
+        # diagnostics on stderr; do not open it again or retry an uncertain write.
+        storage = {"command": args.command,
+                   "database": getattr(exc, "sweep_db_path", None),
+                   "phase": getattr(exc, "sweep_storage_phase", "unknown"),
+                   "sqlite_errorcode": getattr(exc, "sqlite_errorcode", None),
+                   "sqlite_errorname": getattr(exc, "sqlite_errorname", None),
+                   "python_version": sys.version.split()[0],
+                   "sqlite_version": sqlite3.sqlite_version,
+                   "cleanup_errors": getattr(exc, "sweep_cleanup_errors", []),
+                   "retry_performed": False,
+                   "next_action": "Stop execution, preserve database/WAL/SHM and worker receipts, resolve the storage problem, then reconcile leases and validate with the bound release before resuming. Do not replay calls or retry an uncertain commit automatically."}
+        print(json.dumps({"error": type(exc).__name__, "reason": str(exc), "storage": storage},
+                         ensure_ascii=False, default=str), file=sys.stderr)
+        return 2
     except (ValueError, RuntimeError, FileNotFoundError, KeyError) as exc:
         print(json.dumps({"error": type(exc).__name__, "reason": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2

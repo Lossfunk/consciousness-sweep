@@ -13,6 +13,7 @@ import math
 import shutil
 import os
 from pathlib import Path
+import sqlite3
 import threading
 import time
 import uuid
@@ -193,9 +194,12 @@ class Coordinator:
         plan.setdefault("mode", "corpus")
         if plan["mode"] not in {"corpus", "discovery"}:
             raise ValueError("mode must be corpus or discovery; native certification uses science/tools")
+        from .storage import require_new_run_storage
+        storage = require_new_run_storage(run_dir.parent)
         run_dir.mkdir(parents=True)
         store = Store(run_dir)
         store.initialize(plan)
+        store.event("run_storage_checked", storage)
         store.set_state("intake_closed", False, "A run cannot finish until its commissioned intake is closed")
         save_json(run_dir / "execution_plan.json", plan)
         for directory in ("jobs", "sources", "delivery"):
@@ -825,10 +829,17 @@ class Coordinator:
                 self.store.settle_budget(reservation, outcome="not-started", reason=str(exc))
             record_block("budget", "budget-admission-blocked", "not-admitted", str(exc))
             self.store.defer(job["id"], job["owner"], job["token"], str(exc), delay_seconds=0)
+        except sqlite3.Error:
+            # A failed persistence operation can have an uncertain outcome.
+            # Preserve reservations/receipts and stop admission; do not treat
+            # storage failure as a scientific/model failure or retry the call.
+            raise
         except Exception as exc:
             if reservation:
                 try:
                     self.store.settle_budget(reservation, outcome="unknown", reason=str(exc))
+                except sqlite3.Error:
+                    raise
                 except Exception:
                     pass
             self.store.fail(job["id"], job["owner"], job["token"], type(exc).__name__ + ": " + str(exc))
@@ -1168,6 +1179,10 @@ class Coordinator:
         def finish(future, job):
             try:
                 future.result()
+            except sqlite3.Error:
+                # Propagate storage faults before admitting another batch.
+                # ThreadPoolExecutor still waits for already admitted work.
+                raise
             except Exception as exc:
                 if self.store.job(job["id"])["state"] == "running":
                     self.store.fail(job["id"], job["owner"], job["token"], "Local worker failure: " + str(exc))

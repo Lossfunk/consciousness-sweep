@@ -206,11 +206,14 @@ def active_context(*, harness=None, model=None, effort=None, available_models=No
 
 def discover(root: Path, *, harness=None, model=None, effort=None, available_models=None) -> dict:
     """Inspect only the current host. Catalog presence never establishes access."""
-    root = Path(root).resolve()
-    disk = shutil.disk_usage(root)
+    from .storage import inspect_storage
+    root = Path(root).expanduser().absolute()
+    storage = inspect_storage(root / "runs")
+    storage["requested_global_root"] = str(root)
     return {"version": "capability-inventory-v1", "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
             "system": platform.system(), "architecture": platform.machine(), "python": platform.python_version(),
-            "cpu": _cpu(), "memory": _memory(), "disk": {"free_bytes": disk.free, "total_bytes": disk.total},
+            "cpu": _cpu(), "memory": _memory(), "disk": {"free_bytes": storage["free_bytes"], "total_bytes": storage["total_bytes"]},
+            "storage": storage,
             "gpus": _gpus(), "harnesses": {name: _tool(name) for name in ("codex", "claude", "openclaw")},
             "active_context": active_context(harness=harness, model=model, effort=effort,
                                                available_models=available_models),
