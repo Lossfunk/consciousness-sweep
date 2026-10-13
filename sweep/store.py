@@ -813,7 +813,7 @@ class Store:
             raise StoreError("Owner name is bound to another process; use a fresh owner ID")
         conn.execute("INSERT OR IGNORE INTO owners VALUES(?,?,?,?)", (owner, pid, host, time.time()))
 
-    def claim(self, stages, owner, lease_seconds=300, limit=1):
+    def claim(self, stages, owner, lease_seconds=300, limit=1, calibration_reviews=None):
         if not stages or not owner or not 1 <= limit <= 1000 or lease_seconds <= 0:
             raise ValueError("Claim requires stages, owner, bounded limit and positive lease")
         now = time.time()
@@ -821,8 +821,15 @@ class Store:
             self._require_initialized(conn)
             self._register_owner(conn, owner, os.getpid(), socket.gethostname())
             placeholders = ",".join("?" for _ in stages)
-            rows = conn.execute("SELECT j.* FROM jobs j WHERE j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND j.stage IN (" + placeholders + ") AND j.available_at<=? AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete') ORDER BY j.priority DESC,j.id LIMIT ?",
-                                list(stages) + [now, limit]).fetchall()
+            review_filter = ""
+            args = list(stages) + [now]
+            if calibration_reviews is not None:
+                if type(calibration_reviews) is not bool:
+                    raise ValueError("calibration_reviews must be boolean or null")
+                review_filter = " AND coalesce(json_extract(j.payload,'$.calibration_review'),0)=?"
+                args.append(int(calibration_reviews))
+            rows = conn.execute("SELECT j.* FROM jobs j WHERE j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||j.id AND json_extract(m.value,'$.active')=1) AND j.stage IN (" + placeholders + ") AND j.available_at<=?" + review_filter + " AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete') ORDER BY j.priority DESC,j.id LIMIT ?",
+                                args + [limit]).fetchall()
             result = []
             for row in rows:
                 token = row["token"] + 1
@@ -852,6 +859,26 @@ class Store:
     def complete(self, job_id, owner, token, result):
         with self._transaction() as conn:
             self._owned(conn, job_id, owner, token)
+            self._event(conn, "job_completed", {"job_id": job_id, "owner": owner, "token": token,
+                                                "result": result})
+            conn.execute("UPDATE jobs SET state='complete',result=?,lease_until=NULL,updated_at=? WHERE id=?",
+                         (_json(result), time.time(), job_id))
+
+    def complete_agent_submission(self, job_id, owner, token, result, submission, publish):
+        """Fence manual publication and its append-first history in one lock.
+
+        The callback may only publish this lease's immutable artifacts. A crash
+        before commit can leave those bytes for an identical retry, but a losing
+        or recovered worker never gets to replace a committed worker's evidence.
+        """
+        with self._transaction() as conn:
+            self._owned(conn, job_id, owner, token)
+            automatic = conn.execute(
+                "SELECT 1 FROM reservations WHERE job_id=? AND state!='released' LIMIT 1", (job_id,)).fetchone()
+            if automatic:
+                raise StoreError("Automatic execution already reserved this job; manual submission cannot replace its receipt")
+            publish()
+            self._event(conn, "agent_submission", submission)
             self._event(conn, "job_completed", {"job_id": job_id, "owner": owner, "token": token,
                                                 "result": result})
             conn.execute("UPDATE jobs SET state='complete',result=?,lease_until=NULL,updated_at=? WHERE id=?",

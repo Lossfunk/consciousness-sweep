@@ -19,7 +19,7 @@ from .store import StoreError
 
 MODEL_STAGES = {"title", "abstract", "rescue", "audit", "reader"}
 SCREEN_FIELDS = {"paper_id", "title", "year", "authors", "doi", "abstract"}
-NONMATERIAL_EVENTS = ("operational_validation", "delivery_checkpoint", "throughput_estimate", "execution_session_finished")
+NONMATERIAL_EVENTS = ("operational_validation", "delivery_checkpoint", "throughput_estimate", "execution_session_finished", "operational_sanity")
 
 
 def current(coordinator):
@@ -43,7 +43,8 @@ def current(coordinator):
             event = json.loads(recorded["payload"])
             if event.get("ok") is not True or event.get("snapshot_event_id") != snapshot:
                 return False
-            row = conn.execute("SELECT id FROM events WHERE kind NOT IN (?,?,?,?) ORDER BY id DESC LIMIT 1", NONMATERIAL_EVENTS).fetchone()
+            placeholders = ",".join("?" for _ in NONMATERIAL_EVENTS)
+            row = conn.execute("SELECT id FROM events WHERE kind NOT IN (" + placeholders + ") ORDER BY id DESC LIMIT 1", NONMATERIAL_EVENTS).fetchone()
         return (row[0] if row else 0) <= snapshot
     except (OSError, ValueError, TypeError, AttributeError, sqlite3.Error):
         return False
@@ -60,6 +61,10 @@ def require_integrity(coordinator):
         failed = failed or (report.get("ok") is False and not report.get("incomplete"))
     if failed:
         raise ValueError("Operational integrity check failed. Repair the recorded errors and run validate before execution or delivery; previous delivery is preserved.")
+    with coordinator.store._connection() as conn:
+        latest_sanity = conn.execute("SELECT payload FROM events WHERE kind='operational_sanity' ORDER BY id DESC LIMIT 1").fetchone()
+    if latest_sanity and json.loads(latest_sanity[0]).get("ok") is False:
+        raise ValueError("Lightweight record check failed. Repair delivery/sanity.json findings and rerun sanity before admitting work or delivering results.")
 
 
 def validate(coordinator, *, deadline=None):
@@ -288,6 +293,23 @@ def validate(coordinator, *, deadline=None):
                             require(submitted.get("actor") == result["actor"], "External agent attribution differs from submission history")
                             saved = directory / ("submitted_result-" + str(row["token"]) + ".json")
                             require(load(saved) == assessment, "External agent result differs from its saved submission")
+                            required_provenance = bool(payload.get("calibration_review"))
+                            if required_provenance or "execution_provenance" in result or "execution_verification" in result:
+                                from .coordinator import execution_task_context, validate_execution_provenance
+                                job = {"stage": stage, "payload": payload}
+                                profile = coordinator.profile_for_job(job)
+                                context = execution_task_context(job, profile)
+                                require(all(task.get(key) == value for key, value in context.items()),
+                                        "External agent task execution context differs from its intended profile")
+                                execution = {key: result.get(key) for key in ("execution_provenance", "execution_verification")}
+                                require(load(directory / ("submitted_execution-" + str(row["token"]) + ".json")) == execution,
+                                        "External agent execution provenance differs from its saved submission")
+                                require(submitted.get("execution_sha256") == digest(execution),
+                                        "External agent execution provenance has no matching submission history")
+                                expected_verification = validate_execution_provenance(
+                                    profile, execution["execution_provenance"], required=required_provenance)
+                                require(execution["execution_verification"] == expected_verification,
+                                        "External agent verification differs from its reported execution provenance")
                         checked("completed_model_results")
                     checked("jobs")
                 except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError, AssertionError, ValidationError, SchemaError) as exc:
@@ -359,6 +381,10 @@ def validate(coordinator, *, deadline=None):
 
             from .discovery_validation import validate_discovery
             validate_discovery(coordinator, conn, error, checked)
+            from .calibration import validate_records
+            for issue in validate_records(coordinator, conn):
+                error(issue["code"], issue["entity"], issue["reason"])
+            checked("seed_calibration_records")
 
             for row in conn.execute("SELECT * FROM job_supersessions ORDER BY job_id"):
                 try:

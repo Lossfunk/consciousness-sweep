@@ -12,6 +12,7 @@ import contextlib
 import contextvars
 import email.utils
 import hashlib
+import html
 import ipaddress
 import json
 import os
@@ -56,8 +57,32 @@ def normalize_doi(value):
     return re.sub(r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)", "", value)
 
 
+def _title_presentation(value):
+    """Decode known bibliographic display syntax only for identity comparison.
+
+    Keep raw metadata/receipts untouched. Requiring complete entities and
+    balanced, attribute-free formatting tags avoids treating mathematical angle
+    comparisons, unknown markup or malformed HTML as disposable presentation.
+    """
+    def entity(match):
+        encoded = match.group()
+        return html.unescape(encoded) if encoded.startswith("&#") else html.entities.html5.get(encoded[1:], encoded)
+
+    text = re.sub(r"&(?:#(?:[0-9]+|[xX][0-9a-fA-F]+)|[A-Za-z][A-Za-z0-9]*);", entity, str(value or ""))
+    tags = re.compile(r"</?(?:i|b|em|strong|italic|bold)>", re.I)
+    stack = []
+    for match in tags.finditer(text):
+        tag = match.group()[1:-1].casefold()
+        if tag.startswith("/"):
+            if not stack or stack.pop() != tag[1:]:
+                return text
+        else:
+            stack.append(tag)
+    return text if stack else tags.sub("", text)
+
+
 def normalize_title(value):
-    return " ".join(re.sub(r"[^\w\s]", " ", unicodedata.normalize("NFKC", str(value or "")).casefold()).split())
+    return " ".join(re.sub(r"[^\w\s]", " ", unicodedata.normalize("NFKC", _title_presentation(value)).casefold()).split())
 
 
 def safe_url(url, *, resolve=True):
@@ -343,6 +368,16 @@ class SourceClient:
                     "results": [], "next_cursor": cursor, "exhausted": False,
                     "attempts": exc.attempts, "raw_responses": captured,
                     "retry_after": exc.retry_after, "reason": exc.reason}
+        except (AttributeError, TypeError, KeyError, IndexError) as exc:
+            if not captured:
+                raise
+            # A syntactically valid JSON response can still have a malformed
+            # nested shape. Retain that response in the normal resolution path,
+            # rather than fail a worker and lose its source-failure receipt.
+            return {"status": "incomplete", "request": request, "retrieved_at": now(),
+                    "results": [], "next_cursor": cursor, "exhausted": False,
+                    "attempts": [], "raw_responses": captured, "retry_after": None,
+                    "reason": "Bibliographic response could not be normalized ({}); inspect the retained source response".format(type(exc).__name__)}
         finally:
             _SEARCH_RESPONSES.reset(token)
 
@@ -373,6 +408,13 @@ class SourceClient:
         except SourceError as exc:
             return {"status": exc.status, "source": source, "query": query, "candidates": [], "proposed_identity": None,
                     "requires_confirmation": True, "raw_responses": captured, "reason": exc.reason}
+        except (AttributeError, TypeError, KeyError, IndexError) as exc:
+            if not captured:
+                raise
+            return {"status": "incomplete", "source": source, "query": query,
+                    "candidates": [], "proposed_identity": None, "requires_confirmation": True,
+                    "raw_responses": captured,
+                    "reason": "Bibliographic response could not be normalized ({}); inspect the retained source response".format(type(exc).__name__)}
         finally:
             _SEARCH_RESPONSES.reset(token)
 
@@ -584,6 +626,34 @@ def normalize_crossref(row, reference=False):
             "url": "https://doi.org/" + urllib.parse.quote(doi, safe="/") if doi else None}
 
 
+def _publish_immutable(path, value, *, conflict_reason):
+    """Publish complete bytes once, without exposing a partially written file.
+
+    Same-directory staging plus an exclusive link makes concurrent identical
+    writes idempotent. Failed or interrupted writes never occupy the immutable
+    name, and existing conflicting bytes are preserved for explicit recovery.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        if path.read_bytes() != value:
+            raise ValueError(conflict_reason)
+        return
+    fd, name = tempfile.mkstemp(prefix=".source-staging-", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(value)
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(name, path)
+        except FileExistsError:
+            if path.read_bytes() != value:
+                raise ValueError(conflict_reason)
+    finally:
+        Path(name).unlink(missing_ok=True)
+
+
 def save_snapshot(path, snapshot):
     """Exclusive creation: a completed retrieval snapshot cannot be overwritten."""
     if snapshot.get("status") != "complete" or snapshot.get("result_set_sha256") != digest(snapshot.get("results")):
@@ -596,10 +666,8 @@ def save_snapshot(path, snapshot):
         if old != snapshot:
             raise ValueError("Immutable completed snapshot differs; do not rerun/replace it")
         return old
-    with path.open("xb") as handle:
-        handle.write(value)
-        handle.flush()
-        os.fsync(handle.fileno())
+    _publish_immutable(path, value,
+                       conflict_reason="Immutable completed snapshot differs; do not rerun/replace it")
     return snapshot
 
 
@@ -792,6 +860,31 @@ def _identity(paper, units, extracted):
     return "unclear", "Insufficient bibliographic corroboration; source identity requires resolution"
 
 
+def _supplement_cover(paper, units):
+    """Locate an explicit supplement cover declaration before the article title.
+
+    Bibliographic identity alone cannot distinguish a main article from its SI.
+    A discussion/link to supporting material later in an article is not such a
+    declaration. This role check never decides the article's scientific value.
+    """
+    first = next((unit["content"] for unit in units if unit["content"].strip()), "")
+    text = normalize_title("\n".join(unit["content"] for unit in units[:2]))
+    title = normalize_title(paper.get("title"))
+    title_at = text.find(title) if title else -1
+    if title_at < 0:
+        return None
+    heading = re.compile(
+        r"(?:(?:electronic|online)\s+)?(?:"
+        r"supplement(?:ary|al)(?:\s+(?:online|electronic))?\s+(?:materials?|information|data|appendix)|"
+        r"supporting(?:\s+online)?\s+(?:materials?|information))"
+        r"(?:\s+(?:for|to))?\s*[:.]?", re.I)
+    for line in first.splitlines():
+        declaration = " ".join(line.split())
+        if heading.fullmatch(declaration) and text.find(normalize_title(declaration)) < title_at:
+            return declaration
+    return None
+
+
 def _asset(paper, data, label, directory, *, role="article", association=None, deadline=None):
     _remaining(deadline, 120)
     sha = digest(data)
@@ -808,11 +901,17 @@ def _asset(paper, data, label, directory, *, role="article", association=None, d
         units, extraction, identity, supplements = _extract(data, Path(urllib.parse.urlsplit(label).path).suffix, deadline=deadline)
         payload = {"units": units, "extraction": extraction, "identity": identity,
                    "supplements": supplements, "source_sha256": sha}
-        extraction_cache.write_bytes(canonical_bytes({"payload": payload, "sha256": digest(payload)}))
+        _publish_immutable(extraction_cache, canonical_bytes({"payload": payload, "sha256": digest(payload)}),
+                           conflict_reason="Immutable cached extraction changed")
     if not units or not any(u["content"].strip() for u in units):
         raise ValueError("Extraction contains no readable source text; OCR/manual source required")
     status, reason = _identity(paper, units, identity)
     source_identity = {"status": status, "reason": reason, **identity}
+    declaration = _supplement_cover(paper, units) if role == "article" else None
+    if status == "match" and declaration:
+        status, reason = "unclear", ("Bibliographic identity matches, but the source cover explicitly declares "
+                                    "supplementary material ({!r}); it cannot establish the main article. "
+                                    "Acquire the main article and associate this source as a supplement.").format(declaration)
     if role == "supplement" and association and not identity.get("doi") and not identity.get("title"):
         status, reason = "match", association
     asset_id = "asset-" + sha[:20]
@@ -824,10 +923,8 @@ def _asset(paper, data, label, directory, *, role="article", association=None, d
              "map_path": directory / (sha + ".map.json")}
     for key, payload in [("original_path", data), ("text_path", content.encode()), ("map_path", canonical_bytes(mapping))]:
         _remaining(deadline, 120)
-        if paths[key].exists() and paths[key].read_bytes() != payload:
-            raise ValueError("Immutable cached source/extraction changed")
-        if not paths[key].exists():
-            paths[key].write_bytes(payload)
+        _publish_immutable(paths[key], payload,
+                           conflict_reason="Immutable cached source/extraction changed")
     _remaining(deadline, 120)
     asset = {"asset_id": asset_id, "source": label, "kind": "main" if role == "article" else "additional",
              "source_role": role, "identity": {"status": status, "reason": reason, **identity},

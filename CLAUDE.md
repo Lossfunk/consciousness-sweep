@@ -8,9 +8,12 @@ Scientific eligibility and discovery rules live in
 execution contract is [science/AGENTS.md](science/AGENTS.md).
 
 Begin with distribution verification and the read-only system/access inventory.
-Recommend one suitable configuration and agree resource use before inference.
-Do the configuration and source-reading checks yourself; the user reviews useful
-prospects rather than evaluating a catalog of models.
+Prefer this active Claude Code session and its observed model access even when
+Codex is also installed. Recommend one suitable configuration and confirm missing
+resource/depth choices once; unbounded depth and subscription-only use without a
+total call/time cap are valid. Then start the actual sweep. There is no compulsory
+commissioning run. Check real seed readings and operational sanity during the run;
+the user reviews useful prospects rather than evaluating a catalog of models.
 
 For unattended Claude subscription workers use the shipped `claude` adapter.
 Do not replace its safe-mode invocation with `--bare`: current Claude documentation

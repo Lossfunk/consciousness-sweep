@@ -61,6 +61,48 @@ def _file_sha(path):
     return digest.hexdigest()
 
 
+def _failure_policy(category, admission="not-admitted", retry_after_seconds=None):
+    """Describe safe next actions separately from provider admission/cost.
+
+    A potentially admitted request is never automatically retryable merely
+    because a provider failure resembles a rate limit.
+    """
+    needs_action = category in {
+        "authentication", "authorization-required", "credential-unset", "cli-unavailable",
+        "subscription-attestation-required", "unsupported-cli-version", "configuration-error",
+        "unknown-configuration-field", "unsupported-cli-argument", "base-instructions-unreadable",
+        "local-app-server-startup", "context-limit", "source-byte-limit", "request-cost-limit",
+        "request-rejected", "model-unavailable", "billing-capacity-unavailable",
+    }
+    retryable = category == "provider-limit" and admission == "not-admitted"
+    disposition = "action-required" if needs_action else "retry-after" if retryable else (
+        "awaiting-agent" if category == "manual-result-pending" else
+        "checkpoint" if category == "session-deadline" else "reconcile-admission")
+    answer = {"failure_category": category, "action_required": needs_action,
+              "retryable": retryable, "retry_disposition": disposition}
+    if retryable:
+        answer["retry_after_seconds"] = retry_after_seconds if retry_after_seconds is not None else 300
+    return answer
+
+
+def _local_failure_category(reason):
+    # Only adapter-generated static reasons enter this mapping. Never classify
+    # source text or model responses using these strings.
+    if "authentication was not established" in reason:
+        return "authentication"
+    if reason.startswith("Selected CLI is unavailable"):
+        return "cli-unavailable"
+    if reason.startswith("Subscription-only operation requires"):
+        return "subscription-attestation-required"
+    if reason.startswith("Claude CLI "):
+        return "unsupported-cli-version"
+    if reason.startswith("Conservative source/context bound"):
+        return "context-limit"
+    if reason.startswith("Conservative per-request cost"):
+        return "request-cost-limit"
+    return "configuration-error"
+
+
 def _operational_diagnostic(stderr, stdout=""):
     """Retain recognizable CLI failure categories, never raw source or reasoning."""
     for line in stderr.splitlines():
@@ -79,24 +121,36 @@ def _operational_diagnostic(stderr, stdout=""):
                     "summary": "Selected CLI rejected a required command-line argument."}
         if stripped.startswith("Error loading config.toml:"):
             return {"category": "configuration-error", "summary": "Selected CLI could not load the requested configuration; raw values omitted."}
-    # Codex emits structured execution errors on stdout. Inspect only explicit
+        low = stripped.lower()
+        if low.startswith(("error:", "authentication error:")) and any(term in low for term in
+                ("unauthorized", "authentication", "not logged in", "invalid api key", "invalid_api_key", "permission denied")):
+            return {"category": "authentication", "summary": "Selected CLI reported an authentication or permission failure; raw values omitted."}
+    # Codex and Claude emit structured execution errors on stdout. Inspect only explicit
     # error events, never assistant messages/reasoning, and retain static labels.
     for line in stdout.splitlines():
         try:
             event = json.loads(line)
         except (ValueError, TypeError):
             continue
-        if not isinstance(event, dict) or event.get("type") not in {"error", "turn.failed"}:
+        if not isinstance(event, dict):
             continue
-        error = event.get("error", event)
-        if not isinstance(error, dict):
+        if event.get("type") in {"error", "turn.failed"}:
+            error = event.get("error", event)
+            if not isinstance(error, dict):
+                continue
+            message = str(error.get("message", "")).lower()
+        elif event.get("is_error") is True:
+            # Error-only envelope fields; do not inspect successful assistant
+            # output or retain source-bearing/provider-private error strings.
+            message = " ".join(str(event.get(key, "")) for key in ("result", "errors", "error", "subtype")).lower()
+        else:
             continue
-        message = str(error.get("message", "")).lower()
         for terms, category, summary in (
             (("stream disconnected", "connection reset", "transport", "connection closed"), "transport-interrupted", "CLI reported an interrupted provider connection; admission remains uncertain."),
             (("rate limit", "rate_limit", "usage limit", "quota"), "provider-limit", "CLI reported a provider usage or rate limit; no billing fallback is permitted."),
             (("context length", "context_length", "too many tokens"), "context-limit", "CLI reported a context limit; source content was not truncated."),
-            (("unauthorized", "authentication", "not logged in"), "authentication", "CLI reported an authentication failure; no credential values retained."),
+            (("unauthorized", "authentication", "not logged in", "invalid api key", "invalid_api_key", "permission denied"), "authentication", "CLI reported an authentication or permission failure; no credential values retained."),
+            (("model not found", "model unavailable", "does not have access to model", "model is not available"), "model-unavailable", "CLI reported that the selected model is unavailable; no model fallback is permitted."),
         ):
             if any(term in message for term in terms):
                 return {"category": category, "summary": summary}
@@ -292,6 +346,7 @@ def _metadata(adapter, raw):
     observed_model = observed_effort = None
     usage = None
     tools = False
+    provider_error = False
     result = None
     if adapter == "codex":
         models, efforts, usages = set(), set(), []
@@ -325,12 +380,14 @@ def _metadata(adapter, raw):
             raise ValueError("Claude returned an invalid envelope")
         result = envelope.get("structured_output") if not envelope.get("is_error") and envelope.get("subtype", "success") == "success" else None
         usage = envelope.get("usage")
+        provider_error = envelope.get("is_error") is True or envelope.get("subtype", "success") != "success"
         model_usage = envelope.get("modelUsage", {})
         observed_model = envelope.get("model") or (next(iter(model_usage)) if len(model_usage) == 1 else sorted(model_usage) if model_usage else None)
         observed_effort = envelope.get("effort")
         tools = bool(envelope.get("permission_denials"))
     return {"observed_model": observed_model, "observed_effort": observed_effort,
-            "usage": normalize_usage(adapter, usage), "tool_use_observed": tools}, result
+            "usage": normalize_usage(adapter, usage), "tool_use_observed": tools,
+            "provider_error": provider_error}, result
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -370,7 +427,8 @@ def _http(profile, prompt, schema):
     if profile.get("credential_env"):
         credential = os.environ.get(profile["credential_env"])
         if not credential:
-            return None, {"status": "deferred", "admission": "not-admitted", "reason": "Configured credential environment variable is unset."}
+            return None, {"status": "deferred", "admission": "not-admitted", "reason": "Configured credential environment variable is unset.",
+                          **_failure_policy("credential-unset")}
         headers["Authorization"] = "Bearer " + credential
     endpoint = profile["endpoint_url"].rstrip("/")
     if not endpoint.endswith("/chat/completions"):
@@ -392,13 +450,30 @@ def _http(profile, prompt, schema):
         return result, {"admission": "admitted", "observed_model": envelope.get("model"),
                         "usage": normalize_usage("openai-compatible", envelope.get("usage")), "provider_response_sha256": _sha(raw)}
     except urllib.error.HTTPError as exc:
+        admission = "not-admitted" if exc.code in {401, 403, 429} else "unknown"
+        category = "authentication" if exc.code in {401, 403} else "provider-limit" if exc.code == 429 else (
+            "request-rejected" if 400 <= exc.code < 500 and exc.code != 408 else "transport-interrupted")
+        retry_after = None
+        if exc.code == 429:
+            value = str((exc.headers or {}).get("Retry-After", ""))
+            if value.isdigit():
+                retry_after = min(86400, max(1, int(value)))
+            # An explicit billing-capacity error will not resolve by polling.
+            # Only known machine codes influence policy; no body is retained.
+            with contextlib.suppress(ValueError, AttributeError, TypeError, OSError):
+                payload = json.loads(exc.read(8192))
+                error = payload.get("error", {})
+                if isinstance(error, dict) and any(error.get(key) in {"insufficient_quota", "billing_hard_limit_reached", "billing_not_active", "credit_balance_too_low"}
+                                                   for key in ("code", "type")):
+                    category = "billing-capacity-unavailable"
         return None, {"status": "deferred" if exc.code in {401, 403, 408, 429, 500, 502, 503, 504} else "failed",
-                      "admission": "not-admitted" if exc.code in {401, 403, 429} else "unknown",
+                      "admission": admission,
                       "reason": "Provider returned HTTP " + str(exc.code) + "; no response body or credential logged.",
-                      "http_status": exc.code}
+                      "http_status": exc.code, **_failure_policy(category, admission, retry_after)}
     except (OSError, ValueError, KeyError, IndexError, TypeError) as exc:
         return None, {"status": "deferred", "admission": "unknown",
-                      "reason": "Provider transport or output failed (" + type(exc).__name__ + "); assessment remains unavailable."}
+                      "reason": "Provider transport or output failed (" + type(exc).__name__ + "); assessment remains unavailable.",
+                      **_failure_policy("transport-or-output-failure", "unknown")}
 
 
 
@@ -420,20 +495,25 @@ def _bounded_http(profile, prompt, schema, deadline):
                        timeout=_remaining(deadline, profile["timeout_seconds"]))
         if outcome["timed_out"]:
             return None, {"status": "deferred", "admission": "unknown", "timed_out": True,
-                          "reason": "Session/provider deadline reached; possible admission remains unknown; no automatic retry."}
+                          "reason": "Session/provider deadline reached; possible admission remains unknown; no automatic retry.",
+                          **_failure_policy("request-timeout", "unknown")}
         try:
             if outcome["exit_code"] != 0:
                 raise ValueError("HTTP worker failed")
             return json.loads(out.read_text())
         except (OSError, ValueError):
             return None, {"status": "deferred", "admission": "unknown",
-                          "reason": "Isolated HTTP worker failed; assessment remains unavailable."}
+                          "reason": "Isolated HTTP worker failed; assessment remains unavailable.",
+                          **_failure_policy("transport-or-output-failure", "unknown")}
 
 
-def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_dispatch=None, deadline=None) -> dict:
+def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_dispatch=None, deadline=None,
+            retry_nonadmitted=False) -> dict:
     """Execute or recover one request; result.json is also the manual handoff."""
     if deadline is not None and (isinstance(deadline, bool) or not isinstance(deadline, (int, float)) or not math.isfinite(deadline)):
         raise ValueError("Deadline must be a finite monotonic timestamp")
+    if type(retry_nonadmitted) is not bool:
+        raise ValueError("Explicit nonadmission retry permission must be boolean")
     p = validate_profile(profile)
     if not isinstance(prompt, str):
         raise ValueError("Prompt must be complete UTF-8 text")
@@ -475,19 +555,22 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
             Draft202012Validator(schema, format_checker=FormatChecker()).validate(candidate)
             return dict(prior, result=candidate, recovered=True)
         if len(prompt.encode()) > p["max_input_bytes"]:
-            return finish(reason="Complete source packet exceeds profile byte limit; no truncation or model call performed.")
+            return finish(reason="Complete source packet exceeds profile byte limit; no truncation or model call performed.",
+                          **_failure_policy("source-byte-limit"))
         problem, input_bound, cost_bound = _request_bound(p, prompt, schema)
         receipt.update(conservative_input_token_bound=input_bound, conservative_request_cost_usd=cost_bound)
         receipt.update(input_bound_scope="submitted-packet-only" if p["adapter"] in {"codex", "claude"} else "submitted-request-estimate",
                        harness_overhead_tokens=None)
         if problem:
-            return finish(reason=problem)
+            return finish(reason=problem, **_failure_policy(_local_failure_category(problem)))
         if p["adapter"] != "manual" and not p["authorized"]:
-            return finish(reason="Profile is not authorized; prepared inputs only, no inference performed.")
+            return finish(reason="Profile is not authorized; prepared inputs only, no inference performed.",
+                          **_failure_policy("authorization-required"))
         result = None
         if p["adapter"] == "manual":
             if not (root / "result.json").is_file():
-                return finish(reason="Awaiting an agent's schema-valid result.json for the immutable prompt and schema.")
+                return finish(reason="Awaiting an agent's schema-valid result.json for the immutable prompt and schema.",
+                              **_failure_policy("manual-result-pending"))
             try:
                 result = json.loads((root / "result.json").read_text())
             except ValueError:
@@ -496,7 +579,8 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
         else:
             marker = root / "dispatch.json"
             if marker.exists():
-                if prior and prior.get("binding_sha256") == binding_hash and prior.get("admission") == "not-admitted" and prior.get("http_status") in {401, 403, 429}:
+                if prior and prior.get("binding_sha256") == binding_hash and prior.get("admission") == "not-admitted" and (
+                        prior.get("retryable") is True or retry_nonadmitted and prior.get("action_required") is True):
                     # A later coordinator invocation may retry a confirmed
                     # provider rejection after backoff. Preserve both original
                     # request reservation and receipt; never erase an unknown
@@ -517,17 +601,20 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
                 # An uncertain/live dispatch is never silently duplicated here.
                     return dict(prior) if prior else finish(admission="unknown", reason="A dispatch was reserved without a terminal receipt; reconcile it before any new request.")
             if _remaining(deadline, p["timeout_seconds"]) <= 0:
-                return finish(reason="Session deadline reached before dispatch; request not admitted.")
+                return finish(reason="Session deadline reached before dispatch; request not admitted.",
+                              **_failure_policy("session-deadline"))
             executable = None
             if p["adapter"] in {"codex", "claude"}:
                 executable, problem = _cli(p) if deadline is None else _cli(p, deadline=deadline)
                 if problem:
-                    return finish(reason=problem)
+                    return finish(reason=problem, **_failure_policy(_local_failure_category(problem)))
                 receipt["executable_sha256"] = _file_sha(executable)
             if p["adapter"] == "openai-compatible" and p.get("credential_env") and not os.environ.get(p["credential_env"]):
-                return finish(reason="Configured credential environment variable is unset.")
+                return finish(reason="Configured credential environment variable is unset.",
+                              **_failure_policy("credential-unset"))
             if _remaining(deadline, p["timeout_seconds"]) <= 0:
-                return finish(reason="Session deadline reached during local admission checks; request not admitted.")
+                return finish(reason="Session deadline reached during local admission checks; request not admitted.",
+                              **_failure_policy("session-deadline"))
             if before_dispatch is not None:
                 # The coordinator commits its lifetime attempt and budget lease
                 # after local admission checks, before any possible provider call.
@@ -537,7 +624,10 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
             receipt.update(admission="unknown", reason="A bounded request was dispatched; result pending.")
             _write(root / "receipt.json", receipt)
             if p["adapter"] == "openai-compatible":
-                result, metadata = _http(p, prompt, schema) if deadline is None else _bounded_http(p, prompt, schema, deadline)
+                # Always isolate HTTP: a socket timeout alone does not bound DNS
+                # or a response that trickles bytes indefinitely. Null session
+                # limits still retain this profile's per-request hard timeout.
+                result, metadata = _bounded_http(p, prompt, schema, deadline)
                 receipt.update(metadata)
                 if result is None:
                     return finish()
@@ -577,11 +667,13 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
                                 metadata, result = _metadata(p["adapter"], out.read_text(errors="replace"))
                                 receipt.update(metadata)
                         if outcome["timed_out"]:
-                            return finish(status="deferred", reason="Model deadline reached; possible admission remains unknown and no automatic retry occurs.")
-                        if outcome["exit_code"] != 0:
+                            return finish(status="deferred", reason="Model deadline reached; possible admission remains unknown and no automatic retry occurs.",
+                                          **_failure_policy("request-timeout", receipt["admission"]))
+                        if outcome["exit_code"] != 0 or receipt.get("provider_error"):
                             diagnostic = _operational_diagnostic(err.read_text(errors="replace"), out.read_text(errors="replace"))
                             return finish(status="deferred", operational_diagnostic=diagnostic,
-                                          reason=diagnostic["summary"] + " No fallback, exclusion, or automatic retry performed.")
+                                          reason=diagnostic["summary"] + " No fallback, exclusion, or automatic retry performed.",
+                                          **_failure_policy(diagnostic["category"], receipt["admission"]))
                         receipt.update(admission="admitted")
                         if p["adapter"] in {"codex", "command"}:
                             raw = response.read_bytes() if response.exists() else out.read_bytes()

@@ -28,37 +28,47 @@ configuration/run when those inputs change.
 
 ## Startup responsibility
 
-1. Read `README.md` and `EXECUTION.md`. Verify the distribution. Use the documented
-   bootstrap; do not replace pinned dependency specifications ad hoc.
-2. Run the read-only doctor. Distinguish physical hardware, usable capacity,
-   configured access, confirmed access, user authorization and model qualification.
-   Unknown quotas are not unlimited. Do not inspect or print credential values.
-3. Recommend one available configuration. Ask the user only for the permitted
-   resources, additional remote access not observable locally, and material
-   workload/deadline preferences, including whether citation expansion should
-   have a maximum depth. Seeds are depth 0; independent process/blind-query
-   results start their own labeled citation roots. Use no depth cap only when
-   that matches the commissioned scope. Do not ask them to evaluate the model catalog.
-4. Explain estimates and their uncertainty. Title calls alone require at least
-   `ceil(logical_papers / 25)`; abstract, rescue, audit and reading add calls.
-   Do not extrapolate a full-sweep ETA from a few full-text reads without stage
-   retention, throughput, quota and retrieval evidence.
-5. Record the user's actual agreement with `plan`. `--authorize` is a record of
-   permission, not an instruction to infer it. Never enable API/usage-credit
-   fallback, purchase credits, launch rented hardware or change account billing.
-6. Commission only the selected relevant configuration within a small agreed
-   allowance; the preset starts at 20 admitted calls. Read the resulting decision
-   trails against the scientific gates yourself and use applicable maintainer
-   qualification evidence when available. Evaluate source facts and supported
-   claims, not superficial label agreement. Keep evaluator expectations outside
-   model inputs. Measure stage throughput with `estimate`, report limitations,
-   and recommend a larger run only with the user's resource authorization.
-   Do not make the user build or label a new benchmark.
+A user saying **"run the sweep"** or **"start sweep"** invokes the discovery
+workflow below. Ask only for missing scope/resource choices, then start the
+actual sweep. Do not insert a compulsory pilot, commissioning allowance or
+hidden total-call/time cap.
 
-General model benchmarks nominate candidates; they do not certify this task.
-The shipped candidates are not all approved models. Qualification is specific to
-model, harness, settings, source format and scientific regime. If the selected
-profile is unqualified, keep outputs provisional and report that limitation.
+1. Read `README.md` and `EXECUTION.md`. Verify the distribution and dependencies.
+   These local operational checks do not require scientific benchmark reruns.
+2. Run the read-only doctor. Supply the active harness, exact current model and
+   effort, and other accessible models from trustworthy session metadata using
+   `--harness`, `--model`, `--effort`, and repeatable `--available-model` options.
+   Prefer the current harness; an installed Codex binary does not override a
+   Claude Code session. Unknown models, quotas and remote resources stay unknown.
+   Never inspect or print credential values or send speculative access probes.
+3. Recommend one configuration using observed CPU/RAM, retrieval tools, usable
+   model access and concurrency. Ask once about any missing resource allowance
+   and citation depth: a nonnegative number of hops, or **unbounded**. Confirm
+   spending/deadline limits only where not already supplied. "Use my subscription
+   until completion, with no extra charges" is a valid authorization. A GPU is
+   relevant only when actually serving local models. Do not make the user rank
+   models or benchmark a catalog.
+4. Explain any available estimate and its uncertainty. Title calls alone require
+   at least `ceil(logical_papers / 25)`; other stages add calls. Refine estimates
+   from real run throughput, retention, retrieval and provider telemetry.
+5. Record the agreement with `plan`. `--authorize` records permission already
+   given. Null call/time limits mean no operator-imposed cap; they do not imply
+   unlimited provider quota. No API/usage-credit fallback, rented hardware or
+   account billing changes are implicit. Unbounded depth still follows the
+   frozen search windows and scientific stopping rules.
+6. Start the real seed and discovery work. Reuse applicable validation evidence;
+   check the initial actual model calls and retrievals while they contribute to
+   the run. Read empirical seeds through the same deployed screening and paper
+   gates. Treat seed expectations as evaluator checks, never reader hints or
+   forced labels. Flag missing sources, partial readings and claim-level
+   disagreements separately. A disagreement calls for source-grounded review,
+   potentially using a preauthorized stronger review profile, rather than
+   automatically declaring either the model or the seed expectation correct.
+
+General benchmarks nominate models; qualification remains specific to model,
+harness, settings and scientific regime. Unqualified output remains provisional.
+A new machine alone does not require a separate scientific test sweep. Maintain
+per-request timeouts, batching, concurrency limits and integrity checks throughout.
 
 ## Work and persistence
 
@@ -77,21 +87,40 @@ screen and read papers at that depth, but leave further citation expansion
 explicitly deferred. Report a depth-limited checkpoint, never saturation or a
 complete registered sweep, when the bound leaves obligations pending. Do not
 reset ordinary hop depth when a CORE node resets its separate bridge counter.
-At quiet checkpoints, especially after manual task completion, run `validate`,
+Use the lightweight `sanity` checker during execution to detect malformed or
+inconsistent metadata, missing reasons and stalled bookkeeping. It is incremental
+and does not replace full validation or scientific review. At quiet checkpoints,
+especially after manual task completion, run `validate`,
 inspect and resolve integrity errors, then run `deliver` and `status`. The
 browser review entry point is `runs/RUN_ID/delivery/index.html`. A successful
 operational validator does not certify the scientific judgments or native ledger.
 
-For agent work exchange, `work` returns a leased model task. Read its complete
-`prompt.txt`, `schema.json` and supplied source evidence, then write a JSON answer
-and `submit` it with the returned job ID. Do not read prior/human labels, borrow
+For agent work exchange, inspect the status returned by `work`: it alternates
+available model and native discovery tasks. For `agent-task`, dispatch a fresh
+source-only worker using its `intended_profile` and `execution_role`. The worker
+reads the complete `prompt.txt`, `schema.json` and supplied source evidence, with
+the task bindings needed to return a JSON answer. Do not inherit the supervisor's
+conversation, calibration references or prior paper assessments into that worker.
+Keep evaluator comparisons in the supervisor's context. Then `submit` the answer
+with the returned job ID. Independent calibration rereads require the bound
+`execution_provenance` attestation described in `EXECUTION.md`; report the actual
+harness/model/effort, or explicit unknowns. A requested profile is not evidence
+that it ran, and a matching worker self-report is not provider verification.
+For `agent-native-task`, preserve the
+returned native lease owner/token and use `native-submit` with its contract. Do not read prior/human labels, borrow
 batch-neighbor evidence, truncate source packets, or invent unread content.
 For discovery decisions, use `native-work --owner WORKER` and the returned owner/token submission contract;
 submit with `native-submit`. Before authoring experiment groups, use `native-allocate` with stable paper-local experiment/comparison keys and reuse the returned identifiers; do not invent identifiers. Perform this work yourself or through authorized
 workers rather than asking the user to fill schemas.
 Automatic headless model workers do not replace those native discovery tasks.
-Use bounded `run --watch` periods when waiting for deferred work; continue native
-handoffs and meaningful missing-source work when the runner returns control.
+Keep their process in a managed terminal/session so the supervising agent can
+service native work concurrently; do not wait indefinitely for all automatic
+work to finish before inspecting the native queue.
+Use `run --watch` to wait for deferred automatic work under the agreed scope;
+continue native handoffs and meaningful missing-source work when it returns
+control. A finite `--max-seconds` is optional for an operational checkpoint,
+not a default total-sweep limit. Service native tasks alongside automatic workers
+so a discovery buffer does not stall while model jobs are running.
 
 Divide non-overlapping leased jobs among workers. Never have workers independently
 infer the next identifier or modify shared tables. Parallelize within the agreed

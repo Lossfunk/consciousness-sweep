@@ -31,7 +31,8 @@ def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
                "source_manifest": manifest, "source_manifest_sha256": digest(manifest)}
     key = paper_id + ":source:" + str(generation) + ":" + digest(manifest)
     previous = coordinator.store.job_by_key("retrieval", key)
-    job_id = coordinator.store.enqueue("retrieval", key, payload, priority=20)
+    job_id = coordinator.store.enqueue("retrieval", key, payload,
+                                      priority=120 if paper.get("seed_role") == "empirical-seed" else 20)
     # Repeated attachment of completed input must not create a pending paper
     # with no pending work. A fresh source generation retires only current
     # presentation fields; prior results/assets remain in append-only history.

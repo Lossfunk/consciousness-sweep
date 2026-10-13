@@ -4,6 +4,11 @@ A portable, resumable literature pipeline for finding studies that help explain
 how awareness of an entity X relates to its use by a downstream function Y.
 Its deliverable is a source-grounded prospect queue for scientific review.
 
+**Current release: portable 1.0.0-r20**, ready for supervised use. This is a
+documentation-only successor to audited r19: runtime, scientific files and
+reader instructions are unchanged. See [Scope and integrity](#scope-and-integrity)
+for the engineering checks and source-reading evidence.
+
 This repository accompanies **Sushrut Thorat and Paras Chopra,
 [Towards a full-stack functionalist theory of consciousness: Identifying its
 functional profile](https://arxiv.org/abs/2609.33366)** (2026). The manuscript
@@ -135,19 +140,30 @@ cd consciousness-sweep
 If repository access is restricted, the operator must first have access through
 GitHub. Open the downloaded directory as the coding agent's workspace and say:
 
-> Follow AGENTS.md and README.md. I want a discovery sweep from the supplied
-> seeds. Inspect the available system and model access, recommend a configuration
-> and a bounded commissioning allowance, and confirm my resource and citation
-> depth limits before starting. Manage the screening, native discovery tasks,
-> retrieval, checkpoints and prospect delivery yourself. Keep decisions grounded
-> in the supplied sources and report anything that needs my scientific judgment.
+> Run the sweep.
 
-The agent handles configuration and evaluation work. You do not need to compare
-every model in the candidate catalog or label a new benchmark.
-At startup you can also specify a citation depth limit, such as “go two citation
-hops from the seeds.” The agent expands eligible links automatically within that
-limit. Seeds are depth 0; papers reached at the limit are still screened and read.
-The run reports further expansion as depth-limited, without claiming saturation.
+Keep that release directory for the lifetime of its runs. Download updates into
+a new directory; do not pull changed code or instructions into an active run.
+Existing runs retain their original package, sources and recorded configuration.
+
+The agent reads the repository instructions, inspects the machine and its active
+harness/model access, recommends workers and stage profiles, and asks once about
+missing resource and citation-depth choices. You can give those choices up front:
+
+> Run the sweep with unbounded citation depth. Use my existing subscription until
+> completion, without extra charges. Use available local resources sensibly.
+
+There is **no mandatory test sweep or hidden 20-call/one-hour allowance**. The
+first real retrievals and model calls verify operational access while doing
+useful work. Empirical seed papers are read through the deployed gates and their
+results checked for source-grounded discrepancies as part of the actual run.
+The agent reports meaningful problems and work needing scientific judgment.
+
+A citation limit such as “two hops” is also supported. Seeds are depth 0; papers
+at the limit are still screened and read. Further expansion remains visibly
+deferred. **Unbounded** means no hop cutoff: continue until the protocol's search
+frontiers satisfy their stopping rules, including required supplementary routes.
+It does not mean that provider quotas or the protocol's query windows disappear.
 
 ## Install and choose resources
 
@@ -159,46 +175,37 @@ python3 bootstrap.py
 ```
 
 On Windows, use `.venv\Scripts\python.exe` instead of `.venv/bin/python`.
-Bootstrap creates an isolated environment and installs the pinned dependencies.
-It does not call a model, purchase credits, or start a literature run. The
-inventory records hardware, installed tools and observable access facts without
-printing credentials. Unknown model access or quotas stay unknown.
+Bootstrap creates an isolated environment and installs pinned dependencies.
+Doctor inventories CPU/RAM, disk, supported GPUs, tools and observable access
+without inference or printing credentials. The supervising agent can supply
+known session facts with `--harness codex` or `--harness claude`, `--model ID`,
+`--effort LEVEL`, and repeated `--available-model ID` flags. Availability and
+scientific qualification remain separate; unknown quota is recorded as unknown.
+An installed Codex CLI never takes precedence over a known active Claude session.
 
-You also need network access for scholarly retrieval and usable access to the
-selected model harness. A GPU is not required for subscription-based cloud
-workers. Local model endpoints require their own sufficient memory and compute;
-the agent inspects what is available instead of assuming it. Check the actual
-account allowance before a long run. The pipeline cannot infer unlimited quota
-from an installed CLI or silently purchase additional capacity.
+Network access is needed for literature retrieval. A GPU is not required for
+subscription cloud workers. If local models are selected, the agent checks their
+actual memory/compute requirements. The agent recommends concurrency and obtains
+any missing resource authorization; it does not rent hardware or purchase quota.
 
-Choose **discovery mode** to search outward from the bibliography, or **corpus
-mode** to screen a list you already have. `plan` defaults to corpus mode; use
-`--mode discovery` explicitly for the literature sweep described above. The
-commands below are for the supervising agent to operate; you do not need to
-write JSON responses or coordinate workers yourself.
+`plan` defaults to **discovery mode**, searching from the supplied bibliography.
+Use `--mode corpus` for a supplied list. The commands are for the supervising
+agent; the user need not manage JSON responses or worker queues.
 
-The default plan uses agent work exchange, which works with Codex, Claude Code,
-OpenClaw or another agent able to read files and run these commands:
-
-```sh
-.venv/bin/python -B -m sweep plan --preset manual --output workspace/plan.json
-```
-
-Review the recommendation and resource allowance with the user. Choose manual
-exchange or one of the automatic options below. After authorization, record the
-agreement in the chosen plan. For manual exchange:
+For work exchange through the current agent (Codex, Claude Code, OpenClaw or
+another agent that can operate these commands):
 
 ```sh
-.venv/bin/python -B -m sweep plan --preset manual --authorize --output workspace/plan.json
+.venv/bin/python -B -m sweep plan --preset manual --authorize \
+  --max-citation-depth unbounded --output workspace/plan.json
 ```
 
-`--authorize` records permission already given; it is not a substitute for it.
-Plans default to a small commissioning allowance, not a budget for a full sweep.
-The supervising agent should use that allowance to check actual source-reading
-trails against the scientific gates, inspect failures and measure throughput.
-The default is 20 admitted calls. Before expanding, the agent reports what those
-checks establish and proposes a larger allowance; the user need not label a
-benchmark or evaluate the model catalog.
+`--authorize` records permission already given. Omitted call/time limits mean
+no operator-imposed total cap; finite `--max-calls N` and `--max-seconds N` remain
+available. `--max-calls unbounded` and `--max-seconds unbounded` explicitly clear
+those limits in a configuration. Subscription/provider exhaustion creates a
+checkpoint; it never silently enables paid fallback or claims the search finished.
+Hosted APIs still require explicit spending ceilings.
 
 ## Automatic model workers
 
@@ -206,36 +213,40 @@ Codex and Claude have separate subscription adapters. The selected model and
 reasoning settings are recorded explicitly; the pipeline does not switch to API
 billing when subscription access fails.
 
-For Claude Code, first confirm that **Usage credits / extra usage are disabled**
-in the account's Usage settings if the run is subscription-only. The adapter
-cannot establish that account setting from the CLI. After authorizing the plan:
+For Claude Code, confirm that **Usage credits / extra usage are disabled** for
+subscription-only runs. The adapter cannot discover that account setting.
+After permission is established, the agent substitutes the exact observed model
+ID and supported effort into this example:
 
 ```sh
-.venv/bin/python -B -m sweep plan --preset claude --authorize \
-  --claude-extra-usage-disabled --workers 2 --max-calls 20 \
-  --max-seconds 3600 --output workspace/plan.json
+.venv/bin/python -B -m sweep plan --preset claude --model EXACT_MODEL_ID \
+  --effort SUPPORTED_EFFORT --authorize --claude-extra-usage-disabled \
+  --max-citation-depth unbounded --output workspace/plan.json
 ```
 
-This preset requests Haiku 5.5 at medium effort for screening and Opus 5.5 at high
-effort for reading and independent checks. It is a commissioning configuration,
-not a scientific qualification claim. Claude Code 2.1.293 or newer is required.
-The Claude adapter has automated simulated-CLI tests; live account behavior and
-scientific quality must be checked on the recipient's available installation.
+For Codex, use `--preset codex --model EXACT_MODEL_ID --effort SUPPORTED_EFFORT`.
+Automatic presets pin the supplied model for every stage; a configuration file
+can choose different available models for title, abstract, rescue and reading.
+`--preset auto` (the default) uses the active host context when sufficient facts
+are known, otherwise current-agent work exchange. It never invents access to a
+model from a provider catalog. `doctor` can recommend the tested Luna/medium
+and Sol/medium screening split when the host reports those exact models available.
+The Codex adapter retains `source-only-v1` context; custom profiles may explicitly
+select `codex_context: standard`.
 
-The analogous Codex preset is `--preset codex`. It requests Luna/medium for
-titles, Sol/medium for abstracts and Sol/xhigh for reading and checks, with the
-tested `source-only-v1` context to reduce repeated harness instructions. These
-are the final configurations exercised in bounded development checks, not a
-general ranking of model ability. Custom profiles remain supported and can
-explicitly select `codex_context: standard`. Model availability is account-dependent.
-See [EXECUTION.md](EXECUTION.md) for custom profiles, local endpoints, budget
-semantics and the task-specific qualification workflow. Official integration
-references are in [sweep/provider_docs.json](sweep/provider_docs.json).
-The candidate catalog nominates configurations using scientific fidelity,
-source grounding, rescue behavior, null interpretation, reliable structured
-completion and measured resource use. It does not rank every model on a claimed
-universal quality score. The agent recommends the least costly available
-configuration that passes the checks for its role.
+The Claude adapter requires a supported CLI version (currently 2.1.293 or newer).
+Its transport has simulated-CLI coverage; this does not establish live Claude
+scientific equivalence. Check real seed decisions against their source evidence
+and flag discrepancies, rather than requiring a preliminary benchmark on every
+machine. An optional preauthorized `calibration_review_profile` in a custom plan
+allows a stronger independent source-only reread when such a flag needs review.
+The original reader result remains unchanged; agreement with an expected tier is
+not enough to clear the scientific issue.
+
+See [EXECUTION.md](EXECUTION.md) for custom profiles, local endpoints, accounting,
+seed checks and recovery. Official integration references are in
+[sweep/provider_docs.json](sweep/provider_docs.json). Candidate catalogs nominate
+models; they do not establish account access or universal scientific quality.
 
 Once the selected plan is ready, initialize a fresh run:
 
@@ -245,11 +256,13 @@ Once the selected plan is ready, initialize a fresh run:
 
 The plan becomes immutable for that run. To change models or execution settings,
 create a separately configured run with a new ID; overwriting the external plan
-file does not change an existing run.
+file does not change an existing run. A predeclared calibration review profile
+is a separate adjudication route, not a silent replacement of the reader.
 
 ## Work from a corpus
 
-Supply UTF-8 JSONL or CSV, one logical work per row. Each row needs a title;
+Initialize a plan with `--mode corpus` for this workflow. Supply UTF-8 JSONL or
+CSV, one logical work per row. Each row needs a title;
 include DOI, authors, year, abstract and full-text locations where available.
 JSONL supports nested fields directly. Keep local configuration, corpora and
 source inputs under `workspace/` or outside the downloaded repository. Relative
@@ -271,9 +284,11 @@ Supplied source bytes are copied into the run and bound by hash before reading.
 .venv/bin/python -B -m sweep estimate --run-id first-sweep
 ```
 
-With manual profiles, the agent repeatedly requests a task, reads its complete
-prompt and source packet, writes a JSON response matching its schema, and submits
-it. The returned task directory contains the exact instructions and identifiers:
+With manual profiles, the agent repeatedly requests a task. An `agent-task`
+response supplies its full prompt, source packet, schema and identifiers; the
+agent writes and submits the requested JSON. In discovery mode, `work` also
+returns `agent-native-task` responses with a native contract and lease, which
+use `native-submit` instead. Check the returned status before dispatching:
 
 ```sh
 .venv/bin/python -B -m sweep work --run-id first-sweep
@@ -298,35 +313,42 @@ review pages:
 ```
 
 Inspect the validation result; a valid partial run can still have unresolved
-work. Validation checks integrity and provenance, not scientific correctness.
+work. Validation checks integrity and provenance, not scientific correctness. During
+execution, `sanity --run-id first-sweep` performs a smaller incremental check;
+`calibration-report --run-id first-sweep` shows the seed-reading comparison and
+any review flags. Neither a matching label nor valid metadata proves scientific
+correctness.
 
 ## Discover literature
 
-A plan with `"mode": "discovery"` initializes the frozen empirical seeds and
-review anchors. After agreeing the allowance, this example creates a bounded
-Codex commissioning run with two workers, twenty admitted calls, a one-hour
-execution-session limit and two citation hops:
+A discovery plan initializes the frozen empirical seeds and review anchors.
+After confirming resources and depth once, this example starts the actual sweep
+through the current agent, without a total call/time or citation-depth cap:
 
 ```sh
-.venv/bin/python -B -m sweep plan --preset codex --mode discovery --authorize \
-  --workers 2 --max-calls 20 --max-seconds 3600 --max-citation-depth 2 \
-  --output workspace/discovery-plan.json
+.venv/bin/python -B -m sweep plan --preset manual --mode discovery --authorize \
+  --max-citation-depth unbounded --output workspace/discovery-plan.json
 .venv/bin/python -B -m sweep init --plan workspace/discovery-plan.json --run-id discovery-sweep
 .venv/bin/python -B -m sweep run --run-id discovery-sweep
-.venv/bin/python -B -m sweep native-work --run-id discovery-sweep --owner AGENT_AND_MODEL
+.venv/bin/python -B -m sweep work --run-id discovery-sweep
 ```
 
-These numbers illustrate a small commissioning allowance, not the estimated cost
-of a complete sweep. Use `--preset manual` for agent work exchange, or the Claude
-preset and account attestation described above. For a custom configuration,
-use `plan --config workspace/discovery-configuration.json --mode discovery`
-with the profile/resource fields in [EXECUTION.md](EXECUTION.md). Initialization
-already creates the seed obligations; `discovery-init` is an idempotent explicit
-initialization command when needed.
+Choose an automatic adapter with the exact model/effort options above when useful,
+or use `plan --config workspace/discovery-configuration.json` for stage-specific
+profiles. Initialization already creates seed obligations; `discovery-init` is an
+idempotent explicit initialization command when needed. Automatic workers and the
+supervising agent's native discovery work should proceed concurrently within the
+agreed resource allowance. The agent must keep servicing both kinds of work;
+the runner cannot invent source-based native scientific judgments. Search fetching
+slows temporarily when the pending paper buffer is full, while screening/reading
+continues; this is queue management, not a cap on papers discovered. Small pending
+screening jobs are combined up to their stage limits, and unfinished batch tails
+still proceed. Agent work exchange alternates native and model work when both are
+ready. Periodic incremental sanity checks flag bookkeeping problems early.
 
-To commission a depth-bounded run, add `--max-citation-depth 2` to `plan`, or
-set `resources.max_citation_depth` in the configuration. Omit it or use JSON
-`null` for no depth cap; `0` limits citation discovery to the initial roots.
+To limit depth, use `--max-citation-depth 2` or set `resources.max_citation_depth`
+in the configuration. `unbounded` on the CLI or JSON `null` means no cap;
+`0` limits citation expansion to the roots while still reading them.
 Independent process/blind-query results start their own labeled citation roots,
 so query-origin depth is kept distinct from distance to the manuscript seeds.
 The status output and review page show any deferred expansion. Those obligations
@@ -407,10 +429,28 @@ are separate from model judgments:
 ```
 
 `pause` requests a graceful stop after already-admitted bounded work is saved.
-`resume` clears that stop request; invoke `run` again to do more work. Completed
+`resume` clears that stop request; invoke `run` again to do more work. Authentication/configuration failures require an explicit
+resolution after the problem is fixed: `resume --run-id first-sweep
+--resolve-access-blocks --reason "Describe the fix"`. Confirmed nonadmission
+can then be checked again under the same settings; uncertain charged failures
+still use the separate retry workflow. Completed
 requests and unchanged source assets are reused. A dead-worker recovery requires
 explicit process-death evidence; elapsed time alone never permits duplicate
 model dispatch.
+
+To pause and later continue the same run:
+
+```sh
+.venv/bin/python -B -m sweep pause --run-id first-sweep
+# Later, from the same release directory:
+.venv/bin/python -B -m sweep resume --run-id first-sweep
+.venv/bin/python -B -m sweep run --run-id first-sweep
+.venv/bin/python -B -m sweep status --run-id first-sweep
+```
+
+Resume preserves the saved plan, remaining allowance and original finite total
+deadline; it does not renew the allowance. With manual profiles, the supervising
+agent continues the work/submit/native-submit cycle described above.
 
 For a failed model request with a verified terminal receipt, the supervising
 agent can explicitly commission one fresh attempt within the remaining run
@@ -428,8 +468,8 @@ provider cost. Repeating this command for the same failed job returns the same
 successor. Unknown token or cost accounting can still block further dispatch.
 An ambiguous live request cannot be retried this way.
 
-Use `run --run-id first-sweep --watch --max-seconds 3600` to wait for deferred
-work to become eligible again within a bounded wall-time allowance. Without
+Use `run --run-id first-sweep --watch` to wait for deferred work. An optional
+`--max-seconds N` creates an operational checkpoint; it is not required. Without
 `--watch`, an idle runner returns control to the supervising agent. Waiting does
 not resolve missing texts, uncertain admissions or required native judgments.
 
@@ -439,15 +479,44 @@ compute. A long run needs an operator-managed persistent terminal or supervisor.
 
 ## Scope and integrity
 
-The code and reader were checked before handoff with 302 software tests,
-23 live full-text readings and four boundary-case repeats. A separate three-call
-check passed all 13 expected useful papers through the deployed title and
-abstract stages into the retrieval queue. Complete-cycle and recovery tests use
-controlled fixtures; earlier live commissioning exercised discovery through
-depth two. These checks establish bounded execution and known-paper retention.
-They do not measure exhaustive recall, establish live Claude equivalence, or
-substitute for reviewing new prospects. Evaluation papers and answer keys are
-kept out of this downloadable package.
+The **13 October 2026 maintainer audit** supports supervised handoff without
+requiring a full scientific sweep as a commissioning step. Its evidence separates
+engineering behavior from scientific reading quality:
+
+- **Packaged software:** 431 tests passed against audited r19 with zero skips,
+  errors or failures. They cover startup, finite and unbounded settings, durable
+  access/budget blocks, crashes, competing and stale workers, source revisions,
+  calibration review, stopping and reopening. r20 changes documentation only.
+- **Offline scale:** 2,500 logical papers and 5,000 encounters exercise concurrent
+  persistence, 100 screening batches, 2,500 retrieval obligations and backpressure
+  over 1,000 citation obligations. Downstream drain is a synthetic fixture, not
+  a claim that those papers were retrieved or read. A separate complete finite
+  workflow exercises actual coordinator/extraction/delivery code using controlled
+  source and model responses, including new work after exhaustion and restart.
+  These tests overlap the packaged suite and must not be added to its count.
+- **Real sources and fresh readers:** the initial diagnostic used seven of eight
+  authorized calls (four screening and three full-text readings). The extension
+  used nine of fourteen further authorized calls, all fresh full-text readings.
+  Public retrieval, source-version changes, missing texts and manual extraction
+  were exercised. Eleven of the thirteen positive-baseline papers have fresh
+  readings and retain a qualified prospect; source-integration gaps and
+  claim-level disagreements remain explicit. Missing mains/supplements are
+  untested evidence, not reader failures or an instruction to force agreement.
+
+The latest reader calls used fresh source-only workers in the active Codex
+harness, with no paid API fallback. Exact backend identity was unverified, and
+manual calls were counted separately from automatic budget telemetry. Live
+Claude/custom-provider paths, clean-machine installation, Windows and network
+filesystems were not exercised. These boundaries do not create a compulsory
+test sweep; the supervising agent still establishes actual access and follows
+the user's resource choices on each new run.
+
+No full sweep was launched during this audit. Scientific gates, reader prompts,
+seeds and calibration expectations remain unchanged. Earlier reading and
+screening checks remain historical evidence; their counts are not added to the
+latest diagnostics or treated as an exhaustive recall estimate. Development
+runs and paper PDFs are excluded from the distribution. The versioned
+seed-calibration reference is coordinator-only and never supplied to readers.
 
 [science/PROTOCOL.md](science/PROTOCOL.md) defines the science. The portable
 coordinator maintains a separate operational prospect ledger. Its completion
@@ -457,7 +526,8 @@ unchanged scientific package's registered-run workflow and validators.
 
 The distribution contains static code, instructions, schemas, seed identities
 and a model candidate catalog. It excludes historical runs, paper PDFs, private
-paths, credentials and evaluation answer keys. Verify it with:
+paths and credentials. Its coordinator-only seed-calibration reference records
+expected contributions and limitations; reader prompts never include it. Verify it with:
 
 ```sh
 python3 bootstrap.py --verify-only
@@ -466,9 +536,10 @@ python3 bootstrap.py --verify-only
 See [AGENTS.md](AGENTS.md) for the agent contract and [EXECUTION.md](EXECUTION.md)
 for operational details and current limitations.
 
-Read the prepared commissioning procedure in [EXECUTION.md](EXECUTION.md) before
-launching a large sweep. Setup and verification do not start a search or model
-call. A time limit or exhausted allowance creates a resumable checkpoint, not a
+Use the startup and ongoing checking procedures in [EXECUTION.md](EXECUTION.md).
+A separate diagnostic is optional and requires its own purpose and allowance;
+ordinary startup immediately proceeds to real seed/discovery work. Setup and
+verification do not start a search or model call. A time limit or exhausted allowance creates a resumable checkpoint, not a
 claim that the literature has been exhausted.
 
 ## Repository guide

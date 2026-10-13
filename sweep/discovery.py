@@ -7,6 +7,9 @@ The frozen native ledger/validator remains the authority for certification.
 from __future__ import annotations
 
 import csv
+from contextlib import contextmanager
+from copy import copy
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -174,6 +177,11 @@ def discovery_tick(c):
         c.store.set_state("discovery_reader_cursor", job["id"], "Bounded completed-reader audit reconciliation cursor")
     state = c.store.get_state(STATE)
     scheduled = 0
+    from .scheduling import pressure
+    backlog = pressure(c)
+    slots = max(0, backlog["search_queue_target"] - backlog["queued_search_jobs"])
+    if backlog["search_admission_paused"]:
+        slots = 0
     for obligation in frontiers.due_obligations(state):
         if _deadline_expired(c):
             break
@@ -182,6 +190,8 @@ def discovery_tick(c):
             continue
         if obligation.get("task"):
             continue
+        if scheduled >= slots:
+            break
         payload = {k: obligation.get(k) for k in ("source", "query", "limit", "cursor", "kind", "parent", "phase", "window_key", "obligation_id", "child_bridge_depth")}
         if obligation.get("coverage_generation"):
             payload["coverage_generation"] = obligation["coverage_generation"]
@@ -514,6 +524,8 @@ def _native_candidates(c, *, hydrate=True):
     if not state:
         return []
     result = _resolution_tasks(c)
+    from .calibration import pending_tasks
+    result.extend(pending_tasks(c))
     for task in frontiers.due_obligations(state):
         if task.get("task"):
             task = dict(task)
@@ -538,7 +550,14 @@ def _native_candidates(c, *, hydrate=True):
                     task["deferred_for_source_generation"] = waiting
             task.setdefault("task_id", task.get("paper_id"))
             result.append(task)
-    if not result and not _pending_semantic(c) and not any(o["status"] != "complete" for o in state["citation_obligations"].values()) and not any(w["status"] != "complete" for w in state["process_windows"].values()):
+    pending_semantic = _pending_semantic(c)
+    # Quiet queues request an audit only until the existing stopping predicate
+    # has current evidence. Repeating an unchanged zero-yield audit indefinitely
+    # creates work without learning anything. New/revised citation obligations
+    # invalidate its bound hash and make the ordinary audit available again.
+    current_principal_evidence = (state["principal_provisionally_satisfied"]
+                                  and not frontiers.principal_errors(state, pending_semantic_jobs=pending_semantic))
+    if not result and not pending_semantic and not current_principal_evidence and not any(o["status"] != "complete" for o in state["citation_obligations"].values()) and not any(w["status"] != "complete" for w in state["process_windows"].values()):
         result.append({"task": "citation-wave-and-frontier-audit", "task_id": "wave-audit", "state": state,
                 "instructions": "Reconcile the complete backward/forward wave, deduplication, all title/abstract/rescue/audit decisions and missing text requests. Submit wave_id, obligation_ids, new_potentially_relevant, screening_complete, reason. A zero yield is a factual post-screening count, not an assumption from an empty queue. After a current zero-yield wave, enter the mandatory blind lane; do not claim native certification."})
     return result
@@ -546,6 +565,41 @@ def _native_candidates(c, *, hydrate=True):
 
 def _native_controls(conn):
     conn.execute("CREATE TABLE IF NOT EXISTS native_task_control(task_id TEXT PRIMARY KEY,owner TEXT,token INTEGER NOT NULL DEFAULT 0,lease_until REAL,available_at REAL NOT NULL DEFAULT 0,last_served REAL NOT NULL DEFAULT 0,reason TEXT,binding TEXT)")
+
+
+def _native_transaction_view(c, conn):
+    """Reuse one write snapshot throughout a native submission.
+
+    Native submissions perform local source checks and durable scheduling, not
+    network/model calls. Their nested Store transactions become savepoints, so
+    all scientific records/frontier changes either commit together against the
+    checked source generation or roll back together. Other workers cannot change
+    that generation or claim/release this native task between its checks/writes.
+    """
+    view, store = copy(c), copy(c.store)
+    counter = 0
+
+    @contextmanager
+    def connection():
+        yield conn
+
+    @contextmanager
+    def transaction():
+        nonlocal counter
+        counter += 1
+        name = "native_nested_" + str(counter)
+        conn.execute("SAVEPOINT " + name)
+        try:
+            yield conn
+            conn.execute("RELEASE SAVEPOINT " + name)
+        except BaseException:
+            conn.execute("ROLLBACK TO SAVEPOINT " + name)
+            conn.execute("RELEASE SAVEPOINT " + name)
+            raise
+
+    store._connection, store._transaction = connection, transaction
+    view.store = store
+    return view
 
 
 def _native_binding(c, task):
@@ -583,9 +637,13 @@ def next_native_task(c, *, owner=None, lease_seconds=900):
         return tasks[0] if tasks else None
     if not isinstance(owner, str) or not owner.strip() or type(lease_seconds) is not int or not 1 <= lease_seconds <= 86400:
         raise ValueError("Native reservation requires an owner and lease_seconds in 1..86400")
-    candidates = _native_candidates(c, hydrate=False)
+    if getattr(c, "plan", {}).get("resources", {}).get("max_wall_seconds") is not None:
+        if time.time() >= c._plan_deadline():
+            raise ValueError("The recorded total wall-clock allowance has expired; pending native work is preserved")
     with c.store._transaction() as conn:
         _native_controls(conn)
+        view = _native_transaction_view(c, conn)
+        candidates = _native_candidates(view, hydrate=False)
         controls = {row["task_id"]: dict(row) for row in conn.execute("SELECT * FROM native_task_control")}
         now = time.time()
         choices = []
@@ -598,10 +656,10 @@ def next_native_task(c, *, owner=None, lease_seconds=900):
         if not choices:
             return None
         _, _, _, task, control = min(choices, key=lambda value: value[:3])
-        task = _hydrate_native_task(c, task)
+        task = _hydrate_native_task(view, task)
         token = control.get("token", 0) if control.get("owner") == owner else control.get("token", 0) + 1
         until = now + lease_seconds
-        binding = control.get("binding") if control.get("owner") == owner else _native_binding(c, task)
+        binding = control.get("binding") if control.get("owner") == owner else _native_binding(view, task)
         conn.execute("INSERT OR REPLACE INTO native_task_control VALUES(?,?,?,?,?,?,?,?)",
                      (task["task_id"], owner, token, until, 0, now, "Explicit native worker reservation", binding))
         c.store._event(conn, "native_task_reserved", {"task_id": task["task_id"], "owner": owner,
@@ -628,6 +686,47 @@ def defer_native_task(c, task_id, *, actor, reason, delay_seconds=300, lease_tok
     return {"task_id": task_id, "status": "deferred", "available_at": now + delay_seconds}
 
 
+def recover_native_task(c, task_id, *, owner, lease_token, actor, reason, proof):
+    """Fence an abandoned external-agent reservation using observed termination.
+
+    A short-lived CLI PID is not the external agent's lifetime. The supervisor
+    must therefore supply its actual harness/task termination observation, bound
+    to the recorded owner. Expiration, silence, and elapsed time alone are never
+    accepted. Live work must be interrupted and observed terminated first.
+    """
+    if (not all(isinstance(v, str) and v.strip() for v in (task_id, owner, actor, reason))
+            or type(lease_token) is not int or lease_token < 1):
+        raise ValueError("Native recovery requires task, owner, current token, actor and reason")
+    if (not isinstance(proof, dict) or proof.get("kind") != "supervisor-observed-termination"
+            or proof.get("owner") != owner
+            or proof.get("terminal_status") not in {"completed", "failed", "interrupted", "terminated"}
+            or not isinstance(proof.get("source"), str) or not proof["source"].strip()
+            or not isinstance(proof.get("evidence"), str) or not proof["evidence"].strip()):
+        raise ValueError("Native recovery requires a source-grounded supervisor observation that this owner has terminated; expiry is insufficient")
+    try:
+        observed = datetime.fromisoformat(proof["observed_at"].replace("Z", "+00:00"))
+        if observed.tzinfo is None or observed > datetime.now(timezone.utc):
+            raise ValueError("Observation must have a timezone and not be in the future")
+    except (KeyError, TypeError, AttributeError, ValueError) as exc:
+        raise ValueError("Termination proof requires a valid observed_at timestamp") from exc
+    with c.store._transaction() as conn:
+        _native_controls(conn)
+        row = conn.execute("SELECT * FROM native_task_control WHERE task_id=?", (task_id,)).fetchone()
+        if not row or row["owner"] != owner or row["token"] != lease_token:
+            raise ValueError("Recovery proof does not match the current native owner/token")
+        # last_served is the latest reservation/renewal. A termination receipt
+        # from an older incarnation cannot release a subsequently resumed worker.
+        if observed.timestamp() < row["last_served"]:
+            raise ValueError("Termination observation predates the latest reservation or renewal")
+        now = time.time()
+        conn.execute("UPDATE native_task_control SET owner=NULL,token=token+1,lease_until=NULL,available_at=?,last_served=?,reason=?,binding=NULL WHERE task_id=? AND owner=? AND token=?",
+                     (now, now, reason, task_id, owner, lease_token))
+        c.store._event(conn, "native_task_recovered", {"task_id": task_id, "owner": owner,
+            "old_token": lease_token, "new_token": lease_token + 1, "actor": actor, "reason": reason, "proof": proof})
+    return {"task_id": task_id, "status": "released-after-observed-termination", "fenced_token": lease_token,
+            "reason": "The old worker cannot submit; the unchanged native obligation is available for reassignment"}
+
+
 def _source_proof(c, paper, payload):
     if not _packet_is_current(paper):
         raise ValueError("Native full-text decisions need a verified packet for the current source generation")
@@ -645,10 +744,13 @@ def _source_proof(c, paper, payload):
 
 
 def submit_native(c, paper_id, payload, actor):
-    candidates = {task["task_id"]: task for task in _native_candidates(c, hydrate=False)}
-    binding = _native_binding(c, candidates[paper_id]) if paper_id in candidates else None
+    if not isinstance(payload, dict) or not isinstance(actor, str) or not actor.strip():
+        raise ValueError("Native submission requires a payload and named actor")
     with c.store._transaction() as conn:
         _native_controls(conn)
+        view = _native_transaction_view(c, conn)
+        candidates = {task["task_id"]: task for task in _native_candidates(view, hydrate=False)}
+        binding = _native_binding(view, candidates[paper_id]) if paper_id in candidates else None
         row = conn.execute("SELECT * FROM native_task_control WHERE task_id=?", (paper_id,)).fetchone()
         lease = payload.get("native_lease") or {}
         if row and row["owner"]:
@@ -656,18 +758,36 @@ def submit_native(c, paper_id, payload, actor):
                 raise ValueError("Native submission requires the current owner and reservation token")
             if row["binding"] != binding:
                 raise ValueError("Native task source changed since reservation; release and re-read the new evidence")
+            token = row["token"]
         elif lease:
             raise ValueError("Native reservation was released or superseded")
-    result = _submit_native(c, paper_id, payload, actor)
-    with c.store._transaction() as conn:
-        conn.execute("UPDATE native_task_control SET owner=NULL,lease_until=NULL,last_served=? WHERE task_id=?", (time.time(), paper_id))
-        c.store._event(conn, "native_task_submission_finished", {"task_id": paper_id, "actor": actor, "lease": lease})
+        else:
+            token = (row["token"] if row else 0) + 1
+            now = time.time()
+            conn.execute("INSERT OR REPLACE INTO native_task_control VALUES(?,?,?,?,?,?,?,?)",
+                         (paper_id, actor, token, now + 900, 0, now, "Atomic submission reservation", binding))
+            c.store._event(conn, "native_task_reserved", {"task_id": paper_id, "owner": actor,
+                "token": token, "lease_until": now + 900, "reason": "Legacy direct submission atomically reserves its execution unit"})
+        result = _submit_native(view, paper_id, payload, actor)
+        changed = conn.execute("UPDATE native_task_control SET owner=NULL,lease_until=NULL,last_served=? WHERE task_id=? AND owner=? AND token=?",
+                               (time.time(), paper_id, actor, token))
+        if changed.rowcount != 1:
+            raise ValueError("Native reservation changed during submission; no changes committed")
+        c.store._event(conn, "native_task_submission_finished", {"task_id": paper_id, "actor": actor,
+            "lease": {"owner": actor, "token": token}, "source_binding": binding})
+    if paper_id.startswith("calibration:"):
+        c._calibration_dirty = True
+        c.reconcile_calibration()
     return result
 
 
 def _submit_native(c, paper_id, payload, actor):
     if not str(actor).strip() or not str(payload.get("reason", "")).strip():
         raise ValueError("Native submission requires actor and reason")
+    if paper_id.startswith("calibration:"):
+        from .calibration import record_adjudication
+        return record_adjudication(c, paper_id[len("calibration:"):],
+                                   {k: v for k, v in payload.items() if k != "native_lease"})
     if paper_id.startswith("source:") or paper_id.startswith("citation-source:"):
         return _submit_source_resolution(c, paper_id, payload, actor)
     if paper_id.startswith("process:"):
@@ -850,7 +970,17 @@ def discovery_status(c):
     state = c.store.get_state(STATE)
     if not state:
         return {"initialized": False, "native_scientific_completion": False}
-    checked = frontiers.readiness(state, pending_semantic_jobs=_pending_semantic(c), missing_texts_current=False, durable_validation_passed=False)
+    pending_semantic = _pending_semantic(c)
+    checked = frontiers.readiness(state, pending_semantic_jobs=pending_semantic, missing_texts_current=False, durable_validation_passed=False)
+    # These two assumptions deliberately ask only whether the operational
+    # frontiers are exhausted. They do not assert that final scientific
+    # validation or missing-text reconciliation has actually happened.
+    frontier_check = frontiers.readiness(state, pending_semantic_jobs=pending_semantic,
+                                        missing_texts_current=True, durable_validation_passed=True)
+    operational = c.store.status()
+    pending_native = _native_candidates(c, hydrate=False)
+    exhausted = (frontier_check["ready"] and not pending_native and not operational["unfinished"]
+                 and not operational["failed"] and not c.store.unprojected_results(limit=1))
     task = next_native_task(c)
     task_summary = {key: task.get(key) for key in ("task", "task_id", "paper_id", "reason") if task.get(key) is not None} if task else None
     windows = {**state["blind_windows"], **state["process_windows"]}
@@ -863,6 +993,11 @@ def discovery_status(c):
         "source_exhausted_windows": sum(w.get("source_exhausted") is True for w in completed_windows),
         "meaning": "Completing a ranked window covers its authorized return only; truncated windows do not establish source exhaustion. Totals count cross-window overlap."}
     return {"initialized": True, "phase": state["phase"], "pending_agent_task": task_summary,
+            "operational_frontiers_exhausted": exhausted,
+            "checkpoint": "operational-frontiers-exhausted-final-review" if exhausted else "frontier-work-pending",
+            "pending_native_tasks": len(pending_native),
+            "latest_citation_wave": state["citation_wave_audits"][-1] if state["citation_wave_audits"] else None,
+            "final_review_required": ["Reconcile missing texts and unresolved readings", "Resolve any remaining scientific uncertainties", "Complete frozen native records, derived exports and native validation"],
             "ranked_query_coverage": ranked_coverage,
             "max_citation_depth": state.get("max_citation_depth"),
             "depth_limited_obligations": sum(o["status"] == "depth-limited" for o in state["citation_obligations"].values()),

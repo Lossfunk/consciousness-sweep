@@ -7,21 +7,45 @@ import sys
 
 from .common import ROOT, canonical, safe_run, save_json
 
+
+def optional_limit(value):
+    """An explicit unbounded allowance is JSON null, never an arbitrary ceiling."""
+    if value.lower() in {"unbounded", "none", "null"}:
+        return None
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("Use an integer or 'unbounded'") from exc
+
+
+def context_arguments(parser):
+    parser.add_argument("--harness", choices=["codex", "claude", "openclaw", "other", "manual"],
+                        help="Active agent harness, supplied from session context; overrides environment markers")
+    parser.add_argument("--model", help="Exact available model ID supplied by the supervising agent")
+    parser.add_argument("--effort", help="Exact supported reasoning effort; never guessed from a model alias")
+    parser.add_argument("--available-model", action="append", default=[],
+                        help="Known accessible model ID from host context (repeatable; does not probe a provider)")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--root", type=Path, default=ROOT, help="Location of recipient run directories")
     sub = p.add_subparsers(dest="command", required=True)
     doctor = sub.add_parser("doctor", help="Read-only host/access inventory; no inference")
     doctor.add_argument("--output", type=Path)
+    context_arguments(doctor)
     plan = sub.add_parser("plan", help="Build an explicit resource/model plan")
     plan.add_argument("--config", type=Path, help="JSON {profiles,resources,workload,mode}")
-    plan.add_argument("--preset", choices=["manual", "codex", "claude"], default="manual")
+    plan.add_argument("--preset", choices=["auto", "manual", "codex", "claude"], default="auto")
+    context_arguments(plan)
     plan.add_argument("--authorize", action="store_true", help="Record resources already authorized by the user")
-    plan.add_argument("--workers", type=int, default=2)
-    plan.add_argument("--max-calls", type=int, default=20)
-    plan.add_argument("--max-seconds", type=int, default=3600)
-    plan.add_argument("--max-citation-depth", type=int, default=argparse.SUPPRESS,
-                      help="Maximum citation hops from each seed/query root (0 = roots only); overrides this field in --config")
+    plan.add_argument("--workers", type=int, default=argparse.SUPPRESS)
+    plan.add_argument("--max-calls", type=optional_limit, default=argparse.SUPPRESS,
+                      help="User-selected total call cap, or unbounded (no default cap)")
+    plan.add_argument("--max-seconds", type=optional_limit, default=argparse.SUPPRESS,
+                      help="User-selected execution-session cap, or unbounded (no default cap)")
+    plan.add_argument("--max-citation-depth", type=optional_limit, default=argparse.SUPPRESS,
+                      help="Maximum citation hops (0 = roots only), or unbounded; overrides --config")
     plan.add_argument("--mode", choices=["corpus", "discovery"],
                       help="Explicit run mode; overrides mode in --config")
     plan.add_argument("--logical-papers", type=int)
@@ -30,18 +54,22 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-allocate", "source-retry"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
-        if name in {"ingest", "submit", "native-submit"}:
+        if name in {"ingest", "submit", "native-submit", "calibration-review"}:
             cmd.add_argument("--input", type=Path, required=True)
         if name == "submit":
             cmd.add_argument("--job-id", required=True)
             cmd.add_argument("--actor", required=True)
         if name == "run":
-            cmd.add_argument("--max-seconds", type=int)
+            cmd.add_argument("--max-seconds", type=optional_limit)
             cmd.add_argument("--local-only", action="store_true")
             cmd.add_argument("--watch", action="store_true", help="Wait for deferred automatic work inside the authorized session duration")
+        if name == "resume":
+            cmd.add_argument("--resolve-access-blocks", action="store_true",
+                             help="Record a real access/configuration fix; does not change models, budgets or unknown admission")
+            cmd.add_argument("--reason", help="What changed to resolve the recorded access failure")
         if name == "estimate":
             cmd.add_argument("--logical-papers", type=int)
         if name == "recover":
@@ -53,7 +81,7 @@ def main(argv=None):
             cmd.add_argument("--job-id", required=True, help="Failed model job with a verified terminal receipt")
             cmd.add_argument("--reason", required=True, help="Why a fresh charged attempt is warranted")
             cmd.add_argument("--actor", required=True, help="Supervising agent/operator authorizing this retry")
-        if name in {"human-decision", "source", "native-submit", "native-allocate"}:
+        if name in {"human-decision", "source", "native-submit", "native-allocate", "calibration-review"}:
             cmd.add_argument("--paper-id", required=True)
         if name == "native-work":
             cmd.add_argument("--owner")
@@ -70,6 +98,14 @@ def main(argv=None):
         if name == "source-retry":
             cmd.add_argument("--paper-id", required=True)
             cmd.add_argument("--reason", required=True)
+        if name == "native-recover":
+            cmd.add_argument("--task-id", required=True)
+            cmd.add_argument("--owner", required=True)
+            cmd.add_argument("--lease-token", required=True, type=int)
+            cmd.add_argument("--actor", required=True)
+            cmd.add_argument("--reason", required=True)
+            cmd.add_argument("--proof", required=True, type=Path,
+                             help="JSON receipt of observed worker termination; expiration alone is insufficient")
         if name == "native-submit":
             cmd.add_argument("--actor", required=True)
         if name == "native-allocate":
@@ -85,7 +121,7 @@ def main(argv=None):
             supplied.add_argument("--path", type=Path, action="append")
             supplied.add_argument("--manifest", type=Path, help="JSON array of {path,role,association_reason} entries; supplies the complete main/SI set")
             cmd.add_argument("--reason", required=True)
-    package = sub.add_parser("package", help="Build a clean answer-key-free downloadable release")
+    package = sub.add_parser("package", help="Build a clean downloadable release with a coordinator-only seed calibration reference")
     package.add_argument("--destination", type=Path, required=True)
     verify = sub.add_parser("verify", help="Verify all distributed inputs")
     verify.add_argument("--directory", type=Path, default=ROOT)
@@ -94,34 +130,44 @@ def main(argv=None):
         if args.command == "doctor":
             from .capabilities import discover
             from .profiles import recommend
-            inventory = discover(args.root)
+            inventory = discover(args.root, harness=args.harness, model=args.model,
+                                 effort=args.effort, available_models=args.available_model)
             result = {"inventory": inventory, "recommendation": recommend(inventory)}
             if args.output:
                 save_json(args.output, result)
         elif args.command == "plan":
             from .capabilities import discover
             from .profiles import build_plan, recommend
-            inventory = discover(args.root)
+            inventory = discover(args.root, harness=args.harness or (args.preset if args.preset != "auto" else None),
+                                 model=args.model, effort=args.effort, available_models=args.available_model)
             draft = json.loads(args.config.read_text()) if args.config else recommend(inventory)
             if not args.config:
-                for role in ("title", "abstract", "rescue", "reader"):
-                    model = "agent-selected" if args.preset == "manual" else "gpt-6-luna" if args.preset == "codex" and role == "title" else "gpt-6.1-sol" if args.preset == "codex" else "claude-haiku-5-5" if role in {"title", "abstract"} else "claude-opus-5-5"
-                    profile = {"adapter": args.preset, "model": model, "authorized": args.authorize,
-                               "qualification_status": "commissioning", "max_output_tokens": 16000}
-                    if args.preset != "manual":
-                        profile["effort"] = "medium" if role in {"title", "abstract"} else "xhigh" if args.preset == "codex" else "high"
-                    if args.preset == "codex":
-                        profile["codex_context"] = "source-only-v1"
-                    if args.preset == "claude":
+                if args.preset in {"codex", "claude"}:
+                    context = inventory.get("active_context", {})
+                    model, effort = args.model or context.get("model"), args.effort or context.get("effort")
+                    if not model or not effort:
+                        raise ValueError("Automatic presets require exact available --model and --effort from host context, or explicit stage profiles via --config")
+                    for role in ("title", "abstract", "rescue", "reader"):
+                        draft["profiles"][role] = {"adapter": args.preset, "model": model, "effort": effort,
+                            "qualification_status": "unqualified", "max_output_tokens": 16000}
+                elif args.preset == "manual":
+                    draft["profiles"] = {role: {"adapter": "manual", "model": args.model or "agent-selected", "effort": args.effort}
+                                         for role in ("title", "abstract", "rescue", "reader")}
+                for profile in draft["profiles"].values():
+                    profile["authorized"] = args.authorize
+                    if profile["adapter"] == "codex":
+                        profile.setdefault("codex_context", "source-only-v1")
+                    if profile["adapter"] == "claude":
                         profile["subscription_extra_usage_disabled"] = args.claude_extra_usage_disabled
-                    draft["profiles"][role] = profile
-                draft["resources"].update(authorized=args.authorize, model_workers=args.workers,
-                  max_calls=args.max_calls, max_wall_seconds=args.max_seconds)
+                draft["resources"]["authorized"] = args.authorize
                 draft["workload"] = {"logical_papers": args.logical_papers} if args.logical_papers is not None else {}
-            if hasattr(args, "max_citation_depth"):
-                draft["resources"]["max_citation_depth"] = args.max_citation_depth
-            result = build_plan(inventory, draft["profiles"], draft["resources"], draft.get("workload"))
-            result["mode"] = args.mode or draft.get("mode", "corpus")
+            for flag, key in (("workers", "model_workers"), ("max_calls", "max_calls"),
+                              ("max_seconds", "max_wall_seconds"), ("max_citation_depth", "max_citation_depth")):
+                if hasattr(args, flag):
+                    draft["resources"][key] = getattr(args, flag)
+            result = build_plan(inventory, draft["profiles"], draft["resources"], draft.get("workload"),
+                                draft.get("calibration_review_profile"))
+            result["mode"] = args.mode or draft.get("mode", "discovery")
             save_json(args.output, result)
         elif args.command == "package":
             from .distribution import build
@@ -161,6 +207,17 @@ def main(argv=None):
                 elif args.command == "validate":
                     from .validation import validate
                     result = validate(coordinator)
+                elif args.command == "sanity":
+                    from .sanity import check
+                    result = check(coordinator)
+                elif args.command == "calibration-report":
+                    from .calibration import reconcile
+                    result = reconcile(coordinator)
+                elif args.command == "calibration-review":
+                    from .calibration import record_adjudication
+                    result = record_adjudication(coordinator, args.paper_id, json.loads(args.input.read_text()))
+                    coordinator._calibration_dirty = True
+                    coordinator.reconcile_calibration()
                 elif args.command == "audit":
                     result = {"scheduled": coordinator.audit(), "status": coordinator.status()}
                 elif args.command == "deliver":
@@ -171,6 +228,11 @@ def main(argv=None):
                     (run_dir / "STOP").write_text("User requested graceful pause.\n")
                     result = {"status": "pause-requested", "reason": "Already admitted bounded requests will finish and persist."}
                 elif args.command == "resume":
+                    if args.resolve_access_blocks:
+                        from .access_control import resolve
+                        if not args.reason or not args.reason.strip():
+                            raise ValueError("--resolve-access-blocks requires the actual fix in --reason")
+                        resolve(coordinator, args.reason)
                     (run_dir / "STOP").unlink(missing_ok=True)
                     coordinator.project_results()
                     result = coordinator.status()
@@ -199,7 +261,13 @@ def main(argv=None):
                     if args.command == "discovery-init":
                         result = discovery.initialize_discovery(coordinator)
                     elif args.command == "native-work":
+                        from .validation import require_integrity
+                        require_integrity(coordinator)
                         result = discovery.next_native_task(coordinator, owner=args.owner, lease_seconds=args.lease_seconds)
+                    elif args.command == "native-recover":
+                        result = discovery.recover_native_task(coordinator, args.task_id, owner=args.owner,
+                            lease_token=args.lease_token, actor=args.actor, reason=args.reason,
+                            proof=json.loads(args.proof.read_text()))
                     elif args.command == "native-list":
                         result = discovery.list_native_tasks(coordinator, limit=args.limit, include_deferred=args.include_deferred)
                     elif args.command == "native-defer":
@@ -209,7 +277,7 @@ def main(argv=None):
                     else:
                         raise ValueError("Unsupported command")
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
-        if args.command == "validate" and not result.get("ok"):
+        if args.command in {"validate", "sanity"} and not result.get("ok"):
             return 2
         return 0
     except (ValueError, RuntimeError, FileNotFoundError, KeyError) as exc:

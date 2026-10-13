@@ -173,7 +173,38 @@ def _tool(name):
     return value
 
 
-def discover(root: Path) -> dict:
+def active_context(*, harness=None, model=None, effort=None, available_models=None) -> dict:
+    """Accept host-provided facts without guessing a provider's model catalog.
+
+    Environment markers identify the enclosing harness only, never model access.
+    Explicit arguments take precedence because nested agent shells can inherit
+    another harness's environment.
+    """
+    source = "operator-supplied" if harness else "unobserved"
+    if not harness:
+        markers = []
+        if os.environ.get("CODEX_THREAD_ID") or os.environ.get("CODEX_CI"):
+            markers.append("codex")
+        if os.environ.get("CLAUDECODE") == "1" or os.environ.get("CLAUDE_CODE_ENTRYPOINT"):
+            markers.append("claude")
+        if os.environ.get("OPENCLAW_SESSION_ID"):
+            markers.append("openclaw")
+        if len(markers) == 1:
+            harness, source = markers[0], "environment-marker"
+    if harness is not None and harness not in {"codex", "claude", "openclaw", "other", "manual"}:
+        raise ValueError("Unknown active harness")
+    models = list(dict.fromkeys(available_models or []))
+    for value in [model, effort, *models]:
+        if value is not None and (not isinstance(value, str) or not value.strip() or any(c in value for c in "\r\n\0")):
+            raise ValueError("Host model and effort facts must be nonempty single-line names")
+    if model and model not in models:
+        models.append(model)
+    return {"harness": harness, "harness_source": source, "model": model, "effort": effort,
+            "available_models": models,
+            "model_evidence": "operator-supplied host context; not independently probed" if models else "unobserved"}
+
+
+def discover(root: Path, *, harness=None, model=None, effort=None, available_models=None) -> dict:
     """Inspect only the current host. Catalog presence never establishes access."""
     root = Path(root).resolve()
     disk = shutil.disk_usage(root)
@@ -181,6 +212,8 @@ def discover(root: Path) -> dict:
             "system": platform.system(), "architecture": platform.machine(), "python": platform.python_version(),
             "cpu": _cpu(), "memory": _memory(), "disk": {"free_bytes": disk.free, "total_bytes": disk.total},
             "gpus": _gpus(), "harnesses": {name: _tool(name) for name in ("codex", "claude", "openclaw")},
+            "active_context": active_context(harness=harness, model=model, effort=effort,
+                                               available_models=available_models),
             "local_tools": {name: shutil.which(name) for name in ("pdftotext", "pdftoppm", "tesseract", "ollama")},
             "configured_credential_env_names": [name for name in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ZAI_API_KEY")
                                                 if name in os.environ],

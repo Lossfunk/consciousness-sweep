@@ -1,6 +1,6 @@
 """Build a clean downloadable agent repository from an explicit static allowlist.
 
-This module never copies development history, run data, evaluations, source PDFs,
+This module never copies development history, run data, raw evaluations, source PDFs,
 credentials or machine configuration. A manifest is an integrity check, not a
 signature. The source scientific release remains byte-for-byte unchanged.
 """
@@ -84,13 +84,13 @@ def _catalog(source):
     return {"registry_version": "portable-candidates-1", "verified_on": source.get("verified_on"),
             "status": "candidate_catalog_not_runtime_allowlist",
             "qualification_rule": "Availability, authorization and task-specific qualification are separate. Exact configurations need source-grounded evidence before approved use; users are not required to evaluate the entire catalog.",
-            "selection_policy": "Recommend one accessible configuration and evaluate only justified alternatives within the user's agreed commissioning budget.",
+            "selection_policy": "Recommend one accessible configuration within the user's resource limits. Compare seed results during the sweep and use only authorized alternatives when a source-grounded review warrants one; a separate pilot is optional.",
             "evaluation_dimensions": ["same-X, awareness and downstream-Y fidelity", "source grounding and evidence locations",
                 "false exclusions and independent rescue", "restraint about null results and equivalence",
                 "structured-output validity", "completed-call rate", "measured tokens, latency and spend"],
             "selection_order": ["Establish accessible, authorized exact role configurations and explicit resource limits.",
                 "Check source-grounded behavior for that role; keep unknown performance and costs explicit.",
-                "Recommend the least costly accessible configuration that passes those checks; compare justified alternatives only within the commissioning budget."],
+                "Recommend the least costly suitable accessible configuration; compare selected seed results with the coordinator-only baseline during ordinary work. A separate pilot is optional."],
             "ranking_scope": "No global model-quality ranking; qualification applies to the exact model, effort, adapter, context and scientific role.",
             "candidates": candidates, "harness_sources": source.get("harness_sources", {})}
 
@@ -109,6 +109,8 @@ def _collect(root):
         include(path, "sweep/" + path.name)
     if (root / "sweep" / "provider_docs.json").is_file():
         include(root / "sweep" / "provider_docs.json", "sweep/provider_docs.json")
+    if (root / "sweep" / "calibration_reference.json").is_file():
+        include(root / "sweep" / "calibration_reference.json", "sweep/calibration_reference.json")
     include(root / "runtime" / "__init__.py", "runtime/__init__.py")
     for name in READER_FILES:
         include(root / "runtime" / "source_reader" / name, "runtime/source_reader/" + name)
@@ -154,6 +156,8 @@ def runtime_fingerprint(root=None):
     files = {}
     for path in sorted((root / "sweep").glob("*.py")):
         files[path.relative_to(root).as_posix()] = _sha(path)
+    if (root / "sweep" / "calibration_reference.json").is_file():
+        files["sweep/calibration_reference.json"] = _sha(root / "sweep" / "calibration_reference.json")
     for name in READER_FILES:
         relative = "runtime/source_reader/" + name
         files[relative] = _sha(root / relative)
@@ -213,7 +217,8 @@ def build(destination, source_root=None, archive=True):
             "files": {name: hashlib.sha256(data).hexdigest() for name, data in sorted(files.items())},
             "mutable_roots": sorted(MUTABLE_ROOTS),
             "nested_mutable_paths": sorted(NESTED_MUTABLE_PATHS),
-            "excluded": ["source PDFs", "run history", "developer tests", "evaluation judgments", "credentials", "machine settings"],
+            "excluded": ["source PDFs", "run history", "developer tests", "raw evaluation judgments", "credentials", "machine settings"],
+            "calibration": "Versioned compact seed reference is coordinator-only; it is never included in model source packets or ordinary reader prompts.",
         }
         (staging / MANIFEST).write_text(_canonical(manifest), encoding="utf-8")
         verification = verify(staging)

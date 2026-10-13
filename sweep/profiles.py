@@ -15,6 +15,10 @@ from urllib.parse import urlsplit
 
 ADAPTERS = {"codex", "claude", "command", "openai-compatible", "manual"}
 ROLES = ("title", "abstract", "rescue", "reader")
+RESOURCE_KEYS = {"authorized", "cpu_workers", "model_workers", "retrieval_workers",
+                 "discovery_buffer_papers", "sanity_interval_seconds", "memory_limit_bytes",
+                 "gpu_memory_limit_bytes", "max_calls", "max_tokens", "max_spend_usd",
+                 "max_wall_seconds", "max_citation_depth"}
 PROFILE_KEYS = {"adapter", "model", "effort", "billing_route", "authorized", "timeout_seconds",
                 "max_attempts", "cli_path", "endpoint_url", "credential_env", "argv", "environment_names",
                 "max_input_bytes", "max_output_tokens", "context_window_tokens", "qualification_status",
@@ -169,32 +173,50 @@ def validate_profile(profile: dict) -> dict:
 
 def recommend(inventory: dict) -> dict:
     """One unapproved starting point; detecting a CLI does not authorize use."""
-    if inventory.get("harnesses", {}).get("codex", {}).get("installed"):
-        base = {"adapter": "codex", "model": "gpt-6.1-sol", "effort": "xhigh", "billing_route": "subscription",
-                "cli_path": inventory["harnesses"]["codex"].get("path"), "authorized": False,
-                "qualification_status": "unqualified", "codex_context": "source-only-v1"}
-        note = "Bounded development checks used Luna/medium for titles, Sol/medium for abstracts, and Sol/xhigh for readers. A new host must verify access and the shipped gate checks before commissioning."
+    context = inventory.get("active_context", {})
+    harness, model, effort = (context.get(key) for key in ("harness", "model", "effort"))
+    installed = inventory.get("harnesses", {}).get(harness, {})
+    if harness in {"codex", "claude"} and installed.get("installed") and model and effort:
+        base = {"adapter": harness, "model": model, "effort": effort, "billing_route": "subscription",
+                "cli_path": installed.get("path"), "authorized": False, "qualification_status": "unqualified"}
+        if harness == "codex":
+            base["codex_context"] = "source-only-v1"
+        note = "Prefer the active harness and exact host-supplied model/effort. Choose cheaper stage-specific profiles only from verified available models; startup does not infer access or scientific qualification."
     else:
-        base = {"adapter": "manual", "model": "human-selected-agent", "authorized": False}
-        note = "No existing qualified automated access assumed. Any coding agent can use manual exchange; choose an installed/hosted adapter explicitly."
+        base = {"adapter": "manual", "model": model or "human-selected-agent", "effort": effort,
+                "authorized": False}
+        note = "Use the current agent through work exchange until its exact automatic model, effort and CLI route are supplied. An installed CLI alone does not establish the active harness or usable models."
     cores = inventory.get("cpu", {}).get("usable_cores") or 1
     memory = inventory.get("memory", {}).get("usable_limit_bytes")
     profiles = {role: validate_profile(base) for role in ROLES}
+    # These are tested candidates, selected only when the current host explicitly
+    # reports their availability. An installed Codex binary is insufficient.
+    known = set(context.get("available_models", []))
     if base["adapter"] == "codex":
-        profiles["title"].update(model="gpt-6-luna", effort="medium")
-        profiles["abstract"]["effort"] = "medium"
-    return {"profiles": profiles,
+        if "gpt-6-luna" in known:
+            profiles["title"].update(model="gpt-6-luna", effort="medium")
+        if "gpt-6.1-sol" in known:
+            profiles["abstract"].update(model="gpt-6.1-sol", effort="medium")
+    return {"mode": "discovery", "profiles": profiles,
             "resources": {"authorized": False, "cpu_workers": max(1, min(2, int(cores))), "model_workers": 2,
                           "retrieval_workers": 4, "memory_limit_bytes": int(memory * 0.5) if memory else None,
-                          "gpu_memory_limit_bytes": None, "max_calls": 20, "max_tokens": None,
-                          "max_spend_usd": 0, "max_wall_seconds": 3600, "max_citation_depth": None},
+                          "gpu_memory_limit_bytes": None, "max_calls": None, "max_tokens": None,
+                          "max_spend_usd": 0, "max_wall_seconds": None, "max_citation_depth": None},
             "reason": note, "remote_resources": "Ask only for additional hosts/quotas and permitted use; no inference performed."}
 
 
-def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict = None) -> dict:
+def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict = None,
+               calibration_review_profile: dict = None) -> dict:
     if not isinstance(profiles, dict) or not profiles:
         raise ValueError("At least one stage profile is required")
+    if not isinstance(resources, dict):
+        raise ValueError("Resources must be an object")
+    unknown = set(resources) - RESOURCE_KEYS
+    if unknown:
+        raise ValueError("Unknown resource keys: " + ", ".join(sorted(unknown)))
     selected = {stage: validate_profile(value) for stage, value in profiles.items()}
+    review_profile = validate_profile(calibration_review_profile) if calibration_review_profile is not None else None
+    all_profiles = list(selected.values()) + ([review_profile] if review_profile else [])
     r = copy.deepcopy(resources)
     r.setdefault("authorized", False)
     if not isinstance(r["authorized"], bool):
@@ -202,6 +224,10 @@ def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict 
     for key, default in (("cpu_workers", 1), ("model_workers", 1), ("retrieval_workers", 2)):
         r.setdefault(key, default)
         _number(r[key], key, minimum=1, integer=True, nullable=False)
+    for key, default in (("discovery_buffer_papers", max(250, 100 * r["model_workers"])),
+                         ("sanity_interval_seconds", 60)):
+        r.setdefault(key, default)
+        _number(r[key], key, minimum=1, integer=key == "discovery_buffer_papers", nullable=False)
     for key in ("memory_limit_bytes", "gpu_memory_limit_bytes", "max_calls", "max_tokens"):
         r.setdefault(key, None)
         _number(r[key], key, minimum=1, integer=True)
@@ -224,22 +250,18 @@ def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict 
     if memory and r["memory_limit_bytes"] and r["memory_limit_bytes"] > memory:
         raise ValueError("Requested local memory exceeds observed usable memory")
     if r["authorized"]:
-        if r["max_calls"] is None:
-            raise ValueError("Authorized runs require a finite model-call budget, including when subscription quotas are unknown")
-        if r["max_wall_seconds"] is None:
-            raise ValueError("Authorized runs require a positive max_wall_seconds execution-session budget")
-        if any(not p["authorized"] and p["adapter"] != "manual" for p in selected.values()):
+        if any(not p["authorized"] and p["adapter"] != "manual" for p in all_profiles):
             raise ValueError("Every automated stage profile requires explicit authorization")
-        if any(p["billing_route"] == "api" for p in selected.values()) and not r["max_spend_usd"]:
+        if any(p["billing_route"] == "api" for p in all_profiles) and not r["max_spend_usd"]:
             raise ValueError("Hosted API work requires a positive overall spending cap")
-        if r["max_tokens"] is not None and any(p["adapter"] in {"codex", "claude"} for p in selected.values()):
-            raise ValueError("CLI output-token allowances are not hard provider limits: use a finite call/time budget and observed token telemetry, or an endpoint with an enforced output limit for a strict token budget")
+        if r["max_tokens"] is not None and any(p["adapter"] in {"codex", "claude"} for p in all_profiles):
+            raise ValueError("CLI output-token allowances are not hard provider limits: use observed token telemetry and optional call/time limits, or an endpoint with an enforced output limit for a strict token budget")
     if any(p["adapter"] in {"codex", "claude"} for p in selected.values()):
-        warnings.append("CLI max_output_tokens is a planning allowance, not an enforced generation bound. Per-call timeout and call budget are enforced; actual tokens remain provider telemetry.")
+        warnings.append("CLI max_output_tokens is a planning allowance, not an enforced generation bound. Per-call timeouts and any user-selected call budget are enforced; actual tokens remain provider telemetry.")
     if inventory.get("cloud_quota") is None:
-        warnings.append("Cloud/subscription quota unknown; call budget is enforceable, quota percentage is not.")
+        warnings.append("Cloud/subscription quota unknown; no inferred entitlement or paid fallback. User-selected limits are enforceable; provider quota exhaustion requires a checkpoint.")
     if any(p["qualification_status"] == "unqualified" for p in selected.values()):
-        warnings.append("Unqualified models need bounded commissioning; the plan does not certify scientific quality.")
+        warnings.append("Model reading quality is unqualified. Check initial real seed decisions against the gates and flag discrepancies; no separate commissioning run is required.")
     estimates = {"status": "unmeasured", "wall_seconds": None, "cost_usd": None,
                  "reason": "Measure real stage throughput, retention and provider usage before estimating the whole sweep."}
     workload = workload or {}
@@ -249,7 +271,10 @@ def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict 
         estimates["minimum_title_calls"] = math.ceil(n / 25)
         if r["max_calls"] is not None and estimates["minimum_title_calls"] > r["max_calls"]:
             warnings.append("The call allowance cannot cover even one title pass at the permitted maximum batch size; this is a bounded partial run.")
-    return {"version": "portable-plan-v1", "authorized": r["authorized"], "profiles": selected, "resources": r,
+    result = {"version": "portable-plan-v1", "authorized": r["authorized"], "profiles": selected, "resources": r,
             "budgets": {"max_calls": r["max_calls"], "max_tokens": r["max_tokens"], "max_cost_usd": r["max_spend_usd"]},
             "estimates": estimates, "warnings": warnings, "workload": workload,
             "inventory_observed_at": inventory.get("observed_at")}
+    if review_profile is not None:
+        result["calibration_review_profile"] = review_profile
+    return result

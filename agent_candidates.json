@@ -196,9 +196,9 @@
   "selection_order": [
     "Establish accessible, authorized exact role configurations and explicit resource limits.",
     "Check source-grounded behavior for that role; keep unknown performance and costs explicit.",
-    "Recommend the least costly accessible configuration that passes those checks; compare justified alternatives only within the commissioning budget."
+    "Recommend the least costly suitable accessible configuration; compare selected seed results with the coordinator-only baseline during ordinary work. A separate pilot is optional."
   ],
-  "selection_policy": "Recommend one accessible configuration and evaluate only justified alternatives within the user's agreed commissioning budget.",
+  "selection_policy": "Recommend one accessible configuration within the user's resource limits. Compare seed results during the sweep and use only authorized alternatives when a source-grounded review warrants one; a separate pilot is optional.",
   "status": "candidate_catalog_not_runtime_allowlist",
   "verified_on": "2026-10-11"
 }

@@ -60,8 +60,7 @@ def terminal_evidence(coordinator, job, conn=None, history=None):
              "Request lacks a terminal receipt; reconcile the original worker before considering a retry")
     _require(receipt.get("admission") in {"admitted", "unknown"},
              "Confirmed nonadmission uses normal deferred work, not a fresh charged attempt")
-    role = "reader" if job["stage"] == "reader" else "rescue" if job["stage"] in {"rescue", "audit"} else job["stage"]
-    profile = validate_profile(coordinator.plan["profiles"][role])
+    profile = validate_profile(coordinator.profile_for_job(job))
     _require(binding.get("profile") == profile, "Retry cannot change the immutable run's model or settings")
     _require(binding.get("version") == adapters.VERSION and binding.get("adapter_source_sha256") == file_hash(adapters.__file__),
              "Retry requires the same deployed adapter; a changed runtime needs a separate run")
