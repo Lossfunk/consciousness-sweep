@@ -5,6 +5,7 @@ scientific eligibility nor certifies a frozen native registered run. Run at a
 quiet checkpoint; concurrent changes make the resulting report stale.
 """
 import hashlib
+from datetime import datetime
 import json
 import math
 from pathlib import Path
@@ -65,6 +66,145 @@ def require_integrity(coordinator):
         latest_sanity = conn.execute("SELECT payload FROM events WHERE kind='operational_sanity' ORDER BY id DESC LIMIT 1").fetchone()
     if latest_sanity and json.loads(latest_sanity[0]).get("ok") is False:
         raise ValueError("Lightweight record check failed. Repair delivery/sanity.json findings and rerun sanity before admitting work or delivering results.")
+
+
+def _validate_retrieval_accounting(conn, error, checked):
+    """Reconcile operational retry/cursor state with its append-first history.
+
+    Legacy jobs may have no accounting records. A started acquisition without a
+    receipt is an honest interrupted/in-flight attempt, not a fabricated failure.
+    The disk-backed index keeps this full audit bounded in Python memory.
+    """
+    def require(value, message):
+        if not value:
+            raise ValueError(message)
+
+    def positive(value):
+        return type(value) is int and value > 0
+
+    def timestamp(value):
+        return type(value) in (int, float) and math.isfinite(value) and value >= 0
+
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('retrieval_service','retrieval_attempts')")}
+    conn.execute("CREATE TEMP TABLE audit_retrieval_claims(job_id TEXT,token INTEGER,owner TEXT,event_id INTEGER,sequence INTEGER,lane TEXT,PRIMARY KEY(job_id,token))")
+    conn.execute("CREATE TEMP TABLE audit_retrieval_events(kind TEXT,job_id TEXT,number INTEGER,payload TEXT,event_id INTEGER,PRIMARY KEY(kind,job_id,number))")
+    conn.execute("CREATE INDEX audit_retrieval_claim_job ON audit_retrieval_claims(job_id,sequence)")
+    lanes = ("priority", "local", "fresh", "retry", "other-stage")
+    sequence, next_lane = 0, 0
+    for row in conn.execute("SELECT id,kind,payload FROM events WHERE kind IN ('job_claimed','retrieval_attempt_started','retrieval_attempt_finished') ORDER BY id"):
+        try:
+            payload = json.loads(row["payload"])
+            jid, token = payload["job_id"], payload["token"]
+            require(positive(token) and isinstance(payload.get("owner"), str) and payload["owner"].strip(), "Retrieval history lacks its worker/lease binding")
+            job = conn.execute("SELECT stage,token FROM jobs WHERE id=?", (jid,)).fetchone()
+            require(job is not None and token <= job["token"], "Retrieval history references an unknown job or future lease")
+            if row["kind"] == "job_claimed":
+                service = "service_sequence" in payload or "service_lane" in payload
+                if service:
+                    require(payload.get("service_sequence") == sequence + 1 and positive(payload.get("service_sequence")), "Retrieval service sequence is not contiguous in claim history")
+                    lane = payload.get("service_lane")
+                    require(lane in lanes, "Unknown retrieval service lane")
+                    require(lane == "priority" or (job["stage"] != "retrieval" if lane == "other-stage" else job["stage"] == "retrieval"), "Retrieval service lane does not match job stage")
+                    sequence, next_lane = payload["service_sequence"], (lanes.index(lane) + 1) % len(lanes)
+                conn.execute("INSERT INTO audit_retrieval_claims VALUES(?,?,?,?,?,?)", (jid, token, payload["owner"], row["id"], payload.get("service_sequence"), payload.get("service_lane")))
+            else:
+                require(job["stage"] == "retrieval" and positive(payload.get("attempt")), "Acquisition event is not a numbered retrieval attempt")
+                conn.execute("INSERT INTO audit_retrieval_events VALUES(?,?,?,?,?)", (row["kind"], jid, payload["attempt"], canonical(payload), row["id"]))
+            checked("retrieval_accounting_events")
+        except (ValueError, KeyError, TypeError, AttributeError, sqlite3.IntegrityError) as exc:
+            error("retrieval_accounting_history", row["id"], exc)
+
+    saved = conn.execute("SELECT value FROM meta WHERE key='retrieval_schedule'").fetchone()
+    try:
+        cursor = json.loads(saved[0]) if saved is not None else None
+        require((cursor is None and sequence == 0) or (isinstance(cursor, dict)
+                and type(cursor.get("sequence")) is int and type(cursor.get("next_lane")) is int
+                and cursor == {"sequence": sequence, "next_lane": next_lane}), "Retrieval service cursor differs from durable claim history")
+        checked("retrieval_service_cursor")
+    except (ValueError, TypeError) as exc:
+        error("retrieval_service_cursor", "retrieval_schedule", exc)
+
+    expected_services = "SELECT c.job_id,max(c.sequence) AS last_sequence,count(*) AS claims FROM audit_retrieval_claims c JOIN jobs j ON j.id=c.job_id WHERE j.stage='retrieval' AND c.sequence IS NOT NULL GROUP BY c.job_id"
+    if "retrieval_service" not in tables:
+        if conn.execute("SELECT 1 FROM (" + expected_services + ") LIMIT 1").fetchone():
+            error("retrieval_service", "table", "Recorded retrieval service has no durable service table")
+    else:
+        conn.execute("CREATE TEMP TABLE audit_retrieval_service AS " + expected_services)
+        conn.execute("CREATE UNIQUE INDEX audit_retrieval_service_job ON audit_retrieval_service(job_id)")
+        for row in conn.execute("SELECT s.*,j.stage,e.last_sequence AS expected_sequence,e.claims AS expected_claims FROM retrieval_service s LEFT JOIN jobs j ON j.id=s.job_id LEFT JOIN audit_retrieval_service e ON e.job_id=s.job_id"):
+            try:
+                require(row["stage"] == "retrieval" and positive(row["last_sequence"]) and positive(row["claims"]), "Service accounting does not identify a retrieval job and positive counts")
+                require(row["last_sequence"] == row["expected_sequence"] and row["claims"] == row["expected_claims"], "Retrieval service counters differ from claim history")
+                checked("retrieval_service_records")
+            except (ValueError, TypeError) as exc:
+                error("retrieval_service", row["job_id"], exc)
+        for row in conn.execute("SELECT e.job_id FROM audit_retrieval_service e LEFT JOIN retrieval_service s ON s.job_id=e.job_id WHERE s.job_id IS NULL"):
+            error("retrieval_service", row[0], "Recorded retrieval claims are missing their service accounting")
+
+    if "retrieval_attempts" not in tables:
+        if conn.execute("SELECT 1 FROM audit_retrieval_events LIMIT 1").fetchone():
+            error("retrieval_attempt", "table", "Recorded acquisition attempts have no durable attempt table")
+        return
+
+    def event(kind, jid, number):
+        row = conn.execute("SELECT payload,event_id FROM audit_retrieval_events WHERE kind=? AND job_id=? AND number=?", (kind, jid, number)).fetchone()
+        return (json.loads(row[0]), row[1]) if row else (None, None)
+
+    def retry_state_valid(result, payload):
+        state = result.get("retry_state")
+        if state is None:
+            return  # Historical/fixture receipts did not publish endpoint state.
+        require(isinstance(state, dict) and type(state.get("version")) is int and state["version"] == 1, "Unknown retrieval endpoint-state version")
+        require(state.get("source_generation") == payload.get("source_generation", 1), "Endpoint history belongs to another source generation")
+        if "source_manifest" in payload:
+            require(state.get("source_manifest_sha256") == payload.get("source_manifest_sha256")
+                    == digest(payload["source_manifest"]), "Endpoint history belongs to another immutable source manifest")
+        require(isinstance(state.get("endpoints"), dict), "Endpoint history must be a keyed object")
+        for key, entry in state["endpoints"].items():
+            require(isinstance(entry, dict) and entry.get("kind") in {"article", "identity-discovery"} and isinstance(entry.get("source"), str) and entry["source"], "Malformed retrieval endpoint identity")
+            require(key == sources.digest([entry["kind"], entry["source"]]), "Endpoint key differs from its source identity")
+            require(isinstance(entry.get("outcome"), dict) and entry.get("outcome_sha256") == sources.digest(entry["outcome"]), "Retained retrieval endpoint outcome hash mismatch")
+            require(entry.get("status") == entry["outcome"].get("status") and isinstance(entry.get("status"), str) and entry["status"], "Endpoint status differs from its outcome")
+            require(positive(entry.get("acquisitions")) and type(entry.get("transient_failures")) is int and 0 <= entry["transient_failures"] <= entry["acquisitions"], "Malformed retrieval endpoint acquisition counts")
+            require((entry["transient_failures"] > 0) == (entry["status"] == "deferred"), "Endpoint transient-failure count disagrees with current outcome")
+            attempted, retry = (datetime.fromisoformat(entry[name]) for name in ("attempted_at", "retry_at"))
+            require(attempted.tzinfo is not None and retry.tzinfo is not None and retry >= attempted, "Endpoint cooldown must have ordered timezone-aware timestamps")
+            checked("retrieval_endpoint_outcomes")
+
+    previous_job, previous_number = None, 0
+    for row in conn.execute("SELECT a.*,j.stage,j.payload AS job_payload,j.attempts AS model_attempts FROM retrieval_attempts a LEFT JOIN jobs j ON j.id=a.job_id ORDER BY a.job_id,a.number"):
+        jid, number = row["job_id"], row["number"]
+        try:
+            if jid != previous_job:
+                previous_job, previous_number = jid, 0
+            require(positive(number) and number == previous_number + 1, "Retrieval attempt numbers are not contiguous")
+            previous_number = number
+            require(row["stage"] == "retrieval" and row["model_attempts"] == 0, "Retrieval accounting must not become charged model attempts")
+            require(timestamp(row["started_at"]), "Retrieval attempt lacks a valid start time")
+            started, start_id = event("retrieval_attempt_started", jid, number)
+            finished, finish_id = event("retrieval_attempt_finished", jid, number)
+            claim = conn.execute("SELECT owner,event_id FROM audit_retrieval_claims WHERE job_id=? AND token=?", (jid, row["token"])).fetchone()
+            require(started is not None and claim is not None and claim["owner"] == row["owner"] and claim["event_id"] < start_id, "Retrieval attempt lacks its earlier matching claim/start event")
+            payload = json.loads(row["job_payload"])
+            require(all(started.get(key) == expected for key, expected in {"job_id": jid, "owner": row["owner"], "token": row["token"], "attempt": number, "source_generation": payload.get("source_generation"), "source_manifest_sha256": payload.get("source_manifest_sha256")}.items()), "Retrieval attempt start differs from immutable job/lease binding")
+            if "source_manifest" in payload:
+                require(digest(payload["source_manifest"]) == payload.get("source_manifest_sha256"), "Acquisition manifest differs from immutable job hash")
+                require(payload["source_manifest"].get("paper_id") == payload.get("paper_id"), "Acquisition manifest belongs to another paper")
+            if row["result"] is None:
+                require(row["completed_at"] is None and finished is None, "Receipt-less retrieval attempt has a completion timestamp or finished event")
+                checked("retrieval_attempts_without_receipt")
+            else:
+                result = json.loads(row["result"])
+                require(isinstance(result, dict) and isinstance(result.get("status"), str) and result["status"], "Retrieval receipt lacks a status")
+                require(timestamp(row["completed_at"]) and finished is not None and finish_id > start_id, "Retrieval receipt lacks a later finish event/time")
+                require(all(finished.get(key) == expected for key, expected in {"job_id": jid, "owner": row["owner"], "token": row["token"], "attempt": number, "result": result}.items()), "Retrieval receipt differs from append-first finish history")
+                retry_state_valid(result, payload)
+                checked("retrieval_attempt_receipts")
+            checked("retrieval_attempt_records")
+        except (ValueError, KeyError, TypeError, AttributeError, OverflowError) as exc:
+            error("retrieval_attempt", jid + ":" + str(number), exc)
+    for row in conn.execute("SELECT e.kind,e.job_id,e.number FROM audit_retrieval_events e LEFT JOIN retrieval_attempts a ON a.job_id=e.job_id AND a.number=e.number WHERE a.id IS NULL"):
+        error("retrieval_attempt", row["job_id"] + ":" + str(row["number"]), "Acquisition history is missing its durable attempt record: " + row["kind"])
 
 
 def validate(coordinator, *, deadline=None):
@@ -410,6 +550,7 @@ def validate(coordinator, *, deadline=None):
 
             from .recovery import validate_retries
             validate_retries(coordinator, conn, error, checked, history)
+            _validate_retrieval_accounting(conn, error, checked)
 
             totals = {"calls": 0.0, "tokens": 0.0, "cost_usd": 0.0, "unknown_outcomes": 0}
             for row in conn.execute("SELECT * FROM reservations ORDER BY id"):

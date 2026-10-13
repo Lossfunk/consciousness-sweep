@@ -15,6 +15,7 @@ import hashlib
 import html
 import ipaddress
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -31,6 +32,8 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from typing import Any
+
+from .common import digest as operational_digest
 
 
 OPENALEX = "https://api.openalex.org"
@@ -233,17 +236,37 @@ def _bounded_public_transport(url, *, deadline, openalex_key_env, **kwargs):
             raise SourceError("deferred", "Isolated source response could not be verified") from exc
 
 
-def _retry_after(headers):
-    value = next((v for k, v in headers.items() if k.lower() == "retry-after"), None)
-    if value is None:
+def _representable_retry_delay(value, *, attempted_at=None):
+    """Validate a provider delay before it becomes a durable UTC deadline."""
+    if isinstance(value, bool):
         return None
     try:
-        return max(0, float(value))
-    except ValueError:
-        try:
-            return max(0, (email.utils.parsedate_to_datetime(value) - dt.datetime.now(dt.timezone.utc)).total_seconds())
-        except (ValueError, TypeError):
+        seconds = float(value)
+        if not math.isfinite(seconds) or seconds < 0:
             return None
+        dt.datetime.fromtimestamp((time.time() if attempted_at is None else attempted_at) + seconds, dt.timezone.utc)
+        return seconds
+    except (OverflowError, OSError, TypeError, ValueError):
+        return None
+
+
+def _retry_after(headers):
+    value = next((v for k, v in headers.items() if k.lower() == "retry-after"), None)
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    try:
+        # HTTP delay-seconds are decimal digits; exponent, fractional and
+        # negative forms are malformed rather than enormous wait requests.
+        if re.fullmatch(r"[0-9]+", value):
+            return _representable_retry_delay(int(value))
+        retry_at = email.utils.parsedate_to_datetime(value)
+        if retry_at.tzinfo is None:
+            return None
+        seconds = max(0, (retry_at - dt.datetime.fromtimestamp(time.time(), dt.timezone.utc)).total_seconds())
+        return _representable_retry_delay(seconds)
+    except (OverflowError, OSError, ValueError, TypeError):
+        return None
 
 
 class SourceClient:
@@ -284,6 +307,11 @@ class SourceClient:
                     raise SourceError("deferred", "Source exceeds operational byte allowance; no truncated evidence accepted", attempts=attempts)
                 attempts.append({"url": url, "at": now(), "attempt": number + 1,
                                  "http_status": code, "body_sha256": digest(body)})
+                retry_header = next((v for k, v in response.get("headers", {}).items() if k.lower() == "retry-after"), None)
+                if retry_header is not None:
+                    # Retain malformed provider evidence even when normalizing
+                    # it to ordinary retry backoff; never discard the response.
+                    attempts[-1]["retry_after_header"] = str(retry_header)
                 if 200 <= code < 300:
                     if json_response:
                         try:
@@ -300,7 +328,8 @@ class SourceClient:
                                   "body_sha256": digest(body), "attempts": attempts, "raw_body": body}
                 if code not in {408, 425, 429, 500, 502, 503, 504}:
                     status = "unavailable" if code in {404, 410} else "blocked"
-                    raise SourceError(status, "HTTP {} requires access/query/coverage resolution".format(code), attempts=attempts)
+                    raise SourceError(status, "HTTP {} requires access/query/coverage resolution".format(code),
+                                      attempts=attempts, retry_after=_retry_after(response.get("headers", {})))
                 retry = _retry_after(response.get("headers", {}))
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
                 attempts.append({"url": url, "at": now(), "attempt": number + 1,
@@ -946,12 +975,88 @@ def _provided_bytes(entry):
     return data
 
 
-def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None):
+class _RetrievalRetry:
+    """Source-generation-bound operational outcomes, returned for durable storage.
+
+    This is never an eligibility cache. A failed endpoint remains unresolved;
+    a new generation or source manifest discards all retry suppression. A daily
+    refresh permits formerly blocked URLs/metadata to recover during continuing
+    transient acquisitions without revisiting them every minute.
+    """
+    def __init__(self, paper, generation, previous_result):
+        binding = {"version": 1, "source_manifest_sha256": operational_digest(paper), "source_generation": generation}
+        previous = (previous_result or {}).get("retry_state") or {}
+        endpoints = previous.get("endpoints", {}) if all(previous.get(k) == v for k, v in binding.items()) else {}
+        self.state = {**binding, "endpoints": json.loads(json.dumps(endpoints))}
+        self.visited = set()
+
+    @staticmethod
+    def key(kind, source):
+        return digest([kind, source])
+
+    def reuse(self, kind, source):
+        key = self.key(kind, source)
+        self.visited.add(key)
+        entry = self.state["endpoints"].get(key)
+        if entry:
+            if (entry.get("kind") != kind or entry.get("source") != source or
+                    entry.get("status") != entry.get("outcome", {}).get("status") or
+                    entry.get("outcome_sha256") != digest(entry.get("outcome"))):
+                raise ValueError("Retained retrieval endpoint outcome integrity mismatch")
+            retry_at = dt.datetime.fromisoformat(entry["retry_at"])
+            if retry_at.tzinfo is None:
+                raise ValueError("Retained retrieval endpoint deadline must include its timezone")
+            if retry_at.timestamp() > time.time():
+                return entry
+        return None
+
+    def record(self, kind, source, outcome):
+        key = self.key(kind, source)
+        self.visited.add(key)
+        previous = self.state["endpoints"].get(key, {})
+        failures = previous.get("transient_failures", 0) + 1 if outcome["status"] == "deferred" else 0
+        delay = min(3600, 60 * 2 ** min(failures - 1, 6)) if failures else 86400
+        attempted_at = time.time()
+        requested = _representable_retry_delay(outcome.get("retry_after"), attempted_at=attempted_at)
+        if requested is not None:
+            delay = max(delay, requested)
+        entry = {"kind": kind, "source": source, "status": outcome["status"],
+                 "acquisitions": previous.get("acquisitions", 0) + 1, "transient_failures": failures,
+                 "attempted_at": dt.datetime.fromtimestamp(attempted_at, dt.timezone.utc).isoformat(),
+                 "retry_at": dt.datetime.fromtimestamp(attempted_at + delay, dt.timezone.utc).isoformat(),
+                 "outcome": outcome, "outcome_sha256": digest(outcome)}
+        self.state["endpoints"][key] = entry
+        return entry
+
+    @staticmethod
+    def reused_attempt(entry):
+        outcome = entry["outcome"]
+        return {"source": entry["source"], "kind": entry["kind"], "status": entry["status"],
+                "reason": outcome.get("reason", "Prior endpoint outcome retained during operational cooldown"),
+                "reused_endpoint_outcome": {"attempted_at": entry["attempted_at"],
+                    "outcome_sha256": entry["outcome_sha256"], "retry_at": entry["retry_at"]}}
+
+    def fields(self):
+        pending = [dt.datetime.fromisoformat(entry["retry_at"]).timestamp()
+                   for key, entry in self.state["endpoints"].items()
+                   if key in self.visited and entry["status"] == "deferred"]
+        fields = {"retry_state": self.state}
+        if pending:
+            earliest = min(pending)
+            fields.update(retry_at=dt.datetime.fromtimestamp(earliest, dt.timezone.utc).isoformat(),
+                          retry_after=max(0, earliest - time.time()))
+        return fields
+
+
+def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None,
+             previous_result=None, source_generation=1):
     """Acquire a verified main source plus explicitly associated supplements.
 
     Supplied entries may be paths or {path, role:'supplement', association_reason}.
     Source claims of complete reading never imply that unavailable graphics or
     unprovided supplements were examined. All extraction content is retained.
+    ``previous_result`` may be the last durable acquisition result for this job;
+    retry outcomes are reused only for the exact manifest and generation.
     """
     client = client or SourceClient(deadline=deadline)
     if deadline is not None and isinstance(client, SourceClient):
@@ -959,6 +1064,19 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
     directory = Path(output_dir)
     directory.mkdir(parents=True, exist_ok=True)
     attempts, assets, gaps, candidates = [], [], [], []
+    retry = _RetrievalRetry(paper, source_generation, previous_result)
+
+    def identity_search(source, limit):
+        cached = retry.reuse("identity-discovery", source)
+        if cached:
+            attempts.append(retry.reused_attempt(cached))
+            return cached["outcome"]
+        found = client.search(source, normalize_doi(paper["doi"]), limit, kind="identity")
+        retry.record("identity-discovery", source, found)
+        attempts.append({"kind": "identity-discovery", "source": source, "status": found["status"],
+                         "reason": found["reason"], "attempts": found.get("attempts", []),
+                         "retry_after": found.get("retry_after"), "raw_responses": found.get("raw_responses", [])})
+        return found
     supplied_supplements = []
     if not provided_paths:
         provided_paths = paper.get("provided_paths") or []
@@ -970,9 +1088,7 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
     # Metadata discovery is useful only when no explicit local source exists.
     local_available = any(c.get("path") for c in candidates) or any(paper.get(k) for k in ("fulltext_path", "pdf_path", "local_path"))
     if not pmcid and paper.get("doi") and not local_available:
-        found = client.search("Europe PMC", normalize_doi(paper["doi"]), 10, kind="identity")
-        attempts.append({"kind": "identity-discovery", "status": found["status"], "reason": found["reason"],
-                         "attempts": found.get("attempts", []), "raw_responses": found.get("raw_responses", [])})
+        found = identity_search("Europe PMC", 10)
         matched = [r for r in found.get("results", []) if r.get("doi") == normalize_doi(paper["doi"])]
         if len(matched) == 1:
             pmcid = matched[0].get("pmcid")
@@ -1006,9 +1122,7 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
         if assets:
             break
         if stage is None:
-            found = client.search("OpenAlex", normalize_doi(paper["doi"]), 1, kind="identity")
-            attempts.append({"kind": "identity-discovery", "source": "OpenAlex", "status": found["status"],
-                             "reason": found["reason"], "raw_responses": found.get("raw_responses", [])})
+            found = identity_search("OpenAlex", 1)
             stage = [{"url": u} for record in found.get("results", [])
                      if normalize_doi(record.get("doi")) == normalize_doi(paper["doi"])
                      for u in record.get("fulltext_urls", [])]
@@ -1017,6 +1131,13 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
             if not label or label in seen:
                 continue
             seen.add(label)
+            cached = retry.reuse("article", label) if not candidate.get("path") else None
+            if cached:
+                attempts.append(retry.reused_attempt(cached))
+                if cached["outcome"].get("asset"):
+                    unresolved.append(cached["outcome"]["asset"])
+                continue
+            receipt = None
             try:
                 _remaining(deadline, 120)
                 if candidate.get("path"):
@@ -1026,23 +1147,36 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
                     data, raw = client.get(label)
                     receipt = {k: v for k, v in raw.items() if k != "raw_body"}
                 asset, links = _asset(paper, data, label, directory, deadline=deadline)
-                attempts.append({"source": label, "status": asset["identity"]["status"], "receipt": receipt,
-                                 "reason": asset["identity"]["reason"]})
+                outcome = {"source": label, "status": asset["identity"]["status"], "receipt": receipt,
+                           "reason": asset["identity"]["reason"]}
+                attempts.append(outcome)
                 if asset["identity"]["status"] == "match":
+                    retry.state["endpoints"].pop(retry.key("article", label), None)
                     assets.append(asset)
                     supplemental_links = links
                     main_base = receipt.get("url") if not candidate.get("path") else None
                     break
                 unresolved.append(asset)
+                if not candidate.get("path"):
+                    retry.record("article", label, {**outcome, "asset": asset})
             except SourceError as exc:
-                attempts.append({"source": label, "status": exc.status, "reason": exc.reason,
-                                 "attempts": exc.attempts, "retry_after": exc.retry_after})
+                outcome = {"source": label, "status": exc.status, "reason": exc.reason,
+                           "attempts": exc.attempts, "retry_after": exc.retry_after}
+                attempts.append(outcome)
+                if not candidate.get("path"):
+                    retry.record("article", label, outcome)
             except (OSError, ValueError, ET.ParseError, subprocess.SubprocessError) as exc:
-                attempts.append({"source": label, "status": "unreadable", "reason": str(exc)})
+                outcome = {"source": label, "status": "unreadable", "reason": str(exc)}
+                if receipt:
+                    outcome["receipt"] = receipt
+                attempts.append(outcome)
+                if not candidate.get("path"):
+                    retry.record("article", label, outcome)
     if not assets:
         status = "identity-unresolved" if unresolved or any(a["status"] == "identity-unresolved" for a in attempts) else "deferred" if any(a["status"] == "deferred" for a in attempts) else "missing"
         return {"status": status, "packet": None, "assets": unresolved, "attempts": attempts,
-                "gaps": ["No verified readable main article"], "reason": "No source has yet passed identity and extraction verification"}
+                "gaps": ["No verified readable main article"], "reason": "No source has yet passed identity and extraction verification",
+                **retry.fields()}
     for link in supplemental_links:
         href = link.get("href")
         resolved = urllib.parse.urljoin(main_base, href) if main_base and href else href
@@ -1083,4 +1217,5 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
               "sources": [{k: v for k, v in a.items() if k not in {"original_path", "text_path", "map_path"}} for a in assets],
               "acquisition_gaps": gaps}
     return {"status": "verified", "packet": packet, "assets": assets, "unresolved_assets": unresolved, "attempts": attempts, "gaps": gaps,
-            "reason": "Main identity verified; source-located extraction retained with explicit acquisition limits"}
+            "reason": "Main identity verified; source-located extraction retained with explicit acquisition limits",
+            "retry_state": retry.state}

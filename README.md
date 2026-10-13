@@ -4,10 +4,12 @@ A portable, resumable literature pipeline for finding studies that help explain
 how awareness of an entity X relates to its use by a downstream function Y.
 Its deliverable is a source-grounded prospect queue for scientific review.
 
-**Current release: portable 1.0.0-r20**, ready for supervised use. This is a
-documentation-only successor to audited r19: runtime, scientific files and
-reader instructions are unchanged. See [Scope and integrity](#scope-and-integrity)
-for the engineering checks and source-reading evidence.
+**Current release: portable 1.0.0-r21**, for supervised use. This revision repairs
+retrieval starvation observed in a paused run: fresh work and supplied local
+sources receive reserved turns, and repeated failures retain endpoint history
+with increasing retry delays. Scientific files and reader instructions are
+unchanged. See [Scope and integrity](#scope-and-integrity) for the engineering
+checks and source-reading evidence.
 
 This repository accompanies **Sushrut Thorat and Paras Chopra,
 [Towards a full-stack functionalist theory of consciousness: Identifying its
@@ -145,6 +147,9 @@ GitHub. Open the downloaded directory as the coding agent's workspace and say:
 Keep that release directory for the lifetime of its runs. Download updates into
 a new directory; do not pull changed code or instructions into an active run.
 Existing runs retain their original package, sources and recorded configuration.
+This release does not migrate existing runs. A run paused under an earlier
+runtime needs an explicit, reviewed continuation mechanism before it can use
+the scheduler repair; replacing its files and resuming is unsupported.
 
 The agent reads the repository instructions, inspects the machine and its active
 harness/model access, recommends workers and stage profiles, and asks once about
@@ -383,6 +388,16 @@ or explicitly supplied supplements are associated with their main article.
 The pipeline verifies source identity and stores immutable source hashes so
 later judgments can be traced to the version actually read.
 
+Acquisition reserves turns for priority work, supplied local sources, fresh
+retrievals, retries and other ready acquisition-worker tasks. Repeated seed
+failures cannot monopolize service across priorities. Retrieval attempts and
+receipts are counted separately from model calls. Transient failures use
+increasing delays from one minute to one hour, honoring longer valid server
+retry instructions. While retrying transient endpoints, unchanged blocked or
+unreadable endpoint outcomes are reused for up to 24 hours. A new source
+generation starts fresh endpoint history; prior attempts remain recorded.
+These delays do not discard missing-source obligations or impose an attempt cap.
+
 Some papers will remain inaccessible, unreadable, or incomplete. Paywalls,
 missing supplements and figure-only evidence can require agent investigation or
 a user-supplied copy. These are recorded gaps, not automatic scientific
@@ -483,10 +498,15 @@ The **13 October 2026 maintainer audit** supports supervised handoff without
 requiring a full scientific sweep as a commissioning step. Its evidence separates
 engineering behavior from scientific reading quality:
 
-- **Packaged software:** 431 tests passed against audited r19 with zero skips,
+- **Packaged software:** 480 tests passed against r21 with zero skips,
   errors or failures. They cover startup, finite and unbounded settings, durable
   access/budget blocks, crashes, competing and stale workers, source revisions,
-  calibration review, stopping and reopening. r20 changes documentation only.
+  calibration review, stopping and reopening. The earlier r19/r20 suites had
+  431 tests; the 49 added regressions cover the reported retrieval starvation,
+  endpoint cooldown/history, acquisition accounting, and refusal of incompatible
+  resumes before database mutation. The incident was reproduced with controlled
+  failures plus actual extraction of a synthetic local PDF. No additional live
+  model readings were needed for this operational repair.
 - **Offline scale:** 2,500 logical papers and 5,000 encounters exercise concurrent
   persistence, 100 screening batches, 2,500 retrieval obligations and backpressure
   over 1,000 citation obligations. Downstream drain is a synthetic fixture, not

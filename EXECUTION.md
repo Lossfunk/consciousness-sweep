@@ -427,13 +427,44 @@ source/stage cohorts: the ten lowest stable source-bound
 hashes, or all papers in a smaller cohort. A miss reopens the remaining current
 exclusions in that cohort. This sample does not estimate corpus recall.
 
-Within available worker capacity, ready reader jobs precede rescue/audit, abstracts and titles; ready acquisition precedes more citation fetching. This scheduling order lets the pipeline finish paper assessments while a large title backlog remains, without excluding or changing any paper. Every acquisition job binds an immutable source manifest and generation. An
+Within available model-worker capacity, ready reader jobs precede rescue/audit,
+abstracts and titles. Acquisition workers rotate among nonempty lanes for
+priority work, supplied local sources, fresh retrievals, retries and other ready
+stages such as search. Each nonempty lane receives service within five admissions;
+an individual job's wait also depends on earlier work in its lane. Fresh work
+is oldest-first across priorities, and retries rotate by last service, so repeated
+seed failures cannot monopolize retrieval workers. Discovery backpressure still
+applies. The durable service cursor survives restart. This ordering changes no
+paper's scientific eligibility. Every acquisition job binds an immutable source
+manifest and generation. An
 identical attachment is idempotent. A changed abstract reopens a screening-only decision; richer metadata does not replace an existing full-paper reading. A changed acquisition identity creates explicit source follow-up work. Older results remain in history but cannot
 replace a newer generation or a richer current stage. `source-retry --run-id ID
 --paper-id ID --reason REASON` authorizes a new acquisition attempt. It does not
 silently retry a model call. Source-verified means bibliographic identity and
 extraction were checked; it does not certify complete article text or figure
 inspection. Acquisition gaps and individual claim dispositions appear in delivery.
+
+Retrieval claims, actual acquisition starts and finished receipts are separate
+from model admission and billing. `status` exposes `retrieval_execution`; an
+attempt without a receipt remains visible after interruption. Retrieval receipts
+and endpoint history publish under the same fenced lease as job completion or
+deferral. They cannot be updated by a stale worker. Transient acquisition retries
+use increasing delays from 60 seconds to a maximum ordinary delay of one hour;
+longer valid `Retry-After` instructions are honored. Invalid or unrepresentable
+server delays fall back to ordinary backoff and retain the response evidence.
+Unchanged blocked or unreadable endpoint outcomes can be reused for 24 hours
+while other endpoints remain transient. Local files are rechecked against their
+bound hashes. A new source generation, including an explicit `source-retry`,
+starts fresh endpoint history and preserves the old receipts. There is no new
+attempt limit, scientific exclusion or saturation rule.
+
+The r21 operational repair does not migrate runs initialized by earlier runtimes.
+Ordinary resume checks the saved scientific and runtime fingerprints before
+opening a writable store. Keep an affected older run paused in its original
+release. Applying a successor requires a separately implemented and reviewed
+continuation mechanism that preserves its original plan, results, history,
+source bindings, resource agreement and execution provenance; editing the saved
+fingerprint or copying new code into the active release is unsupported.
 
 Keep uncertain preprint/published matches separate and preserve supplied version
 relations/publication status. Use the source text to resolve identity. Never count

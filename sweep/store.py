@@ -171,6 +171,13 @@ CREATE INDEX IF NOT EXISTS job_priority ON jobs(state,priority DESC,id,available
 CREATE INDEX IF NOT EXISTS job_owner ON jobs(owner,state);
 CREATE INDEX IF NOT EXISTS job_projection ON jobs(state,projected,id);
 CREATE INDEX IF NOT EXISTS job_source_paper ON jobs(json_extract(payload,'$.paper_id'),stage);
+CREATE TABLE IF NOT EXISTS retrieval_service(job_id TEXT PRIMARY KEY REFERENCES jobs(id),
+ last_sequence INTEGER NOT NULL,claims INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS retrieval_attempts(id INTEGER PRIMARY KEY AUTOINCREMENT,
+ job_id TEXT NOT NULL REFERENCES jobs(id),owner TEXT NOT NULL,token INTEGER NOT NULL,
+ number INTEGER NOT NULL,started_at REAL NOT NULL,result TEXT,completed_at REAL,
+ UNIQUE(job_id,token),UNIQUE(job_id,number));
+CREATE INDEX IF NOT EXISTS retrieval_attempt_job ON retrieval_attempts(job_id,number);
 CREATE TABLE IF NOT EXISTS job_supersessions(job_id TEXT PRIMARY KEY REFERENCES jobs(id),
  replacement_job_id TEXT REFERENCES jobs(id),reason TEXT NOT NULL,created_at REAL NOT NULL,
  CHECK(job_id != replacement_job_id));
@@ -200,6 +207,26 @@ CREATE INDEX IF NOT EXISTS native_ids_paper ON native_scientific_ids(paper_id,ki
 
 
 class Store:
+    @staticmethod
+    def read_plan(run_dir):
+        """Inspect a bound run before any schema setup or write connection.
+
+        A rejected runtime/science upgrade must not mutate the old ledger merely
+        because its coordinator was opened. Ordinary execution still opens the
+        writer only after the caller verifies this immutable origin binding.
+        """
+        path = Path(run_dir).resolve() / "state.sqlite3"
+        if not path.is_file():
+            raise StoreError("Run is not initialized")
+        conn = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=30)
+        try:
+            row = conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()
+            if not row:
+                raise StoreError("Run is not initialized")
+            return json.loads(row[0])
+        finally:
+            conn.close()
+
     def __init__(self, run_dir):
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
@@ -828,18 +855,70 @@ class Store:
                     raise ValueError("calibration_reviews must be boolean or null")
                 review_filter = " AND coalesce(json_extract(j.payload,'$.calibration_review'),0)=?"
                 args.append(int(calibration_reviews))
-            rows = conn.execute("SELECT j.* FROM jobs j WHERE j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||j.id AND json_extract(m.value,'$.active')=1) AND j.stage IN (" + placeholders + ") AND j.available_at<=?" + review_filter + " AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete') ORDER BY j.priority DESC,j.id LIMIT ?",
-                                args + [limit]).fetchall()
+            eligible = "j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||j.id AND json_extract(m.value,'$.active')=1) AND j.stage IN (" + placeholders + ") AND j.available_at<=?" + review_filter + " AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete')"
+            schedule = None
+            if "retrieval" in stages:
+                saved = conn.execute("SELECT value FROM meta WHERE key='retrieval_schedule'").fetchone()
+                schedule = json.loads(saved[0]) if saved else {"next_lane": 0, "sequence": 0}
+                rows = None  # Select one slot at a time inside the same claim transaction.
+            else:
+                rows = conn.execute("SELECT j.* FROM jobs j WHERE " + eligible + " ORDER BY j.priority DESC,j.id LIMIT ?", args + [limit]).fetchall()
             result = []
-            for row in rows:
+            for index in range(limit if rows is None else len(rows)):
+                if schedule is not None:
+                    row, lane = self._next_retrieval_service(conn, eligible, args, schedule)
+                    if row is None:
+                        break
+                else:
+                    row, lane = rows[index], None
                 token = row["token"] + 1
-                self._event(conn, "job_claimed", {"job_id": row["id"], "owner": owner, "token": token})
+                claim = {"job_id": row["id"], "owner": owner, "token": token}
+                if schedule is not None:
+                    schedule["sequence"] += 1
+                    claim.update(service_lane=lane, service_sequence=schedule["sequence"])
+                self._event(conn, "job_claimed", claim)
                 conn.execute("UPDATE jobs SET state='running',owner=?,token=?,lease_until=?,updated_at=? WHERE id=?",
                              (owner, token, now + lease_seconds, now, row["id"]))
+                if row["stage"] == "retrieval":
+                    conn.execute("INSERT INTO retrieval_service VALUES(?,?,1) ON CONFLICT(job_id) DO UPDATE SET last_sequence=excluded.last_sequence,claims=claims+1",
+                                 (row["id"], schedule["sequence"]))
                 value = self._job(row)
                 value.update(state="running", owner=owner, token=token, lease_until=now + lease_seconds)
                 result.append(value)
+            if schedule is not None and result:
+                conn.execute("INSERT INTO meta VALUES('retrieval_schedule',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (_json(schedule),))
             return result
+
+    @staticmethod
+    def _next_retrieval_service(conn, eligible, args, schedule):
+        """Reserve service for priority, local, fresh, retry and other stages.
+
+        Each nonempty lane receives a slot every five admissions at most. The
+        fresh lane is oldest-first across priorities; the retry lane rotates by
+        last service. Thus new high-priority work, recurring failures and local
+        arrivals cannot monopolize acquisition. Empty lanes are skipped. The
+        last slot prevents other requested stages such as discovery from being
+        starved by a full acquisition queue; retrieval-only claims skip it.
+        This affects execution ordering, never scientific eligibility or caps.
+        """
+        source = "CASE WHEN json_type(j.payload,'$.source_manifest')='object' THEN json_extract(j.payload,'$.source_manifest') ELSE coalesce((SELECT record FROM papers WHERE id=json_extract(j.payload,'$.paper_id')),j.payload) END"
+        local = "(coalesce(json_array_length(" + source + ",'$.provided_paths'),0)>0 OR " + " OR ".join(
+            "nullif(json_extract(" + source + ",'$." + key + "'),'') IS NOT NULL"
+            for key in ("fulltext_path", "pdf_path", "local_path")) + ")"
+        lanes = (
+            ("priority", "", "j.priority DESC,coalesce(rs.last_sequence,0),j.id"),
+            ("local", " AND j.stage='retrieval' AND " + local, "coalesce(rs.last_sequence,0),j.priority DESC,j.id"),
+            ("fresh", " AND j.stage='retrieval' AND coalesce(rs.claims,j.token)=0", "j.id"),
+            ("retry", " AND j.stage='retrieval' AND coalesce(rs.claims,j.token)>0", "coalesce(rs.last_sequence,0),j.id"),
+            ("other-stage", " AND j.stage!='retrieval'", "j.priority DESC,j.id"),
+        )
+        for _ in lanes:
+            lane, predicate, order = lanes[schedule["next_lane"]]
+            schedule["next_lane"] = (schedule["next_lane"] + 1) % len(lanes)
+            row = conn.execute("SELECT j.* FROM jobs j LEFT JOIN retrieval_service rs ON rs.job_id=j.id WHERE " + eligible + predicate + " ORDER BY " + order + " LIMIT 1", args).fetchone()
+            if row is not None:
+                return row, lane
+        return None, None
 
     @staticmethod
     def _owned(conn, job_id, owner, token):
@@ -855,6 +934,65 @@ class Store:
             self._owned(conn, job_id, owner, token)
             conn.execute("UPDATE jobs SET lease_until=?,updated_at=? WHERE id=?",
                          (time.time() + lease_seconds, time.time(), job_id))
+
+    def admit_retrieval_attempt(self, job_id, owner, token):
+        """Count actual acquisition starts, separately from claims/model calls."""
+        with self._transaction() as conn:
+            job = self._owned(conn, job_id, owner, token)
+            if job["stage"] != "retrieval":
+                raise StoreError("Retrieval execution accounting requires a retrieval job")
+            prior = conn.execute("SELECT number FROM retrieval_attempts WHERE job_id=? AND token=?", (job_id, token)).fetchone()
+            if prior:
+                return prior[0]
+            number = conn.execute("SELECT coalesce(max(number),0)+1 FROM retrieval_attempts WHERE job_id=?", (job_id,)).fetchone()[0]
+            payload, now = json.loads(job["payload"]), time.time()
+            self._event(conn, "retrieval_attempt_started", {"job_id": job_id, "owner": owner,
+                "token": token, "attempt": number, "source_generation": payload.get("source_generation"),
+                "source_manifest_sha256": payload.get("source_manifest_sha256")})
+            conn.execute("INSERT INTO retrieval_attempts(job_id,owner,token,number,started_at) VALUES(?,?,?,?,?)", (job_id, owner, token, number, now))
+            return number
+
+    def retrieval_attempt_count(self, job_id):
+        with self._connection() as conn:
+            return conn.execute("SELECT count(*) FROM retrieval_attempts WHERE job_id=?", (job_id,)).fetchone()[0]
+
+    def retrieval_attempts(self, job_id, limit=100, after_number=0):
+        if not 1 <= limit <= 1000 or after_number < 0:
+            raise ValueError("Retrieval history requires a bounded page and nonnegative cursor")
+        with self._connection() as conn:
+            return [dict(row, result=json.loads(row["result"]) if row["result"] is not None else None)
+                    for row in conn.execute("SELECT * FROM retrieval_attempts WHERE job_id=? AND number>? ORDER BY number LIMIT ?", (job_id, after_number, limit))]
+
+    def latest_retrieval_result(self, job_id):
+        """Only finished receipts for this exact immutable source-bound job."""
+        with self._connection() as conn:
+            row = conn.execute("SELECT result FROM retrieval_attempts WHERE job_id=? AND result IS NOT NULL ORDER BY number DESC LIMIT 1", (job_id,)).fetchone()
+            return json.loads(row[0]) if row else None
+
+    def finish_retrieval_attempt(self, job_id, owner, token, result, delay_seconds=0):
+        """Fence receipt/cache publication and defer/completion in one transaction."""
+        if (not isinstance(result, dict) or not result.get("status") or isinstance(delay_seconds, bool)
+                or not isinstance(delay_seconds, (int, float)) or not math.isfinite(delay_seconds) or delay_seconds < 0):
+            raise ValueError("Retrieval completion needs a result and finite nonnegative delay")
+        with self._transaction() as conn:
+            job = self._owned(conn, job_id, owner, token)
+            attempt = conn.execute("SELECT * FROM retrieval_attempts WHERE job_id=? AND token=?", (job_id, token)).fetchone()
+            if job["stage"] != "retrieval" or attempt is None or attempt["result"] is not None:
+                raise StoreError("Retrieval completion requires this lease's unfinished admitted attempt")
+            payload, now = json.loads(job["payload"]), time.time()
+            self._event(conn, "retrieval_attempt_finished", {"job_id": job_id, "owner": owner,
+                "token": token, "attempt": attempt["number"], "result": result})
+            conn.execute("UPDATE retrieval_attempts SET result=?,completed_at=? WHERE id=?", (_json(result), now, attempt["id"]))
+            if result["status"] == "deferred":
+                reason = result.get("reason") or "Transient retrieval failure"
+                self._event(conn, "retrieval_deferred", {"job_id": job_id,
+                    "paper_id": payload.get("paper_id"), "source_manifest_sha256": payload.get("source_manifest_sha256"), "result": result})
+                self._event(conn, "job_deferred", {"job_id": job_id, "owner": owner, "token": token,
+                    "reason": reason, "delay_seconds": delay_seconds})
+                conn.execute("UPDATE jobs SET state='pending',owner=NULL,lease_until=NULL,available_at=?,error=?,updated_at=? WHERE id=?", (now + delay_seconds, reason, now, job_id))
+            else:
+                self._event(conn, "job_completed", {"job_id": job_id, "owner": owner, "token": token, "result": result})
+                conn.execute("UPDATE jobs SET state='complete',result=?,lease_until=NULL,updated_at=? WHERE id=?", (_json(result), now, job_id))
 
     def complete(self, job_id, owner, token, result):
         with self._transaction() as conn:
@@ -1169,6 +1307,11 @@ class Store:
                     "superseded_jobs": conn.execute("SELECT count(*) FROM job_supersessions").fetchone()[0],
                     "historical_failed": conn.execute("SELECT count(*) FROM jobs WHERE state='failed'").fetchone()[0],
                     "retried_failed": conn.execute("SELECT count(*) FROM retry_links").fetchone()[0],
+                    "retrieval_execution": {
+                        "claims": conn.execute("SELECT coalesce(sum(claims),0) FROM retrieval_service").fetchone()[0],
+                        "attempts": conn.execute("SELECT count(*) FROM retrieval_attempts").fetchone()[0],
+                        "receipts": conn.execute("SELECT count(*) FROM retrieval_attempts WHERE result IS NOT NULL").fetchone()[0],
+                        "without_receipt": conn.execute("SELECT count(*) FROM retrieval_attempts WHERE result IS NULL").fetchone()[0]},
                     "encounters": conn.execute("SELECT count(*) FROM encounters").fetchone()[0],
                     "events": conn.execute("SELECT count(*) FROM events").fetchone()[0],
                     "budget": self._budget_totals(conn), "native_scientific_completion": False}
@@ -1199,13 +1342,13 @@ class Store:
             with self._connection() as conn:
                 conn.execute("BEGIN")
                 manifest["last_event_id"] = conn.execute("SELECT coalesce(max(id),0) FROM events").fetchone()[0]
-                for table in ("papers", "jobs", "encounters", "events", "reservations", "retry_links", "job_supersessions", "native_scientific_ids"):
+                for table in ("papers", "jobs", "encounters", "events", "reservations", "retry_links", "job_supersessions", "native_scientific_ids", "retrieval_service", "retrieval_attempts"):
                     destination = directory / (table + ".jsonl")
                     fd, name = tempfile.mkstemp(prefix="." + table + "-", dir=str(directory))
                     temp_paths.append(name)
                     digest, count = hashlib.sha256(), 0
                     with os.fdopen(fd, "wb") as output:
-                        for row in conn.execute("SELECT * FROM " + table + " ORDER BY " + ("parent_id" if table == "retry_links" else "job_id" if table == "job_supersessions" else "id")):
+                        for row in conn.execute("SELECT * FROM " + table + " ORDER BY " + ("parent_id" if table == "retry_links" else "job_id" if table in {"job_supersessions", "retrieval_service"} else "id")):
                             item = dict(row)
                             for key in ("record", "payload", "provenance", "result", "estimate", "usage", "evidence"):
                                 if key in item and item[key] is not None:

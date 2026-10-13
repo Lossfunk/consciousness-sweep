@@ -157,13 +157,13 @@ class Coordinator:
         if (ROOT / MANIFEST).is_file():
             verify(ROOT)
         self.run_dir = Path(run_dir).resolve()
-        self.store = Store(self.run_dir)
-        self.plan = self.store.plan()
+        self.plan = Store.read_plan(self.run_dir)
         if self.plan.get("scientific_regime") != regime():
             raise ValueError("Frozen scientific inputs changed; this run cannot silently resume")
         from .distribution import runtime_fingerprint
         if self.plan.get("runtime_fingerprint") != runtime_fingerprint():
             raise ValueError("Executable inputs changed; restore the run's bound release")
+        self.store = Store(self.run_dir)
         self._calibration_dirty = self.plan.get("mode") == "discovery"
 
     @classmethod
@@ -685,15 +685,22 @@ class Coordinator:
             if payload.get("source_manifest_sha256") and digest(paper) != payload["source_manifest_sha256"]:
                 raise ValueError("Retrieval source manifest binding changed")
             directory = self.run_dir / "sources" / payload["paper_id"]
+            attempt = self.store.admit_retrieval_attempt(job["id"], job["owner"], job["token"])
+            previous = self.store.latest_retrieval_result(job["id"])
             result = retrieve(paper, directory, provided_paths=paper.get("provided_paths", []),
-                              deadline=getattr(self, "session_deadline", None))
+                              deadline=getattr(self, "session_deadline", None),
+                              previous_result=previous, source_generation=payload.get("source_generation", 1))
+            delay = 0
             if result["status"] == "deferred":
-                self.store.event("retrieval_deferred", {"job_id": job["id"],
-                    "paper_id": payload["paper_id"], "source_manifest_sha256": payload.get("source_manifest_sha256"),
-                    "result": result})
-                self.store.defer(job["id"], job["owner"], job["token"], result.get("reason", "Transient retrieval failure"), delay_seconds=60)
-            else:
-                self.store.complete(job["id"], job["owner"], job["token"], result)
+                # Retrieval execution counts are separate from charged model
+                # attempts. Cooldown changes readiness, never source eligibility.
+                delay = min(3600, 60 * 2 ** min(max(0, attempt - 1), 6))
+                requested_delay = result.get("retry_after")
+                if requested_delay is not None:
+                    if isinstance(requested_delay, bool) or not isinstance(requested_delay, (int, float)) or not math.isfinite(requested_delay) or requested_delay < 0:
+                        raise ValueError("Retrieval retry delay must be finite and nonnegative")
+                    delay = max(delay, requested_delay)
+            self.store.finish_retrieval_attempt(job["id"], job["owner"], job["token"], result, delay_seconds=delay)
             return
         profile = self.profile_for_job(job)
         from .profiles import profile_fingerprint
