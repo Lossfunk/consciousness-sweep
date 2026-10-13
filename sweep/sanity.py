@@ -134,6 +134,8 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                 CASE WHEN json_valid(payload) THEN json_extract(payload,'$.reason') END AS reason,
                 CASE WHEN json_valid(payload) THEN json_extract(payload,'$.paper_id') END AS paper_id,
                 CASE WHEN json_valid(payload) THEN json_extract(payload,'$.job_id') END AS job_id,
+                CASE WHEN json_valid(payload) THEN json_extract(payload,'$.task_id') END AS task_id,
+                CASE WHEN json_valid(payload) THEN json_extract(payload,'$.wave_id') END AS wave_id,
                 CASE WHEN kind='discovery_encounter' AND json_valid(payload)
                      THEN json_extract(payload,'$.provenance') END AS provenance
                 FROM events WHERE id>? AND id<=? AND kind!='operational_sanity' ORDER BY id LIMIT ?"""
@@ -143,9 +145,46 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                     require(row["valid"] and row["shape"] == "object", "Audit event payload is not a JSON object")
                     if row["kind"] in REASON_EVENTS:
                         require(nonblank(row["reason"]), "Recorded state change lacks a reason")
-                    if row["paper_id"]:
-                        require(isinstance(row["paper_id"], str), "Audit paper ID must be text")
-                        affected_papers.add(row["paper_id"])
+                    pid = row["paper_id"]
+                    if row["kind"] == "native_discovery_submission":
+                        # Older releases mislabeled identity/wave task IDs as paper_id.
+                        # Interpret only this event type; never skip arbitrary bad IDs.
+                        task_id = row["task_id"] if row["task_id"] is not None else pid
+                        require(nonblank(task_id), "Native submission has no task identity")
+                        if task_id.startswith("identity:"):
+                            key = task_id[len("identity:"):]
+                            saved = conn.execute("SELECT value FROM meta WHERE key=?",
+                                                 ("state:identity-resolution:" + key,)).fetchone()
+                            require(saved is not None, "Audit trail references an absent bibliographic identity task")
+                            task = object_json(saved[0])
+                            require(task.get("task_id") == task_id and task.get("resolved") is True,
+                                    "Bibliographic identity task is mismatched or unresolved")
+                            encounter = conn.execute("SELECT value FROM meta WHERE key=?",
+                                                     ("state:encounter:" + key,)).fetchone()
+                            require(encounter is not None, "Resolved identity lacks its durable paper binding")
+                            binding = json.loads(encounter[0])
+                            require(isinstance(binding, list) and len(binding) == 2 and nonblank(binding[0]),
+                                    "Resolved identity paper binding is malformed")
+                            require(pid == (binding[0] if row["task_id"] is not None else task_id),
+                                    "Native identity submission paper differs from its durable binding")
+                            pid = binding[0]
+                        elif task_id == "wave-audit":
+                            require(pid is None if row["task_id"] is not None else pid == "wave-audit",
+                                    "Wave audit must not name a paper")
+                            saved = conn.execute("SELECT json_extract(value,'$.citation_wave_audits') FROM meta WHERE key='state:discovery_frontiers'").fetchone()
+                            audits = json.loads(saved[0]) if saved and saved[0] else []
+                            require(isinstance(audits, list) and all(isinstance(a, dict) for a in audits),
+                                    "Frontier wave audit history is malformed")
+                            require(any(a.get("reason") == row["reason"] and
+                                        (row["task_id"] is None or a.get("wave_id") == row["wave_id"])
+                                        for a in audits), "Wave submission lacks its recorded frontier audit")
+                            pid = None
+                        else:
+                            require(pid and task_id in (pid, "process:" + pid),
+                                    "Native submission task does not match its paper")
+                    if pid:
+                        require(isinstance(pid, str), "Audit paper ID must be text")
+                        affected_papers.add(pid)
                     if row["job_id"]:
                         require(isinstance(row["job_id"], str), "Audit job ID must be text")
                         affected_jobs.add(row["job_id"])

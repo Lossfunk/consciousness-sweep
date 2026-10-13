@@ -4,11 +4,12 @@ A portable, resumable literature pipeline for finding studies that help explain
 how awareness of an entity X relates to its use by a downstream function Y.
 Its deliverable is a source-grounded prospect queue for scientific review.
 
-**Current release: portable 1.0.0-r22**, for supervised use. This revision adds
-storage-location checks and preserves SQLite failure diagnostics, building on
-r21's retrieval fairness and retry repairs. Scientific files and reader
-instructions are unchanged. See [Scope and integrity](#scope-and-integrity) for
-the engineering checks and source-reading evidence.
+**Current release: portable 1.0.0-r26**, for supervised use. This revision fixes
+bibliography-task and wave-audit identifiers being mistaken for paper IDs by
+incremental sanity checks. It retains r25's exact source-text validation and the
+earlier retrieval and storage repairs. Scientific files and reader instructions
+are unchanged. Use a fresh run ID in this release; existing runs are not migrated.
+See [Scope and integrity](#scope-and-integrity) for the validation scope.
 
 This repository accompanies **Sushrut Thorat and Paras Chopra,
 [Towards a full-stack functionalist theory of consciousness: Identifying its
@@ -526,7 +527,17 @@ startup probe cannot rule out later hardware, filesystem or synchronization faul
 
 ## Scope and integrity
 
-The **13 October 2026 maintainer audit** supports supervised handoff without
+The **14 October 2026 operational repair** adds regressions for new and rediscovered
+bibliographic identities, historical task events, invalid task/paper bindings,
+failed-sanity recovery, and wave audits. Complete finite discovery fixtures now
+run incremental sanity after screening, reader and native submissions, at wave
+boundaries, and before and after final delivery. A titleless-reference variant
+also exercises leased resolution, restart and reopened frontiers. These are
+offline source/semantic fixtures, not live model readings or scientific-quality
+claims. An old release is not made resumable by these compatibility checks;
+its recorded runtime binding remains enforced.
+
+The earlier **13 October 2026 maintainer audit** supports supervised handoff without
 requiring a full scientific sweep as a commissioning step. Its evidence separates
 engineering behavior from scientific reading quality:
 

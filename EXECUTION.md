@@ -679,3 +679,15 @@ does not automatically justify a separate prospect; a supporting observation may
 instead remain context for the accepted mapping. Coherent tested functional
 relations remain intact. This clarifies the existing same-X/same-Y contribution
 and signal-control rules without changing scientific inputs or the output schema.
+
+
+### Native task identities and record sanity
+
+Native submissions distinguish `task_id` from the allocated logical `paper_id`.
+An identity-resolution submission records both the bibliography task and its
+resolved paper; a wave submission records its task and wave, with no paper ID.
+Incremental sanity checks reconcile those bindings with durable task/encounter
+or frontier records. Historical native-submission events that stored task IDs
+under `paper_id` are interpreted without rewriting history; unknown tasks,
+unresolved bindings and absent real papers still fail. A failed sanity cursor
+is retained until a successful check, so full validation alone does not clear it.

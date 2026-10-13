@@ -782,6 +782,7 @@ def submit_native(c, paper_id, payload, actor):
 
 
 def _submit_native(c, paper_id, payload, actor):
+    task_id = paper_id
     if not str(actor).strip() or not str(payload.get("reason", "")).strip():
         raise ValueError("Native submission requires actor and reason")
     if paper_id.startswith("calibration:"):
@@ -869,7 +870,14 @@ def _submit_native(c, paper_id, payload, actor):
             return result
         _change(c, apply, "Source-bound native discovery assessment submitted by " + actor)
         c.store.set_state("native-assessment:" + paper_id, dict(payload, packet_sha256=packet_hash, actor=actor), "Native route judgment and source identity retained for lineage reuse")
-    c.store.event("native_discovery_submission", {"paper_id": paper_id, "actor": actor, "payload_sha256": digest(payload), "reason": payload["reason"]})
+    event = {"task_id": task_id, "actor": actor, "payload_sha256": digest(payload), "reason": payload["reason"]}
+    if task_id.startswith("identity:"):
+        event["paper_id"] = value[0]
+    elif task_id == "wave-audit":
+        event["wave_id"] = payload["wave_id"]
+    else:
+        event["paper_id"] = paper_id
+    c.store.event("native_discovery_submission", event)
     return discovery_tick(c)
 
 
