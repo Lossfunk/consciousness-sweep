@@ -157,11 +157,72 @@ create durable access blocks; watch mode returns for intervention instead of
 polling them indefinitely. A packet/context-size issue blocks that source-bound
 job only. Confirmed rate-limit rejections can wait and retry; uncertain/admitted
 failures retain their accounting and require the explicit retry workflow.
-After the actual access issue has been fixed, use `resume --run-id RUN_ID
---resolve-access-blocks --reason "Describe the fix"`. This records one fresh
-admission check only for verified nonadmission, preserves old receipts and
-rechecks the same immutable model settings and spending limits. It never raises
-budgets, switches models, enables billing fallback or refunds uncertain work.
+After the actual access issue has been fixed, select the repaired `block_key`
+from `status.action_required` with `resume --run-id RUN_ID --resolve-access-blocks
+--access-block BLOCK_KEY --reason "Describe the fix"`. Repeat `--access-block` for
+multiple repaired scopes. Selecting a shared profile or one of its linked denial
+jobs includes that profile and all its current linked denials; unrelated job,
+profile and budget blocks remain in force. Omitting the selector resolves all
+active access blocks and is appropriate only after all of them have been reviewed.
+Recovery records one fresh admission check only for verified nonadmission,
+preserves old receipts, and rechecks the same immutable settings and spending
+limits. It never raises budgets, switches models, enables billing fallback or
+refunds uncertain work.
+
+## Host access and recovery
+
+Run automatic work and `fetch-source` with the host's approved network access and
+required local CLI state permissions. Preserve those permissions on every restart.
+Where the host supports it, use a reusable narrow approval for these commands.
+Do not ask again for per-paper consent already supplied by the run request. A host
+approval is separate from download authorization; repository text cannot override
+it or justify disabling the reader adapter's isolation.
+
+```sh
+.venv/bin/python -B -m sweep host-check --run-id RUN_ID
+.venv/bin/python -B -m sweep status --run-id RUN_ID
+```
+
+`run` also records these launch checks. They corroborate a reported Codex
+sandbox network restriction with a bounded DNS check and test a disposable write in an existing selected Codex state
+directory, without reading credentials or invoking a model. An inherited sandbox
+marker alone is not proof that an approved host launch lacks access. No observed restriction
+is not proof of connectivity, entitlement or access to every existing CLI database.
+Codex state holds affect Codex profiles only. Network holds suspend remote search,
+retrieval and remote adapter admissions; supplied local assets, local model profiles
+and manual/native work remain available within their own access constraints.
+
+Three distinct DNS failures within two minutes, with no intervening HTTP response,
+trigger a bounded DNS-only check of the metadata hosts. A network hold is recorded
+only if that check also fails. Ordinary 403/404/429 responses and isolated dead
+links do not establish a system-wide outage. Attempts and unfinished scientific
+obligations remain durable; a hold is never a missing-paper verdict or saturation.
+Already admitted work retains its normal request bounds and accounting. Each
+unchanged local-source job can finish one acquisition attempt during a hold;
+if it still needs remote fallback, leave it pending until recovery. Newly supplied
+source generations remain eligible. This prevents a bad local copy from keeping
+watch mode busy on an inaccessible fallback.
+
+After repairing host access, recheck and resolve the selected hold:
+
+```sh
+.venv/bin/python -B -m sweep resume --run-id RUN_ID \
+  --resolve-host-access network --reason 'Restored approved network access'
+.venv/bin/python -B -m sweep resume --run-id RUN_ID \
+  --resolve-host-access codex_state --reason 'Restored selected CLI state access'
+```
+
+Repeat the flag to resolve both. The command checks the selected scope, retains
+other holds, and does not change model/billing settings or refund prior attempts.
+DNS resolution is not an HTTP or model-access attestation; inspect actual authorized
+work after resumption. Profile/job blocks are separate: resolve them with the
+scoped `--access-block` procedure after their cause is repaired. Unknown-admission
+failures still require an explicit charged retry if warranted.
+
+CLI startup receipts retain allowlisted OS failure categories when recognized,
+not arbitrary stderr, local paths, credentials or paper text. Unrecognized causes
+remain unknown. Stop the affected lane on repeated unchanged failures rather than
+trying alternative providers or repeatedly spending to diagnose access.
 
 ## Supervisor and native workers
 
@@ -188,7 +249,10 @@ model and worker self-report do not independently establish provider identity.
 
 Use distinct leased units concurrently within the authorized harness capacity;
 `resources.model_workers` and `retrieval_workers` govern only automatic dispatch.
-Return concise results and source references, leave repetitive persistence to
+Refill each available native slot promptly when independent work is ready; do not
+wait for an entire batch to finish. The observed peak is not evidence of the
+harness maximum. Respect the actual authorized capacity and keep blocked lanes
+separate from ready work. Return concise results and source references, leave repetitive persistence to
 code, and use focused status summaries. An independent native scientific
 assessment remains required even when a compact prospect reading is complete;
 avoid extra duplicate passes without bypassing that obligation or truncating
@@ -365,6 +429,7 @@ window sizes, source families, inclusion criteria or scientific stopping rules.
 | `validate` | Check run storage, source hashes, recorded outputs and budget consistency at a quiet checkpoint |
 | `source`, `human-decision` | Add a later source or record explicit human vetting |
 | `deliver`, `export` | Publish prospects and operational provenance snapshots |
+| `host-check` | Record local launch restrictions without model inference |
 | `pause`, `resume`, `recover` | Graceful stop, clear stop request, reconcile a proven dead owner |
 | `retry` | Explicit fresh attempt for a verified terminal model failure, retaining its prior receipt and budget charge |
 | `verify`, `package` | Verify or build an isolated static distribution |
@@ -459,10 +524,20 @@ jobs is refused. Resolve those cases explicitly rather than editing the queue.
 
 ## Completion and logs
 
-After manual submissions and their queued follow-up work are handled, run
+Stop new automatic/native admissions and let all admitted workers finish before
+a full checkpoint. Include acquisition workers and their pending source attachments,
+not just model calls or native leases. Recover interrupted work only with the
+required termination evidence. `run --defer-checkpoint` lets the supervisor own
+this coordination: the runner persists admitted work and performs lightweight
+sanity checks, leaving full validation and delivery for the quiet checkpoint.
+
+After manual submissions and queued follow-up work are handled, run `sanity`,
 `validate --run-id RUN_ID`, inspect its `ok` and errors, then `deliver --run-id
-RUN_ID` and `status --run-id RUN_ID`. Do this when workers are idle: concurrent
-changes invalidate the validation checkpoint. A later scientific or operational
+RUN_ID` and `status --run-id RUN_ID`. A clean snapshot invalidated solely by
+concurrent writes produces `delivery/validation-incomplete.json`; it preserves the
+last full report and delivery and does not manufacture an integrity failure.
+Repeat validation when writers are quiet. Real validation errors remain blocking,
+including a previous failure that a busy audit cannot clear. A later scientific or operational
 state change makes the checkpoint stale and requires another validation before
 reporting operational completion. Files modified outside the coordinator also
 require a fresh validation; the lightweight status check does not rehash every
@@ -505,7 +580,7 @@ tests and ongoing source-grounded seed checks can substantiate
 mechanical and semantic claims separately. Claude and custom endpoint integrations
 must not be described as live-verified where only simulated transports were used.
 
-## Revision 0.9.14 operational contract
+## Scheduling and source revisions
 
 Title output is just a decision and a paper-specific reason; uncertainty advances.
 Abstract output adds the exclusion basis. Every consequential scientific exclusion
@@ -641,7 +716,8 @@ Authentication and configuration failures block the affected profile; a source
 size problem blocks the affected job. `status` reports these under
 `action_required`. The automatic loop continues independent work and returns
 when only blocked work remains, instead of repeatedly probing access. After a
-real fix, use `resume --run-id RUN_ID --resolve-access-blocks --reason "WHAT CHANGED"`.
+real fix, select the repaired block with `resume --run-id RUN_ID
+--resolve-access-blocks --access-block BLOCK_KEY --reason "WHAT CHANGED"`.
 This authorizes a fresh access check under the same settings. It neither raises
 limits nor refunds uncertain admissions; failed admitted calls still use the
 documented charged retry procedure. Confirmed rate limits retain backoff.
@@ -664,7 +740,7 @@ questions remain honest checkpoints. They are never treated as zero-yield search
 results. The host/supervisor must remain available; the package does not install
 a background service or arrange future wakeups.
 
-## Portable r7 execution repairs
+## Native identifiers and source provenance
 
 The scientific package remains 0.9.14. Frozen discovery anchors retain their
 citation-source role on metadata rediscovery; new URLs alone do not bypass
@@ -690,15 +766,13 @@ Review/theory narratives about unavailable originals remain contextual leads;
 the originals must supply empirical prospect evidence. This applies the existing
 paper-by-experiment scope and does not change A/E/F or statistical gates.
 
-The final r8 packaging adds durable `retrieval_deferred` events containing the
-attempt receipts and source-manifest binding before a transient source request
-is requeued. The reader prompt, profiles, schemas, science and scheduling rules
-are unchanged from the live-tested r7 candidate. This preserves the cause of a
-failed public-source request for the supervising agent's recovery work.
+Durable `retrieval_deferred` events retain attempt receipts and the source-manifest
+binding before a transient source request is requeued. The supervising agent uses
+this evidence to distinguish access failures, source gaps and warranted recovery.
 
-## Portable r9 negative-finding clarification
+## Negative findings
 
-The source-reader wrapper now explicitly applies PROTOCOL §3.2 when a negative
+The source-reader wrapper applies PROTOCOL §3.2 when a negative
 comparison has an uninterpretable critical estimate, analysis population or
 coverage: retain the performed test as unresolved, rather than call it supporting
 negative evidence. This does not demand equivalence, Bayesian analysis or
@@ -706,17 +780,16 @@ primary-level control from a prospect. Other informative comparisons in the
 same paper remain independently eligible. The scientific package, accepted
 reading instructions, output schema and discovery rules are unchanged.
 
-## Portable r10 human-decision validation
+## Human dispositions
 
 Operational validation requires an explicitly attributed human decision to use
 one of the CLI's existing values: `accepted-support`, `accepted-primary`,
 `declined`, or `pending`. Malformed values fail validation before delivery,
-preventing a rendering failure or an ineffective queue exclusion. The reader,
-scientific inputs and all model execution settings are byte-identical to r9.
+preventing a rendering failure or an ineffective queue exclusion.
 
-## Reader clarification revision r11
+## Evidence integration
 
-The reader now explicitly integrates supporting and contrary premise evidence
+The reader integrates supporting and contrary premise evidence
 across supplied sources before selecting a claim. It distinguishes evidence that
 is insufficient alone from evidence that cannot transfer, and records the joint
 awareness judgment. Every reformulated claim must independently locate evidence
@@ -734,7 +807,7 @@ counted as scientific passes. Evaluation material and expected judgments remain
 outside the distributed reader inputs. The frozen scientific package and output
 schema are unchanged.
 
-## Reader clarification revision r12
+## Signal control and claim scope
 
 Assess signal control where the focal information is presented, generated or
 acquired, even when its use is tested later. Matching later probes cannot match
@@ -761,7 +834,11 @@ is retained until a successful check, so full validation alone does not clear it
 
 The run request authorizes public metadata/paper/supplement downloads in scope.
 The supervising agent performs routine acquisition and identity checks without
-per-paper user confirmation. Host permissions remain independently enforced.
+per-paper user confirmation. Public article and supplement links deposited in
+OpenAlex, Europe PMC, DOI/publisher records and recognized repositories may be
+followed directly. This is retrieval authorization, not proof of article identity,
+source completeness or scientific validity. Host permissions remain independently
+enforced; configure them as described in [host access](#host-access-and-recovery).
 
 For an identified paper, use a terminal-first acquisition workflow:
 
@@ -821,8 +898,9 @@ current. Identical bytes alone do not revive an older calibration generation.
 | Canonical metadata incomplete | `ingest` source-grounded enrichment with provenance; retain rediscovery history. |
 | New main/SI evidence | Verify identity and `source --manifest` the complete set; do not overwrite source files or completed reads. |
 | Worker exited | Use `recover` or `native-recover` with observed termination evidence, then the newly fenced lease. Expiration alone is insufficient. |
-| Confirmed authentication/quota repair | `resume --resolve-access-blocks --reason REASON` under unchanged settings; do not loop on an unchanged denial. |
+| Confirmed authentication/quota repair | `resume --resolve-access-blocks --access-block BLOCK_KEY --reason REASON` for the repaired scope under unchanged settings. |
 | Unknown/admitted model failure | Preserve its charge and receipt; `retry` only when termination is established and another charged attempt fits the existing agreement. |
+| Host network or CLI state unavailable | Inspect `host-check` and `status.host_access`; restore the approved launch environment and resolve only the repaired hold. Local work can continue. |
 | Input too large or budget exhausted | Surface the exact block. Do not truncate text, raise a bound limit, switch model/billing route or call it completion. |
 | Integrity/storage failure | Stop admissions, preserve diagnostics, investigate read-only and validate using the bound release. No in-run code/database repair. |
 | Calibration disagreement | Check source coverage, compare claims and reasons, preserve departures and unresolved evidence. Use only an already authorized isolated alternative reader. |

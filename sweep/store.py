@@ -906,7 +906,22 @@ class Store:
             raise StoreError("Owner name is bound to another process; use a fresh owner ID")
         conn.execute("INSERT OR IGNORE INTO owners VALUES(?,?,?,?)", (owner, pid, host, time.time()))
 
-    def claim(self, stages, owner, lease_seconds=300, limit=1, calibration_reviews=None):
+    @staticmethod
+    def local_retrieval_sql(alias="j", *, untried_during_hold=False):
+        if alias not in {"j", "jobs"}:
+            raise ValueError("Unexpected SQL alias")
+        source = "CASE WHEN json_type(" + alias + ".payload,'$.source_manifest')='object' THEN json_extract(" + alias + ".payload,'$.source_manifest') ELSE coalesce((SELECT record FROM papers WHERE id=json_extract(" + alias + ".payload,'$.paper_id'))," + alias + ".payload) END"
+        local = "(coalesce(json_array_length(" + source + ",'$.provided_paths'),0)>0 OR " + " OR ".join(
+            "nullif(json_extract(" + source + ",'$." + key + "'),'') IS NOT NULL"
+            for key in ("fulltext_path", "pdf_path", "local_path")) + ")"
+        if untried_during_hold:
+            # A failed local copy must not poll its remote fallback throughout a
+            # network hold. New source generations are distinct jobs; recovery
+            # restores ordinary retry admission without removing obligations.
+            local += " AND NOT EXISTS (SELECT 1 FROM retrieval_attempts ra, meta hm WHERE ra.job_id=" + alias + ".id AND hm.key='state:host-access' AND json_type(hm.value,'$.network')='object' AND ra.completed_at>=coalesce(json_extract(hm.value,'$.network.at'),0))"
+        return local
+
+    def claim(self, stages, owner, lease_seconds=300, limit=1, calibration_reviews=None, local_retrieval_only=False):
         if not stages or not owner or not 1 <= limit <= 1000 or lease_seconds <= 0:
             raise ValueError("Claim requires stages, owner, bounded limit and positive lease")
         now = time.time()
@@ -922,6 +937,10 @@ class Store:
                 review_filter = " AND coalesce(json_extract(j.payload,'$.calibration_review'),0)=?"
                 args.append(int(calibration_reviews))
             eligible = "j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||j.id AND json_extract(m.value,'$.active')=1) AND j.stage IN (" + placeholders + ") AND j.available_at<=?" + review_filter + " AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete')"
+            if type(local_retrieval_only) is not bool:
+                raise ValueError("local_retrieval_only must be boolean")
+            if local_retrieval_only:
+                eligible += " AND j.stage='retrieval' AND " + self.local_retrieval_sql(untried_during_hold=True)
             schedule = None
             if "retrieval" in stages:
                 saved = conn.execute("SELECT value FROM meta WHERE key='retrieval_schedule'").fetchone()
@@ -967,10 +986,7 @@ class Store:
         starved by a full acquisition queue; retrieval-only claims skip it.
         This affects execution ordering, never scientific eligibility or caps.
         """
-        source = "CASE WHEN json_type(j.payload,'$.source_manifest')='object' THEN json_extract(j.payload,'$.source_manifest') ELSE coalesce((SELECT record FROM papers WHERE id=json_extract(j.payload,'$.paper_id')),j.payload) END"
-        local = "(coalesce(json_array_length(" + source + ",'$.provided_paths'),0)>0 OR " + " OR ".join(
-            "nullif(json_extract(" + source + ",'$." + key + "'),'') IS NOT NULL"
-            for key in ("fulltext_path", "pdf_path", "local_path")) + ")"
+        local = Store.local_retrieval_sql()
         lanes = (
             ("priority", "", "j.priority DESC,coalesce(rs.last_sequence,0),j.id"),
             ("local", " AND j.stage='retrieval' AND " + local, "coalesce(rs.last_sequence,0),j.priority DESC,j.id"),

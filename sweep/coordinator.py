@@ -675,6 +675,15 @@ class Coordinator:
         return True
 
     def execute_job(self, job):
+        from .host_access import transport_scope, status, profile_blocked
+        if job["stage"] in MODEL_STAGES and profile_blocked(status(self.store), self.profile_for_job(job)):
+            self.store.defer(job["id"], job["owner"], job["token"],
+                             "Host access repair required before model dispatch", delay_seconds=0)
+            return
+        with transport_scope(self.store):
+            return self._execute_job(job)
+
+    def _execute_job(self, job):
         if self._retire_superseded_source_job(job) or self._retire_superseded_screen_job(job):
             return
         from .adapters import execute
@@ -721,6 +730,9 @@ class Coordinator:
                 value = self.store.get_state(key)
                 if value and value.get("active"):
                     return value
+            from .host_access import status, profile_blocked
+            if profile_blocked(status(self.store), profile):
+                return {"reason": "Host access repair required before model dispatch"}
             return None
 
         def record_block(scope, category, admission, reason):
@@ -1153,7 +1165,7 @@ class Coordinator:
         self.store.set_state("audit_revision", revision, "Current exclusion index sampled at this durable screening revision")
         return scheduled
 
-    def run(self, *, max_seconds=None, progress=None, automatic_models=True, watch=False):
+    def run(self, *, max_seconds=None, progress=None, automatic_models=True, watch=False, defer_checkpoint=False):
         from .validation import require_integrity, validate
         require_integrity(self)
         owner = "worker-" + uuid.uuid4().hex
@@ -1175,6 +1187,10 @@ class Coordinator:
         stop = self.run_dir / "STOP"
         automatic_stages = [stage for stage in MODEL_STAGES if automatic_models and self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]["adapter"] != "manual"]
         review_selected_automatic = automatic_models and bool(self.plan.get("calibration_review_profile")) and self.plan["calibration_review_profile"]["adapter"] != "manual"
+        from . import host_access
+        host_access.record_launch(self.store, [*self.plan["profiles"].values(),
+            *([self.plan["calibration_review_profile"]] if self.plan.get("calibration_review_profile") else [])],
+            timeout=min(10, remaining()))
         last_report = 0
         last_sanity = started
         last_compact = 0
@@ -1202,17 +1218,22 @@ class Coordinator:
                 from .access_control import active_blocks
                 from .profiles import profile_fingerprint
                 blocks = active_blocks(self)
+                host_state = host_access.status(self.store)
+                network_held = bool(host_state.get("network"))
                 blocked = {b["profile_sha256"] for b in blocks if b["scope"] == "profile"}
                 capped = capped or any(b["scope"] == "budget" for b in blocks)
                 automated = [stage for stage in automatic_stages if profile_fingerprint(self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]) not in blocked]
+                automated = [stage for stage in automated if not host_access.profile_blocked(host_state,
+                    self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage])]
                 review_automatic = review_selected_automatic and profile_fingerprint(self.plan["calibration_review_profile"]) not in blocked
+                review_automatic = review_automatic and not host_access.profile_blocked(host_state, self.plan.get("calibration_review_profile") or {})
                 from .scheduling import coalesce, pressure
                 backlog = pressure(self)
                 if time.monotonic() - last_compact >= 1:
                     coalesce(self)
                     last_compact = time.monotonic()
                 network = ["retrieval"]
-                if self.plan.get("mode") == "discovery" and not backlog["search_admission_paused"]:
+                if self.plan.get("mode") == "discovery" and not backlog["search_admission_paused"] and not network_held:
                     network.append("search")
                 for stages, limit, kind in (([] if capped else automated, model_workers, "model"), (network, retrieval_workers, "retrieval")):
                     capacity = limit - sum(x[1] == kind for x in active.values())
@@ -1223,7 +1244,8 @@ class Coordinator:
                         capacity -= len(review_jobs)
                     if capacity > 0 and stages:
                         for job in self.store.claim(stages, owner, lease_seconds=1800, limit=capacity,
-                                                    calibration_reviews=False if kind == "model" else None):
+                                                    calibration_reviews=False if kind == "model" else None,
+                                                    local_retrieval_only=network_held and kind == "retrieval"):
                             active[pool.submit(self.execute_job, job)] = (job, kind)
                 if active:
                     finished, _ = wait(active, timeout=min(0.5, remaining()), return_when=FIRST_COMPLETED)
@@ -1241,7 +1263,8 @@ class Coordinator:
                         # an automatic watch loop alive forever.
                         clauses, wait_args = [], []
                         if network:
-                            clauses.append("stage IN (" + ",".join("?" for _ in network) + ")")
+                            clauses.append("(stage IN (" + ",".join("?" for _ in network) + ")" +
+                                (" AND " + self.store.local_retrieval_sql("jobs", untried_during_hold=True) if network_held else "") + ")")
                             wait_args.extend(network)
                         if not capped and automated:
                             clauses.append("(stage IN (" + ",".join("?" for _ in automated) + ") AND coalesce(json_extract(payload,'$.calibration_review'),0)=0)")
@@ -1252,7 +1275,7 @@ class Coordinator:
                             row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND id NOT IN (SELECT job_id FROM job_supersessions) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||jobs.id AND json_extract(m.value,'$.active')=1) AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=jobs.id AND p.state!='complete') AND (" + " OR ".join(clauses or ["0"]) + ")", wait_args).fetchone()
                         next_at = row[0] if row else None
                         if not watch or next_at is None:
-                            if blocks:
+                            if blocks or network_held or host_state.get("codex_state"):
                                 exit_reason = "Access or budget requires a recorded resolution; pending work is preserved"
                             elif capped:
                                 exit_reason = "Authorized model-call budget reached; remaining tasks stay pending"
@@ -1301,7 +1324,14 @@ class Coordinator:
                 self.audit()
             from .sanity import check
             sanity = check(self, deadline=deadline)
+            if not sanity["ok"]:
+                require_integrity(self)
+            if defer_checkpoint:
+                self.store.event("checkpoint_deferred", {"reason": "Supervisor will validate after all automatic, native and source-ingestion writers are quiet"})
+                return self.status()
             report = validate(self, deadline=deadline)
+            if report.get("incomplete"):
+                return self.status()
             if not report["ok"]:
                 require_integrity(self)
             self.deliver(deadline=deadline)
@@ -1331,6 +1361,8 @@ class Coordinator:
         status["queue_pressure"] = pressure(self)
         from .access_control import active_blocks
         status["action_required"] = active_blocks(self)
+        from .host_access import status as host_status
+        status["host_access"] = host_status(self.store)
         deadline = self.store.get_state("execution_deadline")
         if deadline is not None:
             status["execution_deadline"] = dict(deadline,

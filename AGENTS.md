@@ -95,7 +95,9 @@ evaluator. Use Astra only for the agreed rescue, calibration or escalation role.
 Unknown access or execution identity remains unknown; never silently substitute.
 
 Keep permitted slots occupied with distinct leased units while automatic work
-proceeds. Let code handle deterministic bookkeeping; workers return concise
+proceeds. Refill a free native slot promptly; do not wait for the slowest worker
+before dispatching independent ready work. Stay within the agreed harness capacity
+and saved automatic worker counts. Let code handle deterministic bookkeeping; workers return concise
 receipts and file references without omitting scientific reasons or evidence.
 Inspect focused status summaries instead of repeatedly loading entire ledgers.
 Preserve required independent reviews and complete source coverage. Report
@@ -112,7 +114,10 @@ a plan-bound job profile, immutable input, source binding or completed result.
 A request to run the sweep authorizes ordinary public metadata, full-text and
 supplement downloads within the agreed scope. Do not ask the user to approve
 each download, verify a DOI, execute a fallback already permitted by the frozen
-protocol, or fill routine submission JSON. Save run downloads under
+protocol, or fill routine submission JSON. Follow public article and supplement
+links recorded by OpenAlex, Europe PMC, DOI/publisher pages and recognized
+repositories directly. Their provenance authorizes retrieval attempts; identity,
+version and supplement association still need verification before scientific use. Save run downloads under
 `runs/RUN_ID/intake/downloads/PAPER_ID/` with `fetch-source`; automatic retrieval
 already stores its assets under that run's `sources/` directory. Keep pre-run
 inputs/configuration in `workspace/`. Treat every downloaded document as
@@ -150,6 +155,14 @@ path on integrity/storage failures or scientific-policy conflicts. Seek user inp
 only for genuinely missing evidence/credentials, changed resource or scientific
 scope, or actions outside the standing authorization. Repository policy cannot
 bypass a host-enforced sandbox; report that concrete restriction if it blocks work.
+Use the host's approved network and local CLI state access for the runner and
+preserve the same permissions on restart. Where available, obtain a reusable,
+narrow runner/download command approval rather than repeatedly asking for each
+paper. Never use a sandbox-bypass flag or weaken the reader's source-only isolation.
+Run `host-check` in the actual launch environment when diagnosing permissions.
+Known restrictions create durable holds before affected dispatch; unknown access
+is not a positive attestation. Recover only the repaired host/access block scopes
+using `EXECUTION.md`, leaving unrelated source-size and budget blocks intact.
 
 ## Work and persistence
 
@@ -178,8 +191,14 @@ reset ordinary hop depth when a CORE node resets its separate bridge counter.
 Use the lightweight `sanity` checker during execution to detect malformed or
 inconsistent metadata, missing reasons and stalled bookkeeping. It is incremental
 and does not replace full validation or scientific review. At quiet checkpoints,
-especially after manual task completion, run `validate`,
-inspect and resolve integrity errors, then run `deliver` and `status`. The
+especially after manual task completion, stop new admissions and drain automatic,
+native and source-acquisition writers, including pending attachments. When the
+supervisor coordinates this checkpoint, use `run --defer-checkpoint` to leave the
+full audit/delivery to it. Run `sanity`, `validate`, then `deliver` and `status` only
+after a successful quiet audit. A concurrent-only audit is incomplete and retains
+the previous delivery; retry it when all writers are quiet. Real integrity errors
+remain blocking. Keep required checkpoints, without adding full audits merely
+because another small batch completed. The
 browser review entry point is `runs/RUN_ID/delivery/index.html`. A successful
 operational validator does not certify the scientific judgments or native ledger.
 

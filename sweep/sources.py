@@ -106,10 +106,11 @@ def safe_url(url, *, resolve=True):
 
 
 class SourceError(RuntimeError):
-    def __init__(self, status, reason, *, attempts=(), retry_after=None):
+    def __init__(self, status, reason, *, attempts=(), retry_after=None, network_error=None):
         super().__init__(reason)
         self.status, self.reason = status, reason
         self.attempts, self.retry_after = list(attempts), retry_after
+        self.network_error = network_error
 
 
 def _remaining(deadline, maximum):
@@ -199,8 +200,10 @@ def _source_transport_worker(request_path, result_path, body_path):
         envelope = {"result": result}
     except SourceError as exc:
         envelope = {"error": {"status": exc.status, "reason": exc.reason}}
-    except Exception:
-        envelope = {"error": {"status": "deferred", "reason": "Isolated source transport failed; no response was accepted"}}
+    except Exception as exc:
+        from .host_access import network_error
+        envelope = {"error": {"status": "deferred", "reason": "Isolated source transport failed; no response was accepted",
+                              "network_error": network_error(exc)}}
     Path(result_path).write_bytes(canonical_bytes(envelope))
 
 
@@ -223,7 +226,8 @@ def _bounded_public_transport(url, *, deadline, openalex_key_env, **kwargs):
                 raise SourceError("deferred", "Isolated source transport exited without a response")
             envelope = json.loads(result.read_text())
             if envelope.get("error"):
-                raise SourceError(envelope["error"]["status"], envelope["error"]["reason"])
+                raise SourceError(envelope["error"]["status"], envelope["error"]["reason"],
+                                  network_error=envelope["error"].get("network_error"))
             response = envelope["result"]
             if body.stat().st_size > kwargs["max_bytes"]:
                 raise SourceError("deferred", "Source exceeds operational byte allowance; no truncated evidence accepted")
@@ -287,6 +291,10 @@ class SourceClient:
         safe_url(url, resolve=False)
         attempts = []
         for number in range(self.max_attempts):
+            from .host_access import network_hold, observe, network_error
+            hold = network_hold()
+            if hold:
+                raise SourceError("deferred", "Host network hold: " + hold["reason"], attempts=attempts)
             timeout = _remaining(self.deadline, self.timeout)
             retry = None
             try:
@@ -300,6 +308,7 @@ class SourceClient:
                     response = self.transport(_credential_url(url, self.openalex_key_env), **options)
                 _remaining(self.deadline, self.timeout)
                 code = response["status"]
+                observe(url, http_status=code)
                 body = response["body"]
                 if isinstance(body, str):
                     body = body.encode()
@@ -331,9 +340,22 @@ class SourceClient:
                     raise SourceError(status, "HTTP {} requires access/query/coverage resolution".format(code),
                                       attempts=attempts, retry_after=_retry_after(response.get("headers", {})))
                 retry = _retry_after(response.get("headers", {}))
+            except SourceError as exc:
+                if exc.network_error != "dns":
+                    raise
+                attempts.append({"url": url, "at": now(), "attempt": number + 1,
+                                 "network_error": "dns", "reason": "DNS resolution failed; credentials omitted"})
+                observe(url, error="dns", check_timeout=_remaining(self.deadline, 10))
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
                 attempts.append({"url": url, "at": now(), "attempt": number + 1,
                                  "error": type(exc).__name__, "reason": "Network/timeout failure; credentials omitted"})
+                category = network_error(exc)
+                if category:
+                    attempts[-1]["network_error"] = category
+                    observe(url, error=category, check_timeout=_remaining(self.deadline, 10))
+            hold = network_hold()
+            if hold:
+                raise SourceError("deferred", "Host network hold: " + hold["reason"], attempts=attempts)
             delay = retry if retry is not None else (5 if number == 0 else 20)
             if number + 1 == self.max_attempts or delay > 20:
                 raise SourceError("deferred", "Transient source failure; retain obligation for continuation",

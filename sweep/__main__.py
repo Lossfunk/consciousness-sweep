@@ -56,7 +56,7 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
         if name in {"ingest", "submit", "native-submit", "calibration-review"}:
@@ -68,9 +68,12 @@ def main(argv=None):
             cmd.add_argument("--max-seconds", type=optional_limit)
             cmd.add_argument("--local-only", action="store_true")
             cmd.add_argument("--watch", action="store_true", help="Wait for deferred automatic work inside the authorized session duration")
+            cmd.add_argument("--defer-checkpoint", action="store_true", help="Leave full validation/delivery to the supervisor after all writers are quiet")
         if name == "resume":
             cmd.add_argument("--resolve-access-blocks", action="store_true",
                              help="Record a real access/configuration fix; does not change models, budgets or unknown admission")
+            cmd.add_argument("--access-block", action="append", help="Active block_key from status; repeat to select repaired scopes (includes linked profile/job denials)")
+            cmd.add_argument("--resolve-host-access", action="append", choices=["network", "codex_state"], help="Recheck and resolve only the selected repaired host hold; no inference")
             cmd.add_argument("--reason", help="What changed to resolve the recorded access failure")
         if name == "estimate":
             cmd.add_argument("--logical-papers", type=int)
@@ -202,7 +205,7 @@ def main(argv=None):
                     result = coordinator.status()
                 elif args.command == "run":
                     result = coordinator.run(max_seconds=args.max_seconds, automatic_models=not args.local_only,
-                          watch=args.watch,
+                          watch=args.watch, defer_checkpoint=args.defer_checkpoint,
                           progress=lambda event: print(canonical({"progress": event}), flush=True))
                 elif args.command == "work":
                     result = coordinator.next_task()
@@ -236,12 +239,23 @@ def main(argv=None):
                 elif args.command == "pause":
                     (run_dir / "STOP").write_text("User requested graceful pause.\n")
                     result = {"status": "pause-requested", "reason": "Already admitted bounded requests will finish and persist."}
+                elif args.command == "host-check":
+                    from .host_access import record_launch
+                    result = {"host_access": record_launch(coordinator.store, [*coordinator.plan["profiles"].values(),
+                        *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])]), "inference_performed": False}
                 elif args.command == "resume":
+                    if args.access_block and not args.resolve_access_blocks:
+                        raise ValueError("--access-block requires --resolve-access-blocks")
+                    if args.resolve_host_access:
+                        from .host_access import resolve as resolve_host
+                        resolve_host(coordinator.store, [*coordinator.plan["profiles"].values(),
+                            *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])],
+                            args.reason, args.resolve_host_access)
                     if args.resolve_access_blocks:
                         from .access_control import resolve
                         if not args.reason or not args.reason.strip():
                             raise ValueError("--resolve-access-blocks requires the actual fix in --reason")
-                        resolve(coordinator, args.reason)
+                        resolve(coordinator, args.reason, block_keys=args.access_block)
                     (run_dir / "STOP").unlink(missing_ok=True)
                     coordinator.project_results()
                     result = coordinator.status()
@@ -256,8 +270,10 @@ def main(argv=None):
                     coordinator.deliver()
                 elif args.command == "fetch-source":
                     from .downloads import fetch
-                    result = fetch(coordinator, args.paper_id, args.url, role=args.role,
-                        association_reason=args.association_reason, reason=args.reason, actor=args.actor)
+                    from .host_access import transport_scope
+                    with transport_scope(coordinator.store):
+                        result = fetch(coordinator, args.paper_id, args.url, role=args.role,
+                            association_reason=args.association_reason, reason=args.reason, actor=args.actor)
                 elif args.command == "source-retry":
                     from .source_intake import queue_retrieval
                     result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}

@@ -114,7 +114,22 @@ def _operational_diagnostic(stderr, stdout=""):
         if stripped.startswith("Error: failed to read model instructions file "):
             return {"category": "base-instructions-unreadable", "summary": "Selected CLI could not read the pinned base-instruction file."}
         if stripped.startswith("Error: failed to initialize in-process app-server client:"):
-            return {"category": "local-app-server-startup", "summary": "Selected CLI could not initialize its local app-server client; check host permissions and CLI state access."}
+            diagnostic = {"category": "local-app-server-startup", "summary": "Selected CLI could not initialize its local app-server client; check host permissions and CLI state access."}
+            # Only static categories survive. Never retain arbitrary paths,
+            # credentials, source text, or model output from stderr.
+            tail = stripped.split("app-server client:", 1)[1].lower()
+            for words, category in (("permission denied", "permission-denied"),
+                    ("operation not permitted", "permission-denied"),
+                    ("read-only file system", "read-only-filesystem"),
+                    ("address already in use", "address-in-use"),
+                    ("too many open files", "file-descriptor-limit"),
+                    ("disk i/o error", "filesystem-io"),
+                    ("no space left on device", "storage-full"),
+                    ("connection refused", "connection-refused")):
+                if words in tail:
+                    diagnostic["cause"] = category
+                    break
+            return diagnostic
         match = re.match(r"error: unexpected argument '(--[A-Za-z0-9_-]{1,80})'", stripped)
         if match:
             return {"category": "unsupported-cli-argument", "argument": match.group(1),

@@ -95,12 +95,30 @@ def reconcile_nonadmission(coordinator, job, prompt, schema):
     return True
 
 
-def resolve(coordinator, reason, actor="supervising-agent"):
+def _select_blocks(blocks, block_keys):
+    if block_keys is None:
+        return blocks
+    if not block_keys or any(not isinstance(k, str) for k in block_keys):
+        raise ValueError("Select at least one active access block key")
+    by_key = {b["block_key"]: b for b in blocks}
+    selected = set(block_keys)
+    if selected - set(by_key):
+        raise ValueError("Selected access block is not active; inspect current status")
+    # A shared profile and every triggering job receipt are one recovery unit.
+    for key in list(selected):
+        parent = by_key[key].get("profile_block_key")
+        if parent in by_key:
+            selected.add(parent)
+    selected.update(b["block_key"] for b in blocks if b.get("profile_block_key") in selected)
+    return [b for b in blocks if b["block_key"] in selected]
+
+
+def resolve(coordinator, reason, actor="supervising-agent", *, block_keys=None):
     """Record explicit intervention without changing caps, profiles or evidence."""
     if not isinstance(reason, str) or not reason.strip() or not isinstance(actor, str) or not actor.strip():
         raise ValueError("Access resolution requires the actual fix/reason and an actor")
     store = coordinator.store
-    blocks = active_blocks(store)
+    blocks = _select_blocks(active_blocks(store), block_keys)
     grants, failed = {}, []
     for job_id in sorted({b["job_id"] for b in blocks}):
         job = store.job(job_id)
@@ -137,6 +155,13 @@ def resolve(coordinator, reason, actor="supervising-agent"):
             "receipt_sha256": file_hash(receipt_path), "reason": reason.strip(), "actor": actor.strip(),
             "authorized_at": time.time(), "admission": "not-admitted"}
     with store._transaction() as conn:
+        selected_keys = {b["block_key"] for b in blocks}
+        # Do not clear a shared profile while a newly recorded denial is omitted.
+        for row in conn.execute("SELECT key,value FROM meta WHERE key LIKE 'state:access-block:%'"):
+            value = json.loads(row["value"])
+            if value.get("active") and value.get("profile_block_key") in selected_keys and row["key"][6:] not in selected_keys:
+                if not conn.execute("SELECT 1 FROM job_supersessions WHERE job_id=?", (value.get("job_id"),)).fetchone():
+                    raise ValueError("Access state changed during resolution; inspect the new denial")
         for block in blocks:
             key = block["block_key"]
             row = conn.execute("SELECT value FROM meta WHERE key=?", ("state:" + key,)).fetchone()

@@ -64,7 +64,7 @@ harness where available and records unknown model identity or quota honestly.
 There is no compulsory pilot or hidden total-call/time allowance.
 
 **Keep the release unchanged for the lifetime of its runs.** Download upgrades
-into a separate directory. This release, **portable 1.0.0-r29**, is for fresh runs;
+into a separate directory. This release, **portable 1.0.0-r30**, is for fresh runs;
 it does not migrate an older run or replace its recorded sources and judgments.
 
 ### Model configuration
@@ -149,7 +149,10 @@ will report a block rather than truncate evidence or silently switch models.
    gaps, disagreements, deferred work and original readings.
 
 Discovery backpressure pauses admissions while screening and reading catch up.
-Automatic workers and native agent tasks must be serviced together. Unbounded
+Automatic workers and native agent tasks must be serviced together. Refill an
+available native slot as soon as independent leased work is ready, within the
+agreed capacity. Coordinate automatic, native and acquisition workers before
+full validation. Unbounded
 citation depth removes an operator hop cutoff; protocol search windows and bridge
 rules still apply. A budget, depth, access or source block is never saturation.
 
@@ -157,7 +160,10 @@ rules still apply. A budget, depth, access or source block is never saturation.
 
 Starting a run authorizes ordinary public metadata, paper and supplement retrieval
 within its agreed scope. The agent should perform these actions without asking
-for permission for each URL. All run downloads belong under `runs/RUN_ID/`;
+for permission for each URL. Article and supplement links supplied by OpenAlex,
+Europe PMC, DOI/publisher records and recognized repositories are sufficient
+provenance to attempt a download; verify the retrieved article/version before use.
+All run downloads belong under `runs/RUN_ID/`;
 configuration and pre-run intake belong under `workspace/`.
 
 Retrieval is **terminal-first**: use metadata APIs, direct publisher/DOI links,
@@ -190,8 +196,19 @@ The agent must stop and surface a conflict if continuing would change frozen
 scientific rules, the bound release, model settings or authorized spending; buy
 access; invent missing evidence; or discard provenance. A storage or integrity
 failure requires diagnosis and validation, not an improvised database edit.
-Host-enforced network or filesystem approvals still apply—repository instructions
-cannot grant privileges that the host has withheld.
+Launch the runner with the host's approved network and local state access, and
+retain those permissions when restarting it. Where supported, use a reusable,
+narrow approval for the runner and `fetch-source` commands. The agent should
+identify a host-enforced permission request as such, without asking again for
+scientific or per-paper download consent. Repository instructions do not override
+the sandbox or authorize disabling the reader's isolation.
+
+`host-check --run-id RUN_ID` records local launch checks without a model call.
+Known launch restrictions and corroborated multi-host DNS failures create durable
+holds; local sources and eligible independent work can continue. Inspect
+`status.host_access`, repair the launch environment, then use the scoped recovery
+commands in [EXECUTION.md](EXECUTION.md#host-access-and-recovery). Unknown access
+remains unknown until actual authorized work establishes it.
 
 ## Review results
 
@@ -207,6 +224,7 @@ Useful commands for the supervising agent:
 |---|---|
 | `status --run-id RUN_ID` | Current progress, pending work and operational blocks. |
 | `work --run-id RUN_ID` | Next available model or native agent task. |
+| `host-check --run-id RUN_ID` | Record launch restrictions without model inference. |
 | `sanity --run-id RUN_ID` | Incremental metadata, identifier and state checks. |
 | `validate --run-id RUN_ID` | Full operational integrity validation. |
 | `deliver --run-id RUN_ID` | Refresh the reviewable delivery after validation. |

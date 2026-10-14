@@ -583,11 +583,18 @@ def validate(coordinator, *, deadline=None):
                               "A valid failed/unstarted job remains scientifically unassessed."]}
     with store._transaction() as conn:
         current = conn.execute("SELECT coalesce(max(id),0) FROM events").fetchone()[0]
+        incomplete = current != snapshot_event_id and error_count == 0
         if current != snapshot_event_id:
             error("concurrent_change", "database", "Run changed during validation; repeat at a quiet checkpoint")
             report.update(ok=False, error_count=error_count)
-        report["validation_event_id"] = store._event(conn, "operational_validation", {
-            "ok": report["ok"], "snapshot_event_id": snapshot_event_id, "error_count": error_count,
-            "scope": report["scope"], "reason": "Checked durable state, source hashes and recorded output provenance; no native scientific certification"})
-    save_json(root / "delivery" / "validation.json", report)
+        if incomplete:
+            report["incomplete"] = True
+            report["checkpoint_event_id"] = store._event(conn, "checkpoint_deferred", {
+                "reason": "Concurrent writes invalidated an otherwise clean audit; retry at a quiet checkpoint",
+                "snapshot_event_id": snapshot_event_id, "errors": errors})
+        else:
+            report["validation_event_id"] = store._event(conn, "operational_validation", {
+                "ok": report["ok"], "snapshot_event_id": snapshot_event_id, "error_count": error_count,
+                "scope": report["scope"], "reason": "Checked durable state, source hashes and recorded output provenance; no native scientific certification"})
+    save_json(root / "delivery" / ("validation-incomplete.json" if report.get("incomplete") else "validation.json"), report)
     return report
