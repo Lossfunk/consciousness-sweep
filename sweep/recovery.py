@@ -62,8 +62,9 @@ def terminal_evidence(coordinator, job, conn=None, history=None):
              "Confirmed nonadmission uses normal deferred work, not a fresh charged attempt")
     profile = validate_profile(coordinator.profile_for_job(job))
     _require(binding.get("profile") == profile, "Retry cannot change the immutable run's model or settings")
-    _require(binding.get("version") == adapters.VERSION and binding.get("adapter_source_sha256") == file_hash(adapters.__file__),
-             "Retry requires the same deployed adapter; a changed runtime needs a separate run")
+    from .continuation import compatible_adapter_hash
+    _require(binding.get("version") == adapters.VERSION and compatible_adapter_hash(coordinator, binding.get("adapter_source_sha256")),
+             "Retry adapter differs from the current or explicitly continued predecessor runtime")
     _require(receipt.get("requested_model") == profile["model"] and receipt.get("requested_effort") == profile["effort"],
              "Failed receipt model/effort differs from the selected profile")
     source, (prompt, schema) = _source(coordinator, job)

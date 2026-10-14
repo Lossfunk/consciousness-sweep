@@ -63,9 +63,11 @@ asks only for resource or depth choices you have not supplied. It uses the activ
 harness where available and records unknown model identity or quota honestly.
 There is no compulsory pilot or hidden total-call/time allowance.
 
-**Keep the release unchanged for the lifetime of its runs.** Download upgrades
-into a separate directory. This release, **portable 1.0.0-r30**, is for fresh runs;
-it does not migrate an older run or replace its recorded sources and judgments.
+**Keep each release directory unchanged.** Download upgrades separately. This is
+**portable 1.0.0-r31**. Fresh runs bind their execution plan at initialization;
+existing runs can adopt compatible operational changes through the explicit,
+backed-up [continuation procedure](EXECUTION.md#versioned-operational-continuation).
+Original plans, sources, readings and scientific rules remain preserved.
 
 ### Model configuration
 
@@ -148,8 +150,16 @@ will report a block rather than truncate evidence or silently switch models.
 6. **Deliver.** Validate the ledger and produce the review queue, preserving source
    gaps, disagreements, deferred work and original readings.
 
-Discovery backpressure pauses admissions while screening and reading catch up.
-Automatic workers and native agent tasks must be serviced together. Refill an
+Agree on execution priorities at startup. A practical configuration is retained-first
+scheduling, three acquisition rounds per source generation, four shared model/native
+worker slots, and full validation at quiet checkpoints. Uncertain abstracts remain
+in a lower-priority queue, ordered by citation depth and discovery order; they are
+not excluded. Eligible nodes can expand deeper while that queue waits. Missing
+sources remain recorded and can reopen when evidence or access changes.
+
+Discovery backpressure pauses admissions while active screening and reading catch
+up. Deferred uncertain work is reported separately. Automatic workers and native
+agent tasks must be serviced together. Refill an
 available native slot as soon as independent leased work is ready, within the
 agreed capacity. Coordinate automatic, native and acquisition workers before
 full validation. Unbounded
@@ -229,7 +239,8 @@ Useful commands for the supervising agent:
 | `validate --run-id RUN_ID` | Full operational integrity validation. |
 | `deliver --run-id RUN_ID` | Refresh the reviewable delivery after validation. |
 | `pause --run-id RUN_ID` | Stop new admissions; let admitted bounded work persist. |
-| `resume --run-id RUN_ID` | Resume under the same recorded agreement. |
+| `resume --run-id RUN_ID` | Resume under the recorded agreement and any explicit continuation. |
+| `continue-run --run-id RUN_ID ...` | Preview or apply a compatible operational continuation while paused. |
 | `calibration-report --run-id RUN_ID` | Evaluator-only claim and source-coverage comparisons. |
 
 Prefix commands with `.venv/bin/python -B -m sweep`. When a separate local run root

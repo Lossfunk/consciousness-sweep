@@ -97,13 +97,25 @@ Unknown access or execution identity remains unknown; never silently substitute.
 Keep permitted slots occupied with distinct leased units while automatic work
 proceeds. Refill a free native slot promptly; do not wait for the slowest worker
 before dispatching independent ready work. Stay within the agreed harness capacity
-and saved automatic worker counts. Let code handle deterministic bookkeeping; workers return concise
+and effective worker limits. With `operational_policy.inference_workers`, automatic
+model jobs and leased native tasks share one cap; expired unreconciled leases still
+occupy slots. Retrieval has its own bound. Do not start unleased background readers
+to bypass the shared limit. Let code handle deterministic bookkeeping; workers return concise
 receipts and file references without omitting scientific reasons or evidence.
 Inspect focused status summaries instead of repeatedly loading entire ledgers.
 Preserve required independent reviews and complete source coverage. Report
 supervisor/native usage separately from adapter totals, distinguishing cached
 input, account-wide consumption and unmeasured usage. Do not impose a screening
 rejection quota, new scientific gate or hidden total allowance to reduce cost.
+
+At setup, recommend and record `resources.operational_policy`: retained-first
+scheduling, three acquisition rounds, four shared inference slots and supervised
+checkpoints, subject to the user's available capacity and choices. These are
+explicit operational settings, not hidden total allowances. Keep uncertain papers
+in the lower-priority queue; serve its shallower discoveries first when preferred
+work is not ready. Do not change judgments, bypass native assessment or treat a
+parked acquisition as scientific exclusion or saturation. A completed prospect
+remains preferred even if its earlier abstract was uncertain.
 
 An explicitly authorized change to an external supervisor/native-worker
 agreement follows the checkpoint procedure in `EXECUTION.md`. It never changes
@@ -169,7 +181,11 @@ using `EXECUTION.md`, leaving unrelated source-size and budget blocks intact.
 Use the `python -m sweep` commands in `README.md`. Each run writes only inside
 its own `runs/RUN_ID/` directory. Do not inspect another run's classifications or
 dynamic result sets. Do not manually edit `state.sqlite3`, replace snapshots,
-reset attempt counters or reconstruct provenance from memory.
+reset attempt counters or reconstruct provenance from memory. Use only the explicit
+`continue-run` procedure to adopt an operational release for an existing portable
+run. Keep both release directories immutable, preserve the original plan, reconcile
+all workers with actual termination evidence and validate before applying. This
+procedure does not migrate or certify the frozen native scientific ledger.
 
 On a SQLite/storage error, stop new admissions and preserve the error diagnostics,
 database/WAL/SHM, receipts and reservations. Do not blindly retry writes or model

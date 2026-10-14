@@ -290,6 +290,9 @@ class Store:
             conn = sqlite3.connect(str(self.path), timeout=30, isolation_level=None)
             phase = "connection-setup:row-factory"
             conn.row_factory = sqlite3.Row
+            from .continuation import runtime_sha
+            phase = "connection-setup:runtime-fence"
+            conn.create_function("sweep_runtime_sha", 0, runtime_sha)
             for pragma in ("foreign_keys=ON", "synchronous=FULL", "busy_timeout=30000"):
                 phase = "connection-setup:" + pragma
                 conn.execute("PRAGMA " + pragma)
@@ -941,21 +944,39 @@ class Store:
                 raise ValueError("local_retrieval_only must be boolean")
             if local_retrieval_only:
                 eligible += " AND j.stage='retrieval' AND " + self.local_retrieval_sql(untried_during_hold=True)
+            from .execution_policy import job_filter, free_slots, load
+            eligible += job_filter(conn)
+            rounds = load(conn)["retrieval_max_rounds"]
+            if rounds is not None:
+                eligible += " AND (j.stage!='retrieval' OR (SELECT count(*) FROM retrieval_attempts a WHERE a.job_id=j.id)<" + str(rounds) + ")"
+            slots = free_slots(conn)
+            model_stages = {'title', 'abstract', 'rescue', 'audit', 'reader'}
+            if slots is not None and set(stages).issubset(model_stages):
+                limit = min(limit, slots)
+                if limit == 0:
+                    return []
             schedule = None
             if "retrieval" in stages:
                 saved = conn.execute("SELECT value FROM meta WHERE key='retrieval_schedule'").fetchone()
                 schedule = json.loads(saved[0]) if saved else {"next_lane": 0, "sequence": 0}
                 rows = None  # Select one slot at a time inside the same claim transaction.
             else:
-                rows = conn.execute("SELECT j.* FROM jobs j WHERE " + eligible + " ORDER BY j.priority DESC,j.id LIMIT ?", args + [limit]).fetchall()
+                from .execution_policy import load, job_order
+                order = job_order() if load(conn)["retained_first"] else "j.priority DESC,j.id"
+                rows = conn.execute("SELECT j.* FROM jobs j WHERE " + eligible + " ORDER BY " + order + " LIMIT ?", args + [limit]).fetchall()
             result = []
             for index in range(limit if rows is None else len(rows)):
                 if schedule is not None:
-                    row, lane = self._next_retrieval_service(conn, eligible, args, schedule)
+                    slot_filter = " AND j.stage NOT IN ('title','abstract','rescue','audit','reader')" if slots == 0 else ""
+                    row, lane = self._next_retrieval_service(conn, eligible + slot_filter, args, schedule)
                     if row is None:
                         break
                 else:
                     row, lane = rows[index], None
+                if row["stage"] in model_stages and slots is not None:
+                    if slots == 0:
+                        continue
+                    slots -= 1
                 token = row["token"] + 1
                 claim = {"job_id": row["id"], "owner": owner, "token": token}
                 if schedule is not None:
@@ -997,6 +1018,9 @@ class Store:
         for _ in lanes:
             lane, predicate, order = lanes[schedule["next_lane"]]
             schedule["next_lane"] = (schedule["next_lane"] + 1) % len(lanes)
+            from .execution_policy import load, job_order
+            if load(conn)["retained_first"]:
+                order = job_order()
             row = conn.execute("SELECT j.* FROM jobs j LEFT JOIN retrieval_service rs ON rs.job_id=j.id WHERE " + eligible + predicate + " ORDER BY " + order + " LIMIT 1", args).fetchone()
             if row is not None:
                 return row, lane

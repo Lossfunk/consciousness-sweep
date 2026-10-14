@@ -56,11 +56,17 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check", "continue-run"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
         if name in {"ingest", "submit", "native-submit", "calibration-review"}:
             cmd.add_argument("--input", type=Path, required=True)
+        if name == "continue-run":
+            cmd.add_argument("--previous-release", type=Path, required=True)
+            cmd.add_argument("--policy", type=Path, required=True)
+            cmd.add_argument("--actor", required=True)
+            cmd.add_argument("--reason", required=True)
+            cmd.add_argument("--apply", action="store_true", help="Apply the inspected continuation; otherwise read-only preparation")
         if name == "submit":
             cmd.add_argument("--job-id", required=True)
             cmd.add_argument("--actor", required=True)
@@ -193,6 +199,14 @@ def main(argv=None):
             if args.command == "init":
                 coordinator = Coordinator.initialize(run_dir, json.loads(args.plan.read_text()))
                 result = coordinator.status()
+            elif args.command == "continue-run":
+                from . import continuation
+                operation = continuation.apply if args.apply else continuation.prepare
+                result = operation(run_dir, args.previous_release, json.loads(args.policy.read_text()), args.actor, args.reason)
+                if args.apply:
+                    from .execution_policy import park_exhausted
+                    result = {"continuation": result, "parked_retrievals": park_exhausted(Coordinator(run_dir)),
+                              "status": "paused-awaiting-validation"}
             else:
                 coordinator = Coordinator(run_dir)
                 if args.command == "ingest":

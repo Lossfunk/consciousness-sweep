@@ -38,7 +38,7 @@ def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
     # Repeated attachment of completed input must not create a pending paper
     # with no pending work. A fresh source generation retires only current
     # presentation fields; prior results/assets remain in append-only history.
-    if previous is None or (previous["state"] != "complete" and
+    if previous is None or (previous["state"] not in {"complete", "parked"} and
             (paper.get("current_source_manifest_sha256") != digest(manifest) or paper.get("current_source_generation") != generation)):
         coordinator.store.update_paper(paper_id, {"status": "retrieval-pending", "assessment": None,
             "reader_job": None, "packet_path": None, "packet_source_generation": None, "assessment_source_generation": None, "assessment_packet_sha256": None, "retrieval_revision_pending": False, "current_source_manifest_sha256": digest(manifest), "current_source_generation": generation}, reason)

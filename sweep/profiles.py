@@ -18,7 +18,7 @@ ROLES = ("title", "abstract", "rescue", "reader")
 RESOURCE_KEYS = {"authorized", "cpu_workers", "model_workers", "retrieval_workers",
                  "discovery_buffer_papers", "sanity_interval_seconds", "memory_limit_bytes",
                  "gpu_memory_limit_bytes", "max_calls", "max_tokens", "max_spend_usd",
-                 "max_wall_seconds", "max_citation_depth"}
+                 "max_wall_seconds", "max_citation_depth", "operational_policy"}
 PROFILE_KEYS = {"adapter", "model", "effort", "billing_route", "authorized", "timeout_seconds",
                 "max_attempts", "cli_path", "endpoint_url", "credential_env", "argv", "environment_names",
                 "max_input_bytes", "max_output_tokens", "context_window_tokens", "qualification_status",
@@ -218,6 +218,9 @@ def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict 
     review_profile = validate_profile(calibration_review_profile) if calibration_review_profile is not None else None
     all_profiles = list(selected.values()) + ([review_profile] if review_profile else [])
     r = copy.deepcopy(resources)
+    if "operational_policy" in r:
+        from .execution_policy import validate as validate_policy
+        r["operational_policy"] = validate_policy(r["operational_policy"])
     r.setdefault("authorized", False)
     if not isinstance(r["authorized"], bool):
         raise ValueError("Resource authorization must be boolean")

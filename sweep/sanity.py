@@ -288,12 +288,14 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                     require(re.fullmatch(r"J[0-9]{12,}", jid), "Malformed allocated job identifier")
                     payload = object_json(row["payload"])
                     stage, status = row["stage"], row["state"]
-                    require(status in {"pending", "running", "complete", "failed"}, "Unknown job execution state")
+                    require(status in {"pending", "running", "complete", "failed", "parked"}, "Unknown job execution state")
                     require(not row["projected"] or status == "complete", "Uncompleted job marked projected")
                     if status == "running":
                         require(nonblank(row["owner"]) and row["lease_until"] is not None and row["token"] > 0, "Running job lacks its lease/owner binding")
                     require((row["result"] is not None) == (status == "complete"), "Job result presence contradicts execution state")
                     result = object_json(row["result"]) if status == "complete" else None
+                    if status == "parked":
+                        require(stage == "retrieval" and row["owner"] is None and row["lease_until"] is None and nonblank(row["error"]), "Parked acquisition lacks its settled state/reason")
                     if status == "failed":
                         require(nonblank(row["error"]), "Failed job lacks an explanation")
                     if stage in SCREEN_STAGES:

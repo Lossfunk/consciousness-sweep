@@ -306,7 +306,7 @@ def validate(coordinator, *, deadline=None):
                     require(isinstance(payload, dict), "Audit event payload must be an object")
                     kind = row["kind"]
                     key, value = None, None
-                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt", "job_superseded"}:
+                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt", "job_superseded", "retrieval_parked"}:
                         key, value = payload["job_id"], payload
                     elif kind == "job_retry_authorized":
                         key, value = payload["parent_id"], payload
@@ -331,6 +331,17 @@ def validate(coordinator, *, deadline=None):
                     if not re.fullmatch(prefix + r"\d{6,}", row[0]):
                         error("identifier_format", row[0], "Unexpected durable identifier format")
                 checked("identifier_counters")
+
+            for parked in conn.execute("SELECT * FROM jobs WHERE state='parked'"):
+                try:
+                    proof = history("retrieval_parked", parked["id"])
+                    require(parked["stage"] == "retrieval" and parked["owner"] is None and parked["lease_until"] is None, "Only unowned retrieval jobs can be parked")
+                    attempts = conn.execute("SELECT count(*),count(completed_at) FROM retrieval_attempts WHERE job_id=?", (parked["id"],)).fetchone()
+                    require(proof and type(proof["limit"]) is int and proof["limit"] > 0 and proof["rounds"] == attempts[0] == attempts[1] and attempts[0] >= proof["limit"], "Acquisition parking lacks its completed round accounting")
+                    last = conn.execute("SELECT result FROM retrieval_attempts WHERE job_id=? ORDER BY number DESC LIMIT 1", (parked["id"],)).fetchone()
+                    require(last and digest(json.loads(last[0])) == proof["last_result_sha256"] and json.loads(last[0])["status"] == "deferred", "Parked source differs from its preserved failed acquisition receipt")
+                except (KeyError, TypeError, ValueError) as exc:
+                    error("retrieval_parking", parked["id"], exc)
 
             for issue in coordinator.store.native_id_errors(conn):
                 error("native_identifier_registry", "native", issue)

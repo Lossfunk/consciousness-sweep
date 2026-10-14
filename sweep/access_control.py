@@ -74,9 +74,12 @@ def reconcile_nonadmission(coordinator, job, prompt, schema):
         raise ValueError("Unsettled admission lacks a confirmed terminal HTTP rejection")
     binding_path = directory / "binding.json"
     binding = json.loads(binding_path.read_text())
+    from .continuation import compatible_adapter_hash
+    if not compatible_adapter_hash(coordinator, binding.get("adapter_source_sha256")):
+        raise ValueError("Rejection belongs to an unapproved adapter runtime")
     expected = {"version": adapters.VERSION, "profile": profile,
         "prompt_sha256": adapters._sha(prompt.encode()), "schema_sha256": adapters._sha(adapters._bytes(schema)),
-        "adapter_source_sha256": file_hash(adapters.__file__), "base_instructions_sha256": None}
+        "adapter_source_sha256": binding["adapter_source_sha256"], "base_instructions_sha256": None}
     if (binding != expected or file_hash(binding_path) != receipt.get("binding_sha256")
             or file_hash(directory / "prompt.txt") != expected["prompt_sha256"]
             or file_hash(directory / "schema.json") != expected["schema_sha256"]

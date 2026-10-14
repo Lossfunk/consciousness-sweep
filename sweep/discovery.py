@@ -593,15 +593,22 @@ def list_native_tasks(c, *, limit=100, include_deferred=False):
     with c.store._transaction() as conn:
         _native_controls(conn)
         controls = {row["task_id"]: dict(row) for row in conn.execute("SELECT * FROM native_task_control")}
+    from .execution_policy import native_rank, primary_pending, load
     now = time.time()
     tasks = []
-    for index, task in enumerate(candidates):
-        control = controls.get(task["task_id"], {})
-        if not include_deferred and (task.get("deferred_for_source_generation") or control.get("owner") or control.get("available_at", 0) > now):
-            continue
-        task = dict(task, control=control)
-        tasks.append((control.get("last_served", 0), index, task))
-    return [_hydrate_native_task(c, task) for _, _, task in sorted(tasks)[:limit]]
+    with c.store._connection() as conn:
+        policy = load(conn)
+        preferred_pending = policy["retained_first"] and primary_pending(conn)
+        for index, task in enumerate(candidates):
+            control = controls.get(task["task_id"], {})
+            if not include_deferred and (task.get("deferred_for_source_generation") or control.get("owner") or control.get("available_at", 0) > now):
+                continue
+            rank = native_rank(conn, task, policy)
+            if not include_deferred and rank[0] and preferred_pending:
+                continue
+            task = dict(task, control=control)
+            tasks.append((rank, control.get("last_served", 0), index, task))
+    return [_hydrate_native_task(c, task) for _, _, _, task in sorted(tasks)[:limit]]
 
 
 def next_native_task(c, *, owner=None, lease_seconds=900):
@@ -619,16 +626,22 @@ def next_native_task(c, *, owner=None, lease_seconds=900):
         candidates = _native_candidates(view, hydrate=False)
         controls = {row["task_id"]: dict(row) for row in conn.execute("SELECT * FROM native_task_control")}
         now = time.time()
+        from .execution_policy import native_rank, primary_pending, free_slots, load
+        policy = load(conn)
+        preferred_pending, slots = policy["retained_first"] and primary_pending(conn), free_slots(conn)
         choices = []
         for index, task in enumerate(candidates):
             control = controls.get(task["task_id"], {})
             # Expiration alone is not evidence that another worker died.
             if task.get("deferred_for_source_generation") or control.get("owner") not in {None, owner} or control.get("available_at", 0) > now:
                 continue
-            choices.append((0 if control.get("owner") == owner else 1, control.get("last_served", 0), index, task, control))
+            rank = native_rank(conn, task, policy)
+            if control.get("owner") != owner and ((rank[0] and preferred_pending) or slots == 0):
+                continue
+            choices.append((0 if control.get("owner") == owner else 1, rank, control.get("last_served", 0), index, task, control))
         if not choices:
             return None
-        _, _, _, task, control = min(choices, key=lambda value: value[:3])
+        _, _, _, _, task, control = min(choices, key=lambda value: value[:4])
         task = _hydrate_native_task(view, task)
         token = control.get("token", 0) if control.get("owner") == owner else control.get("token", 0) + 1
         until = now + lease_seconds

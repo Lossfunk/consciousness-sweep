@@ -22,8 +22,14 @@ def pressure(coordinator):
         search_jobs = conn.execute("SELECT count(*) FROM jobs j WHERE stage='search' "
             "AND state IN ('pending','running') AND NOT EXISTS "
             "(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id)").fetchone()[0]
-    backlog = sum(counts.values())
-    return {"papers_waiting": backlog, "by_status": counts,
+    total = sum(counts.values())
+    from .execution_policy import for_coordinator, uncertain_sql
+    deferred = 0
+    if for_coordinator(coordinator)["retained_first"]:
+        with coordinator.store._connection() as conn:
+            deferred = conn.execute("SELECT count(*) FROM papers p WHERE p.status IN ('retrieval-pending','reader-pending') AND " + uncertain_sql()).fetchone()[0]
+    backlog = total - deferred
+    return {"papers_waiting": backlog, "total_papers_waiting": total, "deferred_uncertain": deferred, "by_status": counts,
             "high_water_papers": high, "search_admission_paused": backlog >= high,
             "queued_search_jobs": search_jobs,
             "search_queue_target": max(2, 2 * resources.get("retrieval_workers", 2)),

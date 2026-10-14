@@ -55,7 +55,13 @@ configuration has `profiles`, `resources`, optional `workload` and `mode`:
     "max_tokens": null,
     "max_spend_usd": 0,
     "max_wall_seconds": null,
-    "max_citation_depth": null
+    "max_citation_depth": null,
+    "operational_policy": {
+      "retained_first": true,
+      "retrieval_max_rounds": 3,
+      "inference_workers": 4,
+      "supervised_checkpoints": true
+    }
   },
   "workload": {"logical_papers": 2000}
 }
@@ -248,7 +254,12 @@ on inherited model settings or send evaluator context to a reader. A requested
 model and worker self-report do not independently establish provider identity.
 
 Use distinct leased units concurrently within the authorized harness capacity;
-`resources.model_workers` and `retrieval_workers` govern only automatic dispatch.
+`resources.model_workers` and `retrieval_workers` govern automatic dispatch unless
+an explicit `operational_policy.inference_workers` supplies the effective model
+worker limit. That limit is shared atomically with all owned native task leases,
+including expired leases awaiting recovery. It does not include the supervising
+chat or authorize new model settings or spending. Retrieval remains separately
+bounded by `retrieval_workers`.
 Refill each available native slot promptly when independent work is ready; do not
 wait for an entire batch to finish. The observed peak is not evidence of the
 harness maximum. Respect the actual authorized capacity and keep blocked lanes
@@ -591,13 +602,25 @@ source/stage cohorts: the ten lowest stable source-bound
 hashes, or all papers in a smaller cohort. A miss reopens the remaining current
 exclusions in that cohort. This sample does not estimate corpus recall.
 
-Within available model-worker capacity, ready reader jobs precede rescue/audit,
-abstracts and titles. Acquisition workers rotate among nonempty lanes for
+With `retained_first`, ready retained work and existing prospects take precedence
+over uncertain-abstract retrieval, reading and native assessment. Within the
+uncertain lane, shallower citation depth and then stable discovery order take
+precedence. Calibration reviews remain preferred. Blocked preferred work does not
+hold ready lower-priority work unnecessarily. Uncertain papers retain their
+scientific state and remain outstanding; an unbounded productive preferred lane
+can leave them waiting indefinitely, which must be reported.
+
+The active discovery buffer excludes this deferred uncertain lane and parked
+acquisitions; `status` reports them separately. Eligible CORE, provisional CORE
+and strict BRIDGE nodes expand under the unchanged scientific and lineage rules,
+including deeper eligible work before shallower uncertain work. A prospect label
+alone does not authorize expansion. Without retained-first scheduling, ready
+reader jobs precede rescue/audit, abstracts and titles. Acquisition workers rotate among nonempty lanes for
 priority work, supplied local sources, fresh retrievals, retries and other ready
 stages such as search. Each nonempty lane receives service within five admissions;
-an individual job's wait also depends on earlier work in its lane. Fresh work
-is oldest-first across priorities, and retries rotate by last service, so repeated
-seed failures cannot monopolize retrieval workers. Discovery backpressure still
+an individual job's wait also depends on earlier work in its lane. Without retained-first scheduling, fresh work
+is oldest-first across priorities and retries rotate by last service. With it,
+active-lane jobs are ordered by citation depth then stable job ID. Discovery backpressure still
 applies. The durable service cursor survives restart. This ordering changes no
 paper's scientific eligibility. Every acquisition job binds an immutable source
 manifest and generation. An
@@ -619,14 +642,21 @@ server delays fall back to ordinary backoff and retain the response evidence.
 Unchanged blocked or unreadable endpoint outcomes can be reused for 24 hours
 while other endpoints remain transient. Local files are rechecked against their
 bound hashes. A new source generation, including an explicit `source-retry`,
-starts fresh endpoint history and preserves the old receipts. There is no new
-attempt limit, scientific exclusion or saturation rule.
+starts fresh endpoint history and preserves the old receipts. When the user selects
+`retrieval_max_rounds`, actual acquisition starts count toward that per-generation
+allowance; historical rounds count too. After the allowance, terminal unsuccessful
+work is parked with its receipts and missing-source state, freeing the active
+buffer. No additional model calls or scientific exclusions are created. An
+interrupted attempt without a receipt still requires recovery. A new source or
+explicit access-repair `source-retry` can reopen acquisition; unchanged failures
+must not be recycled through that command to evade the allowance.
 
-This release is intended for fresh runs. Ordinary resume checks the saved
-scientific and runtime fingerprints before opening a writable store. Older runs
-retain their original release and data. No existing-run migration is provided:
-do not edit a saved fingerprint, copy an old ledger into a new run, or replace
-code in an active release. Use a new run ID with the new release.
+The policy is stored in the original plan for fresh runs or in an append-only
+continuation receipt for an existing run. Omitting it preserves legacy scheduling:
+no acquisition-round limit, the original model-worker limit, and ordinary automatic
+checkpoints. `supervised_checkpoints` keeps incremental sanity during execution and
+leaves full validation/delivery to the supervising agent at quiet wave checkpoints,
+after recovery/source revisions requiring a checkpoint, and before handoff.
 
 Keep uncertain preprint/published matches separate and preserve supplied version
 relations/publication status. Use the source text to resolve identity. Never count
@@ -855,7 +885,9 @@ For an identified paper, use a terminal-first acquisition workflow:
 4. Preserve failed-attempt receipts, use another available permitted route, and
    continue independent work when access remains blocked. Retry an unchanged
    blocked route only when new evidence or changed access justifies it. Apply
-   the existing missing-text workflow without inventing an exclusion or new cap.
+   the existing missing-text workflow and the recorded acquisition-round allowance.
+   At the allowance, park the request and continue; do not conduct repeated manual
+   acquisition campaigns outside the recorded allowance.
 
 These are acquisition methods, not changes to frozen discovery queries/windows,
 article/version verification, complete source coverage or scientific judgments.
@@ -910,3 +942,60 @@ bindings and lease information, without prior screening, reader or human verdict
 Evaluator-only calibration tasks remain separate. A retired source-scoped access
 block stays in history but is not an action on its replacement; profile and budget
 blocks remain in force across source replacement.
+
+## Versioned operational continuation
+
+Ordinary resume verifies the active runtime and never edits its fingerprint.
+`continue-run` is an explicit operation for a paused portable run. It rejects
+changes to protected scientific inputs, reader instructions, schemas, calibration
+references and frontier rules. It changes only the operational runtime binding
+and the four declared policy fields; profiles, depth, billing, budgets and the
+original execution plan remain unchanged. It is not a native registered-ledger
+migration or scientific certification.
+
+1. Keep the old run and release in place. Download and verify the new release in
+   a separate local directory. Stop admissions and drain all automatic, native
+   and acquisition workers. Submit valid pending results before releasing leases;
+   recover abandoned work only with actual observed termination evidence. Lease
+   expiration alone is insufficient.
+2. Under the old runtime, reconcile interrupted acquisition receipts and run a
+   successful quiet `sanity` and `validate`. Preserve current deliveries.
+3. Save the user-approved policy JSON under the existing run's `intake/`:
+
+   ```json
+   {"retained_first":true,"retrieval_max_rounds":3,"inference_workers":4,"supervised_checkpoints":true}
+   ```
+
+4. From the **new release directory**, use its Python environment and keep
+   `--root` pointing to the **existing run repository** on every invocation:
+
+   ```sh
+   .venv/bin/python -B -m sweep --root /local/old-release continue-run \
+     --run-id RUN_ID --previous-release /local/old-release \
+     --policy /local/old-release/runs/RUN_ID/intake/operational-policy.json \
+     --actor supervising-agent --reason 'User-authorized operational continuation'
+   ```
+
+   Inspect the read-only preview. Repeat the same command with `--apply`. The
+   operation backs up SQLite and the exact original plan under `continuations/`,
+   atomically records the runtime transition, and fences stale runtime writes.
+   It then parks already-exhausted acquisition jobs idempotently. `STOP` remains.
+   A failure after the recorded transition does not undo it: inspect `status`
+   under the new runtime and reconcile before resuming; never restore the backup
+   over a ledger that has subsequent work.
+5. Run `sanity`, `validate`, then `deliver` with the new executable and old root.
+   Inspect preserved assessments, source gaps, parked acquisitions, pending queues
+   and access/budget blocks. The new runtime can recover a predecessor's verified
+   terminal model receipt; unknown/admitted calls retain their charges. Prepared
+   confirmed-unadmitted requests receive new successor IDs if the adapter changed;
+   original artifacts remain unchanged. Access blocks still require scoped repair.
+6. Only after the checkpoint passes, use `resume` and restart coordinated work
+   with the new executable and the same root/run ID. Refill authorized shared
+   slots without bypassing independent scientific assessment. Do not edit a plan,
+   copy patched files into the old release, replay completed readings, reset
+   counters or use old-runtime commands after continuation.
+
+For a later continuation, `--previous-release` names the then-active executable
+release; `--root` still names the unchanged run repository. The receipt chain
+retains every operational agreement. Any scientific conflict requires separate
+review and is outside this mechanism.

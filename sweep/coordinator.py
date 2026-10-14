@@ -163,8 +163,8 @@ class Coordinator:
         if self.plan.get("scientific_regime") != regime():
             raise ValueError("Frozen scientific inputs changed; this run cannot silently resume")
         from .distribution import runtime_fingerprint
-        if self.plan.get("runtime_fingerprint") != runtime_fingerprint():
-            raise ValueError("Executable inputs changed; restore the run's bound release")
+        from .continuation import require_compatible
+        require_compatible(self.run_dir, self.plan, runtime_fingerprint())
         self.store = Store(self.run_dir)
         self._calibration_dirty = self.plan.get("mode") == "discovery"
 
@@ -716,6 +716,9 @@ class Coordinator:
                     delay = max(delay, requested_delay)
             self.store.finish_retrieval_attempt(job["id"], job["owner"], job["token"], result, delay_seconds=delay)
             return
+        from .continuation import rebind_unadmitted_request
+        if rebind_unadmitted_request(self, job):
+            return
         profile = self.profile_for_job(job)
         from .profiles import profile_fingerprint
         profile_hash = profile_fingerprint(profile)
@@ -879,6 +882,8 @@ class Coordinator:
         return True
 
     def project_results(self):
+        from .execution_policy import park_exhausted
+        park_exhausted(self)
         for job in self.store.unprojected_results(limit=100):
             deadline = getattr(self, "session_deadline", None)
             if deadline is not None and time.monotonic() >= deadline:
@@ -1170,7 +1175,10 @@ class Coordinator:
         require_integrity(self)
         owner = "worker-" + uuid.uuid4().hex
         resources = self.plan.get("resources", {})
-        model_workers = max(1, resources.get("model_workers", 1))
+        from .execution_policy import for_coordinator
+        execution_policy = for_coordinator(self)
+        defer_checkpoint = defer_checkpoint or execution_policy["supervised_checkpoints"]
+        model_workers = execution_policy["inference_workers"] or max(1, resources.get("model_workers", 1))
         retrieval_workers = max(1, resources.get("retrieval_workers", 2))
         started = time.monotonic()
         if max_seconds is not None and (isinstance(max_seconds, bool) or not isinstance(max_seconds, (int, float)) or not math.isfinite(max_seconds) or max_seconds <= 0):
@@ -1272,7 +1280,9 @@ class Coordinator:
                         if not capped and review_automatic:
                             clauses.append("(stage='reader' AND json_extract(payload,'$.calibration_review')=1)")
                         with self.store._connection() as conn:
-                            row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND id NOT IN (SELECT job_id FROM job_supersessions) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||jobs.id AND json_extract(m.value,'$.active')=1) AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=jobs.id AND p.state!='complete') AND (" + " OR ".join(clauses or ["0"]) + ")", wait_args).fetchone()
+                            from .execution_policy import job_filter
+                            queue_filter = job_filter(conn).replace("j.", "jobs.")
+                            row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND id NOT IN (SELECT job_id FROM job_supersessions) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||jobs.id AND json_extract(m.value,'$.active')=1) AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=jobs.id AND p.state!='complete') AND (" + " OR ".join(clauses or ["0"]) + ")" + queue_filter, wait_args).fetchone()
                         next_at = row[0] if row else None
                         if not watch or next_at is None:
                             if blocks or network_held or host_state.get("codex_state"):
@@ -1343,6 +1353,8 @@ class Coordinator:
 
     def status(self):
         status = self.store.status()
+        from .execution_policy import for_coordinator
+        status["operational_policy"] = for_coordinator(self)
         audit_current = self.store.get_state("audit_revision") == self.store.get_state("screen_revision", 0)
         from .validation import current
         validation_current = current(self)
