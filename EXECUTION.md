@@ -958,8 +958,14 @@ migration or scientific certification.
    and acquisition workers. Submit valid pending results before releasing leases;
    recover abandoned work only with actual observed termination evidence. Lease
    expiration alone is insufficient.
-2. Under the old runtime, reconcile interrupted acquisition receipts and run a
-   successful quiet `sanity` and `validate`. Preserve current deliveries.
+2. Under the old runtime, reconcile interrupted acquisition receipts and run
+   quiet `sanity` and `validate`. Full validation must pass against the current
+   material snapshot. If sanity fails because of a reproduced checker defect,
+   preserve that failure and require a separately verified successor that fixes
+   it; do not clear the guard or alter ledger records to pass. The continuation
+   can proceed from the successful full validation, but the successor's sanity
+   replay, full validation and delivery must pass before resuming. Unexplained
+   integrity failures require investigation first. Preserve current deliveries.
 3. Save the user-approved policy JSON under the existing run's `intake/`:
 
    ```json

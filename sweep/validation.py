@@ -14,7 +14,7 @@ import sqlite3
 import time
 from jsonschema.exceptions import ValidationError, SchemaError
 
-from . import reading, screening, sources
+from . import execution_policy, reading, screening, sources
 from .common import canonical, digest, file_hash, save_json
 from .store import StoreError
 
@@ -334,12 +334,7 @@ def validate(coordinator, *, deadline=None):
 
             for parked in conn.execute("SELECT * FROM jobs WHERE state='parked'"):
                 try:
-                    proof = history("retrieval_parked", parked["id"])
-                    require(parked["stage"] == "retrieval" and parked["owner"] is None and parked["lease_until"] is None, "Only unowned retrieval jobs can be parked")
-                    attempts = conn.execute("SELECT count(*),count(completed_at) FROM retrieval_attempts WHERE job_id=?", (parked["id"],)).fetchone()
-                    require(proof and type(proof["limit"]) is int and proof["limit"] > 0 and proof["rounds"] == attempts[0] == attempts[1] and attempts[0] >= proof["limit"], "Acquisition parking lacks its completed round accounting")
-                    last = conn.execute("SELECT result FROM retrieval_attempts WHERE job_id=? ORDER BY number DESC LIMIT 1", (parked["id"],)).fetchone()
-                    require(last and digest(json.loads(last[0])) == proof["last_result_sha256"] and json.loads(last[0])["status"] == "deferred", "Parked source differs from its preserved failed acquisition receipt")
+                    execution_policy.parked_receipt(conn, parked, history("retrieval_parked", parked["id"]))
                 except (KeyError, TypeError, ValueError) as exc:
                     error("retrieval_parking", parked["id"], exc)
 
@@ -472,6 +467,10 @@ def validate(coordinator, *, deadline=None):
                 try:
                     paper = json.loads(row["record"])
                     require(paper.get("paper_id") == pid and paper.get("status") == row["status"], "Paper record identity/status differs from indexed state")
+                    if paper.get("retrieval_job"):
+                        acquisition = conn.execute("SELECT * FROM jobs WHERE id=?", (paper["retrieval_job"],)).fetchone()
+                        if acquisition and acquisition["state"] == "parked":
+                            execution_policy.parked_receipt(conn, acquisition, history("retrieval_parked", acquisition["id"]), paper)
                     for entry in paper.get("provided_paths", []):
                         if isinstance(entry, dict) and entry.get("expected_sha256"):
                             hash_file(entry["path"], entry["expected_sha256"])

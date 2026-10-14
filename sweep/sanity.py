@@ -20,7 +20,7 @@ from jsonschema.exceptions import ValidationError
 from runtime.source_reader.schema import output_schema, validate_assessment
 
 from .common import canonical, digest, save_json
-from . import screening
+from . import execution_policy, screening
 from .store import normalize_doi
 
 SCOPE = "incremental-operational-sanity"
@@ -28,7 +28,7 @@ STATE_KEY = "state:sanity-checkpoint"
 SCREEN_STAGES = {"title", "abstract", "rescue", "audit"}
 REASON_EVENTS = {"paper_added", "paper_updated", "paper_metadata_enriched", "discovery_encounter",
                  "control_updated", "control_delta", "job_failed", "job_deferred", "job_superseded",
-                 "native_scientific_id_reserved"}
+                 "native_scientific_id_reserved", "retrieval_parked"}
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 
 
@@ -204,7 +204,23 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
             paper_sample, paper_after = rotate("papers", "paper_after", max_papers)
             job_sample, job_after = rotate("jobs", "job_after", max_jobs)
 
-            for pid in sorted(affected_papers | set(paper_sample)):
+            selected_papers = affected_papers | set(paper_sample)
+            selected_jobs = affected_jobs | set(job_sample)
+            for pid in selected_papers:
+                bound = conn.execute("SELECT json_extract(record,'$.retrieval_job') FROM papers WHERE id=?", (pid,)).fetchone()
+                if bound and bound[0]:
+                    selected_jobs.add(bound[0])
+            parked_ids = {jid for jid in selected_jobs if conn.execute(
+                "SELECT 1 FROM jobs WHERE id=? AND state='parked'", (jid,)).fetchone()}
+            # One history scan, retaining only this bounded batch's parking
+            # events; never rescan the entire ledger for each parked paper.
+            parking = {}
+            if parked_ids:
+                for event in conn.execute("SELECT json_extract(payload,'$.job_id') jid,payload FROM events WHERE kind='retrieval_parked' ORDER BY id"):
+                    if event["jid"] in parked_ids:
+                        parking[event["jid"]] = object_json(event["payload"])
+
+            for pid in sorted(selected_papers):
                 try:
                     row = conn.execute("SELECT id,doi,status,record FROM papers WHERE id=?", (pid,)).fetchone()
                     require(row is not None, "Audit trail references an absent paper")
@@ -264,18 +280,23 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                         if not paper.get("retrieval_revision_pending"):
                             require(payload.get("source_generation", 1) == generation == paper.get("assessment_source_generation"), "Assessment belongs to a stale source generation")
                         affected_jobs.add(paper["reader_job"])
+                    parked_retrieval = False
                     if paper.get("retrieval_job"):
-                        saved = conn.execute("SELECT stage,state,payload,result FROM jobs WHERE id=?", (paper["retrieval_job"],)).fetchone()
-                        require(saved and saved["stage"] == "retrieval" and saved["state"] == "complete", "Stored retrieval lacks its completed acquisition job")
-                        require(object_json(saved["payload"]).get("paper_id") == pid and object_json(saved["result"]) == paper.get("retrieval"),
-                                "Paper retrieval differs from its acquisition result")
+                        saved = conn.execute("SELECT * FROM jobs WHERE id=?", (paper["retrieval_job"],)).fetchone()
+                        parked_retrieval = saved is not None and saved["state"] == "parked"
+                        if parked_retrieval:
+                            execution_policy.parked_receipt(conn, saved, parking.get(saved["id"]), paper)
+                        else:
+                            require(saved and saved["stage"] == "retrieval" and saved["state"] == "complete", "Stored retrieval lacks its completed acquisition job")
+                            require(object_json(saved["payload"]).get("paper_id") == pid and object_json(saved["result"]) == paper.get("retrieval"),
+                                    "Paper retrieval differs from its acquisition result")
                     if paper["status"] == "reader-pending" or paper.get("assessment") is not None:
                         local_file(paper.get("packet_path"))
                         require(paper.get("retrieval", {}).get("status") == "verified", "Readable paper state lacks verified acquisition metadata")
                     if paper["status"].startswith("source-"):
                         retrieval = paper.get("retrieval")
                         require(isinstance(retrieval, dict) and nonblank(retrieval.get("reason")), "Unresolved retrieval lacks its recorded explanation")
-                        require(paper["status"] == "source-" + retrieval.get("status", ""), "Missing-source status differs from retrieval record")
+                        require(parked_retrieval or paper["status"] == "source-" + retrieval.get("status", ""), "Missing-source status differs from retrieval record")
                         issue("source_unresolved", pid, retrieval["reason"], notice=True)
                     tick("papers")
                 except (ValueError, TypeError, KeyError, AttributeError, OSError) as exc:
@@ -295,7 +316,7 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                     require((row["result"] is not None) == (status == "complete"), "Job result presence contradicts execution state")
                     result = object_json(row["result"]) if status == "complete" else None
                     if status == "parked":
-                        require(stage == "retrieval" and row["owner"] is None and row["lease_until"] is None and nonblank(row["error"]), "Parked acquisition lacks its settled state/reason")
+                        execution_policy.parked_receipt(conn, row, parking.get(jid))
                     if status == "failed":
                         require(nonblank(row["error"]), "Failed job lacks an explanation")
                     if stage in SCREEN_STAGES:

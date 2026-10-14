@@ -145,3 +145,49 @@ def park_exhausted(c):
                     queue_native_after_missing_source(c, pid)
             parked.append(proof)
         return parked
+
+
+def parked_receipt(conn, job, proof, paper=None):
+    """Validate settled acquisition against its event and original attempt receipt.
+
+    A parked job has no completed job result. Its final unsuccessful attempt is
+    retained verbatim, including status=deferred; source-missing is presentation
+    of exhausted acquisition effort, not a rewritten retrieval outcome.
+    """
+    def require(value, message):
+        if not value:
+            raise ValueError(message)
+
+    require(job["stage"] == "retrieval" and job["state"] == "parked"
+            and job["owner"] is None and job["lease_until"] is None
+            and job["result"] is None and not job["projected"],
+            "Parked acquisition lacks its settled unowned, unprojected state")
+    require(isinstance(proof, dict) and proof.get("job_id") == job["id"]
+            and isinstance(proof.get("reason"), str) and proof["reason"].strip()
+            and job["error"] == proof["reason"], "Acquisition parking evidence is absent or mismatched")
+    payload = json.loads(job["payload"])
+    require(type(proof.get("source_generation")) is int
+            and proof["source_generation"] == payload.get("source_generation", 1),
+            "Acquisition parking source generation differs from its job")
+    attempts = conn.execute("SELECT count(*),count(completed_at) FROM retrieval_attempts WHERE job_id=?",
+                            (job["id"],)).fetchone()
+    require(type(proof.get("limit")) is int and proof["limit"] > 0
+            and type(proof.get("rounds")) is int
+            and proof["rounds"] == attempts[0] == attempts[1] and attempts[0] >= proof["limit"],
+            "Acquisition parking lacks its completed round accounting")
+    last = conn.execute("SELECT result FROM retrieval_attempts WHERE job_id=? ORDER BY number DESC LIMIT 1",
+                        (job["id"],)).fetchone()
+    result = json.loads(last[0]) if last and last[0] else None
+    require(isinstance(result, dict) and result.get("status") == "deferred"
+            and digest(result) == proof.get("last_result_sha256"),
+            "Parked source differs from its preserved failed acquisition receipt")
+    if paper is not None:
+        require(payload.get("paper_id") == paper["paper_id"], "Parked acquisition belongs to another paper")
+        require(paper.get("acquisition_park") == proof, "Paper differs from its durable parking evidence")
+        require(paper.get("retrieval") == result, "Paper differs from its preserved acquisition receipt")
+        if paper["status"].startswith("source-"):
+            require(paper["status"] == "source-missing", "Parked acquisition must remain source-missing")
+            if not paper.get("retrieval_revision_pending"):
+                require(paper.get("source_generation", 1) == proof["source_generation"],
+                        "Current parked acquisition belongs to a stale source generation")
+    return result

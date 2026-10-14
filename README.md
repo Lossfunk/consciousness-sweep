@@ -64,7 +64,7 @@ harness where available and records unknown model identity or quota honestly.
 There is no compulsory pilot or hidden total-call/time allowance.
 
 **Keep each release directory unchanged.** Download upgrades separately. This is
-**portable 1.0.0-r31**. Fresh runs bind their execution plan at initialization;
+**portable 1.0.0-r32**. Fresh runs bind their execution plan at initialization;
 existing runs can adopt compatible operational changes through the explicit,
 backed-up [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Original plans, sources, readings and scientific rules remain preserved.
