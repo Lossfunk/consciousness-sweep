@@ -64,7 +64,7 @@ harness where available and records unknown model identity or quota honestly.
 There is no compulsory pilot or hidden total-call/time allowance.
 
 **Keep the release unchanged for the lifetime of its runs.** Download upgrades
-into a separate directory. This release, **portable 1.0.0-r28**, is for fresh runs;
+into a separate directory. This release, **portable 1.0.0-r29**, is for fresh runs;
 it does not migrate an older run or replace its recorded sources and judgments.
 
 ### Model configuration
@@ -159,6 +159,13 @@ Starting a run authorizes ordinary public metadata, paper and supplement retriev
 within its agreed scope. The agent should perform these actions without asking
 for permission for each URL. All run downloads belong under `runs/RUN_ID/`;
 configuration and pre-run intake belong under `workspace/`.
+
+Retrieval is **terminal-first**: use metadata APIs, direct publisher/DOI links,
+repositories, preprint servers and author pages. Search tools can locate file
+URLs; terminal tools fetch and extract them. Batch independent lookups and reuse
+verified assets. Use browser interaction for a specific access route that direct
+retrieval cannot provide, and retain visual inspection when figures or extraction
+problems require it.
 
 The agent may locate another public copy, use protocol-approved fallback routes,
 verify bibliographic metadata, ingest a newly obtained source, and recover a

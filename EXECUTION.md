@@ -762,6 +762,26 @@ is retained until a successful check, so full validation alone does not clear it
 The run request authorizes public metadata/paper/supplement downloads in scope.
 The supervising agent performs routine acquisition and identity checks without
 per-paper user confirmation. Host permissions remain independently enforced.
+
+For an identified paper, use a terminal-first acquisition workflow:
+
+1. Locate article and supplement URLs through metadata APIs, DOI/publisher links,
+   repositories, preprint servers and author pages. Available search tools,
+   including Google or Scholar where accessible, may locate additional copies.
+2. Fetch located public files with `fetch-source` and extract them with terminal
+   tools. Batch independent operations within the agreed concurrency and
+   per-request limits; reuse unchanged verified files and extraction results.
+3. Use browser interaction only for a specific source-access step unavailable
+   through direct retrieval. Avoid lengthy navigation and repeated screenshots.
+   Inspect images/pages when essential figures, tables or extraction problems
+   require visual evidence; terminal-first does not mean text-only reading.
+4. Preserve failed-attempt receipts, use another available permitted route, and
+   continue independent work when access remains blocked. Retry an unchanged
+   blocked route only when new evidence or changed access justifies it. Apply
+   the existing missing-text workflow without inventing an exclusion or new cap.
+
+These are acquisition methods, not changes to frozen discovery queries/windows,
+article/version verification, complete source coverage or scientific judgments.
 All downloads stay in the selected repository/run root; never scatter them in
 Downloads or temporary personal folders. Automatic retrieval writes under
 `runs/RUN_ID/sources/`. For a public URL located by the agent:
