@@ -64,8 +64,34 @@ harness where available and records unknown model identity or quota honestly.
 There is no compulsory pilot or hidden total-call/time allowance.
 
 **Keep the release unchanged for the lifetime of its runs.** Download upgrades
-into a separate directory. This release, **portable 1.0.0-r27**, is for fresh runs;
+into a separate directory. This release, **portable 1.0.0-r28**, is for fresh runs;
 it does not migrate an older run or replace its recorded sources and judgments.
+
+### Model configuration
+
+For Codex, use **GPT-6.1 Sol with medium reasoning at Standard speed** for the
+supervising chat. Establish access and authorization for each role before starting:
+
+| Role | Recommended model | Reasoning |
+|---|---|---|
+| Supervision, metadata and source acquisition | GPT-6.1 Sol | Medium |
+| Title screening | GPT-6 Luna | Medium |
+| Abstract screening | GPT-6.1 Sol | Medium |
+| Full-source reading and native scientific assessment | GPT-6.1 Sol | High |
+| Authorized rescue and calibration review | GPT-6 Astra | Extra high (`xhigh`) |
+
+The agent explicitly sets each worker's model and reasoning; scientific readers
+start with source-only context. A worker must not accidentally inherit the
+supervisor's settings. These are recommended role configurations, not claims of
+universal scientific qualification. Claude and other harnesses use their own
+accessible, authorized equivalents without silently switching providers.
+
+Subscription and credit use includes the supervising chat and native workers,
+which the runner's adapter counters do not measure. A reported dollar cost of
+zero does not establish zero credit use. Track whole-workflow usage and completed
+work alongside the runner's counters; more simultaneous workers alone do not
+reduce total consumption. See [supervisor and native workers](EXECUTION.md#supervisor-and-native-workers)
+for dispatch, reporting and checkpoint procedures.
 
 ### Local setup
 

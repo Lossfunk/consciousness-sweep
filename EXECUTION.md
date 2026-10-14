@@ -72,7 +72,8 @@ Subscription limits still apply; a quota pause does not certify completion.
 Hosted API profiles require a positive overall spending ceiling even when
 call/time limits are unbounded.
 Call, token and spending caps belong in `resources`; per-profile versions of
-those caps are rejected because the coordinator budgets the entire run.
+those caps are rejected because the coordinator budgets adapter invocations
+across the run. External supervisor/native calls require separate usage tracking.
 
 For discovery runs, `resources.max_citation_depth` accepts `null` (no depth cap)
 or a nonnegative integer. The equivalent startup flag is
@@ -161,6 +162,69 @@ After the actual access issue has been fixed, use `resume --run-id RUN_ID
 admission check only for verified nonadmission, preserves old receipts and
 rechecks the same immutable model settings and spending limits. It never raises
 budgets, switches models, enables billing fallback or refunds uncertain work.
+
+## Supervisor and native workers
+
+The [model configuration](README.md#model-configuration) assigns roles for Codex.
+Before initialization, inspect and explicitly set the stage profiles in
+`plan --config`: convenience presets inherit some settings from the active chat
+and do not configure the supervisor or its native subagents. Prefer the active
+harness and establish actual access; equivalent Claude/custom settings must be
+chosen explicitly rather than inferred from Codex names.
+
+Save a dated operational receipt under `runs/RUN_ID/intake/` recording the
+user-authorized supervisor/native agreement, requested harness/model/effort,
+speed mode where exposed, concurrency, billing allowance and observed execution
+identity or explicit unknowns. Reference the receipt in the run's append-only
+event history through `Store.event`. This external agreement is not a new plan
+field or an automatically enforced spending cap. Keep historical receipts.
+
+Dispatch `agent-task` with its bound `intended_profile`. Dispatch
+`agent-native-task` with the agreed external role settings and its owner/token.
+Native scientific readers use fresh source-only contexts; in Codex explicitly
+set `model`, `reasoning_effort` and `fork_turns="none"` when spawning. Do not rely
+on inherited model settings or send evaluator context to a reader. A requested
+model and worker self-report do not independently establish provider identity.
+
+Use distinct leased units concurrently within the authorized harness capacity;
+`resources.model_workers` and `retrieval_workers` govern only automatic dispatch.
+Return concise results and source references, leave repetitive persistence to
+code, and use focused status summaries. An independent native scientific
+assessment remains required even when a compact prospect reading is complete;
+avoid extra duplicate passes without bypassing that obligation or truncating
+sources.
+
+Report adapter calls/tokens, supervisor usage and native-worker usage separately
+when telemetry exists. Cached input counts are not new source text. Missing
+telemetry remains unmeasured, and `cost_usd=0` is not evidence of free subscription
+or credit use. Account balances cover other chats too; credit runway is not a
+completion estimate. Estimate remaining work from measured retention, source
+availability and completed native tasks as well as automatic throughput.
+
+### Checkpointing an external model change
+
+An explicit user update may change an external supervisor/native-worker setting
+that is not bound by a saved job profile. It does not authorize changing the
+immutable execution plan or installed release.
+
+1. Use `pause --run-id RUN_ID`, stop new native dispatch and reconcile admitted
+   automatic jobs and native leases. Let workers finish where practical; recover
+   interrupted workers only with the documented termination evidence. Stopping
+   the chat alone does not establish that its background processes stopped.
+2. Record the authorized change, previous and new settings, effective checkpoint
+   and observed identity in a new operational receipt and append-only event.
+   Preserve the earlier execution records and completed work.
+3. Change the supervising chat and explicitly configure newly created workers.
+   Existing workers retain their original settings. Keep all plan-bound
+   automatic/manual job profiles, frozen inputs and source bindings unchanged.
+4. Resume the same run with its bound release, then inspect actual settings,
+   source coverage, task throughput and usage at the next agreed checkpoint.
+
+This procedure neither migrates a release nor requalifies a scientific reader.
+Source-grounded calibration and unresolved limitations remain visible. Changing
+a bound job profile, code, scientific rule or resource limit requires a
+separately versioned configuration/continuation; ordinary `resume` does not
+provide that mechanism.
 
 ## Adapter profiles
 
