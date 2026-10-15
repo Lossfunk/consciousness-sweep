@@ -64,6 +64,14 @@ def attach(coordinator, paper_id, entries, reason, base=None):
     validate_record({"title": "source-manifest", "provided_paths": entries})
     if not entries:
         raise ValueError("Supply the complete nonempty main/SI set")
+    from .workflow import enabled
+    from .source_scope import exclusion
+    if enabled(coordinator):
+        for entry in entries:
+            item = entry if isinstance(entry, dict) else {"path": entry}
+            excluded = exclusion(item["path"], material_kind=item.get("material_kind"))
+            if excluded:
+                raise ValueError(excluded + "; preserve any historical asset, but omit it from the new text manifest")
     base = Path(base or Path.cwd())
     assets = coordinator.run_dir / "intake" / "assets"
     assets.mkdir(parents=True, exist_ok=True)

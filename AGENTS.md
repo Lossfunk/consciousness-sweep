@@ -67,7 +67,7 @@ post-continuation checks pass. Source replacements retain earlier assets and rea
   preferred work runs out. New eligible nodes can expand to deeper levels first.
   Genuinely changed evidence can support an append-first revision; unchanged
   evidence is not a reason to repeat screening.
-- Acquire accessible main text and visible supplements together. Use existing
+- Acquire accessible main text and visible supplementary text together. Use existing
   metadata URLs and terminal routes first. The automatic pass has a 180-second
   deadline and one transport attempt per request. One remaining publisher/public
   copy check may use at most 120 seconds, one search and two candidate copies.
@@ -84,6 +84,14 @@ post-continuation checks pass. Source replacements retain earlier assets and rea
   Keep expectations, prior verdicts and comparison reports with the evaluator.
   Calibration discrepancies remain reportable without mandatory additional calls;
   explicit targeted escalation is a separate resource decision.
+
+Acquisition covers main articles and textual supplements: methods, results,
+appendices, tables and figures in those documents. Do not download code, software
+repositories, raw datasets, simulation traces, saved software outputs or mixed
+archives. Do not render those artifacts into TXT/PDF reader attachments. Keep
+article documents intact, including any equations and code examples printed in
+them. Record out-of-scope links and unexamined dependencies; do not claim code
+reproduction or data reanalysis. Use material_kind to identify supplied sources.
 
 ## Workers and supervision
 
@@ -120,11 +128,11 @@ Distinguish ready work, owned work, deferred coverage, access holds and unknown 
 
 ## Downloads and operational autonomy
 
-Starting the sweep authorizes ordinary public metadata, article and supplement
+Starting the sweep authorizes ordinary public metadata, article and textual-supplement
 requests within its scope. Follow scholarly links from OpenAlex, Europe PMC,
 Crossref, publishers and repositories without asking approval for each download.
 Use `fetch-source` and save under `runs/<RUN_ID>/intake/downloads/<PAPER_ID>/`;
-attach the complete main/SI manifest with `source`. Keep files and receipts organized
+attach the complete main/textual-SI manifest with `source`. Keep files and receipts organized
 by paper ID. Verify article/version identity after download; metadata links do not
 prove document identity, completeness or scientific reliability.
 

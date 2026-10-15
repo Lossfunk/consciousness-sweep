@@ -18,7 +18,7 @@ def _public_location(url):
 
 
 def fetch(coordinator, paper_id, url, *, role='main', association_reason=None,
-          reason, actor='supervising-agent', client=None):
+          reason, actor='supervising-agent', client=None, material_kind=None):
     """Acquisition is authorized by the run; source attachment still verifies identity.
 
     A receipt before dispatch preserves interrupted/unknown attempts. A unique
@@ -32,8 +32,11 @@ def fetch(coordinator, paper_id, url, *, role='main', association_reason=None,
     if role not in {'main', 'supplement'} or role == 'supplement' and not (association_reason or '').strip():
         raise ValueError('Supplement download requires its source-grounded association reason')
     safe_url(url, resolve=False)
-    from .workflow import admit_download
-    remaining = admit_download(coordinator, paper_id, role)
+    from .workflow import admit_download, enabled
+    from . import source_scope
+    text_only = enabled(coordinator)
+    excluded = source_scope.exclusion(url, material_kind=material_kind) if text_only else None
+    remaining = None if excluded else admit_download(coordinator, paper_id, role)
     run_dir = coordinator.run_dir.resolve()
     directory = inside(run_dir / 'intake' / 'downloads' / paper_id, run_dir)
     attempt_id = uuid.uuid4().hex
@@ -41,6 +44,8 @@ def fetch(coordinator, paper_id, url, *, role='main', association_reason=None,
     requested = {'download_id': attempt_id, 'paper_id': paper_id, 'url': _public_location(url),
                  'role': role, 'association_reason': association_reason, 'reason': reason.strip(),
                  'actor': actor.strip(), 'requested_at': now(), 'status': 'requested-outcome-unknown'}
+    if material_kind is not None:
+        requested['material_kind'] = material_kind
     request_path = prefix.with_suffix('.request.json')
     _publish_immutable(request_path, (canonical(requested) + '\n').encode(), conflict_reason='Download request changed')
     coordinator.store.event('source_download_requested', dict(requested,
@@ -48,7 +53,9 @@ def fetch(coordinator, paper_id, url, *, role='main', association_reason=None,
     client = client or SourceClient(max_attempts=1, deadline=time.monotonic() + min(60, remaining if remaining is not None else 60))
     entry = None
     try:
-        body, response = client.get(url)
+        if excluded:
+            raise SourceError('out-of-scope', excluded)
+        body, response = source_scope.get(client, url, enabled=text_only, material_kind=material_kind)
         content_type = next((str(v).split(';')[0].strip().lower() for k, v in response.get('headers', {}).items()
                              if k.lower() == 'content-type'), '')
         suffix = '.pdf' if body.lstrip().startswith(b'%PDF-') else '.xml' if content_type in {'application/xml', 'text/xml'} else '.txt' if content_type == 'text/plain' else '.bin'
@@ -58,6 +65,8 @@ def fetch(coordinator, paper_id, url, *, role='main', association_reason=None,
                    'path': str(target.relative_to(run_dir)), 'sha256': digest(body),
                    'bytes': len(body), 'content_type': content_type, 'attempts': response.get('attempts', [])}
         entry = {'path': str(target), 'role': role, 'expected_sha256': digest(body)}
+        if material_kind is not None:
+            entry['material_kind'] = material_kind
         if association_reason:
             entry['association_reason'] = association_reason
     except SourceError as exc:

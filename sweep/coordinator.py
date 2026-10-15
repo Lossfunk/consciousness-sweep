@@ -136,8 +136,11 @@ def validate_record(row):
             if not item.strip() or "\0" in item:
                 raise ValueError("Empty or unsafe supplied source path")
             continue
-        if not isinstance(item, dict) or set(item) - {"path", "role", "association_reason", "expected_sha256"}:
-            raise ValueError("Source objects accept path, role, association_reason and expected_sha256 only")
+        if not isinstance(item, dict) or set(item) - {"path", "role", "association_reason", "expected_sha256", "material_kind"}:
+            raise ValueError("Source objects accept path, role, association_reason, expected_sha256 and material_kind only")
+        from .source_scope import MATERIAL_KINDS
+        if "material_kind" in item and (not isinstance(item["material_kind"], str) or item["material_kind"] not in MATERIAL_KINDS):
+            raise ValueError("Unknown source material_kind")
         if not isinstance(item.get("path"), str) or not item["path"].strip() or "\0" in item["path"]:
             raise ValueError("Source object requires a nonempty path")
         if item.get("role", "main") not in {"main", "supplement"}:
@@ -733,7 +736,7 @@ class Coordinator:
                 deadline = min(deadline or float("inf"), time.monotonic() + contract()["automatic_acquisition_seconds"])
                 client = SourceClient(max_attempts=1, deadline=deadline)
             result = retrieve(paper, directory, provided_paths=paper.get("provided_paths", []),
-                              deadline=deadline, client=client,
+                              deadline=deadline, client=client, text_only=enabled(self),
                               previous_result=previous, source_generation=payload.get("source_generation", 1))
             delay = 0
             if result["status"] == "deferred":

@@ -146,16 +146,24 @@ def source_record_key(record, source):
 
 
 class _Redirect(urllib.request.HTTPRedirectHandler):
+    def __init__(self, text_only=False, material_kind=None):
+        super().__init__()
+        self.text_only, self.material_kind = text_only, material_kind
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         safe_url(newurl)
+        if self.text_only:
+            from .source_scope import check
+            check(newurl, material_kind=self.material_kind)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def public_transport(url, *, timeout, headers, max_bytes=64 * 1024 * 1024):
+def public_transport(url, *, timeout, headers, max_bytes=64 * 1024 * 1024,
+                     text_only=False, material_kind=None):
     deadline = time.monotonic() + timeout
     safe_url(url)
     request = urllib.request.Request(url, headers=headers)
-    opener = urllib.request.build_opener(_Redirect())
+    opener = urllib.request.build_opener(_Redirect(text_only, material_kind))
     def read_bounded(response):
         body = bytearray()
         while len(body) <= max_bytes:
@@ -170,6 +178,9 @@ def public_transport(url, *, timeout, headers, max_bytes=64 * 1024 * 1024):
         raise SourceError("deferred", "Source exceeds operational download byte limit; no truncated source accepted")
     try:
         with opener.open(request, timeout=_remaining(deadline, timeout)) as response:
+            if text_only:
+                from .source_scope import check
+                check(response.url, material_kind=material_kind, headers=dict(response.headers))
             length = response.headers.get("Content-Length")
             if length and length.isdigit() and int(length) > max_bytes:
                 raise SourceError("deferred", "Source exceeds operational download byte limit; increase authorized resources or supply a local file")
@@ -287,8 +298,11 @@ class SourceClient:
         self.max_download_bytes = max_download_bytes
         self.deadline = deadline
 
-    def get(self, url, *, json_response=False):
+    def get(self, url, *, json_response=False, text_only=False, material_kind=None):
         safe_url(url, resolve=False)
+        if text_only:
+            from .source_scope import check
+            check(url, material_kind=material_kind)
         attempts = []
         for number in range(self.max_attempts):
             from .host_access import network_hold, observe, network_error
@@ -301,12 +315,16 @@ class SourceClient:
                 options = {"timeout": timeout, "max_bytes": self.max_download_bytes, "headers": {
                     "User-Agent": "consciousness-sweep/1.0 (public scholarly metadata)",
                     "Accept": "application/json" if json_response else "application/xml,application/pdf,text/plain;q=0.8,*/*;q=0.1"}}
+                if text_only:
+                    options.update(text_only=True, material_kind=material_kind)
                 if self.deadline is not None and self.transport is public_transport:
                     response = _bounded_public_transport(url, deadline=self.deadline,
                         openalex_key_env=self.openalex_key_env, **options)
                 else:
                     response = self.transport(_credential_url(url, self.openalex_key_env), **options)
                 _remaining(self.deadline, self.timeout)
+                if text_only:
+                    check(response.get("url", url), material_kind=material_kind, headers=response.get("headers"))
                 code = response["status"]
                 observe(url, http_status=code)
                 body = response["body"]
@@ -1077,7 +1095,7 @@ class _RetrievalRetry:
 
 
 def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None,
-             previous_result=None, source_generation=1):
+             previous_result=None, source_generation=1, text_only=False):
     """Acquire a verified main source plus explicitly associated supplements.
 
     Supplied entries may be paths or {path, role:'supplement', association_reason}.
@@ -1092,6 +1110,7 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
     directory = Path(output_dir)
     directory.mkdir(parents=True, exist_ok=True)
     attempts, assets, gaps, candidates = [], [], [], []
+    from . import source_scope
     retry = _RetrievalRetry(paper, source_generation, previous_result)
 
     def identity_search(source, limit):
@@ -1167,12 +1186,15 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
                 continue
             receipt = None
             try:
+                if text_only:
+                    source_scope.check(label, material_kind=candidate.get("material_kind"))
                 _remaining(deadline, 120)
                 if candidate.get("path"):
                     data = _provided_bytes(candidate)
                     receipt = {"route": "provided-file", "path": label, "at": now()}
                 else:
-                    data, raw = client.get(label)
+                    data, raw = source_scope.get(client, label, enabled=text_only,
+                                                material_kind=candidate.get("material_kind"))
                     receipt = {k: v for k, v in raw.items() if k != "raw_body"}
                 asset, links = _asset(paper, data, label, directory, deadline=deadline)
                 outcome = {"source": label, "status": asset["identity"]["status"], "receipt": receipt,
@@ -1208,6 +1230,11 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
     for link in supplemental_links:
         href = link.get("href")
         resolved = urllib.parse.urljoin(main_base, href) if main_base and href else href
+        excluded = source_scope.exclusion(resolved, description=link.get("description", "")) if text_only else None
+        if excluded:
+            attempts.append({"source": resolved or href, "status": "out-of-scope", "reason": excluded})
+            gaps.append(excluded + ": " + str(resolved or href or link.get("description")))
+            continue
         if resolved and urllib.parse.urlsplit(resolved).scheme in {"http", "https"}:
             try:
                 safe_url(resolved, resolve=False)
@@ -1221,8 +1248,11 @@ def retrieve(paper, output_dir, provided_paths=(), *, client=None, deadline=None
         try:
             if not supplement.get("association_reason"):
                 raise ValueError("Supplied supplemental source needs an explicit association reason")
+            if text_only:
+                source_scope.check(label, material_kind=supplement.get("material_kind"))
             _remaining(deadline, 120)
-            data = _provided_bytes(supplement) if supplement.get("path") else client.get(label)[0]
+            data = _provided_bytes(supplement) if supplement.get("path") else source_scope.get(
+                client, label, enabled=text_only, material_kind=supplement.get("material_kind"))[0]
             asset, _ = _asset(paper, data, label, directory, role="supplement", association=supplement["association_reason"], deadline=deadline)
             attempts.append({"source": label, "status": asset["identity"]["status"], "reason": asset["identity"]["reason"]})
             if asset["identity"]["status"] != "match":

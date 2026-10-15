@@ -117,6 +117,8 @@ def main(argv=None):
             cmd.add_argument("--url", required=True)
             cmd.add_argument("--role", choices=["main", "supplement"], default="main")
             cmd.add_argument("--association-reason")
+            from .source_scope import MATERIAL_KINDS
+            cmd.add_argument("--material-kind", choices=sorted(MATERIAL_KINDS))
             cmd.add_argument("--reason", required=True)
             cmd.add_argument("--actor", default="supervising-agent")
         if name == "source-retry":
@@ -309,7 +311,8 @@ def main(argv=None):
                     from .host_access import transport_scope
                     with transport_scope(coordinator.store):
                         result = fetch(coordinator, args.paper_id, args.url, role=args.role,
-                            association_reason=args.association_reason, reason=args.reason, actor=args.actor)
+                            association_reason=args.association_reason, reason=args.reason, actor=args.actor,
+                            material_kind=args.material_kind)
                 elif args.command == "source-retry":
                     from .source_intake import queue_retrieval
                     result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}

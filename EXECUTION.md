@@ -882,9 +882,54 @@ unresolved bindings and absent real papers still fail. A failed sanity cursor
 is retained until a successful check, so full validation alone does not clear it.
 
 
+## Source scope and oversized packets
+
+The focused workflow acquires the main article and supplementary text only:
+methods, results, appendices, tables and figures in those documents. Do not download
+code, repositories, raw datasets, simulation traces or saved software outputs. Do
+not convert them into reader text or image collections. A document containing
+code examples or equations remains an intact article/supplement. Record excluded
+artifact links as outside acquisition scope, not as scientific exclusions. A claim
+that depends on unexamined material must retain that limitation.
+
+Known code/data extensions and repository/archive links are rejected before
+fetching. The public transport also checks redirects and response headers before
+reading the body. An opaque response discovered to be an archive after receipt
+is not saved as a source. Ambiguous text files still require source-grounded
+inspection; extensions alone do not establish document type. A mixed archive is
+not a reason to download an entire repository: locate a direct textual supplement
+within the existing acquisition allowance, otherwise record the gap. Publisher
+metadata requests and article identity verification remain authorized.
+
+Manifest entries may declare `material_kind`: `article-text` or
+`supplementary-text`. `code`, `dataset`, `software-output` and `other` explicitly
+identify out-of-scope artifacts and are rejected by focused acquisition/intake.
+A CSV/TSV supplementary results table needs an explicit `supplementary-text`
+identification; this does not imply raw observations were analyzed. Unsupported
+document extraction remains a recorded gap, never a fabricated reading.
+
+For an authorized one-time cleanup of size-blocked, unassessed packets, inspect
+source inventories and classify attachments before changing any current manifest.
+Keep all downloaded originals, old packets, hashes, failures and accounting.
+Exclude only identified non-text artifacts from a replacement main/textual-SI
+manifest, recording each omission and its reason. Use `source --manifest` to
+create an immutable source generation and supersede stale pending work. Never edit
+an existing packet or hash. Completed scientific readings are not automatically
+rerun by this cleanup. Do not clear profile/budget/unknown-outcome holds.
+
+Measure the new complete reader prompt once. A now-fitting successor can proceed
+through normal leased admission; a still-oversized source stays deferred without
+repeat retries. Do not delete genuine text, appendix sections, references, tables
+or figures to fit a cap. Long theses need a separately verified context strategy.
+`max_input_bytes` is a coarse operational guard, not the model context window;
+the adapter's current context/cost bound also conservatively uses UTF-8 bytes as
+a token upper bound. Raising only the byte cap may still fail that bound. Do not
+change plan-bound limits, use unverified token estimates, truncate sources or
+silently split scientific readings. Preserve all resource and isolation controls.
+
 ## Routine source acquisition and recovery
 
-The run request authorizes public metadata/paper/supplement downloads in scope.
+The run request authorizes public metadata, article and supplementary-text downloads in scope.
 The supervising agent performs routine acquisition and identity checks without
 per-paper user confirmation. Public article and supplement links deposited in
 OpenAlex, Europe PMC, DOI/publisher records and recognized repositories may be
@@ -921,7 +966,7 @@ Downloads or temporary personal folders. Automatic retrieval writes under
 .venv/bin/python -B -m sweep fetch-source --run-id RUN_ID --paper-id P000001 \
   --url 'https://publisher.example/article.pdf' --reason 'Located publisher main article'
 .venv/bin/python -B -m sweep fetch-source --run-id RUN_ID --paper-id P000001 \
-  --url 'https://publisher.example/supplement.pdf' --role supplement \
+  --url 'https://publisher.example/supplement.pdf' --role supplement --material-kind supplementary-text \
   --association-reason 'Linked as supplementary information by the article landing page' \
   --reason 'Obtain methods needed for source coverage'
 ```
@@ -938,7 +983,7 @@ The result's `source_entry` is a candidate manifest entry, not a verified asset.
 Verify title, authors, DOI/article version and supplement association against the
 source. Combine all intended current main/SI entries in a JSON array under the
 run directory, then use `source --manifest FILE --reason REASON`. Entries include
-`path`, `role`, `expected_sha256` and, for supplements, `association_reason`.
+`path`, `role`, `expected_sha256`, optional `material_kind` and, for supplements, `association_reason`.
 Do not replace the main paper with a poster, wrong article, landing page or
 unverified version. Source attachment preserves immutable bytes, advances the
 source generation and retires only old current projections; prior readings and

@@ -36,6 +36,7 @@ def contract(name=NAME):
         "abstract_lookup_seconds": 90, "acquisition_rounds": 1,
         "automatic_acquisition_seconds": 180, "public_copy_searches": 1,
         "public_copy_candidates": 2, "public_copy_seconds": 120,
+        "acquisition_scope": "article-and-supplementary-text-v1",
         "screening": "one decision per unchanged evidence; no compulsory rescue or sampled rereview",
         "missing_abstract": "defer after bounded lookup; no automatic full-text attempt",
         "uncertain_abstract": "defer until explicitly reactivated; retain in global deduplication",
@@ -589,9 +590,10 @@ def hydrate_operational_task(c, task):
     if task.get("task") != "bounded-public-source-acquisition":
         return None
     from .source_intake import source_manifest
+    from .source_scope import INSTRUCTIONS
     return dict(task, paper=source_manifest(c.store.paper(task["paper_id"])),
         execution_role="bounded-public-source-acquisition", intended_profile=c.plan["profiles"]["title"],
-        instructions="Finish one acquisition pass: inspect the publisher/DOI page once if not already checked, collect main text and visible supplements together, then at most one terminal/web search for a public author/repository/preprint copy and at most two candidate downloads. Spend at most 120 seconds. Use fetch-source to save under this run; ordinary public scholarly downloads are authorized. No browser detective work, repeated searches, login bypass or paid fallback. Identity verification remains required. Return {status:'found'|'unavailable',entries:[complete main/SI source entries],attempts:[routes and outcomes],reason}. Unavailable is coverage loss, not scientific exclusion. No need to ask the user for the paper; continue other work.")
+        instructions=INSTRUCTIONS + "\nFinish one acquisition pass: inspect the publisher/DOI page once if not already checked, collect main text and visible textual supplements together, then at most one terminal/web search for a public author/repository/preprint copy and at most two candidate downloads. Spend at most 120 seconds. Use fetch-source to save under this run; ordinary public scholarly downloads are authorized. No browser detective work, repeated searches, login bypass or paid fallback. Identity verification remains required. Return {status:'found'|'unavailable',entries:[complete main/textual-SI source entries with material_kind],attempts:[routes and outcomes, including out-of-scope links],reason}. Unavailable is coverage loss, not scientific exclusion. No need to ask the user for the paper; continue other work.")
 
 
 def submit_operational(c, task_id, payload, actor):

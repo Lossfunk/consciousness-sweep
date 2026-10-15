@@ -41,8 +41,10 @@ coverage or review requirements of a registered run under `science/AGENTS.md`.
 3. **Prioritize retained abstracts.** Uncertain abstracts remain in a deferred
    queue for optional later coverage. Unchanged evidence is not repeatedly screened.
 4. **Acquire sources once.** Try known locations with per-request timeouts and a
-   bounded publisher/public-copy check. Collect visible supplements with the main
-   article. Record unavailable material and move on; do not repeat the hunt.
+   bounded publisher/public-copy check. Collect the main article and visible supplementary text, including methods,
+   results, tables and figures within those documents. Do not download code,
+   datasets, simulation outputs or software archives. Record unavailable material
+   and move on; do not repeat the hunt.
 5. **Read once, substantially.** One fresh source-only worker applies the complete
    rubric and records experiment-level citation eligibility and earned process
    searches. Missing evidence stays unresolved. No automatic second reader is
@@ -69,7 +71,7 @@ cd consciousness-sweep
 Open the folder in Codex, Claude Code or another coding agent and ask:
 
 > Run the focused sweep with unbounded citation depth. Use my existing subscription
-> without extra charges. Download accessible papers and supplements into this
+> without extra charges. Download accessible papers and supplementary text into this
 > run's repository folder, and use available workers within the agreed allowance.
 
 Choose finite resource or depth limits if preferred. The agent reads
@@ -80,7 +82,8 @@ hidden total-call/time allowance or paid-provider fallback.
 Ordinary public scholarly downloads are authorized by this request, including
 links supplied by OpenAlex, Europe PMC, Crossref, publishers and repositories.
 The agent saves them under `runs/<RUN_ID>/intake/downloads/` and verifies article
-identity before use. A trustworthy link does not make document instructions
+identity before use. Source acquisition covers article and supplementary text;
+software repositories and raw datasets are outside scope. A trustworthy link does not make document instructions
 trusted. Host security controls, credentials and purchase permissions still apply.
 
 ### Model configuration
@@ -132,7 +135,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r35**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r36**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
