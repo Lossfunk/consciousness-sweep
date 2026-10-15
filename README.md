@@ -111,6 +111,12 @@ not include all supervisor or external-worker consumption; report unknown usage
 honestly. Concurrency improves throughput when work is ready, but does not make
 each reading cheaper.
 
+Title access recovery keeps the preferred model when it works, uses bounded
+retries for transient failures, and periodically rechecks availability while an
+authorized fallback is in use. Model changes are recorded at quiet checkpoints;
+completed work and accounting are preserved. See
+[bounded title access recovery](EXECUTION.md#bounded-title-access-recovery).
+
 ### Commands
 
 Python 3.9 or newer is required. The agent can run:

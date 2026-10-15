@@ -52,6 +52,18 @@ title-only model/effort change uses `continue-run --title-profile`; preserve old
 job profiles and receipts, and never substitute models silently. STOP remains in force until
 post-continuation checks pass. Source replacements retain earlier assets and reads.
 
+For title access, follow [bounded recovery](EXECUTION.md#bounded-title-access-recovery).
+Keep a working preferred model. For transient, confirmed nonadmission, allow at
+most three attempts per outage across all workers, with backoff. A stale catalog
+is not proof of provider rejection. Record observations and the next check under
+the run's `intake/model-access/`; resume must not reset the recovery count.
+Use only an explicitly authorized title fallback. While on fallback, recheck the
+preferred model at spaced supervisory checkpoints without inference, and restore
+it through `continue-run --title-profile` when new access evidence warrants it.
+Use one ordinary pending title batch to confirm recovery before filling slots.
+Do not retry authentication/quota failures unchanged, replay unknown calls,
+increase reasoning effort, change other roles or add paid-provider fallback.
+
 ## Paper workflow
 
 - Deduplicate against the entire logical-paper index, including excluded, deferred

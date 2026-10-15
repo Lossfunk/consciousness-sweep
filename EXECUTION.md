@@ -1083,10 +1083,77 @@ rubric or frozen input requires separate scientific review and is rejected here.
 
 ### Title model access and authorized replacement
 
-Check the current harness's exact worker model/effort catalog before dispatch.
-A missing local model is an access issue, not a failed scientific reading. Resolve
-only its scoped access block after establishing availability; retain failed or
-unknown calls and their accounting. Do not silently choose a larger model.
+Check the current harness's exact worker model/effort capability before dispatch.
+A missing entry in an old catalog leaves access unestablished; it is not a provider
+rejection. Refresh the observable capability without inferring entitlement from
+the installed binary or a worker's self-report. A current tool-schema restriction
+must be respected. Actual execution through the requested route is stronger
+evidence than a catalog listing, while backend identity may remain unverified.
+Keep a working preferred model; an access problem is not a scientific reading
+failure or a reason to increase reasoning effort.
+
+### Bounded title access recovery
+
+The supervising agent manages this policy using the existing access-resolution,
+lease and continuation commands. The runner does not automatically switch models
+or create a polling task. Apply it within the user's recorded allowance and
+existing supervision mechanism; it adds no model calls at startup.
+
+Keep one outage record per exact title profile and execution route under
+`runs/<RUN_ID>/intake/model-access/`, with a unique outage ID. Save each observation
+as a new file: UTC time, catalog/receipt evidence, requested model and effort,
+job/lease identity where present, admission state, attempt count, next check time,
+authorized fallback and remaining unknowns. Recover this record on resume and
+share its count across workers; a new job or supervisor invocation does not reset
+it. Never store credentials or overwrite earlier evidence. These notes support
+supervision; they do not clear ledger blocks, grant leases or establish billing.
+
+| Observed condition | Supervisory action |
+|---|---|
+| Catalog missing/stale, route otherwise untested | Refresh capability first. If the exact setting is permitted, dispatch one ordinary leased title batch. If the tool currently disallows it, retain the hold and recheck capability without inference. |
+| Transient refusal with confirmed terminal nonadmission | At most three dispatch attempts total in the outage, including the original. Space the second and third at least 60 and 300 seconds after the preceding attempt, with a small additional stagger; honor any longer retry-after. Reconcile the receipt, resolve only the affected access scope with the actual retry rationale, and dispatch just one batch at a time. Continue independent work during the delay. |
+| Explicit unsupported model/effort, authentication failure, exhausted quota or billing denial | Do not repeat the unchanged request. Require changed capability, repaired access or a reset before retrying. A different model must not be used to evade an account/budget hold. |
+| Timeout, lost worker, admitted failure or unknown admission | Preserve the receipt and charge. Establish worker termination and reconcile the outcome; only the existing explicit charged-retry workflow can authorize another attempt. These calls are not nonadmission retries. |
+| Completed response, including malformed output or a disputed screening decision | Save and handle it under the existing result/review workflow. It is not evidence that the model is unavailable; no access retry or model escalation follows from the label or format alone. |
+
+For the economical Codex title configuration, the preferred pair is
+`gpt-6-luna` / `medium`; the optional fallback is `gpt-6.1-sol` / `low` on the same
+authorized harness and billing route. Both switching to the fallback and returning
+to the preferred pair require recorded user authorization, which may be supplied
+once for this policy. Existing authorization need not be requested again. Other
+roles and harnesses retain their own exact profiles. A fallback is never implied
+by the recommendation. Once the bounded transient attempts are exhausted, or an
+explicit unavailability is established, use the authorized fallback at a quiet
+checkpoint or retain the scoped hold. Do not start a new three-attempt cycle for
+each paper.
+
+While on fallback with title work remaining, check the preferred capability at the
+first ordinary supervisory checkpoint at least one hour after fallback, then at
+least two hours after an unchanged check, then at least four hours between further
+unchanged checks. Honor longer provider reset times. These checks use available
+catalog/access observations without inference; keep the working fallback busy.
+Do not wake the supervisor solely to poll, run repeated model probes, or create a
+full validation checkpoint for an unchanged observation. If no non-inference
+capability check exists, retain the unknown and wait for new access evidence.
+
+New evidence permitting the preferred model can trigger restoration at the next
+quiet checkpoint after at least one hour on fallback. Use the title-profile
+continuation below, even when the release itself is unchanged. Resolve any old
+preferred-profile block explicitly under the profile to which its original job
+was bound; a continuation does not erase that block. Dispatch one ordinary pending
+title batch under the restored profile, accept its result if valid, and only then
+fill the other title slots. This is useful work, not an extra calibration call.
+Do not re-screen completed titles or interrupt admitted fallback workers.
+
+If restoration fails, retain its real admission/accounting state and use the
+same bounded recovery rules. A return to the authorized fallback is another
+recorded quiet transition, not a hot task rewrite. After a failed restoration,
+wait at least four hours and require new evidence before another restoration;
+do not bounce between models on each worker handoff. Skip restoration checks when
+no title work remains. Record requested and reported settings separately; a
+successful task alone is not proof of provider identity.
+
+### Recording a title profile change
 
 If the user authorizes a replacement for title screening, `continue-run` accepts
 `--title-profile /absolute/path/title-profile.json` during the same quiet,
