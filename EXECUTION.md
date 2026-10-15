@@ -368,6 +368,19 @@ Saved process-audit explanations, prior verdicts and deferral notes remain in th
 supervisor's ledger. Dispatch the newly emitted task, without appending those notes
 or reusing a worker context that has seen them.
 
+With focused retained-first scheduling, unfinished native assessments following
+complete legacy contextual readings form a background queue. Ready model work
+and other native tasks take precedence. Background tasks remain claimable when
+preferred work is unavailable, retain lease fencing, and still prevent final
+completion. They are counted separately as `background_contextual_native` in
+queue pressure and do not occupy the active discovery buffer. New sources,
+incomplete readings and combined-reader jobs do not receive this lower priority.
+
+Eligible source windows rotate among principal citations, deeper citations and
+earned query windows. The saved turn survives resume. Existing depth limits,
+source windows, queue size, concurrency and backpressure still apply. This changes
+admission order only; no new scientific eligibility or stopping rule is introduced.
+
 Use distinct leased units concurrently within the authorized harness capacity;
 `resources.model_workers` and `retrieval_workers` govern automatic dispatch unless
 an explicit `operational_policy.inference_workers` supplies the effective model

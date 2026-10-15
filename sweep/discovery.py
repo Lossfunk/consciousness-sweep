@@ -6,6 +6,7 @@ The frozen native ledger/validator remains the authority for certification.
 """
 from __future__ import annotations
 
+from collections import deque
 import csv
 from datetime import datetime, timezone
 import json
@@ -167,6 +168,37 @@ def _search_candidate(c, obligation):
     return payload, key, old
 
 
+def _search_admissions(c, obligations):
+    """Rotate only already eligible source windows; never alter their contents."""
+    from .execution_policy import for_coordinator
+    policy = for_coordinator(c)
+    sources = [o for o in obligations if not o.get('task')]
+    if policy.get('workflow') != 'focused-v1' or not policy['retained_first']:
+        for obligation in sources:
+            payload, key, old = _search_candidate(c, obligation)
+            if old is None:
+                yield payload, key, None
+        return
+    names = ('principal-citation', 'deeper-citation', 'earned-query')
+    buckets = {name: [] for name in names}
+    for obligation in sources:
+        lane = ('earned-query' if obligation.get('phase') != 'citation' else
+                'deeper-citation' if (obligation.get('parent_citation_depth') or 0) > 0 else 'principal-citation')
+        buckets[lane].append(obligation)
+    previous = c.store.get_state('search-admission-last-lane', names[0])
+    start = (names.index(previous) + 1) % len(names) if previous in names else 0
+    lanes = deque(names[start:] + names[:start])
+    buckets = {name: iter(values) for name, values in buckets.items()}
+    while lanes:
+        lane = lanes.popleft()
+        for obligation in buckets[lane]:
+            payload, key, old = _search_candidate(c, obligation)
+            if old is None:
+                lanes.append(lane)
+                yield payload, key, lane
+                break
+
+
 def discovery_tick(c):
     if c.plan.get("mode") != "discovery":
         return None
@@ -199,20 +231,23 @@ def discovery_tick(c):
     slots = max(0, backlog["search_queue_target"] - backlog["queued_search_jobs"])
     if backlog["search_admission_paused"]:
         slots = 0
-    for obligation in frontiers.due_obligations(state):
+    obligations = frontiers.due_obligations(state)
+    for obligation in obligations:
         if _deadline_expired(c):
             break
         if obligation.get("task") == "replay-citation-provenance":
             _replay_lineage(c, obligation)
             continue
-        if obligation.get("task"):
-            continue
-        if scheduled >= slots:
+    admissions = _search_admissions(c, obligations)
+    while scheduled < slots and not _deadline_expired(c):
+        candidate = next(admissions, None)
+        if candidate is None:
             break
-        payload, key, old = _search_candidate(c, obligation)
-        if old is not None:
-            continue
+        payload, key, lane = candidate
         c.store.enqueue("search", key, payload, priority=10)
+        if lane is not None:
+            c.store.set_state('search-admission-last-lane', lane,
+                'Rotate bounded source admission among principal, deeper citation and earned query windows')
         scheduled += 1
     return {"phase": state["phase"], "scheduled_source_jobs": scheduled,
             "native_tasks": len(state["native_assessment_pending"]), "native_scientific_completion": False}

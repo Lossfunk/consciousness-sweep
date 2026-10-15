@@ -32,13 +32,19 @@ def pressure(coordinator):
     if audits:
         counts["native-assessment-pending"] = audits
     total = sum(counts.values())
-    from .execution_policy import for_coordinator, uncertain_sql
+    from .execution_policy import for_coordinator, uncertain_sql, contextual_followup_sql
+    policy = for_coordinator(coordinator)
+    contextual = 0
+    if policy.get("workflow") == "focused-v1" and policy["retained_first"]:
+        with coordinator.store._connection() as conn:
+            contextual = conn.execute("SELECT count(DISTINCT p.id) FROM meta m,json_each(m.value,'$.native_assessment_pending') n JOIN papers p ON p.id=n.key WHERE m.key='state:discovery_frontiers' AND coalesce(json_extract(p.record,'$.workflow_defer.active'),0)=0 AND " + contextual_followup_sql()).fetchone()[0]
     deferred = 0
-    if for_coordinator(coordinator)["retained_first"] and not enabled(coordinator):
+    if policy["retained_first"] and not enabled(coordinator):
         with coordinator.store._connection() as conn:
             deferred = conn.execute("SELECT count(*) FROM papers p WHERE p.status IN ('retrieval-pending','reader-pending') AND " + uncertain_sql()).fetchone()[0]
-    backlog = total - deferred
-    return {"papers_waiting": backlog, "total_papers_waiting": total, "deferred_uncertain": deferred, "by_status": counts,
+    backlog = total - deferred - contextual
+    return {"papers_waiting": backlog, "total_papers_waiting": total, "deferred_uncertain": deferred,
+            "background_contextual_native": contextual, "by_status": counts,
             "high_water_papers": high, "search_admission_paused": backlog >= high,
             "queued_search_jobs": search_jobs,
             "search_queue_target": max(2, 2 * resources.get("retrieval_workers", 2)),

@@ -51,7 +51,54 @@ def uncertain_job_sql():
             "AND EXISTS(SELECT 1 FROM papers p WHERE p.id=json_extract(j.payload,'$.paper_id') AND " + uncertain_sql() + "))")
 
 
+def contextual_followup_sql(alias="p"):
+    """Scheduling only: a completed ordinary reading of these same sources.
+
+    A stale, incomplete or combined reading never acquires this lower priority.
+    Native eligibility remains unassessed and its obligation remains pending.
+    """
+    record = alias + ".record"
+    return ("(" + alias + ".status='assessed'"
+        " AND json_extract(" + record + ",'$.assessment.assessment_status')='complete'"
+        " AND json_extract(" + record + ",'$.assessment.paper_decision')='context'"
+        " AND json_extract(" + record + ",'$.assessment_source_generation')=coalesce(json_extract(" + record + ",'$.source_generation'),1)"
+        " AND json_extract(" + record + ",'$.packet_source_generation')=coalesce(json_extract(" + record + ",'$.source_generation'),1)"
+        " AND json_extract(" + record + ",'$.packet_path') IS NOT NULL"
+        " AND EXISTS(SELECT 1 FROM jobs old_reader WHERE old_reader.id=json_extract(" + record + ",'$.reader_job')"
+        " AND old_reader.stage='reader' AND old_reader.state='complete'"
+        " AND json_extract(old_reader.payload,'$.unified_reader') IS NULL"
+        " AND coalesce(json_extract(old_reader.payload,'$.calibration_review'),0)=0))")
+
+
+def _focused_model_ready(conn):
+    """Only dispatchable model work holds background native follow-ups.
+
+    Use the ordinary claim predicate so held, superseded, blocked, dependency-
+    waiting and delayed jobs cannot indefinitely starve the background lane.
+    Source retrieval/search use separate capacity and can run alongside it.
+    """
+    from .store import Store
+    from .profiles import profile_fingerprint
+    from .host_access import profile_blocked
+    blocks = {row[0][6:]: json.loads(row[1]) for row in conn.execute(
+        "SELECT key,value FROM meta WHERE key LIKE 'state:access-block:%'") if json.loads(row[1]).get("active")}
+    if "access-block:budget" in blocks:
+        return False
+    plan = json.loads(conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()[0])
+    host_row = conn.execute("SELECT value FROM meta WHERE key='state:host-access'").fetchone()
+    host = json.loads(host_row[0]) if host_row else {}
+    predicate, args = Store.claimable_sql(conn, ['title','abstract','rescue','audit','reader'], now=time.time())
+    for row in conn.execute("SELECT j.stage,coalesce(json_extract(j.payload,'$.calibration_review'),0) review FROM jobs j WHERE " + predicate, args):
+        profile = (plan.get('calibration_review_profile') if row['review'] else
+            plan['profiles']['rescue' if row['stage'] in {'rescue','audit'} else row['stage']])
+        if profile and 'access-block:profile:' + profile_fingerprint(profile) not in blocks and not profile_blocked(host, profile):
+            return True
+    return False
+
+
 def primary_pending(conn):
+    if load(conn).get("workflow") == "focused-v1":
+        return _focused_model_ready(conn)
     # Ready or running work, not blocked inputs/cooldowns, holds the preferred lane.
     blocks = {row[0][6:]: json.loads(row[1]) for row in conn.execute(
         "SELECT key,value FROM meta WHERE key LIKE 'state:access-block:%'") if json.loads(row[1]).get("active")}
@@ -106,9 +153,14 @@ def job_order(conn=None):
 
 
 def native_rank(conn, task, policy=None):
-    if (policy or load(conn)).get("workflow") == "focused-v1":
+    policy = policy or load(conn)
+    if policy.get("workflow") == "focused-v1":
         category = task.get("task", "")
-        return (0, 2 if category == "bounded-public-source-acquisition" else 1 if category == "bibliographic-identity-resolution" else 0, task.get("paper_id", ""))
+        background = False
+        if policy["retained_first"] and category == "native-discovery-audit" and task.get("paper_id"):
+            row = conn.execute("SELECT " + contextual_followup_sql() + " FROM papers p WHERE p.id=?", (task['paper_id'],)).fetchone()
+            background = bool(row and row[0])
+        return (int(background), 2 if category == "bounded-public-source-acquisition" else 1 if category == "bibliographic-identity-resolution" else 0, task.get("paper_id", ""))
     if not (policy or load(conn))["retained_first"] or not task.get("paper_id") or str(task.get("task_id", "")).startswith("calibration:"):
         return (0, 0, "")
     row = conn.execute("SELECT " + uncertain_sql() + ",json_extract(p.record,'$.citation_depth') "

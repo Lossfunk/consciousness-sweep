@@ -80,6 +80,12 @@ post-continuation checks pass. Source replacements retain earlier assets and rea
 - Preserve prior initial readings on continuation. If their native assessment is
   unfinished, complete only that remaining assessment. Completed native work is
   reused for unchanged sources. No retrospective mass rereading is authorized.
+  With retained-first scheduling, completed legacy contextual readings receive
+  lower-priority native follow-ups. They remain pending and prevent completion,
+  but do not fill the active discovery buffer. Prefer outstanding prospects and
+  ready new work; use otherwise available slots for contextual follow-ups.
+  Changed sources restore ordinary priority. Keep scheduling labels outside
+  source-only reader packets.
 - Seeds use the same gates. Their identities and reference set remain intact.
   Keep expectations, prior verdicts and comparison reports with the evaluator.
   Calibration discrepancies remain reportable without mandatory additional calls;

@@ -55,9 +55,12 @@ coverage or review requirements of a registered run under `science/AGENTS.md`.
    the global deduplication index at every depth.
 
 Discovery pauses admission when active downstream work fills the buffer, including
-papers awaiting scientific assessment. Workers refill available slots as results
-arrive. Lightweight checks run incrementally; full validation and delivery occur
-at coordinated quiet checkpoints.
+papers awaiting scientific assessment. When continuing earlier work, native
+follow-ups for completed contextual readings use a separate background queue;
+outstanding prospects and ready new work take priority. Eligible seed citations,
+deeper citations and earned query windows share bounded search admission.
+Workers refill available slots as results arrive. Lightweight checks run
+incrementally; full validation and delivery occur at coordinated quiet checkpoints.
 
 ## Get started
 
@@ -135,7 +138,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r37**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r38**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
