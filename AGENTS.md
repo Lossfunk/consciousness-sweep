@@ -117,6 +117,32 @@ work is not ready. Do not change judgments, bypass native assessment or treat a
 parked acquisition as scientific exclusion or saturation. A completed prospect
 remains preferred even if its earlier abstract was uncertain.
 
+For an instruction to continue until completion, wait for the first worker
+completion, reconcile it, and refill eligible free slots immediately. Do not end
+a turn merely to report progress while ready work or owned workers remain.
+Before yielding, inspect `supervise --check-yield`; exit code 3 means continue
+supervising. A block in one route does not end independent permitted work.
+
+At startup or resume, establish one same-chat wake-up schedule or equivalent
+external continuation mechanism for unattended execution under the existing
+resource agreement. Reuse an existing matching schedule. Verify its enabled
+state, exact target and settings through the harness, record the observation
+with `supervise --wakeup`, and verify a subsequent actual wake-up. A saved receipt
+is not proof that a future wake-up will execute. Report unavailable continuation;
+do not invent access, switch billing, impose a total cap or duplicate supervisors.
+
+Wake-ups inspect durable state and refill eligible slots through existing
+commands. Respect STOP, checkpoint holds, source bindings, leases, access/budget
+blocks and parked acquisitions. Never clear a hold, retry an unknown call or
+infer worker termination from silence or expiry. Do not run a full audit on
+every wake-up. Use compact checks and notify only on meaningful progress,
+completion or an actionable blocker.
+
+Use `supervise --mode checkpoint --actor ACTOR --reason REASON` to hold admissions
+while workers drain for a quiet audit. After validation and required delivery
+succeed, explicitly return to `--mode active`. Checkpoint holds never expire or
+clear on `resume`. Keep supervision controls out of source-only reader contexts.
+
 An explicitly authorized change to an external supervisor/native-worker
 agreement follows the checkpoint procedure in `EXECUTION.md`. It never changes
 a plan-bound job profile, immutable input, source binding or completed result.

@@ -924,6 +924,29 @@ class Store:
             local += " AND NOT EXISTS (SELECT 1 FROM retrieval_attempts ra, meta hm WHERE ra.job_id=" + alias + ".id AND hm.key='state:host-access' AND json_type(hm.value,'$.network')='object' AND ra.completed_at>=coalesce(json_extract(hm.value,'$.network.at'),0))"
         return local
 
+    @staticmethod
+    def claimable_sql(conn, stages, *, now, calibration_reviews=None, local_retrieval_only=False):
+        """Shared pending-work predicate for admission and supervision inspection."""
+        placeholders = ",".join("?" for _ in stages)
+        review_filter = ""
+        args = list(stages) + [now]
+        if calibration_reviews is not None:
+            if type(calibration_reviews) is not bool:
+                raise ValueError("calibration_reviews must be boolean or null")
+            review_filter = " AND coalesce(json_extract(j.payload,'$.calibration_review'),0)=?"
+            args.append(int(calibration_reviews))
+        eligible = "j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||j.id AND json_extract(m.value,'$.active')=1) AND j.stage IN (" + placeholders + ") AND j.available_at<=?" + review_filter + " AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete')"
+        if type(local_retrieval_only) is not bool:
+            raise ValueError("local_retrieval_only must be boolean")
+        if local_retrieval_only:
+            eligible += " AND j.stage='retrieval' AND " + Store.local_retrieval_sql(untried_during_hold=True)
+        from .execution_policy import job_filter, load
+        eligible += job_filter(conn)
+        rounds = load(conn)["retrieval_max_rounds"]
+        if rounds is not None:
+            eligible += " AND (j.stage!='retrieval' OR (SELECT count(*) FROM retrieval_attempts a WHERE a.job_id=j.id)<" + str(rounds) + ")"
+        return eligible, args
+
     def claim(self, stages, owner, lease_seconds=300, limit=1, calibration_reviews=None, local_retrieval_only=False):
         if not stages or not owner or not 1 <= limit <= 1000 or lease_seconds <= 0:
             raise ValueError("Claim requires stages, owner, bounded limit and positive lease")
@@ -931,24 +954,12 @@ class Store:
         with self._transaction() as conn:
             self._require_initialized(conn)
             self._register_owner(conn, owner, os.getpid(), socket.gethostname())
-            placeholders = ",".join("?" for _ in stages)
-            review_filter = ""
-            args = list(stages) + [now]
-            if calibration_reviews is not None:
-                if type(calibration_reviews) is not bool:
-                    raise ValueError("calibration_reviews must be boolean or null")
-                review_filter = " AND coalesce(json_extract(j.payload,'$.calibration_review'),0)=?"
-                args.append(int(calibration_reviews))
-            eligible = "j.state='pending' AND NOT EXISTS (SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||j.id AND json_extract(m.value,'$.active')=1) AND j.stage IN (" + placeholders + ") AND j.available_at<=?" + review_filter + " AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=j.id AND p.state!='complete')"
-            if type(local_retrieval_only) is not bool:
-                raise ValueError("local_retrieval_only must be boolean")
-            if local_retrieval_only:
-                eligible += " AND j.stage='retrieval' AND " + self.local_retrieval_sql(untried_during_hold=True)
-            from .execution_policy import job_filter, free_slots, load
-            eligible += job_filter(conn)
-            rounds = load(conn)["retrieval_max_rounds"]
-            if rounds is not None:
-                eligible += " AND (j.stage!='retrieval' OR (SELECT count(*) FROM retrieval_attempts a WHERE a.job_id=j.id)<" + str(rounds) + ")"
+            from .supervision import admission_hold
+            if admission_hold(conn, self.run_dir):
+                return []
+            eligible, args = self.claimable_sql(conn, stages, now=now,
+                calibration_reviews=calibration_reviews, local_retrieval_only=local_retrieval_only)
+            from .execution_policy import free_slots
             slots = free_slots(conn)
             model_stages = {'title', 'abstract', 'rescue', 'audit', 'reader'}
             if slots is not None and set(stages).issubset(model_stages):

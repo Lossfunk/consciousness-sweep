@@ -230,6 +230,111 @@ not arbitrary stderr, local paths, credentials or paper text. Unrecognized cause
 remain unknown. Stop the affected lane on repeated unchanged failures rather than
 trying alternative providers or repeatedly spending to diagnose access.
 
+## Continuous supervision
+
+Keep the supervising chat active across worker completions: wait for the first
+completion, reconcile the durable result, and refill every eligible free slot
+immediately. Answer status questions without ending that loop. A clean exit from
+`run --watch` can hand native work back to the supervisor; it is not completion.
+
+For unattended execution, establish one continuation mechanism for the same
+chat/run under the existing authorization. Reuse or create a same-chat wake-up
+when the harness supports it; five minutes is a reasonable recovery cadence.
+Other harnesses can use their supported persistent supervisor. Verify the target,
+enabled state and settings with the host, then verify a subsequent actual wake-up.
+Keep the host available. If automatic continuation is unavailable, report it;
+do not silently switch providers, invent allowances or start an independent run.
+
+Save the observed host configuration under `runs/RUN_ID/intake/wakeup.json`:
+
+```json
+{
+  "kind": "same-chat-schedule",
+  "identifier": "HOST_RETURNED_SCHEDULE_ID",
+  "target": "CURRENT_CHAT_ID",
+  "observed_at": "ACTUAL_TIME_WITH_TIMEZONE",
+  "evidence": "Reference to the host result confirming the target and enabled state",
+  "status": "active"
+}
+```
+
+Use actual returned identifiers, timestamps and evidence. The other supported
+kinds are `external-supervisor` and `interactive-only`; the latter must be
+`unavailable` or `disabled`. Record the observation:
+
+```sh
+python -m sweep supervise --run-id RUN_ID --mode active --actor ACTOR --reason REASON --wakeup runs/RUN_ID/intake/wakeup.json
+```
+
+This command records evidence; it does not install or independently verify a
+schedule. `continuation_verified_by_runtime` remains false. The harness must
+verify actual wake-up execution. A recorded observation never authorizes a
+provider change or proves provider identity.
+
+The wake-up instruction must require inspecting durable state, reconciling
+completed submissions, refilling eligible slots and returning to waiting/refill.
+Respect STOP, checkpoints, access and budget blocks, current sources and leases;
+preserve failed calls and parked sources. Use one supervisor and existing locked
+claims; never create overlapping independent coordinators or unleased readers.
+Keep checks compact, do not run full validation per wake-up, and notify only on
+meaningful progress, completion or an actionable blocker. Reader contexts remain
+fresh and source-only; scheduling context never carries calibration expectations.
+
+`supervise --run-id RUN_ID` reads one database snapshot without model calls, job
+claims or receipt changes. It reports eligible work and free capacity separately.
+A null shared capacity means no shared cap was recorded, not unlimited harness
+slots. The supervisor still checks actual harness capacity and the authorized
+external-worker allowance. Independent permitted native work can continue when
+an automatic model profile is blocked.
+
+Native readiness uses a minimal observation from normal coordinator reconciliation.
+If the ledger has changed, `native_readiness_current` is false and
+`discovery_reconciliation_needed` requests ordinary coordinator work. The monitor
+does not rerun calibration, hydrate papers or treat an unknown ready count as an
+empty frontier. Unqueued search obligations and unprojected results also require
+coordinator attention.
+
+`awaiting-supervisor` means work can be dispatched or completed results need
+projection. `stalled` means actionable work has waited at least 60 seconds since
+recorded work activity with no owned workers. This diagnostic threshold creates
+no execution-time cap. Repeated supervision observations do not reset the clock.
+Other states distinguish working, expired owned leases requiring reconciliation,
+pauses, checkpoints, integrity/resource blocks and no ready work. No state
+certifies scientific completion.
+
+Before ending a turn, run `supervise --run-id RUN_ID --check-yield`. Exit code 3
+means ready work or owned workers still need supervision. Exit 0 permits yielding
+operationally; inspect unresolved obligations and keep continuation available for
+deferred work. The command cannot prevent the host from ending a turn, so a
+verified wake-up remains necessary for unattended operation.
+
+At coordinated checkpoints, hold new admissions before draining workers:
+
+```sh
+python -m sweep supervise --run-id RUN_ID --mode checkpoint --actor ACTOR --reason REASON
+# Wait for all admitted model/native/source writers to finish and persist.
+python -m sweep sanity --run-id RUN_ID
+python -m sweep validate --run-id RUN_ID
+python -m sweep deliver --run-id RUN_ID
+python -m sweep supervise --run-id RUN_ID --mode active --actor ACTOR --reason REASON
+```
+
+Proceed after each check only if it succeeds. A checkpoint fences new automatic
+and native reservations while allowing admitted submissions. It never expires
+or clears on a wake-up. STOP takes precedence; supervision cannot remove it.
+An authorized `resume` removes STOP but leaves the checkpoint for explicit release.
+Supervision observations alone do not stale a successful ledger audit. No plan,
+source version, scientific record or charge is rewritten.
+
+Keep full audits at the protocol's wave boundaries and required incident, pause
+or delivery checkpoints. A status reply, heartbeat or fixed number of worker
+completions does not itself create another scientific wave. Between checkpoints,
+use incremental sanity and concise receipts. Report initial readings, native
+audits, acquisition blocks and discovery counts separately, with stage latency,
+occupied slots and idle/checkpoint time; a mixed-queue elapsed rate is not a
+paper-reading rate. Increasing concurrency requires actual harness capacity and
+the existing resource agreement, and may increase instantaneous quota use.
+
 ## Supervisor and native workers
 
 The [model configuration](README.md#model-configuration) assigns roles for Codex.
@@ -431,6 +536,7 @@ window sizes, source families, inclusion criteria or scientific stopping rules.
 |---|---|
 | `doctor`, `plan`, `init` | Inspect, agree resources, initialize without overwriting |
 | `ingest`, `close-intake`, `reopen-intake` | Manage explicit corpus intake |
+| `supervise [--check-yield]` | Inspect dispatch health; record continuation observations or checkpoint holds with `--mode`. |
 | `run`, `run --watch`, `run --local-only` | Advance stages, wait within the selected scope, or disable automatic model dispatch |
 | `work`, `submit` | Lease and publish ordinary agent judgments |
 | `discovery-init`, `native-work`, `native-submit` | Initialize discovery and resolve native route tasks |

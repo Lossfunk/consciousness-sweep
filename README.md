@@ -64,7 +64,7 @@ harness where available and records unknown model identity or quota honestly.
 There is no compulsory pilot or hidden total-call/time allowance.
 
 **Keep each release directory unchanged.** Download upgrades separately. This is
-**portable 1.0.0-r32**. Fresh runs bind their execution plan at initialization;
+**portable 1.0.0-r33**. Fresh runs bind their execution plan at initialization;
 existing runs can adopt compatible operational changes through the explicit,
 backed-up [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Original plans, sources, readings and scientific rules remain preserved.
@@ -131,6 +131,31 @@ before the plan is bound. Whole articles and supplements can exceed a reader's
 input allowance: choose a supported full-source capacity at setup. The runner
 will report a block rather than truncate evidence or silently switch models.
 
+## Continuous supervision
+
+The supervising chat waits for worker completions, reconciles submitted results
+and immediately refills eligible free slots. A progress reply does not end this
+loop. `run --watch` can hand native work back to the supervisor; it does not keep
+an inactive chat running.
+
+For unattended execution, configure and verify one continuation mechanism in the
+same chat or an equivalent external supervisor under the existing resource
+agreement. A periodic wake-up recovers an idle dispatcher; active workers should
+be replenished immediately. Keep the host available. Report unavailable automatic
+continuation explicitly.
+
+`supervise --run-id RUN_ID` reports eligible work, occupied slots, checkpoint holds
+and idle dispatch without calling a model. Before ending a supervision turn, use
+`supervise --run-id RUN_ID --check-yield`: exit code 3 means ready work or admitted
+workers still need attention. See [continuous supervision](EXECUTION.md#continuous-supervision)
+for wake-up evidence and checkpoint commands. Scientific stopping rules, leases
+and accounting remain unchanged.
+
+Measure throughput by stage and occupied worker time. Initial paper assessments,
+native discovery audits, unresolved acquisitions and newly discovered records are
+different workloads. Keep full validation at required quiet checkpoints; progress
+replies and routine worker completions use compact status and incremental sanity.
+
 ## How a run works
 
 1. **Discover.** Start from the frozen empirical seeds and review anchors, then
@@ -161,9 +186,9 @@ Discovery backpressure pauses admissions while active screening and reading catc
 up. Deferred uncertain work is reported separately. Automatic workers and native
 agent tasks must be serviced together. Refill an
 available native slot as soon as independent leased work is ready, within the
-agreed capacity. Coordinate automatic, native and acquisition workers before
-full validation. Unbounded
-citation depth removes an operator hop cutoff; protocol search windows and bridge
+agreed capacity and the harness's actual slots, including any slot used by the
+supervisor. Coordinate automatic, native and acquisition workers before full
+validation. Unbounded citation depth removes an operator hop cutoff; protocol search windows and bridge
 rules still apply. A budget, depth, access or source block is never saturation.
 
 ## Downloads and routine recovery
@@ -233,6 +258,7 @@ Useful commands for the supervising agent:
 | Command | Purpose |
 |---|---|
 | `status --run-id RUN_ID` | Current progress, pending work and operational blocks. |
+| `supervise --run-id RUN_ID [--check-yield]` | Dispatch health and whether a supervision turn can end. |
 | `work --run-id RUN_ID` | Next available model or native agent task. |
 | `host-check --run-id RUN_ID` | Record launch restrictions without model inference. |
 | `sanity --run-id RUN_ID` | Incremental metadata, identifier and state checks. |

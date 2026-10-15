@@ -15,6 +15,7 @@ import time
 
 from . import citation_depth, frontiers, sources
 from .common import canonical, digest, file_hash, inside, save_json, science_root
+from .transactions import atomic_operation
 
 STATE = "discovery_frontiers"
 
@@ -148,6 +149,20 @@ def _pending_semantic(c):
                for state, n in counts.items() if state != "complete")
 
 
+def _search_candidate(c, obligation):
+    """Exact request identity shared by admission and read-only supervision."""
+    payload = {k: obligation.get(k) for k in ("source", "query", "limit", "cursor", "kind", "parent", "phase", "window_key", "obligation_id", "child_bridge_depth")}
+    if obligation.get("coverage_generation"):
+        payload["coverage_generation"] = obligation["coverage_generation"]
+    key = source_job_key(payload)
+    old = c.store.job_by_key("search", key)
+    while old and c.store.get_state("depth-deferred-search:" + old["id"]):
+        payload = dict(payload, depth_resume_from=old["id"])
+        key = source_job_key(payload)
+        old = c.store.job_by_key("search", key)
+    return payload, key, old
+
+
 def discovery_tick(c):
     if c.plan.get("mode") != "discovery":
         return None
@@ -190,15 +205,7 @@ def discovery_tick(c):
             continue
         if scheduled >= slots:
             break
-        payload = {k: obligation.get(k) for k in ("source", "query", "limit", "cursor", "kind", "parent", "phase", "window_key", "obligation_id", "child_bridge_depth")}
-        if obligation.get("coverage_generation"):
-            payload["coverage_generation"] = obligation["coverage_generation"]
-        key = source_job_key(payload)
-        old = c.store.job_by_key("search", key)
-        while old and c.store.get_state("depth-deferred-search:" + old["id"]):
-            payload = dict(payload, depth_resume_from=old["id"])
-            key = source_job_key(payload)
-            old = c.store.job_by_key("search", key)
+        payload, key, old = _search_candidate(c, obligation)
         if old is not None:
             continue
         c.store.enqueue("search", key, payload, priority=10)
@@ -521,7 +528,16 @@ def _hydrate_native_task(c, task):
     return task
 
 
+@atomic_operation
 def _native_candidates(c, *, hydrate=True):
+    tasks = _compute_native_candidates(c, hydrate=hydrate)
+    from .supervision import observe_native
+    with c.store._connection() as conn:
+        observe_native(conn, tasks)
+    return tasks
+
+
+def _compute_native_candidates(c, *, hydrate=True):
     state = c.store.get_state(STATE)
     if not state:
         return []
@@ -621,6 +637,9 @@ def next_native_task(c, *, owner=None, lease_seconds=900):
         if time.time() >= c._plan_deadline():
             raise ValueError("The recorded total wall-clock allowance has expired; pending native work is preserved")
     with c.store._transaction() as conn:
+        from .supervision import admission_hold
+        if admission_hold(conn, c.run_dir):
+            return None
         _native_controls(conn)
         view = _native_transaction_view(c, conn)
         candidates = _native_candidates(view, hydrate=False)

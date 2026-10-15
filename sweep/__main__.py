@@ -56,11 +56,17 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check", "continue-run"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check", "continue-run", "supervise"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
         if name in {"ingest", "submit", "native-submit", "calibration-review"}:
             cmd.add_argument("--input", type=Path, required=True)
+        if name == "supervise":
+            cmd.add_argument("--mode", choices=["active", "checkpoint"], help="Record active supervision or hold new admissions for a coordinated checkpoint")
+            cmd.add_argument("--actor")
+            cmd.add_argument("--reason")
+            cmd.add_argument("--wakeup", type=Path, help="JSON observation from the host's same-run continuation mechanism; records evidence, does not install a schedule")
+            cmd.add_argument("--check-yield", action="store_true", help="Exit 3 if ready work or owned workers still need active supervision")
         if name == "continue-run":
             cmd.add_argument("--previous-release", type=Path, required=True)
             cmd.add_argument("--policy", type=Path, required=True)
@@ -225,6 +231,14 @@ def main(argv=None):
                     result = coordinator.next_task()
                 elif args.command == "submit":
                     result = coordinator.submit(args.job_id, args.input, args.actor)
+                elif args.command == "supervise":
+                    from .supervision import record, snapshot
+                    if args.mode:
+                        record(coordinator, actor=args.actor, reason=args.reason, mode=args.mode,
+                               wakeup=json.loads(args.wakeup.read_text()) if args.wakeup else None)
+                    elif args.actor or args.reason or args.wakeup:
+                        raise ValueError("Recording supervision requires --mode, --actor and --reason")
+                    result = snapshot(coordinator)
                 elif args.command == "status":
                     result = coordinator.status()
                 elif args.command == "estimate":
@@ -322,6 +336,8 @@ def main(argv=None):
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
         if args.command in {"validate", "sanity"} and not result.get("ok"):
             return 2
+        if args.command == "supervise" and args.check_yield and not result["may_end_turn"]:
+            return 3
         return 0
     except StorageError as exc:
         print(json.dumps({"error": type(exc).__name__, "reason": str(exc), "storage": exc.report},

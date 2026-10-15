@@ -20,7 +20,7 @@ from .store import StoreError
 
 MODEL_STAGES = {"title", "abstract", "rescue", "audit", "reader"}
 SCREEN_FIELDS = {"paper_id", "title", "year", "authors", "doi", "abstract"}
-NONMATERIAL_EVENTS = ("operational_validation", "delivery_checkpoint", "throughput_estimate", "execution_session_finished", "operational_sanity")
+NONMATERIAL_EVENTS = ("operational_validation", "delivery_checkpoint", "throughput_estimate", "execution_session_finished", "operational_sanity", "supervision_updated")
 
 
 def current(coordinator):
