@@ -144,6 +144,10 @@ def _all_papers(c):
 
 
 def _pending_semantic(c):
+    from .workflow import enabled, job_hold_sql
+    if enabled(c):
+        with c.store._connection() as conn:
+            return conn.execute("SELECT count(*) FROM jobs j WHERE stage!='search' AND state NOT IN ('complete','parked') AND NOT EXISTS(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS(SELECT 1 FROM retry_links r WHERE r.parent_id=j.id)" + job_hold_sql()).fetchone()[0]
     status = c.store.status()
     return sum(n for stage, counts in status["jobs"].items() if stage != "search"
                for state, n in counts.items() if state != "complete")
@@ -221,6 +225,13 @@ def queue_native_after_reader(c, paper_id):
     if not state:
         return
     paper = c.store.paper(paper_id)
+    from .workflow import enabled, deferred
+    if enabled(c) and deferred(paper):
+        return
+    if enabled(c) and paper:
+        saved = c.store.get_state("native-assessment:" + paper_id)
+        if saved and _saved_native_is_current(c, paper, saved):
+            return  # A current source reading may honestly remain insufficient.
     existing = state["nodes"].get(paper_id, {})
     if not paper or paper["status"] not in {"assessed", "reading-incomplete"} or paper_id in state["native_assessment_pending"]:
         return
@@ -238,6 +249,10 @@ def queue_native_after_missing_source(c, paper_id):
         return
     state = c.store.get_state(STATE)
     paper = c.store.paper(paper_id)
+    from .workflow import enabled, on_source_missing
+    if enabled(c):
+        on_source_missing(c, paper_id)
+        return
     saved = c.store.get_state("native-assessment:" + paper_id)
     replacement_unresolved = bool(saved and not _saved_native_is_current(c, paper, saved))
     if state and (paper_id not in state["nodes"] or replacement_unresolved) and paper_id not in state["native_assessment_pending"]:
@@ -485,11 +500,15 @@ def _replay_lineage(c, task):
 def _resolution_tasks(c):
     with c.store._connection() as conn:
         rows = conn.execute("SELECT key,value FROM meta WHERE key LIKE 'state:identity-resolution:%' OR key LIKE 'state:source-resolution:%' ORDER BY key").fetchall()
-    return [json.loads(row["value"]) for row in rows if not json.loads(row["value"]).get("resolved")]
+    return [json.loads(row["value"]) for row in rows if not json.loads(row["value"]).get("resolved") and not json.loads(row["value"]).get("workflow_parked")]
 
 
 def _hydrate_native_task(c, task):
     task = dict(task)
+    from .workflow import hydrate_operational_task
+    operational = hydrate_operational_task(c, task)
+    if operational is not None:
+        return operational
     if task.get("paper_id"):
         paper = c.store.paper(task["paper_id"])
         from .source_intake import source_manifest
@@ -542,8 +561,12 @@ def _compute_native_candidates(c, *, hydrate=True):
     if not state:
         return []
     result = _resolution_tasks(c)
+    from .workflow import acquisition_tasks
+    result.extend(acquisition_tasks(c))
     from .calibration import pending_tasks
-    result.extend(pending_tasks(c))
+    from .workflow import enabled
+    if not enabled(c):
+        result.extend(pending_tasks(c))
     for task in frontiers.due_obligations(state):
         if task.get("task"):
             task = dict(task)
@@ -578,6 +601,11 @@ def _compute_native_candidates(c, *, hydrate=True):
     if not result and not pending_semantic and not current_principal_evidence and not any(o["status"] != "complete" for o in state["citation_obligations"].values()) and not any(w["status"] != "complete" for w in state["process_windows"].values()):
         result.append({"task": "citation-wave-and-frontier-audit", "task_id": "wave-audit", "state": state,
                 "instructions": "Reconcile the complete backward/forward wave, deduplication, all title/abstract/rescue/audit decisions and missing text requests. Submit wave_id, obligation_ids, new_potentially_relevant, screening_complete, reason. A zero yield is a factual post-screening count, not an assumption from an empty queue. After a current zero-yield wave, enter the mandatory blind lane; do not claim native certification."})
+    from .workflow import enabled
+    if enabled(c):
+        for task in result:
+            if task.get("task_id") == "wave-audit":
+                task["instructions"] = "Audit the focused-v1 active coverage only. Reconcile completed citation windows and genuinely new eligible nodes; report wave_id, obligation_ids, new_potentially_relevant, screening_complete and source-grounded reason. Add coverage_scope:'focused-v1'. Report deferred coverage separately; held uncertain/unavailable papers are not exclusions or evidence of scientific saturation. The mandatory blind lane and earned process windows still apply."
     return result
 
 
@@ -599,7 +627,7 @@ def _native_binding(c, task):
         return digest({"task_id": task["task_id"], "source_generation": paper.get("source_generation", 1),
             "packet_source_generation": paper.get("packet_source_generation"),
             "source": file_hash(inside(c.run_dir / packet, c.run_dir)) if packet and _packet_is_current(paper) else digest(paper.get("abstract"))})
-    return digest({key: value for key, value in task.items() if key not in {"control", "native_lease"}})
+    return digest({key: value for key, value in task.items() if key not in {"control", "native_lease", "execution_role", "intended_profile", "instructions"}})
 
 
 def list_native_tasks(c, *, limit=100, include_deferred=False):
@@ -661,6 +689,8 @@ def next_native_task(c, *, owner=None, lease_seconds=900):
         if not choices:
             return None
         _, _, _, _, task, control = min(choices, key=lambda value: value[:4])
+        from .workflow import start_operational
+        task = start_operational(view, task)
         task = _hydrate_native_task(view, task)
         token = control.get("token", 0) if control.get("owner") == owner else control.get("token", 0) + 1
         until = now + lease_seconds
@@ -790,6 +820,10 @@ def _submit_native(c, paper_id, payload, actor):
     task_id = paper_id
     if not str(actor).strip() or not str(payload.get("reason", "")).strip():
         raise ValueError("Native submission requires actor and reason")
+    from .workflow import submit_operational
+    handled = submit_operational(c, paper_id, payload, actor)
+    if handled is not None:
+        return handled
     if paper_id.startswith("calibration:"):
         from .calibration import record_adjudication
         return record_adjudication(c, paper_id[len("calibration:"):],
@@ -807,6 +841,9 @@ def _submit_native(c, paper_id, payload, actor):
         elif not all(key in payload for key in ("groups", "paper_state", "source_locations", "source_generation")):
             raise ValueError("A changed source generation requires a fresh full native assessment before process-only continuation")
     if paper_id == "wave-audit":
+        from .workflow import enabled
+        if enabled(c) and payload.get("coverage_scope") != "focused-v1":
+            raise ValueError("Focused wave audit must explicitly name its selective coverage_scope")
         if _pending_semantic(c) or _resolution_tasks(c):
             raise ValueError("Pending semantic/source-identity work prevents a completed wave audit")
         fields = {k: payload[k] for k in ("wave_id", "obligation_ids", "new_potentially_relevant", "screening_complete", "reason")}
@@ -875,6 +912,9 @@ def _submit_native(c, paper_id, payload, actor):
             return result
         _change(c, apply, "Source-bound native discovery assessment submitted by " + actor)
         c.store.set_state("native-assessment:" + paper_id, dict(payload, packet_sha256=packet_hash, actor=actor), "Native route judgment and source identity retained for lineage reuse")
+        from .workflow import enabled, move_native_pending
+        if enabled(c) and process["status"] == "unresolved":
+            move_native_pending(c, [paper_id], "Single source reading leaves process inference unresolved; retain the gap without an automatic reread")
     event = {"task_id": task_id, "actor": actor, "payload_sha256": digest(payload), "reason": payload["reason"]}
     if task_id.startswith("identity:"):
         event["paper_id"] = value[0]
@@ -992,6 +1032,9 @@ def discovery_status(c):
                                         missing_texts_current=True, durable_validation_passed=True)
     operational = c.store.status()
     pending_native = _native_candidates(c, hydrate=False)
+    from .workflow import enabled, active_jobs
+    if enabled(c):
+        operational = dict(operational, **active_jobs(c))
     exhausted = (frontier_check["ready"] and not pending_native and not operational["unfinished"]
                  and not operational["failed"] and not c.store.unprojected_results(limit=1))
     task = next_native_task(c)

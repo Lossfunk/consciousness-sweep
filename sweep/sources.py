@@ -451,8 +451,14 @@ class SourceClient:
                 rows = data.get("resultList", {}).get("result")
                 _page_consistency(rows, data.get("hitCount"), limit)
                 candidates = [normalize_epmc(row) for row in rows]
+            elif source == "Crossref":
+                data, receipt = self._json(CROSSREF + "/works?" + urllib.parse.urlencode({"query.bibliographic": query, "rows": limit}))
+                rows = data.get("message", {}).get("items")
+                if not isinstance(rows, list):
+                    raise SourceError("incomplete", "Crossref bibliographic candidates missing")
+                candidates = [normalize_crossref(row) for row in rows]
             else:
-                raise ValueError("Bibliographic candidate lookup supports OpenAlex or Europe PMC")
+                raise ValueError("Bibliographic candidate lookup supports OpenAlex, Europe PMC or Crossref")
             return {"status": "complete", "source": source, "query": query, "candidates": candidates,
                     "proposed_identity": None, "requires_confirmation": True, "raw_responses": [receipt],
                     "reason": "Compare title, authors, year and version evidence before explicitly approving any source identifier"}

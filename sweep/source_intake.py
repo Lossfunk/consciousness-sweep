@@ -47,7 +47,10 @@ def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
     return job_id
 
 
+@atomic_operation
 def retry_acquisition(coordinator, paper_id, reason):
+    from .workflow import reopen_acquisition
+    reopen_acquisition(coordinator, paper_id, reason)
     return {"job_id": queue_retrieval(coordinator, paper_id, reason, force_retry=True),
             "status": "retrieval-pending", "reason": "Explicit acquisition retry preserves earlier attempts and their source evidence"}
 
@@ -95,6 +98,8 @@ def attach(coordinator, paper_id, entries, reason, base=None):
 def _commit_sources(coordinator, paper_id, normalized, reason):
     paper = coordinator.store.paper(paper_id)
     if paper.get("provided_paths") != normalized:
+        from .workflow import reactivate_source
+        reactivate_source(coordinator, paper_id, reason)
         coordinator.store.update_paper(paper_id, {"provided_paths": normalized,
             "source_generation": paper.get("source_generation", 1) + 1}, reason)
     return {"job_id": queue_retrieval(coordinator, paper_id, reason),

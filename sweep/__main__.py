@@ -189,6 +189,12 @@ def main(argv=None):
                               ("max_seconds", "max_wall_seconds"), ("max_citation_depth", "max_citation_depth")):
                 if hasattr(args, flag):
                     draft["resources"][key] = getattr(args, flag)
+            policy = draft["resources"].setdefault("operational_policy", {})
+            policy.setdefault("workflow", "focused-v1")
+            if policy["workflow"] == "focused-v1":
+                policy.setdefault("retrieval_max_rounds", 1)
+                policy.setdefault("retained_first", True)
+                policy.setdefault("supervised_checkpoints", True)
             result = build_plan(inventory, draft["profiles"], draft["resources"], draft.get("workload"),
                                 draft.get("calibration_review_profile"))
             result["mode"] = args.mode or draft.get("mode", "discovery")
@@ -211,6 +217,8 @@ def main(argv=None):
                 result = operation(run_dir, args.previous_release, json.loads(args.policy.read_text()), args.actor, args.reason)
                 if args.apply:
                     from .execution_policy import park_exhausted
+                    from .workflow import reconcile
+                    reconcile(Coordinator(run_dir))
                     result = {"continuation": result, "parked_retrievals": park_exhausted(Coordinator(run_dir)),
                               "status": "paused-awaiting-validation"}
             else:

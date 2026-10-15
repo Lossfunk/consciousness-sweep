@@ -22,10 +22,19 @@ def pressure(coordinator):
         search_jobs = conn.execute("SELECT count(*) FROM jobs j WHERE stage='search' "
             "AND state IN ('pending','running') AND NOT EXISTS "
             "(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id)").fetchone()[0]
+    from .workflow import enabled
+    if enabled(coordinator):
+        with coordinator.store._connection() as conn:
+            counts = {r["status"]: r["n"] for r in conn.execute(
+                "SELECT status,count(*) n FROM papers WHERE status IN ('discovered','title-pending','abstract-pending','abstract-lookup-pending','rescue-pending','retrieval-pending','reader-pending') AND coalesce(json_extract(record,'$.workflow_defer.active'),0)=0 GROUP BY status")}
+    with coordinator.store._connection() as conn:
+        audits = conn.execute("SELECT count(DISTINCT p.id) FROM meta m,json_each(m.value,'$.native_assessment_pending') n JOIN papers p ON p.id=n.key WHERE m.key='state:discovery_frontiers' AND p.status IN ('assessed','reading-incomplete') AND json_extract(p.record,'$.packet_path') IS NOT NULL AND coalesce(json_extract(p.record,'$.workflow_defer.active'),0)=0").fetchone()[0]
+    if audits:
+        counts["native-assessment-pending"] = audits
     total = sum(counts.values())
     from .execution_policy import for_coordinator, uncertain_sql
     deferred = 0
-    if for_coordinator(coordinator)["retained_first"]:
+    if for_coordinator(coordinator)["retained_first"] and not enabled(coordinator):
         with coordinator.store._connection() as conn:
             deferred = conn.execute("SELECT count(*) FROM papers p WHERE p.status IN ('retrieval-pending','reader-pending') AND " + uncertain_sql()).fetchone()[0]
     backlog = total - deferred
@@ -55,7 +64,7 @@ def coalesce(coordinator, *, max_candidates=100):
                 "AND NOT EXISTS(SELECT 1 FROM dependencies d WHERE d.job_id=j.id OR d.dependency_id=j.id) "
                 "AND NOT EXISTS(SELECT 1 FROM reservations r WHERE r.job_id=j.id) "
                 "ORDER BY j.id LIMIT ?", (stage, time.time(), size, max_candidates)).fetchall()
-            group, seen, origin, priority = [], set(), None, None
+            group, seen, origin, priority, workflow = [], set(), None, None, None
 
             def flush():
                 if len(group) < 2:
@@ -70,6 +79,8 @@ def coalesce(coordinator, *, max_candidates=100):
                 payload["source_sha256"] = digest(payload["source_records"])
                 if origin is not None:
                     payload["origin"] = origin
+                if workflow is not None:
+                    payload["screening_workflow"] = workflow
                 parents = [r["id"] for r, _ in group]
                 key = "coalesced:" + digest([parents, payload])
                 jid, now = store._id(conn, "job", "J"), time.time()
@@ -88,16 +99,16 @@ def coalesce(coordinator, *, max_candidates=100):
                 data = json.loads(row["payload"])
                 ids = data.get("paper_ids", [])
                 if ((coordinator.run_dir / "jobs" / row["id"]).exists()
-                        or set(data) - {"paper_ids", "source_records", "source_sha256", "metadata_revisions", "screen_evidence_bindings", "origin"}
+                        or set(data) - {"paper_ids", "source_records", "source_sha256", "metadata_revisions", "screen_evidence_bindings", "origin", "screening_workflow"}
                         or not ids or [p.get("paper_id") for p in data.get("source_records", [])] != ids
                         or digest(data["source_records"]) != data.get("source_sha256")):
                     continue
                 if group and (len(seen) + len(ids) > size or seen.intersection(ids)
-                              or data.get("origin") != origin or row["priority"] != priority):
+                              or data.get("origin") != origin or row["priority"] != priority or data.get("screening_workflow") != workflow):
                     flush()
                     group, seen = [], set()
                 if not group:
-                    origin, priority = data.get("origin"), row["priority"]
+                    origin, priority, workflow = data.get("origin"), row["priority"], data.get("screening_workflow")
                 group.append((row, data))
                 seen.update(ids)
             flush()

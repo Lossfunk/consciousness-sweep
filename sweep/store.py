@@ -973,7 +973,7 @@ class Store:
                 rows = None  # Select one slot at a time inside the same claim transaction.
             else:
                 from .execution_policy import load, job_order
-                order = job_order() if load(conn)["retained_first"] else "j.priority DESC,j.id"
+                order = job_order(conn) if load(conn)["retained_first"] else "j.priority DESC,j.id"
                 rows = conn.execute("SELECT j.* FROM jobs j WHERE " + eligible + " ORDER BY " + order + " LIMIT ?", args + [limit]).fetchall()
             result = []
             for index in range(limit if rows is None else len(rows)):
@@ -1031,7 +1031,7 @@ class Store:
             schedule["next_lane"] = (schedule["next_lane"] + 1) % len(lanes)
             from .execution_policy import load, job_order
             if load(conn)["retained_first"]:
-                order = job_order()
+                order = job_order(conn)
             row = conn.execute("SELECT j.* FROM jobs j LEFT JOIN retrieval_service rs ON rs.job_id=j.id WHERE " + eligible + predicate + " ORDER BY " + order + " LIMIT 1", args).fetchone()
             if row is not None:
                 return row, lane

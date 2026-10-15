@@ -14,7 +14,7 @@ import sqlite3
 import time
 from jsonschema.exceptions import ValidationError, SchemaError
 
-from . import execution_policy, reading, screening, sources
+from . import execution_policy, reading, screening, sources, workflow
 from .common import canonical, digest, file_hash, save_json
 from .store import StoreError
 
@@ -306,7 +306,7 @@ def validate(coordinator, *, deadline=None):
                     require(isinstance(payload, dict), "Audit event payload must be an object")
                     kind = row["kind"]
                     key, value = None, None
-                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt", "job_superseded", "retrieval_parked"}:
+                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt", "job_superseded", "retrieval_parked", "workflow_reader_rebound"}:
                         key, value = payload["job_id"], payload
                     elif kind == "job_retry_authorized":
                         key, value = payload["parent_id"], payload
@@ -338,6 +338,11 @@ def validate(coordinator, *, deadline=None):
                 except (KeyError, TypeError, ValueError) as exc:
                     error("retrieval_parking", parked["id"], exc)
 
+            try:
+                workflow.validate_holds(coordinator, conn)
+                checked("workflow_holds")
+            except (ValueError, KeyError, TypeError) as exc:
+                error("workflow_holds", "workflow", exc)
             for issue in coordinator.store.native_id_errors(conn):
                 error("native_identifier_registry", "native", issue)
             checked("native_identifier_registry")
@@ -366,7 +371,8 @@ def validate(coordinator, *, deadline=None):
                             require(stage != "title" or "abstract" not in paper, "Title-only stage contains abstract evidence")
                             require(conn.execute("SELECT 1 FROM papers WHERE id=?", (paper["paper_id"],)).fetchone() is not None, "Semantic source references unknown paper")
                         source = {"papers": records}
-                        prompt, schema = screening.prepare(stage, records)
+                        from .workflow import prepare_screen
+                        prompt, schema = prepare_screen(stage, records, payload)
                     elif stage == "reader":
                         source = load(payload["packet_path"])
                         expected = payload.get("packet_sha256") or Path(payload["packet_path"]).name.split(".", 1)[0]
@@ -374,7 +380,8 @@ def validate(coordinator, *, deadline=None):
                         packet_valid(source)
                         require(source.get("paper_id", source.get("paper", {}).get("paper_id")) == payload["paper_id"], "Reader packet belongs to another paper")
                         conn.execute("INSERT OR IGNORE INTO audit_packets VALUES(?,?)", (expected, payload["paper_id"]))
-                        prompt, schema = reading.prepare(source)
+                        from .workflow import prepare_reader
+                        prompt, schema = prepare_reader(source, payload)
                     elif stage == "retrieval" and row["state"] == "complete":
                         if "source_manifest" in payload:
                             require(digest(payload["source_manifest"]) == payload.get("source_manifest_sha256"), "Acquisition manifest differs from immutable job hash")
@@ -386,6 +393,9 @@ def validate(coordinator, *, deadline=None):
                             require([{k: v for k, v in a.items() if k not in {"original_path", "text_path", "map_path"}} for a in result["assets"]] == result["packet"]["sources"], "Retrieval assets differ from packet evidence")
                         else:
                             require(not result.get("packet"), "Unverified retrieval must not supply a ready reader packet")
+                    elif stage == "abstract-lookup":
+                        from .workflow import validate_lookup
+                        validate_lookup(payload, result if row["state"] == "complete" else None)
                     elif stage == "search" and row["state"] == "complete" and result["retrieval_status"] == "complete":
                         hash_file(result["snapshot_path"], result["snapshot_sha256"])
                         snapshot = sources.load_snapshot(local(result["snapshot_path"]))
@@ -410,7 +420,8 @@ def validate(coordinator, *, deadline=None):
                         require(str(result.get("actor", "")).strip(), "Completed model result lacks an actor")
                         assessment = result["assessment"]
                         if stage == "reader":
-                            reading.validate(assessment, source)
+                            from .workflow import validate_reader
+                            validate_reader(assessment, source, payload)
                         else:
                             screening.validate(assessment, stage, source["papers"])
                         if result.get("receipt"):
@@ -483,7 +494,12 @@ def validate(coordinator, *, deadline=None):
                         require(reader_payload.get("source_generation", 0) == paper.get("source_generation", 0), "Current assessment belongs to a superseded source generation")
                         require(paper.get("assessment_packet_sha256") == reader_payload.get("packet_sha256"), "Current assessment packet hash binding is missing or stale")
                         require(paper.get("assessment_source_generation") == paper.get("source_generation", 0), "Current assessment generation binding is missing or stale")
-                        require(json.loads(saved["result"])["assessment"] == paper.get("assessment"), "Current assessment differs from its reader result")
+                        require(workflow.assessment(json.loads(saved["result"])["assessment"], reader_payload) == paper.get("assessment"), "Current assessment differs from its reader result")
+                    if paper.get("assessment") is not None and reader_payload.get("unified_reader"):
+                        combined = json.loads(saved["result"])["assessment"]["native_discovery"]
+                        key = ("workflow-incomplete-native:" if combined.get("status") == "unresolved" else "native-assessment:") + pid
+                        observed = coordinator.store.get_state(key)
+                        require(isinstance(observed, dict) and all(observed.get(k) == v for k, v in combined.items()), "Combined reader is missing its matching discovery publication")
                     for stage, decision in paper.get("screening", {}).items():
                         saved = conn.execute("SELECT stage,state,result FROM jobs WHERE id=?", (decision.get("job_id"),)).fetchone()
                         require(saved is not None and saved["state"] == "complete" and saved["stage"] == stage, "Current screening lacks a completed source-specific job")
@@ -553,6 +569,9 @@ def validate(coordinator, *, deadline=None):
                         changed = payload.get("source_generation", 1) != paper.get("source_generation", 1)
                         changed = changed or (saved["stage"] == "reader" and payload.get("packet_path") != paper.get("packet_path"))
                         changed = changed or (saved["stage"] == "retrieval" and payload.get("source_manifest_sha256") != paper.get("current_source_manifest_sha256"))
+                        if not changed and saved["stage"] == "reader":
+                            proof = history("workflow_reader_rebound", row["job_id"])
+                            changed = workflow.valid_reader_successor(conn, row, payload, proof)
                         require(changed, "Superseded source job still has current inputs")
                     checked("job_supersessions")
                 except (ValueError, KeyError, TypeError, AttributeError) as exc:

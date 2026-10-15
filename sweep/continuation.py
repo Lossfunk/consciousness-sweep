@@ -109,12 +109,22 @@ def prepare(run, previous_release, policy, actor, reason):
             raise ValueError("Original plan file differs from the durable original agreement")
         _quiet(conn, run)
         snapshot = conn.execute("SELECT max(id) FROM events").fetchone()[0]
+        from .workflow import transition_preview
+        preview = transition_preview(conn, validate_policy(policy))
+        previous_policy = validate_policy(prior["policy"] if prior else plan.get("resources", {}).get("operational_policy", {}))
+        if previous_policy.get("workflow") == "focused-v1" and validate_policy(policy).get("workflow") != "focused-v1":
+            raise ValueError("Returning to exhaustive legacy coverage needs a separate reviewed transition; deferred work cannot silently disappear")
+    from .workflow import contract
     return {"format": "operational-continuation-v1", "run_directory": str(run),
         "original_plan_sha256": digest(plan), "source_runtime": source, "target_runtime": target,
         "previous_continuation_sha256": digest(prior) if prior else None,
         "policy": validate_policy(policy), "actor": actor.strip(), "reason": reason.strip(),
         "snapshot_event_id": snapshot, "changed_runtime_files": changed,
         "scientific_inputs_changed": False, "model_profiles_changed": False,
+        "workflow_transition": preview,
+        "workflow_contract": contract(validate_policy(policy).get("workflow", "legacy")),
+        "coverage_and_review_changed": validate_policy(policy).get("workflow", "legacy") !=
+            validate_policy(prior["policy"] if prior else plan.get("resources", {}).get("operational_policy", {})).get("workflow", "legacy"),
         "status": "ready-for-explicit-apply"}
 
 

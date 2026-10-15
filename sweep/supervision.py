@@ -121,12 +121,12 @@ def _snapshot(c, conn, now):
     native_owned = [r for r in controls.values() if r.get("owner")]
     expired = sum(r["lease_until"] is not None and r["lease_until"] <= now for r in owned + native_owned)
     model_owned = sum(r["stage"] in MODEL_STAGES for r in owned) + len(native_owned)
-    network_owned = sum(r["stage"] in {"search", "retrieval"} for r in owned)
+    network_owned = sum(r["stage"] in {"search", "retrieval", "abstract-lookup"} for r in owned)
     slots = free_slots(conn)
     network_slots = max(0, c.plan.get("resources", {}).get("retrieval_workers", 2) - network_owned)
-    ready = {"model": 0, "native": 0, "retrieval": 0, "search": 0}
+    ready = {"model": 0, "native": 0, "retrieval": 0, "search": 0, "abstract-lookup": 0}
     earliest = []
-    predicate, args = c.store.claimable_sql(conn, [*MODEL_STAGES, "retrieval", "search"], now=now)
+    predicate, args = c.store.claimable_sql(conn, [*MODEL_STAGES, "retrieval", "search", "abstract-lookup"], now=now)
     pressured = pressure(c)["search_admission_paused"]
     for row in conn.execute("SELECT j.stage,j.available_at,coalesce(json_extract(j.payload,'$.calibration_review'),0) review," + c.store.local_retrieval_sql("j", untried_during_hold=True) + " local_source FROM jobs j WHERE " + predicate, args):
         stage = row["stage"]
@@ -136,7 +136,7 @@ def _snapshot(c, conn, now):
                 continue
             ready["model"] += 1
         else:
-            if stage == "search" and (pressured or host.get("network")):
+            if (stage == "search" and pressured) or (stage in {"search", "abstract-lookup"} and host.get("network")):
                 continue
             if stage == "retrieval" and host.get("network") and not row["local_source"]:
                 continue
@@ -177,7 +177,7 @@ def _snapshot(c, conn, now):
                         discovery_needed = True
                         discovery_actionable = True
     inference_ready = bool((ready["model"] or ready["native"]) and slots != 0)
-    network_ready = bool((ready["search"] or ready["retrieval"]) and network_slots)
+    network_ready = bool((ready["search"] or ready["retrieval"] or ready["abstract-lookup"]) and network_slots)
     projection_needed = bool(c.store.unprojected_results(limit=1))
     actionable = (inference_ready or network_ready or projection_needed or discovery_actionable) and not hold and not timed_out
     # A monitoring heartbeat must never hide a dispatch stall. Use work events,

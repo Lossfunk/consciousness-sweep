@@ -32,6 +32,8 @@ def fetch(coordinator, paper_id, url, *, role='main', association_reason=None,
     if role not in {'main', 'supplement'} or role == 'supplement' and not (association_reason or '').strip():
         raise ValueError('Supplement download requires its source-grounded association reason')
     safe_url(url, resolve=False)
+    from .workflow import admit_download
+    remaining = admit_download(coordinator, paper_id, role)
     run_dir = coordinator.run_dir.resolve()
     directory = inside(run_dir / 'intake' / 'downloads' / paper_id, run_dir)
     attempt_id = uuid.uuid4().hex
@@ -43,7 +45,7 @@ def fetch(coordinator, paper_id, url, *, role='main', association_reason=None,
     _publish_immutable(request_path, (canonical(requested) + '\n').encode(), conflict_reason='Download request changed')
     coordinator.store.event('source_download_requested', dict(requested,
         receipt_path=str(request_path.relative_to(run_dir))))
-    client = client or SourceClient(max_attempts=1, deadline=time.monotonic() + 60)
+    client = client or SourceClient(max_attempts=1, deadline=time.monotonic() + min(60, remaining if remaining is not None else 60))
     entry = None
     try:
         body, response = client.get(url)

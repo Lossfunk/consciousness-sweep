@@ -8,6 +8,7 @@ All reads share one WAL snapshot. Changes committed afterwards are considered by
 the next pass, rather than incorrectly invalidating the snapshot just checked.
 """
 from __future__ import annotations
+from . import workflow
 
 import json
 from pathlib import Path
@@ -269,8 +270,8 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                         saved = conn.execute("SELECT stage,state,payload,result FROM jobs WHERE id=?", (paper.get("reader_job"),)).fetchone()
                         require(saved and saved["stage"] == "reader" and saved["state"] == "complete", "Assessment lacks its completed reader job")
                         payload, result = object_json(saved["payload"]), object_json(saved["result"])
-                        require(payload.get("paper_id") == pid and result.get("assessment") == paper.get("assessment"), "Assessment differs from its source-bound reader result")
-                        expected_status = "assessed" if result["assessment"].get("assessment_status") == "complete" else "reading-incomplete"
+                        require(payload.get("paper_id") == pid and workflow.assessment(result.get("assessment"), payload) == paper.get("assessment"), "Assessment differs from its source-bound reader result")
+                        expected_status = "assessed" if paper["assessment"].get("assessment_status") == "complete" else "reading-incomplete"
                         require(paper["status"] == expected_status, "Paper completion state differs from the reader's completeness report")
                         require(payload.get("packet_path") == paper.get("packet_path"), "Assessment refers to a superseded packet")
                         require(payload.get("packet_sha256") == paper.get("assessment_packet_sha256"), "Assessment packet hash differs from reader binding")
@@ -330,6 +331,10 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                         if result is not None:
                             require(nonblank(result.get("actor")), "Completed screening lacks an actor")
                             screening.validate(result["assessment"], stage, records)
+                    elif stage == "abstract-lookup":
+                        from .workflow import validate_lookup
+                        validate_lookup(payload, result)
+                        require(conn.execute("SELECT 1 FROM papers WHERE id=?", (payload["paper_id"],)).fetchone(), "Abstract lookup references absent paper")
                     elif stage in {"reader", "retrieval"}:
                         require(conn.execute("SELECT 1 FROM papers WHERE id=?", (payload["paper_id"],)).fetchone(), "Source job references an absent paper")
                         if stage == "reader":
@@ -337,7 +342,9 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                             local_file(payload.get("packet_path"))
                             if result is not None:
                                 require(nonblank(result.get("actor")), "Completed reader lacks an actor")
-                                Draft202012Validator(output_schema()).validate(result["assessment"])
+                                from .workflow import assessment
+                                checked_assessment = assessment(result["assessment"], payload)
+                                Draft202012Validator(output_schema()).validate(checked_assessment)
                                 # Retrieve only source IDs/page maps from the
                                 # stored current asset metadata, never its text.
                                 assets = conn.execute("""SELECT json_extract(s.value,'$.asset_id') AS asset_id,
@@ -346,7 +353,7 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
                                 paper_row = conn.execute("SELECT json_extract(record,'$.packet_path') FROM papers WHERE id=?", (payload["paper_id"],)).fetchone()
                                 if assets and paper_row[0] == payload.get("packet_path"):
                                     packet = {"sources": [{"asset_id": a["asset_id"], "units": json.loads(a["units"])} for a in assets]}
-                                    require(not validate_assessment(result["assessment"], packet), "Reader decision trail contains invalid/unread source-unit references")
+                                    require(not validate_assessment(checked_assessment, packet), "Reader decision trail contains invalid/unread source-unit references")
                                 else:
                                     issue("source_units_deferred", jid, "Historical or external packet: source-unit membership remains the full validator's responsibility", notice=True)
                         elif result is not None:

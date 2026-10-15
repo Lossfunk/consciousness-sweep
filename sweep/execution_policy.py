@@ -6,7 +6,7 @@ from .common import canonical, digest
 from .transactions import atomic_operation
 
 DEFAULT = {"retained_first": False, "retrieval_max_rounds": None,
-           "inference_workers": None, "supervised_checkpoints": False}
+           "inference_workers": None, "supervised_checkpoints": False, "workflow": "legacy"}
 
 
 def validate(value):
@@ -19,6 +19,12 @@ def validate(value):
     for key in ("retrieval_max_rounds", "inference_workers"):
         if result[key] is not None and (type(result[key]) is not int or result[key] < 1):
             raise ValueError(key + " must be a positive integer or null")
+    if result["workflow"] not in {"legacy", "focused-v1"}:
+        raise ValueError("Unknown workflow contract")
+    if result["workflow"] == "focused-v1" and result["retrieval_max_rounds"] != 1:
+        raise ValueError("focused-v1 requires exactly one acquisition pass")
+    if "workflow" not in value:
+        result.pop("workflow")
     return result
 
 
@@ -66,7 +72,7 @@ def primary_pending(conn):
             if ('access-block:budget' in blocks or (profile and
                     ('access-block:profile:' + profile_fingerprint(profile) in blocks or profile_blocked(host, profile)))):
                 continue
-        if row['state'] != 'running' and host.get('network') and (row['stage'] == 'search' or row['stage'] == 'retrieval' and not row['local_source']):
+        if row['state'] != 'running' and host.get('network') and (row['stage'] in {'search', 'abstract-lookup'} or row['stage'] == 'retrieval' and not row['local_source']):
             continue
         return True
     has_controls = conn.execute("SELECT 1 FROM sqlite_master WHERE name='native_task_control'").fetchone()
@@ -81,17 +87,28 @@ def primary_pending(conn):
 
 
 def job_filter(conn):
+    from .workflow import enabled_conn, job_hold_sql
+    held = job_hold_sql() if enabled_conn(conn) else ""
+    if enabled_conn(conn):
+        return held
     if not load(conn)["retained_first"]:
-        return ""
-    return " AND NOT " + uncertain_job_sql() if primary_pending(conn) else ""
+        return held
+    return held + (" AND NOT " + uncertain_job_sql() if primary_pending(conn) else "")
 
 
-def job_order():
+def job_order(conn=None):
+    if conn is not None and load(conn).get("workflow") == "focused-v1":
+        # Finish source-ready work before admitting more papers. Bounded discovery
+        # buffers ensure earlier stages still drain when this finite queue clears.
+        return "j.priority DESC,coalesce((SELECT json_extract(p.record,'$.citation_depth') FROM papers p WHERE p.id=json_extract(j.payload,'$.paper_id')),2147483647),j.id"
     return ("coalesce((SELECT json_extract(p.record,'$.citation_depth') FROM papers p "
             "WHERE p.id=json_extract(j.payload,'$.paper_id')),2147483647),j.id")
 
 
 def native_rank(conn, task, policy=None):
+    if (policy or load(conn)).get("workflow") == "focused-v1":
+        category = task.get("task", "")
+        return (0, 2 if category == "bounded-public-source-acquisition" else 1 if category == "bibliographic-identity-resolution" else 0, task.get("paper_id", ""))
     if not (policy or load(conn))["retained_first"] or not task.get("paper_id") or str(task.get("task_id", "")).startswith("calibration:"):
         return (0, 0, "")
     row = conn.execute("SELECT " + uncertain_sql() + ",json_extract(p.record,'$.citation_depth') "
@@ -143,6 +160,8 @@ def park_exhausted(c):
                 if c.plan.get("mode") == "discovery":
                     from .discovery import queue_native_after_missing_source
                     queue_native_after_missing_source(c, pid)
+                from .workflow import on_source_missing
+                on_source_missing(c, pid)
             parked.append(proof)
         return parked
 

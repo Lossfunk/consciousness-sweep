@@ -1,7 +1,10 @@
 # Portable execution reference
 
 This document describes implemented command interfaces and their limits. The
-scientific package under `science/` remains frozen and separate.
+scientific package under `science/` remains frozen and separate. Fresh portable
+plans use `focused-v1`, an explicit selective-coverage and single-reading workflow.
+Its coverage/review choices supersede the native registered workflow only in the
+portable runner; scientific eligibility and interpretation stay unchanged.
 
 ## Files and identities
 
@@ -58,7 +61,8 @@ configuration has `profiles`, `resources`, optional `workload` and `mode`:
     "max_citation_depth": null,
     "operational_policy": {
       "retained_first": true,
-      "retrieval_max_rounds": 3,
+      "retrieval_max_rounds": 1,
+      "workflow": "focused-v1",
       "inference_workers": 4,
       "supervised_checkpoints": true
     }
@@ -70,7 +74,9 @@ configuration has `profiles`, `resources`, optional `workload` and `mode`:
 This is an unapproved example. Set authorizations only after the user grants
 them. Automatic profiles each require `authorized: true`; resource authorization
 alone does not authorize a different provider. `--config` uses the file's values,
-not the convenience preset's command-line defaults. The explicitly supplied
+not the convenience preset's command-line defaults. `plan` defaults to
+`operational_policy.workflow="focused-v1"`; it requires exactly one acquisition
+round. `legacy` is supported only for explicit historical-workflow compatibility. The explicitly supplied
 `--mode`, `--workers`, `--max-calls`, `--max-seconds` and `--max-citation-depth`
 flags override their configuration fields. Call/time limits are optional: JSON
 `null` or CLI `unbounded` means no user-imposed cap. Finite limits remain positive.
@@ -369,10 +375,11 @@ Refill each available native slot promptly when independent work is ready; do no
 wait for an entire batch to finish. The observed peak is not evidence of the
 harness maximum. Respect the actual authorized capacity and keep blocked lanes
 separate from ready work. Return concise results and source references, leave repetitive persistence to
-code, and use focused status summaries. An independent native scientific
-assessment remains required even when a compact prospect reading is complete;
-avoid extra duplicate passes without bypassing that obligation or truncating
-sources.
+code, and use focused status summaries. Newly commissioned papers receive one combined substantive reading, including
+the rubric output and native citation/process decisions. Existing completed
+initial readings retain their results and finish only their outstanding native
+assessment. Never turn a prospect/context label into a citation decision or
+truncate source coverage to fit a worker.
 
 Report adapter calls/tokens, supervisor usage and native-worker usage separately
 when telemetry exists. Cached input counts are not new source text. Missing
@@ -699,182 +706,91 @@ must not be described as live-verified where only simulated transports were used
 
 ## Scheduling and source revisions
 
-Title output is just a decision and a paper-specific reason; uncertainty advances.
-Abstract output adds the exclusion basis. Every consequential scientific exclusion
-receives a fresh source-only strongest-profile assessment; the first verdict and
-feature assertions are withheld. A rescue that read the abstract completes that
-stage. Clear outside-scope exclusions are independently audited in cumulative
-source/stage cohorts: the ten lowest stable source-bound
-hashes, or all papers in a smaller cohort. A miss reopens the remaining current
-exclusions in that cohort. This sample does not estimate corpus recall.
+The focused workflow retains the semantic title/abstract rubric and existing
+25-title/10-abstract batch bounds. Every paper has a source-specific decision and
+reason. Scientific exclusions are terminal for unchanged evidence; no automatic
+rescue or sampled audit is commissioned. Abstract-uncertain papers remain indexed
+in deferred coverage. The scheduler does not silently drain that queue when
+preferred work ends. Title-retained papers without abstracts receive one bounded
+OpenAlex → Europe PMC → Crossref lookup, then remain unassessed if unavailable.
+Identity must match by DOI or complete title/year/authors; ambiguity is preserved.
 
-With `retained_first`, ready retained work and existing prospects take precedence
-over uncertain-abstract retrieval, reading and native assessment. Within the
-uncertain lane, shallower citation depth and then stable discovery order take
-precedence. Calibration reviews remain preferred. Blocked preferred work does not
-hold ready lower-priority work unnecessarily. Uncertain papers retain their
-scientific state and remain outstanding; an unbounded productive preferred lane
-can leave them waiting indefinitely, which must be reported.
+Source-ready reading and outstanding native assessments take precedence over
+admitting more papers. Discovery backpressure counts that downstream work along
+with screening and retrieval; deferred papers and parked acquisitions do not fill
+the active buffer. Every encountered paper remains in global deduplication.
+Eligible nodes may expand to deeper levels while earlier uncertain papers wait.
+CORE/strict BRIDGE criteria, bridge lineage and bounded process/blind query windows
+remain unchanged. A prospect label alone does not authorize expansion.
 
-The active discovery buffer excludes this deferred uncertain lane and parked
-acquisitions; `status` reports them separately. Eligible CORE, provisional CORE
-and strict BRIDGE nodes expand under the unchanged scientific and lineage rules,
-including deeper eligible work before shallower uncertain work. A prospect label
-alone does not authorize expansion. Without retained-first scheduling, ready
-reader jobs precede rescue/audit, abstracts and titles. Acquisition workers rotate among nonempty lanes for
-priority work, supplied local sources, fresh retrievals, retries and other ready
-stages such as search. Each nonempty lane receives service within five admissions;
-an individual job's wait also depends on earlier work in its lane. Without retained-first scheduling, fresh work
-is oldest-first across priorities and retries rotate by last service. With it,
-active-lane jobs are ordered by citation depth then stable job ID. Discovery backpressure still
-applies. The durable service cursor survives restart. This ordering changes no
-paper's scientific eligibility. Every acquisition job binds an immutable source
-manifest and generation. An
-identical attachment is idempotent. A changed abstract reopens a screening-only decision; richer metadata does not replace an existing full-paper reading. A changed acquisition identity creates explicit source follow-up work. Older results remain in history but cannot
-replace a newer generation or a richer current stage. `source-retry --run-id ID
---paper-id ID --reason REASON` authorizes a new acquisition attempt. It does not
-silently retry a model call. Source-verified means bibliographic identity and
-extraction were checked; it does not certify complete article text or figure
-inspection. Acquisition gaps and individual claim dispositions appear in delivery.
+Compatible untouched partial screening batches coalesce without changing paper
+bindings or reasons. Prepared inputs and previous job IDs remain immutable. No
+batch waits for its slowest neighbor before another free worker can start.
+Inference workers share the recorded cap across model and native leases; retrieval
+and abstract metadata requests use the network-worker pool.
 
-Retrieval claims, actual acquisition starts and finished receipts are separate
-from model admission and billing. `status` exposes `retrieval_execution`; an
-attempt without a receipt remains visible after interruption. Retrieval receipts
-and endpoint history publish under the same fenced lease as job completion or
-deferral. They cannot be updated by a stale worker. Transient acquisition retries
-use increasing delays from 60 seconds to a maximum ordinary delay of one hour;
-longer valid `Retry-After` instructions are honored. Invalid or unrepresentable
-server delays fall back to ordinary backoff and retain the response evidence.
-Unchanged blocked or unreadable endpoint outcomes can be reused for 24 hours
-while other endpoints remain transient. Local files are rechecked against their
-bound hashes. A new source generation, including an explicit `source-retry`,
-starts fresh endpoint history and preserves the old receipts. When the user selects
-`retrieval_max_rounds`, actual acquisition starts count toward that per-generation
-allowance; historical rounds count too. After the allowance, terminal unsuccessful
-work is parked with its receipts and missing-source state, freeing the active
-buffer. No additional model calls or scientific exclusions are created. An
-interrupted attempt without a receipt still requires recovery. A new source or
-explicit access-repair `source-retry` can reopen acquisition; unchanged failures
-must not be recycled through that command to evade the allowance.
+One acquisition pass uses known locations with a 180-second deadline and one
+transport attempt per request. It collects associated supplements encountered
+with the main article. If no readable verified article is found, a single bounded
+native acquisition task may inspect the publisher page and make one public-copy
+search, inspecting at most two candidate copies within 120 seconds. Missing text
+is recorded as deferred coverage. The native worker must use the intended
+metadata profile, save receipts, and return; it must not repeat the hunt.
 
-The policy is stored in the original plan for fresh runs or in an append-only
-continuation receipt for an existing run. Omitting it preserves legacy scheduling:
-no acquisition-round limit, the original model-worker limit, and ordinary automatic
-checkpoints. `supervised_checkpoints` keeps incremental sanity during execution and
-leaves full validation/delivery to the supervising agent at quiet wave checkpoints,
-after recovery/source revisions requiring a checkpoint, and before handoff.
+Acquisition claims, actual starts and terminal receipts remain distinct from model
+billing. Interrupted attempts without receipts require ordinary recovery.
+Historical attempts count toward the one-round limit on continuation. Already
+parked work remains parked. Server Retry-After evidence is retained; it does not
+commission another acquisition round. Mandatory citation/query source windows
+retain their own completeness and fallback rules, rather than being mistaken for
+paper-download hunts.
 
-Keep uncertain preprint/published matches separate and preserve supplied version
-relations/publication status. Use the source text to resolve identity. Never count
-unresolved copies as independent corroboration or reuse decisions across changed
-versions just because titles are similar.
+Every source job binds a manifest and generation. Identical attachment is
+idempotent. New explicitly supplied files can reopen deferred work through a new
+generation, preserving earlier results and receipts. Rediscovering another URL
+alone does not restart a parked hunt. `source-retry --run-id RUN_ID --paper-id ID
+--reason REASON` is an explicit new acquisition authorization; use it only when
+access/evidence actually changed, not to evade the bounded pass.
 
-Use `native-list --run-id ID --include-deferred` to inspect outstanding work, then
-`native-work --run-id ID --owner WORKER --lease-seconds 900` to reserve distinct
-work. Without an owner, native-work is an inspection only. Carry the returned
-owner/token as `native_lease` in submissions. `native-defer --run-id ID --task-id
-TASK --actor WORKER --reason REASON --lease-token TOKEN --delay-seconds 300`
-releases that reservation and lets other tasks proceed. Lease expiry alone is not
-proof that a worker died. Resolve DOI-less parents through the returned identity
-lookup task: inspect candidate bibliography and submit a verified service identity
-with evidence, or retain ambiguity. A citation CORE judgment can be recorded
-while the separate process-search assessment remains unresolved.
+Changed abstract evidence can receive a new append-first decision. Clerical
+metadata updates and repeated discovery do not justify repeated semantic screening.
+Older results cannot replace a newer source generation or richer current reading.
+Source verification establishes article identity and extraction integrity, not
+complete reading, figure inspection or absence of unprovided supplements.
 
-Inconsistent source responses are quarantined, never converted to zero yield.
-Use the returned source task's `restart-citation-window` action to create a new
-recorded coverage generation; prior pages and encounters remain in history.
-Report total hits, returned records and ranked truncation independently. A full
-40-record blind window or 50-record earned-Y window is not source exhaustion.
-The fourteen QREV6 families and their rationale are in science/queries.md.
-
-A failed operational integrity report blocks execution and trusted delivery
-until repaired and successfully revalidated. Deadlines propagate to model and
-retrieval workers, with a cleanup allowance inside the session budget. A killed
-possibly admitted call retains its reservation and unknown cost; no automatic
-model retry follows. If time is insufficient for validation/delivery, record a
-deferred checkpoint and keep the prior delivery. OS scheduling and durable disk
-flushes can add small shutdown latency; the deadline does not allow workers to
-drain their full original multi-minute timeout.
+The original plan or append-only continuation receipt records this workflow.
+Operational `status.coverage` reports deferred papers and held jobs separately.
+Holds preserve old job IDs, sources, outputs, failures and charges. An active-scope
+checkpoint with deferred coverage is not scientific saturation or native
+registered-run certification.
 
 ## Startup and ongoing checks
 
-A request to "run the sweep" starts discovery after one scope/resource agreement.
-Verify dependencies, writable run storage, exact adapter settings and observable
-authentication. Real first retrieval/model calls supply the remaining operational
-checks and count as sweep work. There is no compulsory commissioning run, 20-call
-ceiling, one-hour cutoff or obligation to rerun scientific benchmarks on each host.
-An optional diagnostic must be requested or justified separately, with its own
-explicit scope; it must not silently replace the user's intended sweep.
+Startup verifies the release, storage, immutable inputs and the user's actual
+resource/depth agreement. A separate pilot, rerunning the calibration set for each
+fresh worker, or trying every available provider is not required.
 
-Use `sanity --run-id RUN_ID` during execution for bounded incremental metadata,
-reason, identifier and state checks. The report records which events/papers/jobs
-were covered; an incomplete scan is not presented as full validation. The
-persistent report is `delivery/sanity.json`. Full `validate` at quiet checkpoints
-still checks the complete ledger and immutable source bindings. Neither checks
-whether an experimental scientific inference is correct.
+The 18 empirical seeds remain unchanged: 13 expected useful prospects, three
+contextual controls and two without a fixed outcome. They pass through the same
+screening and source workflow. Expectations remain with the evaluator.
+`calibration-report --run-id RUN_ID` retains observed claims, gaps and disagreements;
+these flags do not automatically commission a reread, force agreement or create a
+recurring adjudication task in focused-v1. Missing text is untested. Explicit
+source-grounded adjudication can be recorded with `calibration-review`; original
+and alternative readings remain separate. Additional model work needs an actual
+agreed scope/profile and does not silently inherit a stronger model.
 
-The 18 empirical seed papers pass through the actual title, abstract and full-text
-gates. The calibration reference distinguishes 13 expected useful prospects,
-three contextual controls and two papers without a fixed expected outcome;
-review/discovery anchors are not assumed to be positive examples. Expected
-contributions are evaluator material, not reader inputs or tier overrides. `calibration-report --run-id RUN_ID` exposes observed judgments, source
-gaps and review flags. Missing text, partial reading, disagreement about a claim
-and a model execution failure require different responses. An unexpected
-exclusion is a flag for source-grounded adjudication, not proof that the seed
-must pass or that a stronger model is automatically right.
+Incremental `sanity` checks metadata, identifiers, references and state transitions
+against a consistent snapshot. Its default interval is 60 seconds. It does not
+rehash every source or judge scientific claims. Full `validate` checks the complete
+ledger, source bytes and immutable bindings at a quiet checkpoint. Neither proves
+scientific reading quality. A failed check blocks further admission until resolved.
 
-A plan may declare an authorized `calibration_review_profile` alongside stage
-profiles. It follows the same access, no-fallback and resource accounting rules.
-This permits independent source-only rereading under an agreed stronger model;
-its response does not overwrite the original scientific decision. The supervising
-agent records a claim-specific resolution with `calibration-review --run-id RUN_ID
---paper-id PAPER_ID --input REVIEW_JSON`. If no authorized review route is
-available, retain the flag and request a focused decision rather than silently
-switching models or repeatedly spending until a preferred label appears.
-
-Semantic seed comparisons are ordinary leased native tasks (`calibration:PAPER_ID`),
-including when a prospect label agrees. Their template asks the supervisor to
-compare each expected and observed claim, gate reasoning, source integration and
-statistical scope. Check whether the decisive sources are actually available
-before blaming the model or dispatching another read. Missing text is untested;
-it cannot become a calibration failure or be filled from the reference. The
-comparison report is linked from the delivery page. A valid, source-supported
-departure from the reference can be recorded without rewriting either reading.
-
-A reported acquisition or reading gap holds an automatic second read until the
-supervisor records a located `source_coverage` judgment. Request missing premise
-evidence first. Routine extraction notices do not block, and an interrupted read
-with supplied unread units may go to the authorized alternative. Expected claims
-guide comparison but never override source evidence or enter ordinary reader
-prompts.
-
-Authentication and configuration failures block the affected profile; a source
-size problem blocks the affected job. `status` reports these under
-`action_required`. The automatic loop continues independent work and returns
-when only blocked work remains, instead of repeatedly probing access. After a
-real fix, select the repaired block with `resume --run-id RUN_ID
---resolve-access-blocks --access-block BLOCK_KEY --reason "WHAT CHANGED"`.
-This authorizes a fresh access check under the same settings. It neither raises
-limits nor refunds uncertain admissions; failed admitted calls still use the
-documented charged retry procedure. Confirmed rate limits retain backoff.
-
-For an abandoned external-agent native lease, use `native-recover --run-id RUN_ID
---task-id TASK_ID --owner OWNER --lease-token TOKEN --actor SUPERVISOR --reason
-"WHY" --proof RECEIPT_JSON`. The receipt must contain `kind` equal to
-`supervisor-observed-termination`, the exact `owner`, a terminal `terminal_status`
-(`completed`, `failed`, `interrupted` or `terminated`), the harness/task observation
-in `source` and `evidence`, and a timezone-bearing `observed_at` after the latest
-reservation. Expiry or silence is insufficient. Recovery fences the old token
-and makes the unchanged work available again; same-owner resume is also supported.
-
-Unattended execution still requires the supervising agent to service leased
-native discovery tasks while automatic workers process retrieval and model jobs.
-Use separate leased units and the shared transactional writer, and continue
-independent work when one unit is deferred. Watch mode waits under the selected
-scope; quota exhaustion, unknown admission, missing sources and native scientific
-questions remain honest checkpoints. They are never treated as zero-yield search
-results. The host/supervisor must remain available; the package does not install
-a background service or arrange future wakeups.
+Use supervised checkpoints to stop admission and drain workers before validation
+and delivery. Retain previous publications while preparing the next snapshot.
+Known access/budget blocks are durable; resolve them only after actual repair.
+Unknown/admitted calls retain their accounting, and lease expiry alone is never
+proof of termination. Session or budget exhaustion leaves incomplete work visible.
 
 ## Native identifiers and source provenance
 
@@ -1051,63 +967,52 @@ blocks remain in force across source replacement.
 
 ## Versioned operational continuation
 
-Ordinary resume verifies the active runtime and never edits its fingerprint.
-`continue-run` is an explicit operation for a paused portable run. It rejects
-changes to protected scientific inputs, reader instructions, schemas, calibration
-references and frontier rules. It changes only the operational runtime binding
-and the four declared policy fields; profiles, depth, billing, budgets and the
-original execution plan remain unchanged. It is not a native registered-ledger
-migration or scientific certification.
+`continue-run` operates on a paused portable run using a separate verified release.
+It preserves the original plan, completed work, source artifacts, IDs, charges,
+profiles, depth and billing. Protected scientific files, accepted reader rubric,
+calibration reference and frontier criteria must match. A receipt explicitly records
+whether the coverage/review workflow changed; this is not silent native-run migration.
 
-1. Keep the old run and release in place. Download and verify the new release in
-   a separate local directory. Stop admissions and drain all automatic, native
-   and acquisition workers. Submit valid pending results before releasing leases;
-   recover abandoned work only with actual observed termination evidence. Lease
-   expiration alone is insufficient.
-2. Under the old runtime, reconcile interrupted acquisition receipts and run
-   quiet `sanity` and `validate`. Full validation must pass against the current
-   material snapshot. If sanity fails because of a reproduced checker defect,
-   preserve that failure and require a separately verified successor that fixes
-   it; do not clear the guard or alter ledger records to pass. The continuation
-   can proceed from the successful full validation, but the successor's sanity
-   replay, full validation and delivery must pass before resuming. Unexplained
-   integrity failures require investigation first. Preserve current deliveries.
-3. Save the user-approved policy JSON under the existing run's `intake/`:
+1. Keep both releases and the run. Pause admission and drain all workers. Submit
+   completed valid work. Recover abandoned leases only with observed termination
+   evidence. Reconcile interrupted acquisition receipts.
+2. Under the old active runtime, run quiet sanity and full validation. Full validation
+   must pass against the latest material snapshot. Preserve unexplained failures;
+   do not edit code, source hashes, the ledger or the fingerprint to force passage.
+3. Save the authorized policy under the existing run's `intake/`. Use the actual
+   available shared inference capacity. For example:
 
    ```json
-   {"retained_first":true,"retrieval_max_rounds":3,"inference_workers":4,"supervised_checkpoints":true}
+   {"workflow":"focused-v1","retained_first":true,"retrieval_max_rounds":1,"inference_workers":3,"supervised_checkpoints":true}
    ```
 
-4. From the **new release directory**, use its Python environment and keep
-   `--root` pointing to the **existing run repository** on every invocation:
+4. From the new release directory, use its Python and the original run root:
 
    ```sh
-   .venv/bin/python -B -m sweep --root /local/old-release continue-run \
-     --run-id RUN_ID --previous-release /local/old-release \
-     --policy /local/old-release/runs/RUN_ID/intake/operational-policy.json \
-     --actor supervising-agent --reason 'User-authorized operational continuation'
+   .venv/bin/python -B -m sweep --root /local/run-repository continue-run \
+     --run-id RUN_ID --previous-release /local/active-release \
+     --policy /local/run-repository/runs/RUN_ID/intake/workflow-policy.json \
+     --actor supervising-agent --reason 'User-authorized focused coverage and combined reading'
    ```
 
-   Inspect the read-only preview. Repeat the same command with `--apply`. The
-   operation backs up SQLite and the exact original plan under `continuations/`,
-   atomically records the runtime transition, and fences stale runtime writes.
-   It then parks already-exhausted acquisition jobs idempotently. `STOP` remains.
-   A failure after the recorded transition does not undo it: inspect `status`
-   under the new runtime and reconcile before resuming; never restore the backup
-   over a ledger that has subsequent work.
-5. Run `sanity`, `validate`, then `deliver` with the new executable and old root.
-   Inspect preserved assessments, source gaps, parked acquisitions, pending queues
-   and access/budget blocks. The new runtime can recover a predecessor's verified
-   terminal model receipt; unknown/admitted calls retain their charges. Prepared
-   confirmed-unadmitted requests receive new successor IDs if the adapter changed;
-   original artifacts remain unchanged. Access blocks still require scoped repair.
-6. Only after the checkpoint passes, use `resume` and restart coordinated work
-   with the new executable and the same root/run ID. Refill authorized shared
-   slots without bypassing independent scientific assessment. Do not edit a plan,
-   copy patched files into the old release, replay completed readings, reset
-   counters or use old-runtime commands after continuation.
+   Inspect the preview, including `workflow_contract` and
+   `coverage_and_review_changed`. Repeat with `--apply`. The command backs up SQLite
+   and the exact original plan, records the runtime transition, fences older
+   binaries and reconciles pending work. STOP remains in place.
+5. Inspect the reconciliation: completed readings and native assessments are intact;
+   unfinished old initial readings receive fresh combined successor jobs; completed
+   initial readings finish only their remaining native work. Prepared predecessor
+   files remain immutable. Uncertain/unavailable work is held or parked, exclusion
+   rereviews are held, and unknown calls retain their receipts and charges. No
+   historical judgment is rewritten to satisfy the new workflow.
+6. Run new-runtime `sanity`, `validate`, then `deliver` with the original root.
+   Confirm counts, source generations, holds, original budget totals and the explicit
+   deferred-coverage report. A failure after the transition requires inspection and
+   reconciliation under the new runtime; never restore a backup over later work.
+7. Only after these checks pass, `resume`, return supervision to active mode if held,
+   and refill available leased slots. Use the new executable with the same root/run
+   ID on every invocation. Never overlay the old release or restart the run.
 
-For a later continuation, `--previous-release` names the then-active executable
-release; `--root` still names the unchanged run repository. The receipt chain
-retains every operational agreement. Any scientific conflict requires separate
-review and is outside this mechanism.
+A later continuation names the then-active release as `--previous-release`.
+Ordinary resume never changes policy or adds an allowance. A different scientific
+rubric or frozen input requires separate scientific review and is rejected here.

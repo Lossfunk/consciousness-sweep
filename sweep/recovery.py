@@ -30,7 +30,8 @@ def _source(coordinator, job):
         source = _load(path)
         expected = payload.get("packet_sha256") or path.name.split(".", 1)[0]
         _require(digest(source) == expected, "Retry source packet no longer matches its immutable job binding")
-        return source, reading.prepare(source)
+        from .workflow import prepare_reader
+        return source, prepare_reader(source, payload)
     records = payload["source_records"]
     _require(digest(records) == payload["source_sha256"], "Retry metadata snapshot hash changed")
     _require([record["paper_id"] for record in records] == payload["paper_ids"], "Retry metadata membership changed")
@@ -40,7 +41,8 @@ def _source(coordinator, job):
         if stage != "title":
             paper["abstract"] = record.get("abstract") or None
         papers.append(paper)
-    return {"papers": papers}, screening.prepare(stage, papers)
+    from .workflow import prepare_screen
+    return {"papers": papers}, prepare_screen(stage, papers, payload)
 
 
 def terminal_evidence(coordinator, job, conn=None, history=None):
