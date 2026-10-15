@@ -68,6 +68,7 @@ def main(argv=None):
             cmd.add_argument("--wakeup", type=Path, help="JSON observation from the host's same-run continuation mechanism; records evidence, does not install a schedule")
             cmd.add_argument("--check-yield", action="store_true", help="Exit 3 if ready work or owned workers still need active supervision")
         if name == "continue-run":
+            cmd.add_argument("--title-profile", type=Path, help="Explicit JSON {model,effort,access_evidence} for future/unadmitted title tasks only")
             cmd.add_argument("--previous-release", type=Path, required=True)
             cmd.add_argument("--policy", type=Path, required=True)
             cmd.add_argument("--actor", required=True)
@@ -216,7 +217,8 @@ def main(argv=None):
             elif args.command == "continue-run":
                 from . import continuation
                 operation = continuation.apply if args.apply else continuation.prepare
-                result = operation(run_dir, args.previous_release, json.loads(args.policy.read_text()), args.actor, args.reason)
+                result = operation(run_dir, args.previous_release, json.loads(args.policy.read_text()), args.actor, args.reason,
+                    json.loads(args.title_profile.read_text()) if args.title_profile else None)
                 if args.apply:
                     from .execution_policy import park_exhausted
                     from .workflow import reconcile
@@ -279,14 +281,14 @@ def main(argv=None):
                     result = {"status": "pause-requested", "reason": "Already admitted bounded requests will finish and persist."}
                 elif args.command == "host-check":
                     from .host_access import record_launch
-                    result = {"host_access": record_launch(coordinator.store, [*coordinator.plan["profiles"].values(),
+                    result = {"host_access": record_launch(coordinator.store, [*coordinator.execution_profiles.values(),
                         *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])]), "inference_performed": False}
                 elif args.command == "resume":
                     if args.access_block and not args.resolve_access_blocks:
                         raise ValueError("--access-block requires --resolve-access-blocks")
                     if args.resolve_host_access:
                         from .host_access import resolve as resolve_host
-                        resolve_host(coordinator.store, [*coordinator.plan["profiles"].values(),
+                        resolve_host(coordinator.store, [*coordinator.execution_profiles.values(),
                             *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])],
                             args.reason, args.resolve_host_access)
                     if args.resolve_access_blocks:

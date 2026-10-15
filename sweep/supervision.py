@@ -128,10 +128,12 @@ def _snapshot(c, conn, now):
     earliest = []
     predicate, args = c.store.claimable_sql(conn, [*MODEL_STAGES, "retrieval", "search", "abstract-lookup"], now=now)
     pressured = pressure(c)["search_admission_paused"]
-    for row in conn.execute("SELECT j.stage,j.available_at,coalesce(json_extract(j.payload,'$.calibration_review'),0) review," + c.store.local_retrieval_sql("j", untried_during_hold=True) + " local_source FROM jobs j WHERE " + predicate, args):
+    for row in conn.execute("SELECT j.id,j.stage,j.available_at,coalesce(json_extract(j.payload,'$.calibration_review'),0) review," + c.store.local_retrieval_sql("j", untried_during_hold=True) + " local_source FROM jobs j WHERE " + predicate, args):
         stage = row["stage"]
         if stage in MODEL_STAGES:
             profile = c.plan.get("calibration_review_profile") if row["review"] else c.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]
+            if stage == "title":
+                profile = c.profile_for_job({"id":row["id"],"stage":"title","payload":{}})
             if budget_held or not profile or profile_fingerprint(profile) in profiles or profile_blocked(host, profile):
                 continue
             ready["model"] += 1

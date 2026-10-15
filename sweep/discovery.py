@@ -386,7 +386,11 @@ def _schedule_new(c, rows, prefix):
             c.store.update_paper(pid, {"status": "title-pending"}, "New logical work requires its own semantic screening decision")
 
 
+@atomic_operation
 def project_discovery(c, job):
+    # Only local, bounded snapshot projection belongs here. Keep the replay
+    # check, encounter publication, frontier transition and acknowledgement on
+    # one write snapshot; retrieval and inference have already finished.
     payload, result = job["payload"], job["result"]
     marker = "search-projection:" + job["id"]
     if c.store.get_state(marker):

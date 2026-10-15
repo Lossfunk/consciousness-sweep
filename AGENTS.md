@@ -47,7 +47,9 @@ to active code, schemas, scientific sources or plan-bound model profiles.
    Never recreate a run, recycle an ID, import another run's judgments or reset costs.
 
 Keep the original execution plan immutable. A versioned continuation retains it
-and appends the new runtime and workflow agreement. STOP remains in force until
+and appends the new runtime and workflow agreement. An explicitly authorized
+title-only model/effort change uses `continue-run --title-profile`; preserve old
+job profiles and receipts, and never substitute models silently. STOP remains in force until
 post-continuation checks pass. Source replacements retain earlier assets and reads.
 
 ## Paper workflow

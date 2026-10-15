@@ -453,7 +453,7 @@ def validate(coordinator, *, deadline=None):
                             required_provenance = bool(payload.get("calibration_review"))
                             if required_provenance or "execution_provenance" in result or "execution_verification" in result:
                                 from .coordinator import execution_task_context, validate_execution_provenance
-                                job = {"stage": stage, "payload": payload}
+                                job = {"id": jid, "stage": stage, "payload": payload}
                                 profile = coordinator.profile_for_job(job)
                                 context = execution_task_context(job, profile)
                                 require(all(task.get(key) == value for key, value in context.items()),

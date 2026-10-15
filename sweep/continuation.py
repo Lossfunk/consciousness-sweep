@@ -42,6 +42,11 @@ def require_compatible(run, plan, target):
                         or current['previous_continuation_sha256'] != (digest(previous) if previous else None)):
                     raise ValueError("Continuation history mismatch; execution refused")
                 validate_policy(current['policy'])
+                from .title_profiles import validate_history, history
+                validate_history(plan, current)
+                previous_history = history(previous)
+                if history(current)[:len(previous_history)] != previous_history:
+                    raise ValueError("Title profile history changed during continuation")
                 active, previous = current['target_runtime'], current
             if receipt != previous or receipt["target_runtime"] != target:
                 raise ValueError("Continuation binding/history mismatch; execution refused")
@@ -78,7 +83,7 @@ def _quiet(conn, run):
         raise ValueError("Predecessor validation is stale; validate after all workers and recovery writes are quiet")
 
 
-def prepare(run, previous_release, policy, actor, reason):
+def prepare(run, previous_release, policy, actor, reason, title_profile=None):
     run, previous_release = Path(run).resolve(), Path(previous_release).resolve()
     if not str(actor).strip() or not str(reason).strip():
         raise ValueError("Continuation requires the authorizing actor and reason")
@@ -108,6 +113,8 @@ def prepare(run, previous_release, policy, actor, reason):
         if digest(json.loads((run / "execution_plan.json").read_text())) != digest(plan):
             raise ValueError("Original plan file differs from the durable original agreement")
         _quiet(conn, run)
+        from .title_profiles import preview as title_preview
+        title_history, title_jobs = title_preview(conn, run, plan, prior, title_profile, actor, reason)
         snapshot = conn.execute("SELECT max(id) FROM events").fetchone()[0]
         from .workflow import transition_preview
         preview = transition_preview(conn, validate_policy(policy))
@@ -120,7 +127,8 @@ def prepare(run, previous_release, policy, actor, reason):
         "previous_continuation_sha256": digest(prior) if prior else None,
         "policy": validate_policy(policy), "actor": actor.strip(), "reason": reason.strip(),
         "snapshot_event_id": snapshot, "changed_runtime_files": changed,
-        "scientific_inputs_changed": False, "model_profiles_changed": False,
+        "scientific_inputs_changed": False, "model_profiles_changed": title_profile is not None,
+        "title_profile_history": title_history, "title_profile_replacements": title_jobs,
         "workflow_transition": preview,
         "workflow_contract": contract(validate_policy(policy).get("workflow", "legacy")),
         "coverage_and_review_changed": validate_policy(policy).get("workflow", "legacy") !=
@@ -128,8 +136,8 @@ def prepare(run, previous_release, policy, actor, reason):
         "status": "ready-for-explicit-apply"}
 
 
-def apply(run, previous_release, policy, actor, reason):
-    receipt = prepare(run, previous_release, policy, actor, reason)
+def apply(run, previous_release, policy, actor, reason, title_profile=None):
+    receipt = prepare(run, previous_release, policy, actor, reason, title_profile)
     run = Path(run).resolve()
     folder = run / "continuations" / uuid.uuid4().hex
     folder.mkdir(parents=True)
@@ -156,6 +164,8 @@ def apply(run, previous_release, policy, actor, reason):
         event = conn.execute("INSERT INTO events(at,kind,payload) VALUES(?,'runtime_continued',?)", (time.time(), canonical(receipt))).lastrowid
         receipt["event_id"] = event
         conn.execute("INSERT OR REPLACE INTO meta VALUES('state:runtime_continuation',?)", (canonical(receipt),))
+        from .title_profiles import replace_pending
+        replace_pending(conn, run, receipt)
         # Fence older binaries, even though the historical plan still names them.
         # Old connections lack this function; older upgraded binaries return a different hash.
         triggers = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'runtime_fence_%'")]

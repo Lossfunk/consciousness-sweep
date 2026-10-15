@@ -171,6 +171,11 @@ class Coordinator:
         self.store = Store(self.run_dir)
         self._calibration_dirty = self.plan.get("mode") == "discovery"
 
+    @property
+    def execution_profiles(self):
+        from .title_profiles import profiles
+        return profiles(self.plan, self.store.get_state("runtime_continuation"))
+
     @classmethod
     def initialize(cls, run_dir, plan):
         from .distribution import runtime_fingerprint
@@ -573,7 +578,7 @@ class Coordinator:
         from .profiles import profile_fingerprint
         blocked = blocked_profiles(self)
         budget_block = self.store.get_state("access-block:budget") or {}
-        stages = [] if budget_block.get("active") else [stage for stage in MODEL_STAGES if profile_fingerprint(self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]) not in blocked]
+        stages = [] if budget_block.get("active") else [stage for stage in MODEL_STAGES if profile_fingerprint(self.execution_profiles["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]) not in blocked]
         # Share agent attention between model exchange and native discovery.
         # Otherwise a continuously replenished screening queue starves the
         # source-grounded decisions that enable the next citation generation.
@@ -924,24 +929,37 @@ class Coordinator:
             deadline = getattr(self, "session_deadline", None)
             if deadline is not None and time.monotonic() >= deadline:
                 return
-            if job["stage"] == "search":
-                from .discovery import project_discovery
-                project_discovery(self, job)
-            elif job["stage"] in {"title", "abstract", "rescue", "audit"}:
-                self._project_screen(job)
-            elif job["stage"] == "retrieval":
-                self._project_retrieval(job)
-            elif job["stage"] == "reader":
-                self._project_reader(job)
-            elif job["stage"] == "abstract-lookup":
-                from .workflow import project_abstract_lookup
-                project_abstract_lookup(self, job)
-            else:
-                continue
-            self.store.mark_projected(job["id"])
+            self._project_result(job["id"])
         self.reconcile_calibration()
 
+    @atomic_operation
+    def _project_result(self, job_id):
+        # The outer candidate list can be stale when run/work overlap. Recheck
+        # inside the transaction and commit effects with their acknowledgement.
+        # Lock one bounded result, never the network/model execution or full loop.
+        job = self.store.job(job_id)
+        if not job or job["state"] != "complete" or job["projected"]:
+            return
+        if job["stage"] == "search":
+            from .discovery import project_discovery
+            project_discovery(self, job)
+        elif job["stage"] in {"title", "abstract", "rescue", "audit"}:
+            self._project_screen(job)
+        elif job["stage"] == "retrieval":
+            self._project_retrieval(job)
+        elif job["stage"] == "reader":
+            self._project_reader(job)
+        elif job["stage"] == "abstract-lookup":
+            from .workflow import project_abstract_lookup
+            project_abstract_lookup(self, job)
+        else:
+            return
+        self.store.mark_projected(job_id)
+
     def profile_for_job(self, job):
+        if job["stage"] == "title":
+            from .title_profiles import for_job
+            return for_job(self.plan, self.store.get_state("runtime_continuation"), job)
         if job["payload"].get("calibration_review"):
             from .profiles import profile_fingerprint
             profile = self.plan.get("calibration_review_profile")
@@ -951,7 +969,7 @@ class Coordinator:
                 raise ValueError("Seed second-read settings differ from their bound profile")
             return profile
         stage = job["stage"]
-        return self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]
+        return self.execution_profiles["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]
 
     def reconcile_calibration(self):
         if self.plan.get("mode") != "discovery" or not self._calibration_dirty:
@@ -1267,10 +1285,10 @@ class Coordinator:
         # Combined reading needs the same source-bound ID allocation as native
         # discovery. It is dispatched through work, never a silent CLI fallback.
         from .workflow import enabled
-        automatic_stages = [stage for stage in MODEL_STAGES if not (enabled(self) and stage == "reader") if automatic_models and self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]["adapter"] != "manual"]
+        automatic_stages = [stage for stage in MODEL_STAGES if not (enabled(self) and stage == "reader") if automatic_models and self.execution_profiles["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]["adapter"] != "manual"]
         review_selected_automatic = automatic_models and bool(self.plan.get("calibration_review_profile")) and self.plan["calibration_review_profile"]["adapter"] != "manual"
         from . import host_access
-        host_access.record_launch(self.store, [*self.plan["profiles"].values(),
+        host_access.record_launch(self.store, [*self.execution_profiles.values(),
             *([self.plan["calibration_review_profile"]] if self.plan.get("calibration_review_profile") else [])],
             timeout=min(10, remaining()))
         last_report = 0
@@ -1310,9 +1328,9 @@ class Coordinator:
                 network_held = bool(host_state.get("network"))
                 blocked = {b["profile_sha256"] for b in blocks if b["scope"] == "profile"}
                 capped = capped or any(b["scope"] == "budget" for b in blocks)
-                automated = [stage for stage in automatic_stages if profile_fingerprint(self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]) not in blocked]
+                automated = [stage for stage in automatic_stages if profile_fingerprint(self.execution_profiles["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]) not in blocked]
                 automated = [stage for stage in automated if not host_access.profile_blocked(host_state,
-                    self.plan["profiles"]["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage])]
+                    self.execution_profiles["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage])]
                 review_automatic = review_selected_automatic and profile_fingerprint(self.plan["calibration_review_profile"]) not in blocked
                 review_automatic = review_automatic and not host_access.profile_blocked(host_state, self.plan.get("calibration_review_profile") or {})
                 from .scheduling import coalesce, pressure

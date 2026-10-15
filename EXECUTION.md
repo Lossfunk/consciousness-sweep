@@ -1031,7 +1031,8 @@ blocks remain in force across source replacement.
 
 `continue-run` operates on a paused portable run using a separate verified release.
 It preserves the original plan, completed work, source artifacts, IDs, charges,
-profiles, depth and billing. Protected scientific files, accepted reader rubric,
+depth and billing. Profiles remain unchanged unless the explicit title-only option
+below is supplied. Protected scientific files, accepted reader rubric,
 calibration reference and frontier criteria must match. A receipt explicitly records
 whether the coverage/review workflow changed; this is not silent native-run migration.
 
@@ -1078,3 +1079,38 @@ whether the coverage/review workflow changed; this is not silent native-run migr
 A later continuation names the then-active release as `--previous-release`.
 Ordinary resume never changes policy or adds an allowance. A different scientific
 rubric or frozen input requires separate scientific review and is rejected here.
+
+
+### Title model access and authorized replacement
+
+Check the current harness's exact worker model/effort catalog before dispatch.
+A missing local model is an access issue, not a failed scientific reading. Resolve
+only its scoped access block after establishing availability; retain failed or
+unknown calls and their accounting. Do not silently choose a larger model.
+
+If the user authorizes a replacement for title screening, `continue-run` accepts
+`--title-profile /absolute/path/title-profile.json` during the same quiet,
+backed-up transition. Supply the exact authorized `model`, `effort` and a nonempty
+`access_evidence` description of what was observed and what remains unknown.
+The option changes only title model/effort on the existing Codex/manual route.
+It preserves the original plan, other roles, request limits, billing and budget.
+Qualification evidence for the old model is retained in history and is not
+transferred to the replacement; this adds no compulsory calibration run.
+The option is optional; runtime upgrades never imply a model change.
+
+The preview lists `title_profile_history` and `title_profile_replacements`.
+Completed/historical jobs retain their original settings. Pending title jobs get
+new successor IDs and the same source bindings; their old files, blocks and
+records remain. Previously leased work requires recorded nonadmission, and any
+admitted/uncertain request or dependent job prevents automatic replacement.
+Reconcile those cases explicitly. A reserved job-ID boundary binds future title
+jobs to the recorded profile, including after coalescing or another continuation.
+The intended task profile, reported worker identity and provider verification
+remain distinct. No retrospective rereading or allowance reset is implied.
+
+Completed-result projection is atomic per bounded job: checking its current
+state, applying local changes and recording completion share one transaction.
+Overlapping coordinator calls reuse committed results; interrupted transactions
+replay from the saved source snapshot. Network requests and inference run outside
+this transaction. Keep a single supervisor/managed runner for clear ownership;
+parallel reader and retrieval workers retain their existing shared limits.

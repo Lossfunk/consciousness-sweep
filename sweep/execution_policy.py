@@ -85,12 +85,16 @@ def _focused_model_ready(conn):
     if "access-block:budget" in blocks:
         return False
     plan = json.loads(conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()[0])
+    from .title_profiles import for_job as title_profile
+    continuation_row = conn.execute("SELECT value FROM meta WHERE key='state:runtime_continuation'").fetchone()
+    continuation = json.loads(continuation_row[0]) if continuation_row else None
     host_row = conn.execute("SELECT value FROM meta WHERE key='state:host-access'").fetchone()
     host = json.loads(host_row[0]) if host_row else {}
     predicate, args = Store.claimable_sql(conn, ['title','abstract','rescue','audit','reader'], now=time.time())
-    for row in conn.execute("SELECT j.stage,coalesce(json_extract(j.payload,'$.calibration_review'),0) review FROM jobs j WHERE " + predicate, args):
+    for row in conn.execute("SELECT j.id,j.stage,coalesce(json_extract(j.payload,'$.calibration_review'),0) review FROM jobs j WHERE " + predicate, args):
         profile = (plan.get('calibration_review_profile') if row['review'] else
             plan['profiles']['rescue' if row['stage'] in {'rescue','audit'} else row['stage']])
+        if row['stage'] == 'title': profile = title_profile(plan, continuation, dict(row))
         if profile and 'access-block:profile:' + profile_fingerprint(profile) not in blocks and not profile_blocked(host, profile):
             return True
     return False
@@ -103,12 +107,15 @@ def primary_pending(conn):
     blocks = {row[0][6:]: json.loads(row[1]) for row in conn.execute(
         "SELECT key,value FROM meta WHERE key LIKE 'state:access-block:%'") if json.loads(row[1]).get("active")}
     plan = json.loads(conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()[0])
+    from .title_profiles import for_job as title_profile
+    continuation_row = conn.execute("SELECT value FROM meta WHERE key='state:runtime_continuation'").fetchone()
+    continuation = json.loads(continuation_row[0]) if continuation_row else None
     host_row = conn.execute("SELECT value FROM meta WHERE key='state:host-access'").fetchone()
     host = json.loads(host_row[0]) if host_row else {}
     from .profiles import profile_fingerprint
     from .host_access import profile_blocked
     from .store import Store
-    for row in conn.execute("SELECT j.state,j.stage," + Store.local_retrieval_sql(untried_during_hold=True) + " local_source,coalesce(json_extract(j.payload,'$.calibration_review'),0) review FROM jobs j WHERE (j.state='running' OR (j.state='pending' AND j.available_at<=?)) "
+    for row in conn.execute("SELECT j.id,j.state,j.stage," + Store.local_retrieval_sql(untried_during_hold=True) + " local_source,coalesce(json_extract(j.payload,'$.calibration_review'),0) review FROM jobs j WHERE (j.state='running' OR (j.state='pending' AND j.available_at<=?)) "
             "AND NOT EXISTS(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) "
             "AND NOT EXISTS(SELECT 1 FROM meta b WHERE b.key='state:access-block:job:'||j.id AND json_extract(b.value,'$.active')=1) "
             "AND NOT EXISTS(SELECT 1 FROM dependencies d JOIN jobs q ON q.id=d.dependency_id WHERE d.job_id=j.id AND q.state!='complete') "
@@ -116,6 +123,7 @@ def primary_pending(conn):
         role = {'reader':'reader','title':'title','abstract':'abstract','rescue':'rescue','audit':'rescue'}.get(row['stage'])
         if role and row['state'] != 'running':
             profile = plan.get('calibration_review_profile') if row['review'] else plan['profiles'][role]
+            if role == 'title': profile = title_profile(plan, continuation, dict(row))
             if ('access-block:budget' in blocks or (profile and
                     ('access-block:profile:' + profile_fingerprint(profile) in blocks or profile_blocked(host, profile)))):
                 continue
