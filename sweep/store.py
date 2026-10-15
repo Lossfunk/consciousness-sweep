@@ -942,6 +942,8 @@ class Store:
             eligible += " AND j.stage='retrieval' AND " + Store.local_retrieval_sql(untried_during_hold=True)
         from .execution_policy import job_filter, load
         eligible += job_filter(conn)
+        from .search_holds import job_filter as search_hold_filter
+        eligible += search_hold_filter()
         rounds = load(conn)["retrieval_max_rounds"]
         if rounds is not None:
             eligible += " AND (j.stage!='retrieval' OR (SELECT count(*) FROM retrieval_attempts a WHERE a.job_id=j.id)<" + str(rounds) + ")"

@@ -117,6 +117,10 @@ authorized fallback is in use. Model changes are recorded at quiet checkpoints;
 completed work and accounting are preserved. See
 [bounded title access recovery](EXECUTION.md#bounded-title-access-recovery).
 
+An unresolved dependency can hold its exact search windows while unrelated
+retrieval, reading and citation work continues. Holds remain visible and pending
+until explicitly resolved; see [scoped search holds](EXECUTION.md#scoped-search-window-holds).
+
 ### Commands
 
 Python 3.9 or newer is required. The agent can run:

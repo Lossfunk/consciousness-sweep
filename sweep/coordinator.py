@@ -1379,7 +1379,8 @@ class Coordinator:
                             clauses.append("(stage='reader' AND json_extract(payload,'$.calibration_review')=1)")
                         with self.store._connection() as conn:
                             from .execution_policy import job_filter
-                            queue_filter = job_filter(conn).replace("j.", "jobs.")
+                            from .search_holds import job_filter as search_hold_filter
+                            queue_filter = job_filter(conn).replace("j.", "jobs.") + search_hold_filter("jobs")
                             row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND id NOT IN (SELECT job_id FROM job_supersessions) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||jobs.id AND json_extract(m.value,'$.active')=1) AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=jobs.id AND p.state!='complete') AND (" + " OR ".join(clauses or ["0"]) + ")" + queue_filter, wait_args).fetchone()
                         next_at = row[0] if row else None
                         if not watch or next_at is None:

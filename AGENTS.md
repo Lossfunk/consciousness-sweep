@@ -170,6 +170,13 @@ recovery commands without another permission request. It may not modify immutabl
 inputs, rewrite sources/hashes, invent evidence, merge ambiguous versions, erase
 failures, refund unknown calls or retry a model outcome without the required evidence.
 
+For a dependency confined to exact process/blind query windows, use the
+[scoped search hold](EXECUTION.md#scoped-search-window-holds) and continue unrelated
+eligible work. Keep those windows pending until an explicit evidence-backed
+release; never use a global source-runner hold or queue-size proxy for this case.
+`--local-only` still runs source retrieval and searches. Global integrity and
+access failures retain their existing scope.
+
 Respect STOP and durable access/budget holds. Lease expiry alone does not prove
 worker termination. Recover abandoned leases only with actual termination evidence.
 Source changes do not clear profile/budget holds. Integrity failures require diagnosis;

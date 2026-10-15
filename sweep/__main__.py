@@ -56,11 +56,17 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check", "continue-run", "supervise"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check", "continue-run", "supervise", "search-hold", "search-release"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
         if name in {"ingest", "submit", "native-submit", "calibration-review"}:
             cmd.add_argument("--input", type=Path, required=True)
+        if name in {"search-hold", "search-release"}:
+            cmd.add_argument("--window-key", action="append", required=True, help="Exact frozen query window key; repeat for atomic changes")
+            cmd.add_argument("--actor", required=True)
+            cmd.add_argument("--reason", required=True)
+            if name == "search-release":
+                cmd.add_argument("--evidence", required=True, help="Source or repair receipt that resolves this operational hold")
         if name == "supervise":
             cmd.add_argument("--mode", choices=["active", "checkpoint"], help="Record active supervision or hold new admissions for a coordinated checkpoint")
             cmd.add_argument("--actor")
@@ -227,7 +233,11 @@ def main(argv=None):
                               "status": "paused-awaiting-validation"}
             else:
                 coordinator = Coordinator(run_dir)
-                if args.command == "ingest":
+                if args.command in {"search-hold", "search-release"}:
+                    from .search_holds import change
+                    result = change(coordinator, args.window_key, actor=args.actor, reason=args.reason,
+                        release=args.command == "search-release", evidence=getattr(args, "evidence", None))
+                elif args.command == "ingest":
                     result = coordinator.import_corpus(args.input)
                 elif args.command == "close-intake":
                     coordinator.close_intake()

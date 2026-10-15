@@ -1027,6 +1027,47 @@ Evaluator-only calibration tasks remain separate. A retired source-scoped access
 block stays in history but is not an action on its replacement; profile and budget
 blocks remain in force across source replacement.
 
+## Scoped search-window holds
+
+When an unresolved dependency affects identified process or blind query windows,
+hold those exact windows and continue independent work. Do not stop all source
+execution or use a paper-count threshold as a substitute for a scoped hold.
+Global integrity failures, STOP, and access/budget blocks retain their existing
+scope and must still be respected.
+
+Use the `window_key` values recorded in `discovery_frontiers`:
+
+```sh
+.venv/bin/python -B -m sweep search-hold --run-id RUN_ID \
+  --window-key WINDOW_KEY --actor supervising-agent \
+  --reason 'This window depends on an unresolved recorded comparison; see intake/review.json'
+```
+
+Repeat `--window-key` to hold several windows atomically. The command refuses
+unknown or completed windows, owned workers and completed results awaiting
+projection. Reconcile those workers/results before holding the window; a hold
+does not cancel a request already dispatched. Holds survive restart and cover
+both queued automatic searches and native source-resolution tasks. Held jobs
+do not consume the active search-queue buffer. Unrelated citation expansion,
+abstract lookup, acquisition and reading continue under their existing rules.
+
+`status` and `supervise` list active holds with their exact request identity and
+reason. These windows remain incomplete. An empty runnable queue is neither
+frontier exhaustion nor scientific saturation. Resolving the underlying evidence
+question remains separate from the operational hold:
+
+```sh
+.venv/bin/python -B -m sweep search-release --run-id RUN_ID \
+  --window-key WINDOW_KEY --actor supervising-agent \
+  --reason 'The recorded dependency has been resolved' \
+  --evidence 'intake/review-resolution.json: source-grounded resolution and validation'
+```
+
+Release preserves the original request, queued job and prior history. It does
+not alter eligibility, grant resources or repair scientific records. Do not
+release a hold merely to obtain an empty queue or finish the run. `run --local-only`
+disables automatic model calls; it still permits network retrieval and searches.
+
 ## Versioned operational continuation
 
 `continue-run` operates on a paused portable run using a separate verified release.

@@ -102,6 +102,9 @@ def _snapshot(c, conn, now):
     from .profiles import profile_fingerprint
     from .scheduling import pressure
 
+    from .search_holds import records
+    held_windows = records(conn)
+    held_keys = {w["window_key"] for w in held_windows}
     policy, saved = load(conn), control(conn)
     hold = admission_hold(conn, c.run_dir)
     host = c.store.get_state("host-access") or {}
@@ -173,7 +176,7 @@ def _snapshot(c, conn, now):
                 if obligation.get("task") == "replay-citation-provenance":
                     discovery_needed = True
                     discovery_actionable = True
-                elif not obligation.get("task") and not pressured and not host.get("network"):
+                elif not obligation.get("task") and obligation.get("window_key") not in held_keys and not pressured and not host.get("network"):
                     _, _, old = _search_candidate(c, obligation)
                     if old is None:
                         discovery_needed = True
@@ -209,7 +212,7 @@ def _snapshot(c, conn, now):
         state, action = "awaiting-worker-reconciliation" if expired else "working", "Wait for the next completion, reconcile it, then refill immediately. Expiry alone never authorizes reclaim."
     else:
         pending = conn.execute("SELECT count(*) FROM jobs j WHERE j.state IN ('pending','failed','parked') AND NOT EXISTS(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS(SELECT 1 FROM retry_links r WHERE r.parent_id=j.id)").fetchone()[0]
-        state = "blocked-or-waiting" if pending or blocks else "no-ready-work"
+        state = "blocked-or-waiting" if pending or blocks or held_windows else "no-ready-work"
         action = "Inspect unresolved obligations and deferred work; this is not scientific completion."
     if integrity_error or timed_out or hold:
         actionable = False
@@ -218,6 +221,7 @@ def _snapshot(c, conn, now):
         "active_workers": total_owned, "active_inference_workers": model_owned,
         "expired_owned_leases": expired, "free_inference_slots": slots, "free_retrieval_slots": network_slots,
         "eligible_work": ready, "dispatch_needed": actionable,
+        "held_search_windows": held_windows,
         "projection_needed": projection_needed,
         "native_readiness_current": native_current,
         "discovery_reconciliation_needed": discovery_needed,

@@ -11,6 +11,7 @@ from .common import canonical, digest
 
 
 def pressure(coordinator):
+    from .search_holds import job_filter
     resources = coordinator.plan.get("resources", {})
     high = resources.get("discovery_buffer_papers") or max(250, 100 * resources.get("model_workers", 1))
     with coordinator.store._connection() as conn:
@@ -19,9 +20,11 @@ def pressure(coordinator):
             "SELECT status,count(*) n FROM papers WHERE status IN "
             "('discovered','title-pending','abstract-pending','rescue-pending',"
             "'retrieval-pending','reader-pending') GROUP BY status")}
-        search_jobs = conn.execute("SELECT count(*) FROM jobs j WHERE stage='search' "
+        search_query = ("SELECT count(*) FROM jobs j WHERE stage='search' "
             "AND state IN ('pending','running') AND NOT EXISTS "
-            "(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id)").fetchone()[0]
+            "(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id)")
+        search_jobs = conn.execute(search_query + job_filter()).fetchone()[0]
+        held_search_jobs = conn.execute(search_query).fetchone()[0] - search_jobs
     from .workflow import enabled
     if enabled(coordinator):
         with coordinator.store._connection() as conn:
@@ -46,7 +49,7 @@ def pressure(coordinator):
     return {"papers_waiting": backlog, "total_papers_waiting": total, "deferred_uncertain": deferred,
             "background_contextual_native": contextual, "by_status": counts,
             "high_water_papers": high, "search_admission_paused": backlog >= high,
-            "queued_search_jobs": search_jobs,
+            "queued_search_jobs": search_jobs, "held_search_jobs": held_search_jobs,
             "search_queue_target": max(2, 2 * resources.get("retrieval_workers", 2)),
             "scope": "temporary admission control, not a search or paper limit"}
 

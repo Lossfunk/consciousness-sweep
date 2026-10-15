@@ -343,6 +343,12 @@ def validate(coordinator, *, deadline=None):
                 checked("workflow_holds")
             except (ValueError, KeyError, TypeError) as exc:
                 error("workflow_holds", "workflow", exc)
+            try:
+                from .search_holds import validate as validate_search_holds
+                validate_search_holds(conn, history=True)
+                checked("search_window_holds")
+            except (ValueError, KeyError, TypeError) as exc:
+                error("search_window_holds", "query-windows", exc)
             for issue in coordinator.store.native_id_errors(conn):
                 error("native_identifier_registry", "native", issue)
             checked("native_identifier_registry")

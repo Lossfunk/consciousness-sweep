@@ -108,6 +108,11 @@ def check(coordinator_or_store, *, max_events=2000, max_papers=100, max_jobs=100
             require(isinstance(cursor, int) and not isinstance(cursor, bool) and 0 <= cursor <= snapshot,
                     "Sanity event cursor is invalid or points beyond durable history")
             require(conn.execute("SELECT 1 FROM meta WHERE key='plan'").fetchone(), "Run is not initialized")
+            try:
+                from .search_holds import validate as validate_search_holds
+                tick("search_window_holds", validate_search_holds(conn))
+            except (ValueError, KeyError, TypeError) as exc:
+                issue("search_window_holds", "query-windows", exc)
             affected_papers, affected_jobs = set(), set()
             event_end = cursor
 

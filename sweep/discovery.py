@@ -172,7 +172,9 @@ def _search_admissions(c, obligations):
     """Rotate only already eligible source windows; never alter their contents."""
     from .execution_policy import for_coordinator
     policy = for_coordinator(c)
-    sources = [o for o in obligations if not o.get('task')]
+    from .search_holds import active_keys
+    held = active_keys(c)
+    sources = [o for o in obligations if not o.get('task') and o.get('window_key') not in held]
     if policy.get('workflow') != 'focused-v1' or not policy['retained_first']:
         for obligation in sources:
             payload, key, old = _search_candidate(c, obligation)
@@ -320,7 +322,13 @@ def _native_paper(paper, scientific_state):
 
 
 def execute_search(c, job, client=None):
-    payload = job["payload"]
+    # Recheck the durable lease before any source I/O. Hold publication refuses
+    # running jobs, so a claim/hold race has exactly one winner.
+    from .search_holds import require_unheld
+    with c.store._connection() as conn:
+        owned = c.store._owned(conn, job["id"], job["owner"], job["token"])
+        payload = json.loads(owned["payload"])
+        require_unheld(c, payload)
     state = c.store.get_state(STATE) or {}
     obligation = state.get("citation_obligations", {}).get(payload.get("obligation_id"))
     if obligation and payload.get("coverage_generation", 0) != obligation.get("coverage_generation", 0):
@@ -539,7 +547,11 @@ def _replay_lineage(c, task):
 def _resolution_tasks(c):
     with c.store._connection() as conn:
         rows = conn.execute("SELECT key,value FROM meta WHERE key LIKE 'state:identity-resolution:%' OR key LIKE 'state:source-resolution:%' ORDER BY key").fetchall()
-    return [json.loads(row["value"]) for row in rows if not json.loads(row["value"]).get("resolved") and not json.loads(row["value"]).get("workflow_parked")]
+    from .search_holds import active_keys
+    held = active_keys(c)
+    tasks = [json.loads(row["value"]) for row in rows]
+    return [t for t in tasks if not t.get("resolved") and not t.get("workflow_parked")
+            and (t.get("request") or {}).get("window_key") not in held]
 
 
 def _hydrate_native_task(c, task):
@@ -994,6 +1006,8 @@ def _submit_source_resolution(c, task_id, payload, actor):
                    "obligation_id": obligation_id, "child_bridge_depth": obligation["child_bridge_depth"], "window_key": None}
         if obligation.get("coverage_generation"):
             request["coverage_generation"] = obligation["coverage_generation"]
+    from .search_holds import require_unheld
+    require_unheld(c, request)
     if _citation_block(c, request):
         raise ValueError("Operational citation depth boundary blocks source-resolution retrieval; the obligation remains pending")
     generation_key = "source-resolution-generation:" + task_id
@@ -1084,7 +1098,10 @@ def discovery_status(c):
     from .workflow import enabled, active_jobs
     if enabled(c):
         operational = dict(operational, **active_jobs(c))
-    exhausted = (frontier_check["ready"] and not pending_native and not operational["unfinished"]
+    from .search_holds import records
+    with c.store._connection() as conn:
+        search_holds = records(conn)
+    exhausted = (not search_holds and frontier_check["ready"] and not pending_native and not operational["unfinished"]
                  and not operational["failed"] and not c.store.unprojected_results(limit=1))
     task = next_native_task(c)
     task_summary = {key: task.get(key) for key in ("task", "task_id", "paper_id", "reason") if task.get(key) is not None} if task else None
@@ -1099,6 +1116,7 @@ def discovery_status(c):
         "meaning": "Completing a ranked window covers its authorized return only; truncated windows do not establish source exhaustion. Totals count cross-window overlap."}
     return {"initialized": True, "phase": state["phase"], "pending_agent_task": task_summary,
             "operational_frontiers_exhausted": exhausted,
+            "held_search_windows": search_holds,
             "checkpoint": "operational-frontiers-exhausted-final-review" if exhausted else "frontier-work-pending",
             "pending_native_tasks": len(pending_native),
             "latest_citation_wave": state["citation_wave_audits"][-1] if state["citation_wave_audits"] else None,
