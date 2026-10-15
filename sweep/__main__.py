@@ -74,6 +74,8 @@ def main(argv=None):
             cmd.add_argument("--wakeup", type=Path, help="JSON observation from the host's same-run continuation mechanism; records evidence, does not install a schedule")
             cmd.add_argument("--check-yield", action="store_true", help="Exit 3 if ready work or owned workers still need active supervision")
         if name == "continue-run":
+            from .validator_repair import REPAIR
+            cmd.add_argument("--repair-validation", choices=[REPAIR], help="Explicit known validator-only repair; requires passing replacement checks on the unchanged quiet snapshot")
             cmd.add_argument("--title-profile", type=Path, help="Explicit JSON {model,effort,access_evidence} for future/unadmitted title tasks only")
             cmd.add_argument("--previous-release", type=Path, required=True)
             cmd.add_argument("--policy", type=Path, required=True)
@@ -224,7 +226,8 @@ def main(argv=None):
                 from . import continuation
                 operation = continuation.apply if args.apply else continuation.prepare
                 result = operation(run_dir, args.previous_release, json.loads(args.policy.read_text()), args.actor, args.reason,
-                    json.loads(args.title_profile.read_text()) if args.title_profile else None)
+                    json.loads(args.title_profile.read_text()) if args.title_profile else None,
+                    repair_validation=args.repair_validation)
                 if args.apply:
                     from .execution_policy import park_exhausted
                     from .workflow import reconcile

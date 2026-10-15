@@ -268,8 +268,16 @@ class Coordinator:
                 continue
             from .workflow import enabled, deferred
             if enabled(self) and deferred(paper) and paper.get("retrieval_revision_pending"):
-                self.store.update_paper(identity, {"retrieval_revision_pending": False},
-                    "New location retained in provenance; parked acquisition needs an explicit retry or supplied source")
+                prior = self.store.job(paper.get("retrieval_job")) if paper.get("retrieval_job") else None
+                bound = (prior or {}).get("payload", {}).get("source_manifest", {})
+                supplied = any(paper.get(k) and paper.get(k) != bound.get(k)
+                    for k in ("provided_paths", "fulltext_path", "pdf_path", "local_path"))
+                if supplied:
+                    from .workflow import reactivate_source
+                    reactivate_source(self, identity, "Explicitly supplied local evidence reopens acquisition")
+                else:
+                    self.store.update_paper(identity, {"retrieval_revision_pending": False},
+                        "New location retained in provenance; parked acquisition needs an explicit retry or supplied source")
                 paper = self.store.paper(identity)
             if paper.get("retrieval_revision_pending"):
                 already_retained = (paper.get("status") in {"retrieval-pending", "reader-pending", "source-missing", "assessed", "reading-incomplete"}

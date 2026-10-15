@@ -226,6 +226,43 @@ def park_exhausted(c):
         return parked
 
 
+def parked_metadata_revision(conn, paper, payload, proof):
+    """Prove that later metadata did not replace a settled acquisition.
+
+    The latest metadata generation can advance while focused coverage keeps
+    the original acquisition parked. Never infer this from a counter alone:
+    require the unchanged acquisition binding and every intervening increment
+    to be an append-first bibliographic enrichment, not supplied source bytes.
+    """
+    def require(value, detail):
+        if not value:
+            raise ValueError("Current parked acquisition belongs to a stale source generation: " + detail)
+    held = paper.get("workflow_defer") or {}
+    require(load(conn).get("workflow") == "focused-v1" and held.get("active") is True
+            and held.get("workflow") == "focused-v1", "no focused deferred coverage")
+    base, current = proof["source_generation"], paper.get("source_generation", 1)
+    require(type(current) is int and current > base, "invalid metadata generation")
+    require(paper.get("current_source_generation") == base
+            and payload.get("source_manifest_sha256") == digest(payload.get("source_manifest"))
+            and paper.get("current_source_manifest_sha256") == payload.get("source_manifest_sha256"),
+            "the original acquisition manifest was replaced")
+    generation, events = base, []
+    for row in conn.execute("SELECT id,kind,json_extract(payload,'$.previous.source_generation') previous,"
+            "json_extract(payload,'$.changes.source_generation') generation,"
+            "json_extract(payload,'$.changes.metadata_changed_fields') fields FROM events "
+            "WHERE kind IN ('paper_metadata_enriched','paper_updated') AND json_extract(payload,'$.paper_id')=? "
+            "AND json_extract(payload,'$.changes.source_generation')>? ORDER BY id", (paper['paper_id'], base)):
+        fields = json.loads(row['fields']) if row['fields'] else []
+        require(row['kind'] == 'paper_metadata_enriched' and row['previous'] == generation
+                and row['generation'] == generation + 1 and fields
+                and not set(fields).intersection({'provided_paths', 'fulltext_path', 'pdf_path', 'local_path'}),
+                "generation lacks an uninterrupted metadata-only history")
+        generation = row['generation']
+        events.append(row['id'])
+    require(generation == current and events, "metadata generation differs from its history")
+    return events
+
+
 def parked_receipt(conn, job, proof, paper=None):
     """Validate settled acquisition against its event and original attempt receipt.
 
@@ -266,7 +303,6 @@ def parked_receipt(conn, job, proof, paper=None):
         require(paper.get("retrieval") == result, "Paper differs from its preserved acquisition receipt")
         if paper["status"].startswith("source-"):
             require(paper["status"] == "source-missing", "Parked acquisition must remain source-missing")
-            if not paper.get("retrieval_revision_pending"):
-                require(paper.get("source_generation", 1) == proof["source_generation"],
-                        "Current parked acquisition belongs to a stale source generation")
+            if not paper.get("retrieval_revision_pending") and paper.get("source_generation", 1) != proof["source_generation"]:
+                parked_metadata_revision(conn, paper, payload, proof)
     return result

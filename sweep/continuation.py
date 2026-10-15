@@ -63,7 +63,7 @@ def protected(name):
         "sweep/calibration.py", "sweep/calibration_reference.json", "sweep/frontiers.py"})
 
 
-def _quiet(conn, run):
+def _quiet(conn, run, repair_validation=None):
     if not (Path(run) / "STOP").is_file():
         raise ValueError("Pause admissions before continuation")
     if conn.execute("SELECT 1 FROM jobs WHERE state='running' LIMIT 1").fetchone():
@@ -73,17 +73,22 @@ def _quiet(conn, run):
             raise ValueError("Native leases must be released or recovered with observed termination proof")
     if conn.execute("SELECT 1 FROM retrieval_attempts WHERE completed_at IS NULL LIMIT 1").fetchone():
         raise ValueError("An interrupted acquisition lacks its terminal receipt; reconcile before continuation")
-    latest = conn.execute("SELECT payload FROM events WHERE kind='operational_validation' ORDER BY id DESC LIMIT 1").fetchone()
-    if not latest or json.loads(latest[0]).get("ok") is not True:
+    latest = conn.execute("SELECT id,payload FROM events WHERE kind='operational_validation' ORDER BY id DESC LIMIT 1").fetchone()
+    event = dict(json.loads(latest['payload']), validation_event_id=latest['id']) if latest else None
+    if repair_validation:
+        from .validator_repair import REPAIR
+        if repair_validation != REPAIR or not event or event.get('ok') is not False:
+            raise ValueError("Validator repair requires its recognized failed predecessor checkpoint")
+    elif not event or event.get("ok") is not True:
         raise ValueError("A successful quiet validation under the predecessor runtime is required")
     from .validation import NONMATERIAL_EVENTS
-    event = json.loads(latest[0])
     row = conn.execute("SELECT max(id) FROM events WHERE kind NOT IN (" + ",".join("?" for _ in NONMATERIAL_EVENTS) + ")", NONMATERIAL_EVENTS).fetchone()
     if (row[0] or 0) > event["snapshot_event_id"]:
         raise ValueError("Predecessor validation is stale; validate after all workers and recovery writes are quiet")
+    return event
 
 
-def prepare(run, previous_release, policy, actor, reason, title_profile=None):
+def prepare(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None):
     run, previous_release = Path(run).resolve(), Path(previous_release).resolve()
     if not str(actor).strip() or not str(reason).strip():
         raise ValueError("Continuation requires the authorizing actor and reason")
@@ -112,7 +117,7 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None):
         require_compatible(run, plan, source)
         if digest(json.loads((run / "execution_plan.json").read_text())) != digest(plan):
             raise ValueError("Original plan file differs from the durable original agreement")
-        _quiet(conn, run)
+        predecessor_validation = _quiet(conn, run, repair_validation)
         from .title_profiles import preview as title_preview
         title_history, title_jobs = title_preview(conn, run, plan, prior, title_profile, actor, reason)
         snapshot = conn.execute("SELECT max(id) FROM events").fetchone()[0]
@@ -121,12 +126,19 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None):
         previous_policy = validate_policy(prior["policy"] if prior else plan.get("resources", {}).get("operational_policy", {}))
         if previous_policy.get("workflow") == "focused-v1" and validate_policy(policy).get("workflow") != "focused-v1":
             raise ValueError("Returning to exhaustive legacy coverage needs a separate reviewed transition; deferred work cannot silently disappear")
+    repair_evidence = None
+    if repair_validation:
+        if title_profile is not None or validate_policy(policy) != previous_policy:
+            raise ValueError("Validator-only continuation must preserve the operational policy and model profiles")
+        from .validator_repair import inspect
+        repair_evidence = inspect(run, repair_validation, predecessor_validation, snapshot)
     from .workflow import contract
     return {"format": "operational-continuation-v1", "run_directory": str(run),
         "original_plan_sha256": digest(plan), "source_runtime": source, "target_runtime": target,
         "previous_continuation_sha256": digest(prior) if prior else None,
         "policy": validate_policy(policy), "actor": actor.strip(), "reason": reason.strip(),
         "snapshot_event_id": snapshot, "changed_runtime_files": changed,
+        "validator_repair": repair_evidence,
         "scientific_inputs_changed": False, "model_profiles_changed": title_profile is not None,
         "title_profile_history": title_history, "title_profile_replacements": title_jobs,
         "workflow_transition": preview,
@@ -136,8 +148,8 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None):
         "status": "ready-for-explicit-apply"}
 
 
-def apply(run, previous_release, policy, actor, reason, title_profile=None):
-    receipt = prepare(run, previous_release, policy, actor, reason, title_profile)
+def apply(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None):
+    receipt = prepare(run, previous_release, policy, actor, reason, title_profile, repair_validation=repair_validation)
     run = Path(run).resolve()
     folder = run / "continuations" / uuid.uuid4().hex
     folder.mkdir(parents=True)
@@ -156,7 +168,9 @@ def apply(run, previous_release, policy, actor, reason, title_profile=None):
     conn.create_function("sweep_runtime_sha", 0, lambda: receipt["source_runtime"]["sha256"])
     try:
         conn.execute("BEGIN IMMEDIATE")
-        _quiet(conn, run)
+        _quiet(conn, run, repair_validation)
+        if repair_validation and digest(json.loads((run / "delivery/validation.json").read_text())) != receipt["validator_repair"]["predecessor_report_sha256"]:
+            raise ValueError("Predecessor validation report changed during continuation")
         if conn.execute("SELECT max(id) FROM events").fetchone()[0] != receipt["snapshot_event_id"]:
             raise ValueError("Run changed during backup; repeat preparation at a quiet checkpoint")
         if digest(json.loads(conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()[0])) != receipt["original_plan_sha256"]:

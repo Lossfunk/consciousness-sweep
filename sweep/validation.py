@@ -207,7 +207,9 @@ def _validate_retrieval_accounting(conn, error, checked):
         error("retrieval_attempt", row["job_id"] + ":" + str(row["number"]), "Acquisition history is missing its durable attempt record: " + row["kind"])
 
 
-def validate(coordinator, *, deadline=None):
+def validate(coordinator, *, deadline=None, persist=True):
+    if type(persist) is not bool:
+        raise ValueError("persist must be boolean")
     root, store = Path(coordinator.run_dir).resolve(), coordinator.store
     errors, checks, error_count = [], {}, 0
     started = time.time()
@@ -616,6 +618,16 @@ def validate(coordinator, *, deadline=None):
               "elapsed_seconds": round(time.time() - started, 3), "native_scientific_certification": False,
               "limitations": ["Schema/source integrity does not establish scientific correctness or discovery stopping.",
                               "A valid failed/unstarted job remains scientifically unassessed."]}
+    if not persist:
+        # Explicit maintainer inspection can validate a compatible predecessor
+        # snapshot without replacing its failed report or writing an audit event.
+        with store._connection() as conn:
+            current = conn.execute("SELECT coalesce(max(id),0) FROM events").fetchone()[0]
+        if current != snapshot_event_id:
+            error("concurrent_change", "database", "Run changed during read-only validation")
+            report.update(ok=False, error_count=error_count, incomplete=True)
+        report["persisted"] = False
+        return report
     with store._transaction() as conn:
         current = conn.execute("SELECT coalesce(max(id),0) FROM events").fetchone()[0]
         incomplete = current != snapshot_event_id and error_count == 0

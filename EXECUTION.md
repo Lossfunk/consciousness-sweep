@@ -1068,6 +1068,14 @@ not alter eligibility, grant resources or repair scientific records. Do not
 release a hold merely to obtain an empty queue or finish the run. `run --local-only`
 disables automatic model calls; it still permits network retrieval and searches.
 
+An acquisition's parked receipt remains bound to its original manifest and
+attempt generation. Later bibliographic locations can advance metadata without
+reopening that acquisition. The validator requires the unchanged acquisition
+binding and the intervening metadata-only history. Explicitly supplied local
+text, including through `ingest`, reopens source processing; a rediscovered URL
+alone does not authorize another hunt.
+
+
 ## Versioned operational continuation
 
 `continue-run` operates on a paused portable run using a separate verified release.
@@ -1081,7 +1089,8 @@ whether the coverage/review workflow changed; this is not silent native-run migr
    completed valid work. Recover abandoned leases only with observed termination
    evidence. Reconcile interrupted acquisition receipts.
 2. Under the old active runtime, run quiet sanity and full validation. Full validation
-   must pass against the latest material snapshot. Preserve unexplained failures;
+   must pass against the latest material snapshot, except for the narrowly scoped
+   validator-only procedure below. Preserve unexplained failures;
    do not edit code, source hashes, the ledger or the fingerprint to force passage.
 3. Save the authorized policy under the existing run's `intake/`. Use the actual
    available shared inference capacity. For example:
@@ -1120,6 +1129,27 @@ whether the coverage/review workflow changed; this is not silent native-run migr
 A later continuation names the then-active release as `--previous-release`.
 Ordinary resume never changes policy or adds an allowance. A different scientific
 rubric or frozen input requires separate scientific review and is rejected here.
+
+### Validator-only recovery
+
+When the active release falsely rejects a parked acquisition after bibliographic
+rediscovery, a reviewed replacement can perform an explicit validator-only
+continuation. Retain the failed predecessor report and its history. Add
+`--repair-validation parked-metadata-generation-v1` to both the `continue-run`
+preview and its subsequent `--apply` command.
+
+This procedure requires STOP, no owned workers or unfinished acquisition attempts,
+and a fresh predecessor full-validation report containing only the recognized
+parked-metadata failure. The replacement proves the unchanged acquisition binding
+and metadata history, then performs full validation and sanity read-only on that
+same snapshot. Any other failure, changed snapshot, model-profile change or
+operational-policy change blocks the transition. It is not a general validation
+bypass and does not clear access holds or resolve scientific dependencies.
+
+Application preserves the predecessor report and records the repair evidence in
+the ordinary backed-up continuation receipt. Keep STOP until new-runtime sanity
+and full validation pass explicitly. No counter, parking proof, source file,
+scientific judgment or charge is rewritten to make validation succeed.
 
 
 ### Title model access and authorized replacement
