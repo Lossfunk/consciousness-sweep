@@ -363,6 +363,10 @@ Native scientific readers use fresh source-only contexts; in Codex explicitly
 set `model`, `reasoning_effort` and `fork_turns="none"` when spawning. Do not rely
 on inherited model settings or send evaluator context to a reader. A requested
 model and worker self-report do not independently establish provider identity.
+Native paper tasks expose current sources and explicit dispatch fields only.
+Saved process-audit explanations, prior verdicts and deferral notes remain in the
+supervisor's ledger. Dispatch the newly emitted task, without appending those notes
+or reusing a worker context that has seen them.
 
 Use distinct leased units concurrently within the authorized harness capacity;
 `resources.model_workers` and `retrieval_workers` govern automatic dispatch unless

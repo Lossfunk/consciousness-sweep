@@ -1,6 +1,6 @@
 {
   "calibration": "Versioned compact seed reference is coordinator-only; it is never included in model source packets or ordinary reader prompts.",
-  "created_at": "2026-10-15T06:14:22.393915+00:00",
+  "created_at": "2026-10-15T07:56:43.534245+00:00",
   "excluded": [
     "source PDFs",
     "run history",
@@ -12,10 +12,10 @@
   "files": {
     ".gitattributes": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da",
     ".gitignore": "5950d2ee44c8f4b6cd58507b3fefe4f209079c5f4e1c3adf98e52c8bb3aa3d57",
-    "AGENTS.md": "305e4915d559cc8ddf639c8117a80de378ed3bcd5ea38fdbeea2f5d3e1d61479",
+    "AGENTS.md": "b10b76adb670afb193c94dfaa8f19050eee64343ee05f96d7c562ca0a5d66a28",
     "CLAUDE.md": "612f3b78552bc55a779fbea65f3c438fdcd8d4b4bc1415c92c62f804be8d416e",
-    "EXECUTION.md": "513539371a77017812682801da04f6039231bf152a82e36bd27c5feead22e7a6",
-    "README.md": "ab13c16ddf3b3adf6e5df42a9e0ed90d2ffcb7f05a5ad3634fd2e6d40085a285",
+    "EXECUTION.md": "8ae7e119d6ddd89c4637661592361f92a82bb1157d5eabc9e067c1b8d1c247cd",
+    "README.md": "6c76001052b733a110908d42c2dc07dd01d9a0169d0de2cb30f7f95ce25b142a",
     "agent_candidates.json": "65507ce12b862feed3aee48bde53084e4f8cea8f8e5596afbea91e38231df616",
     "bootstrap.py": "453a92a7bd78989bc0480fb01a6d38667c7f2cab641e6c88212978d6884381ad",
     "development/prospect_contract_v1.md": "7940a69a378a49b18d130be127cbde180d8653ac4e819751a4a524a08af91fcd",
@@ -93,7 +93,7 @@
     "sweep/common.py": "50bdd2878aaa5381e9aca6e50bfcd02142489945b08387ea3803b29d06721091",
     "sweep/continuation.py": "cc3c21c075923b92a06a6b761f054e0616d00d3820478f324a8c204558892e2b",
     "sweep/coordinator.py": "d6267fbddd10b56801e3390b291beeb684c851c6af13f887d71b7e16b06e2cde",
-    "sweep/discovery.py": "446fabd7ee91c0f1cead50fe66617e019f3e3f8b9e05bd65c0268883db77b98a",
+    "sweep/discovery.py": "3cd98a3630a312f4f35088b7cbeca29dd6c7eb694d875f7e0b7877dd05813d9a",
     "sweep/discovery_validation.py": "b8f1236ca3457e78904cb37d9942e37601cef9c599af788dc14abbe9d7f6d62f",
     "sweep/distribution.py": "cad65083c7198b6ff22d7b0df1aa568c8c7790e63e083e6e0daf05850e026ece",
     "sweep/downloads.py": "cd73aed4240cc4b2155443c71fc0368b9a98d0a07e0c0b69be383a06a8e2b077",

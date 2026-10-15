@@ -510,6 +510,16 @@ def _hydrate_native_task(c, task):
     if operational is not None:
         return operational
     if task.get("paper_id"):
+        # Pending task explanations and deferral notes can contain earlier
+        # scientific judgments. Keep them in durable history, not reader inputs.
+        # Construct this boundary explicitly so new ledger fields cannot leak.
+        original = task
+        task = {key: original[key] for key in ("task", "task_id", "paper_id") if key in original}
+        if "control" in original:
+            task["control"] = {key: original["control"][key] for key in
+                ("task_id", "owner", "token", "lease_until", "available_at", "last_served", "binding")
+                if key in original["control"]}
+        task["reason"] = "Assess the current supplied sources under the scientific protocol; record source-grounded findings and unresolved evidence."
         paper = c.store.paper(task["paper_id"])
         from .source_intake import source_manifest
         # A fresh native reader receives bibliography and source evidence only.
