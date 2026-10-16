@@ -31,6 +31,119 @@ Put mutable user configuration, intake files and their source documents under
 must still obey their own write-scope restrictions. Verification checks every
 static scientific input and rejects unexpected files elsewhere in the package.
 
+## Managed worker exchange
+
+The coordinator can publish completed answers through a managed local process
+while the active harness runs fresh workers. No model session is launched by this
+process; it does not change profiles, billing, coverage, resource limits or holds.
+Use one supervisor and one publisher per run.
+
+After initialization, or a quiet supported continuation, explicitly open the
+publication gate and start the publisher in a managed terminal session:
+
+```sh
+.venv/bin/python -B -m sweep publication-control --run-id RUN_ID --mode OPEN --actor SUPERVISOR --reason "Begin managed publication after verified setup"
+.venv/bin/python -B -m sweep publication-watch --run-id RUN_ID
+```
+
+Keep the returned process/session managed until its actual exit. The optional
+`--max-seconds` bounds this helper session only; omission adds no total duration
+limit. `--poll-seconds` defaults to one second. A second publisher is refused.
+STOP prevents new work but lets admitted answers settle; the publisher exits when
+no workers remain owned. `publication-control --mode HOLD` stops publication and
+new admissions. It does not cancel already admitted bounded network calls. A
+missing or inconsistent publication gate fails closed. Ordinary runs that have
+never configured this gate retain their existing supervision controls.
+
+Observe the actual number **N** of free harness worker slots, excluding the
+supervisor and workers already running elsewhere in that harness. Then call:
+
+```sh
+.venv/bin/python -B -m sweep exchange --run-id RUN_ID --slots N
+```
+
+This first commits ready answers, then offers up to N eligible tasks within the
+run's shared recorded cap. `--slots 0` only drains and reconciles; it creates no
+workers. Offers keep the existing model/native scheduling order and source/lease
+bindings. They are stored under `intake/dispatch-v1/<TICKET_ID>/task.json`, with
+compact ledger tickets. The returned packet is coordinator material: supply only
+its designated source-only files, bindings and intended profile to each reader.
+
+For each **new** ticket, create exactly one fresh worker in the active harness,
+using the intended model and effort with no inherited coordinator conversation.
+After observing its actual context identifier, record the handoff:
+
+```sh
+.venv/bin/python -B -m sweep dispatch-ack --run-id RUN_ID --ticket-id TICKET_ID --worker-context-id CONTEXT_ID --actor SUPERVISOR --reason "Observed worker creation for this exact ticket"
+```
+
+An offered ticket is not evidence of dispatch. If the supervisor or command dies,
+`exchange` reports the existing unacknowledged ticket rather than offering that
+lease again. Inspect the exact ticket against actual harness workers and their
+history. A matching worker can be acknowledged; uncertain worker existence needs
+reconciliation. Expiry or a missing reply does not authorize a second reader.
+Record absence/termination evidence through the existing recovery workflow when
+appropriate. Changed leases cannot be acknowledged as if they were original ones.
+
+When a worker finishes, retain its original bound answer unchanged. Obtain a local
+settings observation and exact worker pointer from the harness, keeping unavailable
+facts unknown. The settings file has `settings_match: true` and a nonempty
+`actual_local_turn_settings` list of `{model, effort}` observations. The pointer
+has `session_id` and `agent_path`. These are coordinator attestations, not provider
+identity verification; do not manufacture them from the intended profile or solely
+from worker self-report. When settings cannot be observed, retain that unknown and
+use the existing supervised submission route for the saved answer; do not rerun
+inference merely to use this optional queue. A model envelope must include its source/prompt/schema/
+profile hashes, lease, result and source-only `execution_provenance`.
+
+```sh
+.venv/bin/python -B -m sweep publication-stage --run-id RUN_ID --kind model --entity-id JOB_ID --input runs/RUN_ID/intake/answer.json --settings runs/RUN_ID/intake/settings.json --pointer runs/RUN_ID/intake/worker.json --actor WORKER_OWNER
+```
+
+All three files must be inside this run. `staged` means queued, not committed.
+The publisher commits through the existing validators and fenced submission API,
+with its acknowledgement in the same transaction. It retains immutable envelopes
+and receipts under `intake/publication-inbox-v1/`. A lost acknowledgement is
+recovered from the ledger without resubmission or inference. Original answers,
+first readings, history and charges are retained. An orphan file receipt is a
+reconciliation issue, never proof of a database commit.
+
+React to each `published`/`refill-needed` notification immediately: observe free
+harness capacity, run `exchange`, create and acknowledge the next fresh worker.
+Do not wait for all readers, the next heartbeat, a full status report or full
+validation. This is a harness handoff, not autonomous Python spawning. The same
+loop applies with scripted workers in tests and with the observed active harness
+in execution. If the publisher exits with an error, preserve its output and inspect
+the exact records before restarting; never infer that its pending answer committed.
+
+Bounded acquisition answers can use `--kind native --entity-id TASK_ID` with their
+existing `native_lease` and observed settings/pointer. Other native scientific
+reviews, identity resolutions and calibration adjudication retain their normal
+supervised `native-submit`/review commands. Completed native submissions are
+recognized from their exact terminal lease event; ambiguous legacy completion
+does not authorize replay. One invalid queued answer is retained with a
+`needs-reconciliation` receipt while other eligible answers can proceed. A global
+integrity failure holds publication globally instead of condemning every draft.
+After resolving a specific blocker, use `publication-reconcile --run-id RUN_ID
+--request-id REQUEST_ID --actor SUPERVISOR --reason "Evidence of the resolved
+condition"`. It rechecks the exact saved envelope through the same fences and
+preserves the original blocker receipt; it does not clear holds or rerun inference.
+
+Normal polling and repeated CLI handoffs use the pending index and a ledger-bound
+index checkpoint, without scanning all settled envelopes each time. An older
+restored ledger invalidates that checkpoint and triggers reconstruction. Restore
+only while all processes are stopped; keep original envelopes/receipts together
+with their run and do not manually prune the pending index.
+
+Ordinary local CLI mutations share a short coordination lock. `run` and
+`fetch-source` retain their short store transactions and execute network requests
+outside that extra lock. Do not add a command-wide wrapper around them. At a
+checkpoint, use `supervise --mode checkpoint`, drain the source runner and workers,
+then hold the publisher and validate/deliver the quiet snapshot. Reopen the
+publication gate and return supervision to active mode only when those checks pass
+and the run is authorized to continue. Existing STOP, access, budget and scoped
+search holds must remain intact.
+
 ## Plans and resources
 
 For ordinary startup, use observed active-harness facts (`--harness`, `--model`,

@@ -53,6 +53,34 @@ def main(argv=None):
     plan.add_argument("--logical-papers", type=int)
     plan.add_argument("--claude-extra-usage-disabled", action="store_true")
     plan.add_argument("--output", type=Path, required=True)
+    for name in ("publication-control", "publication-stage", "publication-watch", "publication-reconcile", "exchange", "dispatch-ack"):
+        cmd = sub.add_parser(name)
+        cmd.add_argument("--run-id", required=True)
+        if name == "publication-control":
+            cmd.add_argument("--mode", choices=["OPEN", "HOLD"], required=True)
+            cmd.add_argument("--actor", required=True)
+            cmd.add_argument("--reason", required=True)
+        elif name == "publication-stage":
+            cmd.add_argument("--kind", choices=["model", "native"], required=True)
+            cmd.add_argument("--entity-id", required=True)
+            cmd.add_argument("--input", type=Path, required=True)
+            cmd.add_argument("--settings", type=Path, required=True)
+            cmd.add_argument("--pointer", type=Path, required=True)
+            cmd.add_argument("--actor", required=True)
+        elif name == "publication-watch":
+            cmd.add_argument("--poll-seconds", type=float, default=1)
+            cmd.add_argument("--max-seconds", type=float)
+        elif name == "publication-reconcile":
+            cmd.add_argument("--request-id", required=True)
+            cmd.add_argument("--actor", required=True)
+            cmd.add_argument("--reason", required=True)
+        elif name == "exchange":
+            cmd.add_argument("--slots", type=int, required=True, help="Observed free harness slots now; zero only drains prepared answers")
+        else:
+            cmd.add_argument("--ticket-id", required=True)
+            cmd.add_argument("--worker-context-id", required=True)
+            cmd.add_argument("--actor", required=True)
+            cmd.add_argument("--reason", required=True)
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
@@ -256,129 +284,148 @@ def main(argv=None):
                               "status": "paused-awaiting-validation"}
             else:
                 coordinator = Coordinator(run_dir)
-                if args.command in {"search-hold", "search-release"}:
-                    from .search_holds import change
-                    result = change(coordinator, args.window_key, actor=args.actor, reason=args.reason,
-                        release=args.command == "search-release", evidence=getattr(args, "evidence", None))
-                elif args.command == "ingest":
-                    result = coordinator.import_corpus(args.input)
-                elif args.command == "close-intake":
-                    coordinator.close_intake()
-                    result = coordinator.status()
-                elif args.command == "reopen-intake":
-                    coordinator.store.set_state("intake_closed", False, "Explicit continuation requested by operator")
-                    result = coordinator.status()
-                elif args.command == "run":
-                    result = coordinator.run(max_seconds=args.max_seconds, automatic_models=not args.local_only,
-                          watch=args.watch, defer_checkpoint=args.defer_checkpoint,
-                          progress=lambda event: print(canonical({"progress": event}), flush=True))
-                elif args.command == "work":
-                    result = coordinator.next_task()
-                elif args.command == "submit":
-                    result = coordinator.submit(args.job_id, args.input, args.actor)
-                elif args.command == "supervise":
-                    from .supervision import record, snapshot
-                    if args.mode:
-                        record(coordinator, actor=args.actor, reason=args.reason, mode=args.mode,
-                               wakeup=json.loads(args.wakeup.read_text()) if args.wakeup else None)
-                    elif args.actor or args.reason or args.wakeup:
-                        raise ValueError("Recording supervision requires --mode, --actor and --reason")
-                    result = snapshot(coordinator)
-                elif args.command == "status":
-                    result = coordinator.status()
-                elif args.command == "estimate":
-                    from .metrics import estimate
-                    result = estimate(coordinator, args.logical_papers)
-                elif args.command == "validate":
-                    from .validation import validate
-                    result = validate(coordinator)
-                elif args.command == "sanity":
-                    from .sanity import check
-                    result = check(coordinator)
-                elif args.command == "calibration-report":
-                    from .calibration import reconcile
-                    result = reconcile(coordinator)
-                elif args.command == "calibration-review":
-                    from .calibration import record_adjudication
-                    result = record_adjudication(coordinator, args.paper_id, json.loads(args.input.read_text()))
-                    coordinator._calibration_dirty = True
-                    coordinator.reconcile_calibration()
-                elif args.command == "audit":
-                    result = {"scheduled": coordinator.audit(), "status": coordinator.status()}
-                elif args.command == "deliver":
-                    result = coordinator.deliver()
-                elif args.command == "export":
-                    result = coordinator.store.export()
-                elif args.command == "pause":
-                    (run_dir / "STOP").write_text("User requested graceful pause.\n")
-                    result = {"status": "pause-requested", "reason": "Already admitted bounded requests will finish and persist."}
-                elif args.command == "host-check":
-                    from .host_access import record_launch
-                    result = {"host_access": record_launch(coordinator.store, [*coordinator.execution_profiles.values(),
-                        *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])]), "inference_performed": False}
-                elif args.command == "resume":
-                    if args.access_block and not args.resolve_access_blocks:
-                        raise ValueError("--access-block requires --resolve-access-blocks")
-                    if args.resolve_host_access:
-                        from .host_access import resolve as resolve_host
-                        resolve_host(coordinator.store, [*coordinator.execution_profiles.values(),
-                            *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])],
-                            args.reason, args.resolve_host_access)
-                    if args.resolve_access_blocks:
-                        from .access_control import resolve
-                        if not args.reason or not args.reason.strip():
-                            raise ValueError("--resolve-access-blocks requires the actual fix in --reason")
-                        resolve(coordinator, args.reason, block_keys=args.access_block)
-                    (run_dir / "STOP").unlink(missing_ok=True)
-                    coordinator.project_results()
-                    result = coordinator.status()
-                elif args.command == "recover":
-                    result = coordinator.store.recover_owner(args.owner, args.reason,
-                               {"kind": "process-dead", "pid": args.pid, "host": args.host})
-                elif args.command == "retry":
-                    from .recovery import retry
-                    result = retry(coordinator, args.job_id, args.reason, args.actor)
-                elif args.command == "human-decision":
-                    result = coordinator.store.update_paper(args.paper_id, {"human_decision": args.decision}, args.reason, "human-explicit")
-                    coordinator.deliver()
-                elif args.command == "fetch-source":
-                    from .downloads import fetch
-                    from .host_access import transport_scope
-                    with transport_scope(coordinator.store):
-                        result = fetch(coordinator, args.paper_id, args.url, role=args.role,
-                            association_reason=args.association_reason, reason=args.reason, actor=args.actor,
-                            material_kind=args.material_kind)
-                elif args.command == "source-retry":
-                    from .source_intake import queue_retrieval
-                    result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}
-                elif args.command == "native-allocate":
-                    result = coordinator.store.allocate_native_ids(args.paper_id, args.experiment_key,
-                        comparison_key=args.comparison_key, actor=args.actor, reason=args.reason)
-                elif args.command == "source":
-                    from .source_intake import attach
-                    paths = json.loads(args.manifest.read_text()) if args.manifest else [str(p.resolve()) for p in args.path]
-                    result = attach(coordinator, args.paper_id, paths, args.reason,
-                                    base=args.manifest.resolve().parent if args.manifest else Path.cwd())
-                else:
-                    from . import discovery
-                    if args.command == "discovery-init":
-                        result = discovery.initialize_discovery(coordinator)
-                    elif args.command == "native-work":
-                        from .validation import require_integrity
-                        require_integrity(coordinator)
-                        result = discovery.next_native_task(coordinator, owner=args.owner, lease_seconds=args.lease_seconds)
-                    elif args.command == "native-recover":
-                        result = discovery.recover_native_task(coordinator, args.task_id, owner=args.owner,
-                            lease_token=args.lease_token, actor=args.actor, reason=args.reason,
-                            proof=json.loads(args.proof.read_text()))
-                    elif args.command == "native-list":
-                        result = discovery.list_native_tasks(coordinator, limit=args.limit, include_deferred=args.include_deferred)
-                    elif args.command == "native-defer":
-                        result = discovery.defer_native_task(coordinator, args.task_id, actor=args.actor, reason=args.reason, delay_seconds=args.delay_seconds, lease_token=args.lease_token)
-                    elif args.command == "native-submit":
-                        result = discovery.submit_native(coordinator, args.paper_id, json.loads(args.input.read_text()), args.actor)
+                from .coordination import command_scope
+                with command_scope(run_dir, args.command):
+                    if args.command in {"publication-control", "publication-stage", "publication-watch", "publication-reconcile", "exchange", "dispatch-ack"}:
+                        from .exchange import Exchange, control, watch
+                        lane = Exchange(coordinator)
+                        if args.command == "publication-control":
+                            result = control(coordinator, args.mode, args.actor, args.reason)
+                        elif args.command == "publication-stage":
+                            result = {"status": "staged", "request_id": lane.stage(args.kind, args.entity_id,
+                                args.input, args.actor, args.settings, args.pointer)}
+                        elif args.command == "publication-watch":
+                            result = watch(coordinator, poll_seconds=args.poll_seconds, max_seconds=args.max_seconds,
+                                progress=lambda value: print(canonical(value), flush=True))
+                        elif args.command == "publication-reconcile":
+                            result = lane.reconcile(args.request_id, args.actor, args.reason)
+                        elif args.command == "exchange":
+                            result = lane.step(args.slots)
+                        else:
+                            result = lane.acknowledge(args.ticket_id, args.worker_context_id, args.actor, args.reason)
+                    elif args.command in {"search-hold", "search-release"}:
+                        from .search_holds import change
+                        result = change(coordinator, args.window_key, actor=args.actor, reason=args.reason,
+                            release=args.command == "search-release", evidence=getattr(args, "evidence", None))
+                    elif args.command == "ingest":
+                        result = coordinator.import_corpus(args.input)
+                    elif args.command == "close-intake":
+                        coordinator.close_intake()
+                        result = coordinator.status()
+                    elif args.command == "reopen-intake":
+                        coordinator.store.set_state("intake_closed", False, "Explicit continuation requested by operator")
+                        result = coordinator.status()
+                    elif args.command == "run":
+                        result = coordinator.run(max_seconds=args.max_seconds, automatic_models=not args.local_only,
+                              watch=args.watch, defer_checkpoint=args.defer_checkpoint,
+                              progress=lambda event: print(canonical({"progress": event}), flush=True))
+                    elif args.command == "work":
+                        result = coordinator.next_task()
+                    elif args.command == "submit":
+                        result = coordinator.submit(args.job_id, args.input, args.actor)
+                    elif args.command == "supervise":
+                        from .supervision import record, snapshot
+                        if args.mode:
+                            record(coordinator, actor=args.actor, reason=args.reason, mode=args.mode,
+                                   wakeup=json.loads(args.wakeup.read_text()) if args.wakeup else None)
+                        elif args.actor or args.reason or args.wakeup:
+                            raise ValueError("Recording supervision requires --mode, --actor and --reason")
+                        result = snapshot(coordinator)
+                    elif args.command == "status":
+                        result = coordinator.status()
+                    elif args.command == "estimate":
+                        from .metrics import estimate
+                        result = estimate(coordinator, args.logical_papers)
+                    elif args.command == "validate":
+                        from .validation import validate
+                        result = validate(coordinator)
+                    elif args.command == "sanity":
+                        from .sanity import check
+                        result = check(coordinator)
+                    elif args.command == "calibration-report":
+                        from .calibration import reconcile
+                        result = reconcile(coordinator)
+                    elif args.command == "calibration-review":
+                        from .calibration import record_adjudication
+                        result = record_adjudication(coordinator, args.paper_id, json.loads(args.input.read_text()))
+                        coordinator._calibration_dirty = True
+                        coordinator.reconcile_calibration()
+                    elif args.command == "audit":
+                        result = {"scheduled": coordinator.audit(), "status": coordinator.status()}
+                    elif args.command == "deliver":
+                        result = coordinator.deliver()
+                    elif args.command == "export":
+                        result = coordinator.store.export()
+                    elif args.command == "pause":
+                        (run_dir / "STOP").write_text("User requested graceful pause.\n")
+                        result = {"status": "pause-requested", "reason": "Already admitted bounded requests will finish and persist."}
+                    elif args.command == "host-check":
+                        from .host_access import record_launch
+                        result = {"host_access": record_launch(coordinator.store, [*coordinator.execution_profiles.values(),
+                            *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])]), "inference_performed": False}
+                    elif args.command == "resume":
+                        if args.access_block and not args.resolve_access_blocks:
+                            raise ValueError("--access-block requires --resolve-access-blocks")
+                        if args.resolve_host_access:
+                            from .host_access import resolve as resolve_host
+                            resolve_host(coordinator.store, [*coordinator.execution_profiles.values(),
+                                *([coordinator.plan["calibration_review_profile"]] if coordinator.plan.get("calibration_review_profile") else [])],
+                                args.reason, args.resolve_host_access)
+                        if args.resolve_access_blocks:
+                            from .access_control import resolve
+                            if not args.reason or not args.reason.strip():
+                                raise ValueError("--resolve-access-blocks requires the actual fix in --reason")
+                            resolve(coordinator, args.reason, block_keys=args.access_block)
+                        (run_dir / "STOP").unlink(missing_ok=True)
+                        coordinator.project_results()
+                        result = coordinator.status()
+                    elif args.command == "recover":
+                        result = coordinator.store.recover_owner(args.owner, args.reason,
+                                   {"kind": "process-dead", "pid": args.pid, "host": args.host})
+                    elif args.command == "retry":
+                        from .recovery import retry
+                        result = retry(coordinator, args.job_id, args.reason, args.actor)
+                    elif args.command == "human-decision":
+                        result = coordinator.store.update_paper(args.paper_id, {"human_decision": args.decision}, args.reason, "human-explicit")
+                        coordinator.deliver()
+                    elif args.command == "fetch-source":
+                        from .downloads import fetch
+                        from .host_access import transport_scope
+                        with transport_scope(coordinator.store):
+                            result = fetch(coordinator, args.paper_id, args.url, role=args.role,
+                                association_reason=args.association_reason, reason=args.reason, actor=args.actor,
+                                material_kind=args.material_kind)
+                    elif args.command == "source-retry":
+                        from .source_intake import queue_retrieval
+                        result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}
+                    elif args.command == "native-allocate":
+                        result = coordinator.store.allocate_native_ids(args.paper_id, args.experiment_key,
+                            comparison_key=args.comparison_key, actor=args.actor, reason=args.reason)
+                    elif args.command == "source":
+                        from .source_intake import attach
+                        paths = json.loads(args.manifest.read_text()) if args.manifest else [str(p.resolve()) for p in args.path]
+                        result = attach(coordinator, args.paper_id, paths, args.reason,
+                                        base=args.manifest.resolve().parent if args.manifest else Path.cwd())
                     else:
-                        raise ValueError("Unsupported command")
+                        from . import discovery
+                        if args.command == "discovery-init":
+                            result = discovery.initialize_discovery(coordinator)
+                        elif args.command == "native-work":
+                            from .validation import require_integrity
+                            require_integrity(coordinator)
+                            result = discovery.next_native_task(coordinator, owner=args.owner, lease_seconds=args.lease_seconds)
+                        elif args.command == "native-recover":
+                            result = discovery.recover_native_task(coordinator, args.task_id, owner=args.owner,
+                                lease_token=args.lease_token, actor=args.actor, reason=args.reason,
+                                proof=json.loads(args.proof.read_text()))
+                        elif args.command == "native-list":
+                            result = discovery.list_native_tasks(coordinator, limit=args.limit, include_deferred=args.include_deferred)
+                        elif args.command == "native-defer":
+                            result = discovery.defer_native_task(coordinator, args.task_id, actor=args.actor, reason=args.reason, delay_seconds=args.delay_seconds, lease_token=args.lease_token)
+                        elif args.command == "native-submit":
+                            result = discovery.submit_native(coordinator, args.paper_id, json.loads(args.input.read_text()), args.actor)
+                        else:
+                            raise ValueError("Unsupported command")
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
         if args.command in {"validate", "sanity"} and not result.get("ok"):
             return 2

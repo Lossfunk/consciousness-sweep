@@ -147,6 +147,23 @@ Do not truncate articles, remove relevant supplements or raise bound limits to
 get past the check. A different capacity profile/source strategy requires a
 recorded supported continuation; a genuinely changed source creates new work.
 
+Use the [managed worker exchange](EXECUTION.md#managed-worker-exchange) for sustained
+manual/harness execution. Keep one managed `publication-watch` session. Stage
+unchanged answers with observed settings and worker identity; consume its durable
+completion/refill notifications promptly. Call `exchange --slots N` with the
+currently observed free harness capacity, spawn each new dispatch ticket exactly
+once, and record `dispatch-ack`. A saved ticket is not proof a worker started.
+Inspect unacknowledged tickets against actual harness workers before acting; do
+not respawn, release a lease or rerun inference merely because a reply was lost.
+Pass only the emitted source-only task inputs to readers, never the exchange's
+coordinator history or publication inbox.
+
+Use the release's short coordination locks. Do not wrap `run` or `fetch-source`
+in an additional command-wide lock: their bounded network requests must not block
+completed reader publication. Ordinary local CLI mutations already share the
+publication lock. At checkpoints, hold admissions, drain the source runner and
+workers, then stop/hold the publisher before validation and delivery.
+
 Keep authorized slots occupied with independent ready work. Refill as each worker
 finishes; do not wait for a whole batch. Combined reading is agent-mediated; the
 automatic runner handles screening, retrieval and metadata work within its own

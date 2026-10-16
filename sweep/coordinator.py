@@ -652,7 +652,7 @@ class Coordinator:
         self.store.defer(job["id"], job["owner"], job["token"], capacity["reason"], delay_seconds=0)
         return True
 
-    def submit(self, job_id, path, actor):
+    def submit(self, job_id, path, actor, *, compact=False):
         job = self.store.job(job_id)
         if not job or job["state"] != "running":
             raise ValueError("Task is not currently leased")
@@ -710,7 +710,7 @@ class Coordinator:
             {"job_id": job_id, "actor": actor, "result_sha256": digest(result),
              "execution_sha256": digest(execution), "usage": "external-agent-unobserved"}, publish)
         self.project_results()
-        return self.status()
+        return {"status": "published", "job_id": job_id} if compact else self.status()
 
     def validate_job(self, job, result, source):
         if job["stage"] == "reader":

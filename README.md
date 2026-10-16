@@ -143,14 +143,16 @@ then initialize a unique run:
 
 On Windows, use `.venv\Scripts\python.exe`. `manual` profiles mean work exchange
 with fresh agent workers, not forms for the user. The supervisor services tasks
-and publishes their bound results unchanged, waits for the submission command's
-actual exit, and verifies completion in the ledger. Oversized requests stay blocked
+through a [managed publication and worker exchange](EXECUTION.md#managed-worker-exchange).
+Completed answers are committed before new tasks are offered. Durable dispatch
+tickets prevent an interrupted supervisor from silently spawning a second reader;
+the active harness supplies each fresh worker and its observed execution identity. Oversized requests stay blocked
 without occupying worker slots or repeatedly returning on resume. Combined reading uses this exchange because it reserves
 scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r49**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r51**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded

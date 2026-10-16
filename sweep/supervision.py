@@ -49,7 +49,8 @@ def admission_hold(conn, run_dir):
         return "paused"
     if control(conn).get("mode") == "checkpoint":
         return "checkpoint"
-    return None
+    from .coordination import writer_hold
+    return writer_hold(conn, run_dir)
 
 
 def record(c, *, actor, reason, mode="active", wakeup=None):
