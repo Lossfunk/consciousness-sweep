@@ -156,6 +156,16 @@ def main(argv=None):
             supplied.add_argument("--path", type=Path, action="append")
             supplied.add_argument("--manifest", type=Path, help="JSON array of {path,role,association_reason} entries; supplies the complete main/SI set")
             cmd.add_argument("--reason", required=True)
+    for name in ("backup-archive", "backup-restore"):
+        cmd = sub.add_parser(name, help="Historical backup storage only; never changes the live ledger or sources")
+        cmd.add_argument("--run-id", required=True)
+        cmd.add_argument("--actor", default="supervising-agent")
+        cmd.add_argument("--reason", default="")
+        if name == "backup-archive":
+            cmd.add_argument("--keep-latest", type=int, default=2)
+            cmd.add_argument("--apply", action="store_true", help="Archive closed backups after verified decompression; otherwise read-only inventory")
+        else:
+            cmd.add_argument("--backup", required=True, help="Original run-relative historical backup path to restore, never the live database")
     package = sub.add_parser("package", help="Build a clean downloadable release with a coordinator-only seed calibration reference")
     package.add_argument("--destination", type=Path, required=True)
     verify = sub.add_parser("verify", help="Verify all distributed inputs")
@@ -216,6 +226,15 @@ def main(argv=None):
         elif args.command == "verify":
             from .distribution import verify
             result = verify(args.directory)
+        elif args.command in {"backup-archive", "backup-restore"}:
+            from . import backup_storage
+            run_dir = safe_run(args.root, args.run_id)
+            if args.command == "backup-restore":
+                result = backup_storage.restore(run_dir, args.backup, actor=args.actor, reason=args.reason)
+            elif args.apply:
+                result = backup_storage.archive(run_dir, keep_latest=args.keep_latest, actor=args.actor, reason=args.reason)
+            else:
+                result = backup_storage.inventory(run_dir, args.keep_latest)
         else:
             from .coordinator import Coordinator
             run_dir = safe_run(args.root, args.run_id)
@@ -385,7 +404,7 @@ def main(argv=None):
         print(json.dumps({"error": type(exc).__name__, "reason": str(exc), "storage": storage},
                          ensure_ascii=False, default=str), file=sys.stderr)
         return 2
-    except (ValueError, RuntimeError, FileNotFoundError, KeyError) as exc:
+    except (ValueError, RuntimeError, OSError, EOFError, KeyError) as exc:
         print(json.dumps({"error": type(exc).__name__, "reason": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
 

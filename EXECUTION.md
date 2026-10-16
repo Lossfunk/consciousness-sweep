@@ -1283,3 +1283,69 @@ Overlapping coordinator calls reuse committed results; interrupted transactions
 replay from the saved source snapshot. Network requests and inference run outside
 this transaction. Keep a single supervisor/managed runner for clear ownership;
 parallel reader and retrieval workers retain their existing shared limits.
+
+## Backup storage
+
+Routine checkpoints do not require another full SQLite copy. `continue-run` makes
+one consistent backup itself and checks available space before copying. A status
+update, heartbeat, fixed worker-completion count or ordinary pause/resume does
+not justify an additional snapshot. Keep validation at the documented checkpoints.
+
+Use the storage commands to reclaim space occupied by **closed historical SQLite
+backups**. Preview is read-only and can run during normal work:
+
+```sh
+python -m sweep --root /local/run-repository backup-archive --run-id RUN_ID
+```
+
+At a paused, drained checkpoint, archive the previewed older backups:
+
+```sh
+python -m sweep --root /local/run-repository backup-archive --run-id RUN_ID \
+  --keep-latest 2 --apply --actor supervising-agent \
+  --reason 'Retain recent restore points and losslessly archive older backups'
+```
+
+This retains the two newest restore points and the latest continuation backup
+(which may be an additional file). It compresses older backups one at a time,
+checks their original run plan, streams decompression to verify original bytes
+and SHA-256, and durably records the archive mapping before removing only the
+uncompressed historical copy. Identical backups share one compressed blob.
+The latest continuation and original receipts remain intact. Reruns verify and
+finish interrupted operations; changed files, missing/corrupt archives, active
+workers, SQLite WAL/journal sidecars and unsafe paths stop removal. A leftover
+SHM index without WAL stays in place with its hash recorded and checked; it is
+never removed, reconstructed or treated as missing database content. No model calls occur.
+
+Archives and per-path records live under `runs/RUN_ID/storage/backups/`. Their
+original-path mapping supplements existing receipts without rewriting those
+receipts or the ledger. Keep this directory with the run. Archives preserve all
+backup bytes; they are not a substitute for a separate-device disaster backup.
+
+Restore a historical backup to its original path when needed:
+
+```sh
+python -m sweep --root /local/run-repository backup-restore --run-id RUN_ID \
+  --backup continuations/CONTINUATION_ID/state-before.sqlite3 \
+  --actor supervising-agent --reason 'Restore a historical snapshot for inspection'
+```
+
+Restoration requires paused/drained work and enough space. It verifies the
+compressed and decompressed hashes and refuses to overwrite different existing
+bytes. This restores a **historical file only**; it never rolls back the active
+ledger. Never copy that file over later completed work.
+
+These filesystem-maintenance commands open the live ledger read-only and may
+maintain backups from an older compatible portable run before runtime adoption.
+They do not initialize Coordinator, alter fingerprints, migrate the run, or
+authorize execution with a different release. Run ordinary scientific work and
+validation under the run's bound runtime until a supported continuation succeeds.
+After continuation, apply backup maintenance before resuming; ordinary checkpoints
+need no recurring full-backup or archive pass.
+
+Storage commands leave sources, extraction, job files, delivery generations and
+all original ledger events unchanged. Their space savings concern historical
+backups; they do not certify capacity for an arbitrarily large sweep. Report
+actual before/after bytes, retained restore points and archive failures. If disk
+space becomes insufficient, keep the run operationally paused with the reason;
+never report scientific exhaustion.

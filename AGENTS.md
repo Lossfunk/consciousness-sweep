@@ -211,3 +211,17 @@ active-scope progress and the exact remaining coverage. Budget exhaustion, missi
 sources, unresolved identity, depth limits and deferred uncertainty are not scientific
 saturation. Native certification remains a separate workflow with its own complete
 ledger and frozen requirements.
+
+## Storage
+
+Do not create full database copies at ordinary checkpoints, heartbeat/status
+updates, worker-count thresholds or ordinary pause/resume. Use compact receipts;
+required validation still applies. Versioned continuation creates its own backup,
+so do not add a manual duplicate. After a continuation, before resuming, inspect
+`backup-archive` and apply the documented storage policy to closed older backups.
+Keep two recent uncompressed restore points and the latest continuation backup.
+Older backup bytes remain recoverable through verified compressed archives and
+immutable path/hash mappings. Use only the supported commands; never remove live
+SQLite files/sidecars, source versions, worker evidence or scientific records.
+The storage commands do not migrate the run or authorize scientific execution
+under a different runtime. See [backup storage](EXECUTION.md#backup-storage).

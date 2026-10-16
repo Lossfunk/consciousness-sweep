@@ -151,6 +151,8 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
 def apply(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None):
     receipt = prepare(run, previous_release, policy, actor, reason, title_profile, repair_validation=repair_validation)
     run = Path(run).resolve()
+    from .backup_storage import require_space
+    require_space(run, (run / "state.sqlite3").stat().st_size)
     folder = run / "continuations" / uuid.uuid4().hex
     folder.mkdir(parents=True)
     # Snapshot first. The write transaction below refuses any intervening event.
