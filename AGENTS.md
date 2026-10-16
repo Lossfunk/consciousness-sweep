@@ -129,6 +129,24 @@ fenced command. Use the intended model and reasoning explicitly. Reserve scienti
 IDs through `native-allocate`; do not infer the next ID. Keep original and alternative
 reads separate. Partial or oversized packets must remain honestly incomplete.
 
+Workers return bound answers and execution receipts to the coordinator. The
+coordinator publishes those answers unchanged through `submit` or `native-submit`,
+keeps the submission process managed until its actual exit, and verifies the
+durable completion before refilling the slot. A launcher exit, PID or saved draft
+does not prove submission. Do not start detached submission children. If completion
+is uncertain, inspect the exact job/task and receipt before taking further action;
+never blindly resubmit or repeat inference. Preserve failed drafts and unknown
+outcomes. Reuse after recovery requires a normal fresh lease, unchanged evidence,
+schema, prompt and profile, and the original reader's execution provenance.
+
+`work` checks packet bytes and the same conservative request bounds as automatic
+execution before handing a model task to a worker. A capacity rejection is a
+durable job-scoped block and releases its undispatched lease atomically. Continue
+with other ready tasks; do not clear the block or repeatedly reclaim it unchanged.
+Do not truncate articles, remove relevant supplements or raise bound limits to
+get past the check. A different capacity profile/source strategy requires a
+recorded supported continuation; a genuinely changed source creates new work.
+
 Keep authorized slots occupied with independent ready work. Refill as each worker
 finishes; do not wait for a whole batch. Combined reading is agent-mediated; the
 automatic runner handles screening, retrieval and metadata work within its own
@@ -148,6 +166,9 @@ ledger audit after every worker handoff or allow queued work to stall for status
 Track whole-workflow usage where available. Adapter counters exclude unobserved
 supervisor/native consumption; zero recorded dollars does not mean zero credits.
 Distinguish ready work, owned work, deferred coverage, access holds and unknown calls.
+When reporting a funnel, count unique papers and distinguish current screening
+decisions from cumulative queue admissions, historical revisions and repeated
+source generations. Show missing-source, uncertain and held work separately.
 
 ## Downloads and operational autonomy
 

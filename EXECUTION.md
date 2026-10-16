@@ -121,7 +121,9 @@ that level, the runner lets screening, reading and native tasks catch up before
 fetching more search windows. It never discards encountered papers or limits the
 total sweep. `resources.sanity_interval_seconds` defaults to 60 and must be positive.
 Pending small screening jobs are coalesced up to existing scientific batch limits;
-there is no requirement to wait for a full batch before processing the final tail.
+coalescing also respects the selected profile's request capacity. Fitting batches
+stay separate when their combined packet would exceed it. There is no requirement
+to wait for a full batch before processing the final tail.
 Agent work exchange alternates available native discovery and model tasks so
 neither class starves the other. Each unit keeps its durable lease and bindings.
 
@@ -647,6 +649,35 @@ the original reading is never overwritten. Ordinary legacy raw submissions
 remain accepted on the first lease but have unverified identity and isolation.
 After a task is deferred or recovered and leased again, submit the bound envelope
 with the current owner/token; a raw response cannot establish which lease wrote it.
+
+### Managed publication and capacity blocks
+
+Workers return their bound answer file and execution receipt; the coordinator
+publishes the answer unchanged with `submit` or `native-submit`. Keep the actual
+submission command attached to a managed execution handle until it exits, then
+check durable job/task completion. Do not launch an unawaited `Popen`, shell
+background child or other detached submission. A launcher exit or returned PID
+does not establish success. If the terminal outcome is lost, first inspect the
+bound job and stored result: a committed result is reconciled without another
+submission; an uncommitted draft stays preserved until supported recovery permits
+a normally leased, exact-input publication. Do not repeat model inference, alter
+the judgment or attribute the coordinator's identity to the original reader.
+
+`work` uses the automatic adapter's packet-byte, conservative context and
+per-request cost checks before returning an agent task. A rejected model packet
+creates `status.action_required` under `access-block:job:JOB_ID` and atomically
+releases its lease; no worker is launched and accounting is unchanged. The
+dispatcher continues to independent fitting work. Resume preserves this block.
+The bound prompt, source, schema and profile hashes remain in its history. An
+explicit resolution rechecks the same limits; if nothing has changed the block
+returns without dispatch. Source replacement supersedes the old request rather
+than clearing profile/budget holds or overwriting its evidence. The conservative
+context estimate is not an exact tokenizer or proof of provider capacity.
+
+Keep complete main articles and relevant textual supplements. Raising limits or
+changing a reading strategy is a separate recorded configuration decision, not an
+automatic response to a block. Oversized work remains visible and incomplete
+without preventing other eligible work from being dispatched.
 
 `retry --run-id RUN_ID --job-id FAILED_JOB_ID --actor ACTOR --reason REASON`
 creates one new immutable work unit with exactly the failed job's evidence,

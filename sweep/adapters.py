@@ -429,6 +429,20 @@ def _request_bound(profile, prompt, schema):
     return None, input_bound, cost
 
 
+def request_capacity(profile, prompt, schema):
+    """One non-admitting packet check for automatic and agent work exchange."""
+    p = validate_profile(profile)
+    prompt_bytes = len(prompt.encode("utf-8"))
+    if prompt_bytes > p["max_input_bytes"]:
+        return {"reason": "Complete source packet exceeds profile byte limit; no truncation or model call performed.",
+                "prompt_bytes": prompt_bytes, "max_input_bytes": p["max_input_bytes"],
+                **_failure_policy("source-byte-limit")}
+    problem, input_bound, cost_bound = _request_bound(p, prompt, schema)
+    return {"reason": problem, "prompt_bytes": prompt_bytes, "max_input_bytes": p["max_input_bytes"],
+            "conservative_input_token_bound": input_bound, "conservative_request_cost_usd": cost_bound,
+            **(_failure_policy(_local_failure_category(problem)) if problem else {})}
+
+
 def _http(profile, prompt, schema):
     payload = {"model": profile["model"], "messages": [{"role": "user", "content": prompt}],
                "max_tokens": profile["max_output_tokens"], "stream": False}
@@ -569,15 +583,15 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
             candidate = json.loads((root / "result.json").read_text())
             Draft202012Validator(schema, format_checker=FormatChecker()).validate(candidate)
             return dict(prior, result=candidate, recovered=True)
-        if len(prompt.encode()) > p["max_input_bytes"]:
-            return finish(reason="Complete source packet exceeds profile byte limit; no truncation or model call performed.",
-                          **_failure_policy("source-byte-limit"))
-        problem, input_bound, cost_bound = _request_bound(p, prompt, schema)
-        receipt.update(conservative_input_token_bound=input_bound, conservative_request_cost_usd=cost_bound)
+        capacity = request_capacity(p, prompt, schema)
+        if capacity.get("failure_category") == "source-byte-limit":
+            return finish(**capacity)
+        receipt.update(conservative_input_token_bound=capacity["conservative_input_token_bound"],
+                       conservative_request_cost_usd=capacity["conservative_request_cost_usd"])
         receipt.update(input_bound_scope="submitted-packet-only" if p["adapter"] in {"codex", "claude"} else "submitted-request-estimate",
                        harness_overhead_tokens=None)
-        if problem:
-            return finish(reason=problem, **_failure_policy(_local_failure_category(problem)))
+        if capacity["reason"]:
+            return finish(**capacity)
         if p["adapter"] != "manual" and not p["authorized"]:
             return finish(reason="Profile is not authorized; prepared inputs only, no inference performed.",
                           **_failure_policy("authorization-required"))

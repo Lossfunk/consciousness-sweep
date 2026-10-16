@@ -65,6 +65,11 @@ def coalesce(coordinator, *, max_candidates=100):
     store = coordinator.store
     merged = []
     with store._transaction() as conn:
+        from .title_profiles import profiles
+        continuation = conn.execute("SELECT value FROM meta WHERE key='state:runtime_continuation'").fetchone()
+        # A merged request is a new job in the current profile epoch. Parent
+        # jobs keep their own historical profiles and immutable source bindings.
+        current_profiles = profiles(coordinator.plan, json.loads(continuation[0]) if continuation else None)
         for stage, size in (("title", 25), ("abstract", 10)):
             rows = conn.execute("SELECT j.* FROM jobs j WHERE j.stage=? AND j.state='pending' "
                 "AND j.token=0 AND j.attempts=0 AND j.available_at<=? "
@@ -116,6 +121,17 @@ def coalesce(coordinator, *, max_candidates=100):
                               or data.get("origin") != origin or row["priority"] != priority or data.get("screening_workflow") != workflow):
                     flush()
                     group, seen = [], set()
+                if group:
+                    from .adapters import request_capacity
+                    from .workflow import prepare_screen
+                    records = [p for _, item in group for p in item["source_records"]] + data["source_records"]
+                    prompt, schema = prepare_screen(stage, records, data)
+                    profile = current_profiles[stage]
+                    if request_capacity(profile, prompt, schema)["reason"]:
+                        # Preserve fitting independent batches instead of making
+                        # them inaccessible by amortizing too much context.
+                        flush()
+                        group, seen = [], set()
                 if not group:
                     origin, priority, workflow = data.get("origin"), row["priority"], data.get("screening_workflow")
                 group.append((row, data))
