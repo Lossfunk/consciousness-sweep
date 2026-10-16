@@ -682,6 +682,17 @@ def _native_transaction_view(c, conn):
 
 def _native_binding(c, task):
     pid = task.get("paper_id")
+    if not pid and task.get("obligation_id") and task.get("source") == "publisher-or-repository-reference-list":
+        # Dispatch hydrates this citation task; submission rebuilds it without
+        # hydration. Bind the same obligation and current parent evidence at
+        # both boundaries, not the presence of generated packet/contract fields.
+        task = dict(task)
+        task.pop("packet_path", None)
+        task.pop("source_generation", None)
+        task["submission_contract"] = {key: value for key, value in task.get("submission_contract", {}).items()
+                                       if key != "source_generation"}
+        task["parent_source_binding"] = _native_binding(c, {
+            "task_id": task["task_id"], "paper_id": task["parent"]["paper_id"]})
     if pid:
         paper = c.store.paper(pid)
         packet = paper.get("packet_path")
