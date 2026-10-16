@@ -150,7 +150,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r47**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r49**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -171,9 +171,10 @@ Sources supplied later may reopen work through a new immutable source generation
 ## Storage management
 
 Routine checkpoints validate and publish progress without copying the entire
-database. Versioned continuation makes one consistent backup. Keep recent restore
-points directly available and use [backup archiving](EXECUTION.md#backup-storage)
-for older snapshots. The supported tool verifies lossless compression before
+database. Versioned continuation makes one consistent backup. Keep the newest
+restore point and the latest continuation backup directly available; they may be
+the same file. Use [backup archiving](EXECUTION.md#backup-storage) for older
+snapshots. The supported tool verifies lossless compression before
 removing an uncompressed backup, preserves its original receipt, and can restore
 its exact bytes and path. Sources, readings, charges and the live database remain
 unchanged. Never delete run evidence or rewrite the ledger to reduce disk use.

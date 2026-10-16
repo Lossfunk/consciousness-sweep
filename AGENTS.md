@@ -219,7 +219,8 @@ updates, worker-count thresholds or ordinary pause/resume. Use compact receipts;
 required validation still applies. Versioned continuation creates its own backup,
 so do not add a manual duplicate. After a continuation, before resuming, inspect
 `backup-archive` and apply the documented storage policy to closed older backups.
-Keep two recent uncompressed restore points and the latest continuation backup.
+Keep the newest restore point uncompressed and also retain the latest continuation
+backup if it is a different file. Use a larger `--keep-latest` only when requested.
 Older backup bytes remain recoverable through verified compressed archives and
 immutable path/hash mappings. Use only the supported commands; never remove live
 SQLite files/sidecars, source versions, worker evidence or scientific records.

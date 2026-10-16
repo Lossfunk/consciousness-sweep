@@ -1295,20 +1295,21 @@ Use the storage commands to reclaim space occupied by **closed historical SQLite
 backups**. Preview is read-only and can run during normal work:
 
 ```sh
-python -m sweep --root /local/run-repository backup-archive --run-id RUN_ID
+python -m sweep --root /local/run-repository backup-archive --run-id RUN_ID --keep-latest 1
 ```
 
 At a paused, drained checkpoint, archive the previewed older backups:
 
 ```sh
 python -m sweep --root /local/run-repository backup-archive --run-id RUN_ID \
-  --keep-latest 2 --apply --actor supervising-agent \
-  --reason 'Retain recent restore points and losslessly archive older backups'
+  --keep-latest 1 --apply --actor supervising-agent \
+  --reason 'Retain the newest restore point and losslessly archive older backups'
 ```
 
-This retains the two newest restore points and the latest continuation backup
-(which may be an additional file). It compresses older backups one at a time,
-checks their original run plan, streams decompression to verify original bytes
+The default `--keep-latest 1` retains the newest restore point and the latest
+continuation backup (which may be an additional file). A larger value retains
+more recent backups uncompressed when explicitly requested. It compresses older
+backups one at a time, checks their original run plan, streams decompression to verify original bytes
 and SHA-256, and durably records the archive mapping before removing only the
 uncompressed historical copy. Identical backups share one compressed blob.
 The latest continuation and original receipts remain intact. Reruns verify and

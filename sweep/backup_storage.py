@@ -188,7 +188,7 @@ def _records(run):
     return result
 
 
-def inventory(run, keep_latest=2):
+def inventory(run, keep_latest=1):
     """Read-only plan. Always retain the latest continuation plus recent backups."""
     run = Path(run).absolute()
     if type(keep_latest) is not int or keep_latest < 1:
@@ -215,8 +215,8 @@ def inventory(run, keep_latest=2):
     for record in records:
         found.setdefault(record['original_path'], {k: record[k] for k in ('original_path','original_bytes','mtime_ns')})['archived'] = True
     ordered = sorted(found.values(), key=lambda x: (-x['mtime_ns'], x['original_path']))
-    # Select across archived and unarchived files so a rerun doesn't retain two
-    # more old files each time. The latest successful continuation is protected.
+    # Select across archived and unarchived files so reruns don't progressively
+    # retain more old files. The latest successful continuation is protected.
     keep = {x['original_path'] for x in ordered[:keep_latest]}
     continuations = [x for x in ordered if x['original_path'].startswith('continuations/')]
     if continuations:
@@ -313,7 +313,7 @@ def _archive_one(run, relative, identity, actor, reason):
         'archive_bytes': record['archive_bytes'], 'record': record_path.relative_to(run).as_posix()}
 
 
-def archive(run, *, keep_latest=2, actor, reason):
+def archive(run, *, keep_latest=1, actor, reason):
     run = Path(run).absolute()
     if not str(actor).strip() or not str(reason).strip():
         raise ValueError('Backup maintenance requires actor and reason')

@@ -162,7 +162,8 @@ def main(argv=None):
         cmd.add_argument("--actor", default="supervising-agent")
         cmd.add_argument("--reason", default="")
         if name == "backup-archive":
-            cmd.add_argument("--keep-latest", type=int, default=2)
+            cmd.add_argument("--keep-latest", type=int, default=1,
+                             help="Recent backups to retain uncompressed (default: 1); the latest continuation is always retained too")
             cmd.add_argument("--apply", action="store_true", help="Archive closed backups after verified decompression; otherwise read-only inventory")
         else:
             cmd.add_argument("--backup", required=True, help="Original run-relative historical backup path to restore, never the live database")
