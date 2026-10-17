@@ -15,7 +15,7 @@ REPAIR = "parked-metadata-generation-v1"
 OLD_REASON = "Current parked acquisition belongs to a stale source generation"
 
 
-def readonly_coordinator(run, *, database=None):
+def readonly_coordinator(run, *, database=None, record_overrides=None):
     """Inspection-only view: no constructor, migrations, fencing or disk writes.
 
     SQLite mode=ro protects the main database while full validation may create
@@ -35,6 +35,14 @@ def readonly_coordinator(run, *, database=None):
         conn = sqlite3.connect(uri, uri=True, isolation_level=None)
         conn.row_factory = sqlite3.Row
         try:
+            if record_overrides:
+                conn.execute('PRAGMA temp_store=FILE')
+                conn.execute('CREATE TEMP TABLE repair_papers(id TEXT PRIMARY KEY,record TEXT)')
+                conn.executemany('INSERT INTO repair_papers VALUES(?,?)',
+                    [(pid, json.dumps(record)) for pid, record in record_overrides.items()])
+                conn.execute('CREATE TEMP VIEW papers AS SELECT p.id,p.doi,p.biblio,p.status,'
+                    'coalesce(r.record,p.record) AS record,p.created_at,p.updated_at '
+                    'FROM main.papers p LEFT JOIN repair_papers r ON p.id=r.id')
             yield conn
         finally:
             conn.close()
@@ -50,6 +58,9 @@ def readonly_coordinator(run, *, database=None):
 
 
 def inspect(run, kind, predecessor_report, snapshot):
+    from . import source_generation_repair
+    if kind == source_generation_repair.REPAIR:
+        return source_generation_repair.inspect(run, predecessor_report, snapshot)
     if kind != REPAIR:
         raise ValueError("Unknown validator repair")
     from . import execution_policy, validation, sanity

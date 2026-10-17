@@ -103,7 +103,8 @@ def main(argv=None):
             cmd.add_argument("--check-yield", action="store_true", help="Exit 3 if ready work or owned workers still need active supervision")
         if name == "continue-run":
             from .validator_repair import REPAIR
-            cmd.add_argument("--repair-validation", choices=[REPAIR], help="Explicit known validator-only repair; requires passing replacement checks on the unchanged quiet snapshot")
+            from .source_generation_repair import REPAIR as SOURCE_REPAIR
+            cmd.add_argument("--repair-validation", choices=[REPAIR, SOURCE_REPAIR], help="Explicit known repair; requires proven failure, quiet snapshot and passing replacement checks before backed-up apply")
             cmd.add_argument("--title-profile", type=Path, help="Explicit JSON {model,effort,access_evidence} for future/unadmitted title tasks only")
             cmd.add_argument("--previous-release", type=Path, required=True)
             cmd.add_argument("--policy", type=Path, required=True)

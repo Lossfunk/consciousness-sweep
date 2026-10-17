@@ -1381,6 +1381,34 @@ and full validation pass explicitly. No counter, parking proof, source file,
 scientific judgment or charge is rewritten to make validation succeed.
 
 
+### Retained-packet generation recovery
+
+Bibliographic rediscovery preserves an existing verified packet's generation until
+replacement source work is actually admitted. Deferred readings retain their
+original source and assessment; a newly supplied text still reopens acquisition.
+
+For a proven historical metadata-only increment that left a deferred reading on
+its original packet, use `--repair-validation retained-packet-metadata-generation-v1`
+on both continuation preview and apply. The quiet-checkpoint requirements above
+still apply. Recover owned tasks only after observing worker termination; preserve
+prepared answers and their source, prompt, schema, profile and execution receipts.
+Do not repeat inference to clear ownership.
+
+This repair requires a fresh predecessor full-validation report containing only
+that recognized stale-assessment failure. It proves each metadata-only increment,
+the unchanged acquisition/packet/reader bindings, and the absence of newer source
+jobs. A read-only projected snapshot must pass full validation and sanity before
+application. Any unrelated failure or supplied/replaced source blocks the repair.
+
+The ordinary continuation backup precedes an attributed, append-first correction
+of the current counter to the retained packet's generation. The mistaken generation
+is retired permanently; future source work advances beyond it. Historical events,
+original jobs and answers, source bytes and hashes, scientific decisions, holds and
+accounting are preserved. Keep STOP until post-continuation checks and delivery
+pass, then reconcile preserved answers under fresh fenced leases and unchanged
+execution bindings before admitting new inference.
+
+
 ### Title model access and authorized replacement
 
 Check the current harness's exact worker model/effort capability before dispatch.

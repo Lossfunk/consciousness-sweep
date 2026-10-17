@@ -77,7 +77,8 @@ def _quiet(conn, run, repair_validation=None):
     event = dict(json.loads(latest['payload']), validation_event_id=latest['id']) if latest else None
     if repair_validation:
         from .validator_repair import REPAIR
-        if repair_validation != REPAIR or not event or event.get('ok') is not False:
+        from .source_generation_repair import REPAIR as SOURCE_REPAIR
+        if repair_validation not in {REPAIR, SOURCE_REPAIR} or not event or event.get('ok') is not False:
             raise ValueError("Validator repair requires its recognized failed predecessor checkpoint")
     elif not event or event.get("ok") is not True:
         raise ValueError("A successful quiet validation under the predecessor runtime is required")
@@ -129,7 +130,7 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
     repair_evidence = None
     if repair_validation:
         if title_profile is not None or validate_policy(policy) != previous_policy:
-            raise ValueError("Validator-only continuation must preserve the operational policy and model profiles")
+            raise ValueError("Repair continuation must preserve the operational policy and model profiles")
         from .validator_repair import inspect
         repair_evidence = inspect(run, repair_validation, predecessor_validation, snapshot)
     from .workflow import contract
@@ -180,6 +181,9 @@ def apply(run, previous_release, policy, actor, reason, title_profile=None, *, r
         event = conn.execute("INSERT INTO events(at,kind,payload) VALUES(?,'runtime_continued',?)", (time.time(), canonical(receipt))).lastrowid
         receipt["event_id"] = event
         conn.execute("INSERT OR REPLACE INTO meta VALUES('state:runtime_continuation',?)", (canonical(receipt),))
+        from . import source_generation_repair
+        if repair_validation == source_generation_repair.REPAIR:
+            source_generation_repair.apply(conn, receipt['validator_repair'], actor, reason)
         from .title_profiles import replace_pending
         replace_pending(conn, run, receipt)
         # Fence older binaries, even though the historical plan still names them.

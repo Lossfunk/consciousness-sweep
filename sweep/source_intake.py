@@ -16,6 +16,11 @@ def source_manifest(paper):
     return {key: paper[key] for key in MANIFEST_FIELDS if key in paper}
 
 
+def next_generation(paper):
+    """Never reuse a generation retired by an attributed bookkeeping repair."""
+    return max(paper.get("source_generation", 1), paper.get("retired_source_generation", 0)) + 1
+
+
 @atomic_operation
 def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
     """Bind acquisition to immutable inputs; explicit retries preserve old jobs."""
@@ -25,10 +30,12 @@ def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
     if paper is None:
         raise ValueError("Unknown paper")
     generation = paper.get("source_generation", 1)
-    if force_retry:
-        generation += 1
-        coordinator.store.update_paper(paper_id, {"source_generation": generation}, reason)
     manifest = source_manifest(paper)
+    if force_retry or (paper.get("current_source_generation") == generation
+            and paper.get("current_source_manifest_sha256")
+            and paper["current_source_manifest_sha256"] != digest(manifest)):
+        generation = next_generation(paper)
+        coordinator.store.update_paper(paper_id, {"source_generation": generation}, reason)
     payload = {"paper_id": paper_id, "source_generation": generation,
                "source_manifest": manifest, "source_manifest_sha256": digest(manifest)}
     key = paper_id + ":source:" + str(generation) + ":" + digest(manifest)
@@ -109,6 +116,6 @@ def _commit_sources(coordinator, paper_id, normalized, reason):
         from .workflow import reactivate_source
         reactivate_source(coordinator, paper_id, reason)
         coordinator.store.update_paper(paper_id, {"provided_paths": normalized,
-            "source_generation": paper.get("source_generation", 1) + 1}, reason)
+            "source_generation": next_generation(paper)}, reason)
     return {"job_id": queue_retrieval(coordinator, paper_id, reason),
             "sources": [{"role": item.get("role", "main"), "sha256": item["expected_sha256"]} for item in normalized]}

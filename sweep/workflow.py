@@ -553,10 +553,11 @@ def reopen_acquisition(c, pid, reason):
     previous = c.store.get_state("bounded-acquisition:" + pid)
     reactivate_source(c, pid, reason)
     if previous:
+        from .source_intake import next_generation
         c.store.set_state("bounded-acquisition:" + pid, {"paper_id": pid, "task_id": "acquire:" + pid,
             "task": "bounded-public-source-acquisition", "status": "pending", "reason": reason,
             "pass_number": previous.get("pass_number", 1) + 1, "previous_pass_sha256": digest(previous),
-            "source_generation": c.store.paper(pid).get("source_generation", 1) + 1},
+            "source_generation": next_generation(c.store.paper(pid))},
             "Explicit source/access retry starts a new bounded pass; previous outcomes remain in history")
 
 

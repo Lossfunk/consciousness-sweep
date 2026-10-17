@@ -700,8 +700,12 @@ class Store:
         if "abstract" in changed:
             changes["screening_revision_pending"] = True
         if acquisition.intersection(changed):
-            changes.update(source_generation=current.get("source_generation", 1) + 1,
-                           retrieval_revision_pending=True)
+            changes["retrieval_revision_pending"] = True
+            # A new location is not a replacement of an already verified packet.
+            # Advance that binding only if reconciliation admits new source work.
+            if not current.get("packet_path") or {"provided_paths", "fulltext_path", "pdf_path", "local_path"}.intersection(changed):
+                from .source_intake import next_generation
+                changes["source_generation"] = next_generation(current)
         self._event(conn, "paper_metadata_enriched", {"paper_id": paper_id, "changes": changes,
                     "previous": {key: current.get(key) for key in changes}, "provenance": provenance,
                     "reason": "Rediscovery supplied new metadata or decision-relevant abstract evidence; existing decisions require explicit reconciliation"})

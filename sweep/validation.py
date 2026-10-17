@@ -314,6 +314,19 @@ def validate(coordinator, *, deadline=None, persist=True):
                         key, value = payload["parent_id"], payload
                     elif kind == "paper_updated":
                         require(str(payload.get("reason", "")).strip(), "Paper update lacks a reason")
+                        if 'retired_source_generation' in payload.get('changes', {}):
+                            from .source_generation_repair import REPAIR
+                            proof = payload.get('source_generation_repair', {})
+                            changes = payload['changes']
+                            require(payload.get('repair') == REPAIR and payload.get('actor')
+                                    and proof.get('paper_id') == payload['paper_id']
+                                    and proof.get('changes') == changes and proof.get('metadata_event_ids')
+                                    and type(changes.get('source_generation')) is int
+                                    and type(changes['retired_source_generation']) is int
+                                    and 0 < changes['source_generation'] < changes['retired_source_generation'],
+                                    'Retired source generation lacks an attributed repair proof')
+                            conn.execute('INSERT OR REPLACE INTO audit_history VALUES(?,?,?,?)',
+                                ('source_generation_repair', payload['paper_id'], canonical(payload), row['id']))
                         if "human_decision" in payload.get("changes", {}):
                             key, value, kind = payload["paper_id"], payload, "human_decision"
                     elif kind == "control_updated" and payload.get("key", "").startswith(("native-assessment:", "native-record-supplement:", "native-dispatch-hold:")):
@@ -486,6 +499,11 @@ def validate(coordinator, *, deadline=None, persist=True):
                 try:
                     paper = json.loads(row["record"])
                     require(paper.get("paper_id") == pid and paper.get("status") == row["status"], "Paper record identity/status differs from indexed state")
+                    retirement = history('source_generation_repair', pid)
+                    preview = getattr(coordinator, '_source_generation_repair_preview', {}).get(pid)
+                    expected_retired = (preview or (retirement or {}).get('changes', {})).get('retired_source_generation')
+                    require(paper.get('retired_source_generation') == expected_retired,
+                            'Retired source generation differs from its repair history')
                     if paper.get("retrieval_job"):
                         acquisition = conn.execute("SELECT * FROM jobs WHERE id=?", (paper["retrieval_job"],)).fetchone()
                         if acquisition and acquisition["state"] == "parked":
