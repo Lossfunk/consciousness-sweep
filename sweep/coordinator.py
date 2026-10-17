@@ -1551,7 +1551,7 @@ class Coordinator:
                 "depth-provenance-unresolved" if info.get("depth_unresolved_obligations") else
                 "within-limit" if self.plan["resources"].get("max_citation_depth") is not None else "unbounded")
         from .supervision import snapshot
-        status["supervision"] = snapshot(self)
+        status["supervision"] = snapshot(self, queue_pressure=status["queue_pressure"])
         return status
 
     def deliver(self, *, deadline=None):

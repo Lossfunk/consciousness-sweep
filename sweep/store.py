@@ -1008,6 +1008,9 @@ class Store:
                 if schedule is not None:
                     schedule["sequence"] += 1
                     claim.update(service_lane=lane, service_sequence=schedule["sequence"])
+                    if lane == "other-stage":
+                        schedule["last_other_stage"] = row["stage"]
+                        claim["service_stage"] = row["stage"]
                 self._event(conn, "job_claimed", claim)
                 conn.execute("UPDATE jobs SET state='running',owner=?,token=?,lease_until=?,updated_at=? WHERE id=?",
                              (owner, token, now + lease_seconds, now, row["id"]))
@@ -1029,8 +1032,9 @@ class Store:
         fresh lane is oldest-first across priorities; the retry lane rotates by
         last service. Thus new high-priority work, recurring failures and local
         arrivals cannot monopolize acquisition. Empty lanes are skipped. The
-        last slot prevents other requested stages such as discovery from being
-        starved by a full acquisition queue; retrieval-only claims skip it.
+        last slot rotates among eligible non-retrieval stages, so abstract
+        lookup cannot displace discovery indefinitely. The cursor is recorded
+        with each such claim; retrieval-only claims leave it unchanged.
         This affects execution ordering, never scientific eligibility or caps.
         """
         local = Store.local_retrieval_sql()
@@ -1047,6 +1051,18 @@ class Store:
             from .execution_policy import load, job_order
             if load(conn)["retained_first"]:
                 order = job_order(conn)
+            if lane == "other-stage":
+                stages = [r[0] for r in conn.execute(
+                    "SELECT DISTINCT j.stage FROM jobs j WHERE " + eligible + predicate +
+                    " ORDER BY j.stage", args)]
+                previous = schedule.get("last_other_stage", "")
+                stages = [s for s in stages if s > previous] + [s for s in stages if s <= previous]
+                if not stages:
+                    continue
+                row = conn.execute("SELECT j.* FROM jobs j LEFT JOIN retrieval_service rs ON rs.job_id=j.id WHERE "
+                    + eligible + predicate + " AND j.stage=? ORDER BY " + order + " LIMIT 1",
+                    args + [stages[0]]).fetchone()
+                return row, lane
             row = conn.execute("SELECT j.* FROM jobs j LEFT JOIN retrieval_service rs ON rs.job_id=j.id WHERE " + eligible + predicate + " ORDER BY " + order + " LIMIT 1", args).fetchone()
             if row is not None:
                 return row, lane

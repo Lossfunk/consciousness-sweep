@@ -83,7 +83,7 @@ def record(c, *, actor, reason, mode="active", wakeup=None):
     return value
 
 
-def snapshot(c, *, now=None):
+def snapshot(c, *, now=None, queue_pressure=None):
     """One non-mutating database snapshot, without source hydration or inference."""
     from .transactions import transaction_view
     with c.store._connection() as conn:
@@ -91,13 +91,14 @@ def snapshot(c, *, now=None):
         if own:
             conn.execute("BEGIN")
         try:
-            return _snapshot(transaction_view(c, conn), conn, time.time() if now is None else now)
+            return _snapshot(transaction_view(c, conn), conn, time.time() if now is None else now,
+                             queue_pressure=queue_pressure)
         finally:
             if own:
                 conn.rollback()
 
 
-def _snapshot(c, conn, now):
+def _snapshot(c, conn, now, *, queue_pressure=None):
     from .execution_policy import load, free_slots, native_rank, primary_pending
     from .host_access import profile_blocked
     from .profiles import profile_fingerprint
@@ -131,7 +132,7 @@ def _snapshot(c, conn, now):
     ready = {"model": 0, "native": 0, "retrieval": 0, "search": 0, "abstract-lookup": 0}
     earliest = []
     predicate, args = c.store.claimable_sql(conn, [*MODEL_STAGES, "retrieval", "search", "abstract-lookup"], now=now)
-    pressured = pressure(c)["search_admission_paused"]
+    pressured = (pressure(c) if queue_pressure is None else queue_pressure)["search_admission_paused"]
     for row in conn.execute("SELECT j.id,j.stage,j.available_at,coalesce(json_extract(j.payload,'$.calibration_review'),0) review," + c.store.local_retrieval_sql("j", untried_during_hold=True) + " local_source FROM jobs j WHERE " + predicate, args):
         stage = row["stage"]
         if stage in MODEL_STAGES:

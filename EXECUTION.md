@@ -153,7 +153,10 @@ Ordinary local CLI mutations and individual ledger write transactions share the
 same coordination lock. Source workers wait for dispatch/publication transactions
 before beginning a write; nested operations retain their atomic savepoints.
 Status and native-task listings use read snapshots without updating caches or
-initializing tables. `run` and `fetch-source` execute network requests outside
+initializing tables. Backlog pressure scans the pending-paper index once and is reused
+within each status snapshot. Source service rotates between eligible search and
+abstract-lookup stages as well as retrieval, retaining its cursor across resume.
+Stage priority never bypasses source, dependency, access or scoped search holds. `run` and `fetch-source` execute network requests outside
 the write lock. Do not add a command-wide wrapper around them. At a
 checkpoint, use `supervise --mode checkpoint`, drain the source runner and workers,
 then hold the publisher and validate/deliver the quiet snapshot. Reopen the

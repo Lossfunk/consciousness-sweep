@@ -90,7 +90,7 @@ def _validate_retrieval_accounting(conn, error, checked):
     conn.execute("CREATE TEMP TABLE audit_retrieval_events(kind TEXT,job_id TEXT,number INTEGER,payload TEXT,event_id INTEGER,PRIMARY KEY(kind,job_id,number))")
     conn.execute("CREATE INDEX audit_retrieval_claim_job ON audit_retrieval_claims(job_id,sequence)")
     lanes = ("priority", "local", "fresh", "retry", "other-stage")
-    sequence, next_lane = 0, 0
+    sequence, next_lane, last_other_stage = 0, 0, None
     for row in conn.execute("SELECT id,kind,payload FROM events WHERE kind IN ('job_claimed','retrieval_attempt_started','retrieval_attempt_finished') ORDER BY id"):
         try:
             payload = json.loads(row["payload"])
@@ -105,6 +105,10 @@ def _validate_retrieval_accounting(conn, error, checked):
                     lane = payload.get("service_lane")
                     require(lane in lanes, "Unknown retrieval service lane")
                     require(lane == "priority" or (job["stage"] != "retrieval" if lane == "other-stage" else job["stage"] == "retrieval"), "Retrieval service lane does not match job stage")
+                    if "service_stage" in payload or (lane == "other-stage" and last_other_stage is not None):
+                        require(lane == "other-stage" and payload.get("service_stage") == job["stage"],
+                                "Non-retrieval stage cursor differs from its claim")
+                        last_other_stage = job["stage"]
                     sequence, next_lane = payload["service_sequence"], (lanes.index(lane) + 1) % len(lanes)
                 conn.execute("INSERT INTO audit_retrieval_claims VALUES(?,?,?,?,?,?)", (jid, token, payload["owner"], row["id"], payload.get("service_sequence"), payload.get("service_lane")))
             else:
@@ -117,9 +121,12 @@ def _validate_retrieval_accounting(conn, error, checked):
     saved = conn.execute("SELECT value FROM meta WHERE key='retrieval_schedule'").fetchone()
     try:
         cursor = json.loads(saved[0]) if saved is not None else None
+        expected_cursor = {"sequence": sequence, "next_lane": next_lane}
+        if last_other_stage is not None:
+            expected_cursor["last_other_stage"] = last_other_stage
         require((cursor is None and sequence == 0) or (isinstance(cursor, dict)
                 and type(cursor.get("sequence")) is int and type(cursor.get("next_lane")) is int
-                and cursor == {"sequence": sequence, "next_lane": next_lane}), "Retrieval service cursor differs from durable claim history")
+                and cursor == expected_cursor), "Retrieval service cursor differs from durable claim history")
         checked("retrieval_service_cursor")
     except (ValueError, TypeError) as exc:
         error("retrieval_service_cursor", "retrieval_schedule", exc)

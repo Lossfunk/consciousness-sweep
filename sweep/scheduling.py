@@ -8,8 +8,10 @@ import json
 import time
 
 from .common import canonical, digest
+from .transactions import read_operation
 
 
+@read_operation
 def pressure(coordinator):
     from .search_holds import job_filter
     resources = coordinator.plan.get("resources", {})
@@ -30,17 +32,24 @@ def pressure(coordinator):
         with coordinator.store._connection() as conn:
             counts = {r["status"]: r["n"] for r in conn.execute(
                 "SELECT status,count(*) n FROM papers WHERE status IN ('discovered','title-pending','abstract-pending','abstract-lookup-pending','rescue-pending','retrieval-pending','reader-pending') AND coalesce(json_extract(record,'$.workflow_defer.active'),0)=0 GROUP BY status")}
+    from .execution_policy import for_coordinator, uncertain_sql, contextual_followup_sql
+    policy = for_coordinator(coordinator)
+    background = (contextual_followup_sql() if policy.get("workflow") == "focused-v1"
+                  and policy["retained_first"] else "0")
     with coordinator.store._connection() as conn:
-        audits = conn.execute("SELECT count(DISTINCT p.id) FROM meta m,json_each(m.value,'$.native_assessment_pending') n JOIN papers p ON p.id=n.key WHERE m.key='state:discovery_frontiers' AND p.status IN ('assessed','reading-incomplete') AND json_extract(p.record,'$.packet_path') IS NOT NULL AND coalesce(json_extract(p.record,'$.workflow_defer.active'),0)=0").fetchone()[0]
+        # Keep the pending-ID index outermost. A reorder through papers.status
+        # reparses the complete frontier JSON for every assessed paper.
+        # CROSS JOIN fixes loop order; each pending ID gets one primary-key lookup.
+        audits, contextual = conn.execute(
+            "SELECT count(DISTINCT CASE WHEN p.status IN ('assessed','reading-incomplete') "
+            "AND json_extract(p.record,'$.packet_path') IS NOT NULL THEN p.id END),"
+            "count(DISTINCT CASE WHEN " + background + " THEN p.id END) "
+            "FROM meta m CROSS JOIN json_each(m.value,'$.native_assessment_pending') n "
+            "CROSS JOIN papers p ON p.id=n.key WHERE m.key='state:discovery_frontiers' "
+            "AND coalesce(json_extract(p.record,'$.workflow_defer.active'),0)=0").fetchone()
     if audits:
         counts["native-assessment-pending"] = audits
     total = sum(counts.values())
-    from .execution_policy import for_coordinator, uncertain_sql, contextual_followup_sql
-    policy = for_coordinator(coordinator)
-    contextual = 0
-    if policy.get("workflow") == "focused-v1" and policy["retained_first"]:
-        with coordinator.store._connection() as conn:
-            contextual = conn.execute("SELECT count(DISTINCT p.id) FROM meta m,json_each(m.value,'$.native_assessment_pending') n JOIN papers p ON p.id=n.key WHERE m.key='state:discovery_frontiers' AND coalesce(json_extract(p.record,'$.workflow_defer.active'),0)=0 AND " + contextual_followup_sql()).fetchone()[0]
     deferred = 0
     if policy["retained_first"] and not enabled(coordinator):
         with coordinator.store._connection() as conn:
