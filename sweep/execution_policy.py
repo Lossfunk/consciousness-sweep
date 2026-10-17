@@ -153,8 +153,8 @@ def job_filter(conn):
 
 def job_order(conn=None):
     if conn is not None and load(conn).get("workflow") == "focused-v1":
-        # Finish source-ready work before admitting more papers. Bounded discovery
-        # buffers ensure earlier stages still drain when this finite queue clears.
+        # Ordinary ordering within a service stage. Store.claim reserves turns
+        # for screening so a replenished reader queue cannot starve earlier gates.
         return "j.priority DESC,coalesce((SELECT json_extract(p.record,'$.citation_depth') FROM papers p WHERE p.id=json_extract(j.payload,'$.paper_id')),2147483647),j.id"
     return ("coalesce((SELECT json_extract(p.record,'$.citation_depth') FROM papers p "
             "WHERE p.id=json_extract(j.payload,'$.paper_id')),2147483647),j.id")

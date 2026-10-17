@@ -156,7 +156,12 @@ Status and native-task listings use read snapshots without updating caches or
 initializing tables. Backlog pressure scans the pending-paper index once and is reused
 within each status snapshot. Source service rotates between eligible search and
 abstract-lookup stages as well as retrieval, retaining its cursor across resume.
-Stage priority never bypasses source, dependency, access or scoped search holds. `run` and `fetch-source` execute network requests outside
+Model dispatch uses two reader turns followed by one turn rotating through eligible
+title, abstract, rescue and audit stages. Empty lanes lend their turns immediately;
+priority and citation depth still order work within each stage. Automatic and
+harness claims share this durable rotation and the existing worker allowance.
+Stage priority never bypasses source, dependency, access or scoped search holds.
+`run` and `fetch-source` execute network requests outside
 the write lock. Do not add a command-wide wrapper around them. At a
 checkpoint, use `supervise --mode checkpoint`, drain the source runner and workers,
 then hold the publisher and validate/deliver the quiet snapshot. Reopen the

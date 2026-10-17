@@ -981,11 +981,16 @@ class Store:
                 limit = min(limit, slots)
                 if limit == 0:
                     return []
-            schedule = None
+            schedule = model_schedule = None
             if "retrieval" in stages:
                 saved = conn.execute("SELECT value FROM meta WHERE key='retrieval_schedule'").fetchone()
                 schedule = json.loads(saved[0]) if saved else {"next_lane": 0, "sequence": 0}
                 rows = None  # Select one slot at a time inside the same claim transaction.
+            elif set(stages).issubset(model_stages):
+                saved = conn.execute("SELECT value FROM meta WHERE key='model_schedule'").fetchone()
+                model_schedule = json.loads(saved[0]) if saved else {
+                    "next_lane": 0, "sequence": 0, "last_screen_stage": ""}
+                rows = None
             else:
                 from .execution_policy import load, job_order
                 order = job_order(conn) if load(conn)["retained_first"] else "j.priority DESC,j.id"
@@ -997,6 +1002,10 @@ class Store:
                     row, lane = self._next_retrieval_service(conn, eligible + slot_filter, args, schedule)
                     if row is None:
                         break
+                elif model_schedule is not None:
+                    row, model_lane = self._next_model_service(conn, eligible, args, model_schedule)
+                    if row is None:
+                        break
                 else:
                     row, lane = rows[index], None
                 if row["stage"] in model_stages and slots is not None:
@@ -1005,6 +1014,12 @@ class Store:
                     slots -= 1
                 token = row["token"] + 1
                 claim = {"job_id": row["id"], "owner": owner, "token": token}
+                if model_schedule is not None:
+                    model_schedule["sequence"] += 1
+                    claim.update(model_service_lane=model_lane,
+                                 model_service_sequence=model_schedule["sequence"])
+                    if model_lane == "screening":
+                        model_schedule["last_screen_stage"] = row["stage"]
                 if schedule is not None:
                     schedule["sequence"] += 1
                     claim.update(service_lane=lane, service_sequence=schedule["sequence"])
@@ -1022,7 +1037,39 @@ class Store:
                 result.append(value)
             if schedule is not None and result:
                 conn.execute("INSERT INTO meta VALUES('retrieval_schedule',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (_json(schedule),))
+            if model_schedule is not None and result:
+                conn.execute("INSERT INTO meta VALUES('model_schedule',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (_json(model_schedule),))
             return result
+
+    @staticmethod
+    def _next_model_service(conn, eligible, args, schedule):
+        """Two reader turns, one rotating screening/review turn; skip empty lanes.
+
+        Shared by automatic and harness claims, with the cursor committed beside
+        each lease. Preserve ordinary priority/depth ordering within each stage.
+        All eligibility, scope, holds and dependency predicates come from claim.
+        """
+        from .execution_policy import load, job_order
+        order = job_order(conn) if load(conn)["retained_first"] else "j.priority DESC,j.id"
+        for _ in range(3):
+            index = schedule["next_lane"]
+            schedule["next_lane"] = (index + 1) % 3
+            if index < 2:
+                stage, lane = "reader", "reader-" + str(index + 1)
+            else:
+                stages = [r[0] for r in conn.execute(
+                    "SELECT DISTINCT j.stage FROM jobs j WHERE " + eligible +
+                    " AND j.stage!='reader' ORDER BY j.stage", args)]
+                previous = schedule["last_screen_stage"]
+                stages = [s for s in stages if s > previous] + [s for s in stages if s <= previous]
+                if not stages:
+                    continue
+                stage, lane = stages[0], "screening"
+            row = conn.execute("SELECT j.* FROM jobs j WHERE " + eligible +
+                " AND j.stage=? ORDER BY " + order + " LIMIT 1", args + [stage]).fetchone()
+            if row is not None:
+                return row, lane
+        return None, None
 
     @staticmethod
     def _next_retrieval_service(conn, eligible, args, schedule):

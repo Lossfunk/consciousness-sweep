@@ -91,6 +91,8 @@ def _validate_retrieval_accounting(conn, error, checked):
     conn.execute("CREATE INDEX audit_retrieval_claim_job ON audit_retrieval_claims(job_id,sequence)")
     lanes = ("priority", "local", "fresh", "retry", "other-stage")
     sequence, next_lane, last_other_stage = 0, 0, None
+    model_sequence, model_next_lane, last_screen_stage = 0, 0, ""
+    model_lanes = ("reader-1", "reader-2", "screening")
     for row in conn.execute("SELECT id,kind,payload FROM events WHERE kind IN ('job_claimed','retrieval_attempt_started','retrieval_attempt_finished') ORDER BY id"):
         try:
             payload = json.loads(row["payload"])
@@ -99,6 +101,19 @@ def _validate_retrieval_accounting(conn, error, checked):
             job = conn.execute("SELECT stage,token FROM jobs WHERE id=?", (jid,)).fetchone()
             require(job is not None and token <= job["token"], "Retrieval history references an unknown job or future lease")
             if row["kind"] == "job_claimed":
+                if "model_service_sequence" in payload or "model_service_lane" in payload:
+                    require(payload.get("model_service_sequence") == model_sequence + 1
+                            and positive(payload.get("model_service_sequence")),
+                            "Model service sequence is not contiguous in claim history")
+                    model_lane = payload.get("model_service_lane")
+                    require(model_lane in model_lanes and job["stage"] in MODEL_STAGES,
+                            "Unknown model service lane or job stage")
+                    require((model_lane == "screening") == (job["stage"] != "reader"),
+                            "Model service lane does not match job stage")
+                    model_sequence = payload["model_service_sequence"]
+                    model_next_lane = (model_lanes.index(model_lane) + 1) % len(model_lanes)
+                    if model_lane == "screening":
+                        last_screen_stage = job["stage"]
                 service = "service_sequence" in payload or "service_lane" in payload
                 if service:
                     require(payload.get("service_sequence") == sequence + 1 and positive(payload.get("service_sequence")), "Retrieval service sequence is not contiguous in claim history")
@@ -117,6 +132,18 @@ def _validate_retrieval_accounting(conn, error, checked):
             checked("retrieval_accounting_events")
         except (ValueError, KeyError, TypeError, AttributeError, sqlite3.IntegrityError) as exc:
             error("retrieval_accounting_history", row["id"], exc)
+
+    saved = conn.execute("SELECT value FROM meta WHERE key='model_schedule'").fetchone()
+    try:
+        cursor = json.loads(saved[0]) if saved is not None else None
+        require((cursor is None and model_sequence == 0) or (isinstance(cursor, dict)
+                and type(cursor.get("sequence")) is int and type(cursor.get("next_lane")) is int
+                and cursor == {"sequence": model_sequence, "next_lane": model_next_lane,
+                               "last_screen_stage": last_screen_stage}),
+                "Model service cursor differs from durable claim history")
+        checked("model_service_cursor")
+    except (ValueError, TypeError) as exc:
+        error("model_service_cursor", "model_schedule", exc)
 
     saved = conn.execute("SELECT value FROM meta WHERE key='retrieval_schedule'").fetchone()
     try:
