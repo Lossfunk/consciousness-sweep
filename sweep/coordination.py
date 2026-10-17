@@ -62,7 +62,7 @@ def lock(run):
 # Long-running automatic execution already uses fenced short store transactions.
 # Its network/model calls must never acquire an extra command-wide lock.
 LOCAL_COMMANDS = {'work', 'submit', 'native-work', 'native-submit', 'source',
-    'source-retry', 'native-allocate', 'native-defer', 'native-recover', 'recover',
+    'source-retry', 'native-records', 'native-allocate', 'native-defer', 'native-recover', 'recover',
     'retry', 'ingest', 'close-intake', 'reopen-intake', 'supervise', 'sanity',
     'validate', 'calibration-review', 'calibration-report', 'audit', 'deliver',
     'export', 'pause', 'resume', 'human-decision', 'search-hold', 'search-release',

@@ -402,8 +402,7 @@ class Store:
             values = []
             for group in assessment.get("groups", []):
                 values.extend([group.get("experiment_id"), *group.get("linked_comparison_ids", [])])
-            for activation in assessment.get("process_activations", []):
-                comparison = activation.get("comparison", {})
+            for comparison in assessment.get("comparisons", []) + [a.get("comparison", {}) for a in assessment.get("process_activations", [])]:
                 values.extend([comparison.get("experiment_id"), comparison.get("comparison_id")])
             for value in values:
                 match = re.fullmatch(pattern, value or "")

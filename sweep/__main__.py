@@ -84,7 +84,7 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "source-retry", "fetch-source", "host-check", "continue-run", "supervise", "search-hold", "search-release"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "native-records", "source-retry", "fetch-source", "host-check", "continue-run", "supervise", "search-hold", "search-release"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
         if name in {"ingest", "submit", "native-submit", "calibration-review"}:
@@ -137,6 +137,12 @@ def main(argv=None):
             cmd.add_argument("--actor", required=True, help="Supervising agent/operator authorizing this retry")
         if name in {"human-decision", "source", "native-submit", "native-allocate", "calibration-review"}:
             cmd.add_argument("--paper-id", required=True)
+        if name == "native-records":
+            cmd.add_argument("--reader-job-id", required=True)
+            cmd.add_argument("--expected-result-sha256", required=True)
+            cmd.add_argument("--input", type=Path, required=True)
+            cmd.add_argument("--actor", required=True)
+            cmd.add_argument("--reason", required=True)
         if name == "native-work":
             cmd.add_argument("--owner")
             cmd.add_argument("--lease-seconds", type=int, default=900)
@@ -148,6 +154,7 @@ def main(argv=None):
             cmd.add_argument("--actor", required=True)
             cmd.add_argument("--reason", required=True)
             cmd.add_argument("--delay-seconds", type=int, default=300)
+            cmd.add_argument("--until-changed", action="store_true", help="Hold unchanged source/identity work until evidence changes or explicit release; retain incomplete coverage")
             cmd.add_argument("--lease-token", type=int)
         if name == "fetch-source":
             cmd.add_argument("--paper-id", required=True)
@@ -398,6 +405,10 @@ def main(argv=None):
                     elif args.command == "source-retry":
                         from .source_intake import queue_retrieval
                         result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}
+                    elif args.command == "native-records":
+                        from .native_records import supplement
+                        result = supplement(coordinator, args.reader_job_id, args.input,
+                            args.expected_result_sha256, args.actor, args.reason)
                     elif args.command == "native-allocate":
                         result = coordinator.store.allocate_native_ids(args.paper_id, args.experiment_key,
                             comparison_key=args.comparison_key, actor=args.actor, reason=args.reason)
@@ -421,7 +432,7 @@ def main(argv=None):
                         elif args.command == "native-list":
                             result = discovery.list_native_tasks(coordinator, limit=args.limit, include_deferred=args.include_deferred)
                         elif args.command == "native-defer":
-                            result = discovery.defer_native_task(coordinator, args.task_id, actor=args.actor, reason=args.reason, delay_seconds=args.delay_seconds, lease_token=args.lease_token)
+                            result = discovery.defer_native_task(coordinator, args.task_id, actor=args.actor, reason=args.reason, delay_seconds=args.delay_seconds, lease_token=args.lease_token, until_changed=args.until_changed)
                         elif args.command == "native-submit":
                             result = discovery.submit_native(coordinator, args.paper_id, json.loads(args.input.read_text()), args.actor)
                         else:

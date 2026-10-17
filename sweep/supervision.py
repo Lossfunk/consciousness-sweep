@@ -29,7 +29,7 @@ def observe_native(conn, tasks):
     ledger invalidates this observation; monitors ask the coordinator to refresh
     it rather than evaluating calibration or scientific rules themselves.
     """
-    fields = ("task_id", "task", "paper_id", "deferred_for_source_generation")
+    fields = ("task_id", "task", "paper_id", "deferred_for_source_generation", "dispatch_block", "deadline_at")
     value = {"revision": material_revision(conn),
              "tasks": [{key: task[key] for key in fields if key in task} for task in tasks]}
     encoded = canonical(value)
@@ -162,7 +162,7 @@ def _snapshot(c, conn, now):
         preferred = policy["retained_first"] and primary_pending(conn)
         for task in cached.get("tasks", []) if native_current else []:
             ctl = controls.get(task["task_id"], {})
-            if task.get("deferred_for_source_generation") or ctl.get("owner") or ctl.get("available_at", 0) > now:
+            if task.get("dispatch_block") or (task.get("deadline_at") is not None and now >= task["deadline_at"]) or task.get("deferred_for_source_generation") or ctl.get("owner") or ctl.get("available_at", 0) > now:
                 continue
             if preferred and native_rank(conn, task, policy)[0]:
                 continue

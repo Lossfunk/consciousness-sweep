@@ -1602,6 +1602,12 @@ class Coordinator:
                         row = {k: paper.get(k) for k in ("paper_id", "title", "doi", "year", "status", "packet_path", "reader_job", "source_generation", "publication_status", "version", "version_of", "relation", "version_relations", "possible_duplicates")}
                         row.update(acquisition_gaps=paper.get("retrieval", {}).get("packet", {}).get("acquisition_gaps", []), assessment=assessment, human_decision=paper.get("human_decision", "pending"),
                                    in_reading_queue=assessment["paper_decision"] in {"prospect", "unresolved"} and paper.get("human_decision") != "declined")
+                        native = self.store.get_state('native-assessment:' + paper['paper_id'])
+                        if native and native.get('packet_sha256') == paper.get('assessment_packet_sha256') and native.get('source_generation') == paper.get('source_generation'):
+                            row['native_discovery'] = native
+                        supplement = self.store.get_state('native-record-supplement:' + paper['reader_job'])
+                        if supplement:
+                            row['native_record_supplement'] = supplement
                         out.write(canonical(row) + "\n")
                         check_deadline()
                         (staging / "papers" / (paper["paper_id"] + ".html")).write_text(paper_page(paper).replace('href="../index.html"', 'href="../../index.html"'))

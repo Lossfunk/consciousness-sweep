@@ -537,6 +537,38 @@ or credit use. Account balances cover other chats too; credit runway is not a
 completion estimate. Estimate remaining work from measured retention, source
 availability and completed native tasks as well as automatic throughput.
 
+### Source tasks awaiting evidence
+
+An expired public-copy allowance blocks a new acquisition dispatch. The original
+deadline, attempts and missing-source state remain visible in `native-list
+--include-deferred`; expiry neither establishes worker termination nor renews a
+hunt. Finish or reconcile existing owners using actual completion/termination
+receipts. At a quiet checkpoint, an unowned expired pass can be settled through
+ordinary `native-submit` with `status: unavailable` and an honest `attempts` entry
+citing the original deadline and whether any retrieval actually ran. This is a
+coverage gap, not evidence that every route was tried.
+
+A citation-source task with a matching queued, running or unprojected search job
+waits for that job; do not dispatch a second reference-list reader. Process saved
+snapshots through the ordinary source runner without a new fetch. Failed jobs
+remain available for explicit diagnosis.
+
+Use an evidence-bound deferral for a source/identity task that cannot progress
+with its unchanged inputs, instead of periodically reserving and releasing it:
+
+```sh
+python -m sweep native-defer --run-id RUN_ID --task-id TASK_ID \
+  --actor OWNER --lease-token TOKEN --until-changed \
+  --reason "The recorded source failure remains unresolved; awaiting new evidence"
+```
+
+For an unowned task omit the lease token and identify the supervisor as actor.
+The hold remains visible and the scientific obligation remains incomplete. A
+changed task/source binding makes it eligible again. A verified access repair can
+explicitly release the hold with `native-defer --delay-seconds 0` and a reason
+identifying the repair. Do not blanket-release holds, reset acquisition clocks,
+or treat elapsed time as access recovery. Other independent ready work continues.
+
 ### Checkpointing an external model change
 
 An explicit user update may change an external supervisor/native-worker setting
@@ -991,6 +1023,42 @@ is transactional and idempotent; it does not supply an assessment, imply a
 completed comparison, or activate a process search. Native submission rejects
 unreserved IDs. Process eligibility may remain explicitly unresolved while
 source-grounded citation eligibility is recorded.
+
+New combined jobs record `native_record_contract: comparisons-v1` in their
+immutable payload. Previously prepared and completed jobs retain their exact
+original prompt/schema contract and remain valid after continuation; do not
+rewrite their files to match current guidance. Their runtime validator checks the
+assessment with its original standalone schema. For local checks of an older
+combined schema, validate its nested assessment schema as a standalone document
+so its source-ID references retain the correct scope.
+
+Native discovery submissions may include `comparisons`, a list of complete typed
+focal and component rows independent of `process_activations`. Store source-grounded
+rows there even when no process search is earned. An activation can repeat its
+identical row; conflicting records are rejected. Allocated unresolved comparison
+links do not require fabricated completed rows. Current native records accompany
+`delivery/prospects.jsonl`; storage and schema validity do not certify inference.
+
+For an already completed own-run reading whose original worker saved typed rows
+separately, `native-records` attaches those existing records without replacing the
+answer, modifying citation/process judgments, or commissioning another reading:
+
+```sh
+python -m sweep native-records --run-id RUN_ID --reader-job-id JOB_ID \
+  --input runs/RUN_ID/intake/original-reader-records.json \
+  --expected-result-sha256 ORIGINAL_RESULT_SHA256 \
+  --actor SUPERVISOR --reason "Original worker records from this exact completed reading"
+```
+
+The hash is `sweep.common.digest` of the complete stored job result, not the
+response-file hash. The input must be within this run and contain its original
+`source_generation`, `source_locations`, `groups` and `comparisons`. Establish its
+original-worker provenance from retained receipts; do not author new judgments
+under this command. The current reader and source packet must still match. The
+command validates and snapshots the input, retains an additive attributed record,
+and exposes it in delivery. Exact repeats are idempotent; changed records are
+rejected. Missing evidence or a scientific route disagreement remains unresolved
+for separate review. A saved supplement is not automatic CORE or process approval.
 
 Review/theory narratives about unavailable originals remain contextual leads;
 the originals must supply empirical prospect evidence. This applies the existing

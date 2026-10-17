@@ -584,6 +584,7 @@ def _hydrate_native_task(c, task):
         task["submission_contract"] = {"source_generation": "Echo the current task source_generation; older packet generations cannot be submitted",
             "identifier_allocation": "Before authoring groups, call native-allocate --paper-id ID --experiment-key STABLE_LABEL [--comparison-key STABLE_X_Y_KEY] --actor WORKER --reason REASON; reuse returned IDs. Reservation is not scientific certification.",
             "paper_state": "native fulltext_status/current_status/bridge_empirical_status",
+            "comparisons": "complete typed focal/component comparison rows, including nonactivating or unresolved comparisons; never invent a process search to carry a row",
             "groups": "complete typed physical experiment-group records", "source_locations": "[{asset_id, unit_id, observation}]",
             "process_audit": "{status: no-eligible-comparison | eligible-comparisons-recorded | unresolved, reason}",
             "process_activations": "[{comparison: complete typed native row, variants: provenance-bearing lexical variants, normalization_reason}]",
@@ -667,7 +668,8 @@ def _compute_native_candidates(c, *, hydrate=True):
         for task in result:
             if task.get("task_id") == "wave-audit":
                 task["instructions"] = "Audit the focused-v1 active coverage only. Reconcile completed citation windows and genuinely new eligible nodes; report wave_id, obligation_ids, new_potentially_relevant, screening_complete and source-grounded reason. Add coverage_scope:'focused-v1'. Report deferred coverage separately; held uncertain/unavailable papers are not exclusions or evidence of scientific saturation. The mandatory blind lane and earned process windows still apply."
-    return result
+    from .native_dispatch import annotate
+    return annotate(c, result)
 
 
 def _native_controls(conn):
@@ -699,7 +701,7 @@ def _native_binding(c, task):
         return digest({"task_id": task["task_id"], "source_generation": paper.get("source_generation", 1),
             "packet_source_generation": paper.get("packet_source_generation"),
             "source": file_hash(inside(c.run_dir / packet, c.run_dir)) if packet and _packet_is_current(paper) else digest(paper.get("abstract"))})
-    return digest({key: value for key, value in task.items() if key not in {"control", "native_lease", "execution_role", "intended_profile", "instructions"}})
+    return digest({key: value for key, value in task.items() if key not in {"control", "native_lease", "execution_role", "intended_profile", "instructions", "dispatch_block"}})
 
 
 @read_operation
@@ -718,7 +720,7 @@ def list_native_tasks(c, *, limit=100, include_deferred=False):
         preferred_pending = policy["retained_first"] and primary_pending(conn)
         for index, task in enumerate(candidates):
             control = controls.get(task["task_id"], {})
-            if not include_deferred and (task.get("deferred_for_source_generation") or control.get("owner") or control.get("available_at", 0) > now):
+            if not include_deferred and (task.get("dispatch_block") or task.get("deferred_for_source_generation") or control.get("owner") or control.get("available_at", 0) > now):
                 continue
             rank = native_rank(conn, task, policy)
             if not include_deferred and rank[0] and preferred_pending:
@@ -755,6 +757,8 @@ def next_native_task(c, *, owner=None, lease_seconds=900):
             # Expiration alone is not evidence that another worker died.
             if task.get("deferred_for_source_generation") or control.get("owner") not in {None, owner} or control.get("available_at", 0) > now:
                 continue
+            if task.get("dispatch_block") and control.get("owner") != owner:
+                continue
             rank = native_rank(conn, task, policy)
             if control.get("owner") != owner and ((rank[0] and preferred_pending) or slots == 0):
                 continue
@@ -775,23 +779,37 @@ def next_native_task(c, *, owner=None, lease_seconds=900):
         return dict(task, native_lease={"owner": owner, "token": token, "lease_until": until})
 
 
-def defer_native_task(c, task_id, *, actor, reason, delay_seconds=300, lease_token=None):
+@atomic_operation
+def defer_native_task(c, task_id, *, actor, reason, delay_seconds=300, lease_token=None, until_changed=False):
     if not str(actor).strip() or not str(reason).strip() or type(delay_seconds) is not int or not 0 <= delay_seconds <= 604800:
         raise ValueError("Native deferral requires actor/reason and delay_seconds in 0..604800")
-    if task_id not in {task["task_id"] for task in _native_candidates(c, hydrate=False)}:
+    tasks = {task["task_id"]: task for task in _native_candidates(c, hydrate=False)}
+    if task_id not in tasks:
         raise ValueError("Unknown or already completed native task")
+    if until_changed and not task_id.startswith(('source:', 'citation-source:', 'identity:', 'acquire:')):
+        raise ValueError('Evidence-bound deferral is for source/identity operations only')
     with c.store._transaction() as conn:
         _native_controls(conn)
         row = conn.execute("SELECT * FROM native_task_control WHERE task_id=?", (task_id,)).fetchone()
         old = dict(row) if row else {}
         if old.get("owner") and (old["owner"] != actor or old["token"] != lease_token):
             raise ValueError("Only the reserving owner with its token may defer/release this native task")
+        from .native_dispatch import PREFIX, binding
+        key = PREFIX + task_id
+        previous = c.store.get_state(key)
+        if until_changed:
+            c.store.set_state(key, {'active': True, 'task_id': task_id,
+                'binding': binding(c, tasks[task_id]), 'actor': actor, 'reason': reason},
+                'Await changed source evidence or explicit documented access recovery; obligation remains incomplete')
+        elif previous and previous.get('active'):
+            c.store.set_state(key, dict(previous, active=False, release_actor=actor, release_reason=reason),
+                'Explicit supervisor release of the evidence-bound operational hold')
         now = time.time()
         conn.execute("INSERT OR REPLACE INTO native_task_control VALUES(?,?,?,?,?,?,?,?)",
-                     (task_id, None, old.get("token", 0), None, now + delay_seconds, now, reason, None))
+                     (task_id, None, old.get("token", 0), None, 0 if until_changed else now + delay_seconds, now, reason, None))
         c.store._event(conn, "native_task_deferred", {"task_id": task_id, "actor": actor,
-                       "reason": reason, "available_at": now + delay_seconds})
-    return {"task_id": task_id, "status": "deferred", "available_at": now + delay_seconds}
+                       "reason": reason, "available_at": 0 if until_changed else now + delay_seconds, "until_changed": until_changed})
+    return {"task_id": task_id, "status": "awaiting-changed-evidence" if until_changed else "deferred", "available_at": 0 if until_changed else now + delay_seconds}
 
 
 def recover_native_task(c, task_id, *, owner, lease_token, actor, reason, proof):
@@ -965,8 +983,8 @@ def _submit_native(c, paper_id, payload, actor):
         if native_paper["paper_id"] != paper_id:
             raise ValueError("Cannot replace native focal paper identity")
         activations = payload.get("process_activations", [])
-        c.store.require_native_ids(paper_id, payload["groups"],
-                                  comparisons=[a["comparison"] for a in activations])
+        from .native_records import validate as validate_records
+        validate_records(c, paper_id, payload)
         if process["status"] != "unresolved" and (process["status"] == "eligible-comparisons-recorded") != bool(activations):
             raise ValueError("Process audit and activation records disagree")
         def apply(state):

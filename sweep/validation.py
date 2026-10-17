@@ -316,7 +316,7 @@ def validate(coordinator, *, deadline=None, persist=True):
                         require(str(payload.get("reason", "")).strip(), "Paper update lacks a reason")
                         if "human_decision" in payload.get("changes", {}):
                             key, value, kind = payload["paper_id"], payload, "human_decision"
-                    elif kind == "control_updated" and payload.get("key", "").startswith("native-assessment:"):
+                    elif kind == "control_updated" and payload.get("key", "").startswith(("native-assessment:", "native-record-supplement:", "native-dispatch-hold:")):
                         key, value = payload["key"], payload
                     if key is not None:
                         conn.execute("INSERT OR REPLACE INTO audit_history VALUES(?,?,?,?)", (kind, key, canonical(value), row["id"]))
@@ -546,12 +546,36 @@ def validate(coordinator, *, deadline=None, persist=True):
                         event = history("control_updated", row["key"][len("state:"):])
                         require(event is not None and event.get("value") == value, "Native discovery judgment differs from its explicit submission history")
                         pid = row["key"].split("state:native-assessment:", 1)[1]
-                        coordinator.store.require_native_ids(pid, value["groups"],
-                            [a["comparison"] for a in value.get("process_activations", [])], conn=conn)
+                        from .native_records import validate as validate_records
+                        validate_records(coordinator, pid, value, conn=conn)
                         require(conn.execute("SELECT 1 FROM audit_packets WHERE hash=? AND paper_id=?", (value["packet_sha256"], pid)).fetchone() is not None, "Native discovery judgment is not bound to a supplied reader packet")
                         checked("native_source_bindings")
-                except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError, StoreError) as exc:
+                except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError, StoreError, ValidationError) as exc:
                     error("control_binding", row["key"], exc)
+
+            for row in conn.execute("SELECT key,value FROM meta WHERE key LIKE 'state:native-record-supplement:%'"):
+                try:
+                    from .native_records import verify_supplement
+                    value = json.loads(row['value'])
+                    require(row['key'] == 'state:native-record-supplement:' + value['reader_job_id'], 'Supplement key differs from reader job')
+                    event = history('control_updated', row['key'][len('state:'):])
+                    require(event is not None and event.get('value') == value, 'Supplement differs from append-first history')
+                    verify_supplement(coordinator, value)
+                    checked('native_record_supplements')
+                except (ValueError, KeyError, TypeError, AttributeError, IndexError, OSError, StoreError, ValidationError) as exc:
+                    error('native_record_supplement', row['key'], exc)
+
+            for row in conn.execute("SELECT key,value FROM meta WHERE key LIKE 'state:native-dispatch-hold:%'"):
+                try:
+                    value = json.loads(row['value'])
+                    require(row['key'] == 'state:native-dispatch-hold:' + value['task_id'], 'Dispatch hold task mismatch')
+                    require(type(value.get('active')) is bool and value.get('actor') and value.get('reason'), 'Dispatch hold lacks state or provenance')
+                    require(re.fullmatch('[0-9a-f]{64}', value['binding']) is not None, 'Invalid dispatch evidence binding')
+                    event = history('control_updated', row['key'][len('state:'):])
+                    require(event is not None and event.get('value') == value, 'Dispatch hold differs from append-first history')
+                    checked('native_dispatch_holds')
+                except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                    error('native_dispatch_hold', row['key'], exc)
 
             from .discovery_validation import validate_discovery
             validate_discovery(coordinator, conn, error, checked)
