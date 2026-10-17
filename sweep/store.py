@@ -269,11 +269,16 @@ class Store:
             if conn is not None:
                 _close_connection(conn, path, primary)
 
-    def __init__(self, run_dir):
+    def __init__(self, run_dir, *, initialize=True):
         self.run_dir = Path(run_dir)
-        self.run_dir.mkdir(parents=True, exist_ok=True)
         self.path = self.run_dir / "state.sqlite3"
-        with self._connection() as conn:
+        if not initialize:
+            if not self.path.is_file():
+                raise StoreError("Run is not initialized")
+            return
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+        from .coordination import lock
+        with lock(self.path.parent), self._connection() as conn:
             phase = "journal-mode-setup"
             try:
                 conn.execute("PRAGMA journal_mode=WAL")
@@ -308,7 +313,12 @@ class Store:
 
     @contextmanager
     def _transaction(self):
-        with self._connection() as conn:
+        # All local writers, including the automatic source runner, queue before
+        # opening SQLite's write transaction. Network/model execution stays
+        # outside this scope. Nested transaction views use the same connection
+        # and savepoints; no operation or uncertain commit is retried here.
+        from .coordination import lock
+        with lock(self.path.parent), self._connection() as conn:
             phase = "transaction-begin"
             try:
                 conn.execute("BEGIN IMMEDIATE")

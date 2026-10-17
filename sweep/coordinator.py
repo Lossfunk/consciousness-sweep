@@ -20,7 +20,7 @@ import uuid
 
 from .common import ROOT, canonical, digest, file_hash, regime, save_json, scientific_module
 from .store import Store, BudgetExceeded
-from .transactions import atomic_operation
+from .transactions import atomic_operation, read_operation
 from . import screening, reading
 
 MODEL_STAGES = ("title", "abstract", "rescue", "audit", "reader")
@@ -168,7 +168,9 @@ class Coordinator:
         from .distribution import runtime_fingerprint
         from .continuation import require_compatible
         require_compatible(self.run_dir, self.plan, runtime_fingerprint())
-        self.store = Store(self.run_dir)
+        # Initialization/continuation owns schema setup. Reopening a bound run
+        # must not execute DDL or INSERT OR IGNORE just to report its status.
+        self.store = Store(self.run_dir, initialize=False)
         self._calibration_dirty = self.plan.get("mode") == "discovery"
 
     @property
@@ -1491,6 +1493,7 @@ class Coordinator:
             self.session_deadline = None
         return self.status()
 
+    @read_operation
     def status(self):
         status = self.store.status()
         from .execution_policy import for_coordinator

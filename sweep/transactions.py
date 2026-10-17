@@ -7,6 +7,7 @@ commit together. Nested operations use savepoints on the same connection.
 from contextlib import contextmanager
 from copy import copy
 from functools import wraps
+import sys
 
 
 def transaction_view(coordinator, conn):
@@ -45,4 +46,27 @@ def atomic_operation(operation):
         if getattr(view, "_calibration_dirty", False):
             coordinator._calibration_dirty = True
         return result
+    return execute
+
+
+def read_operation(operation):
+    """Observe one snapshot without obtaining a write reservation or caching it."""
+    @wraps(operation)
+    def execute(coordinator, *args, **kwargs):
+        with coordinator.store._connection() as conn:
+            own = not conn.in_transaction
+            if own:
+                conn.execute("BEGIN")
+            try:
+                return operation(transaction_view(coordinator, conn), *args, **kwargs)
+            finally:
+                if own:
+                    primary = sys.exc_info()[1]
+                    try:
+                        conn.rollback()
+                    except BaseException as cleanup:
+                        if primary is None:
+                            raise
+                        from .store import _record_cleanup_error
+                        _record_cleanup_error(primary, cleanup, coordinator.store.path, "read-snapshot-rollback")
     return execute

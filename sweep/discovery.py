@@ -16,7 +16,7 @@ import time
 
 from . import citation_depth, frontiers, sources
 from .common import canonical, digest, file_hash, inside, save_json, science_root
-from .transactions import atomic_operation
+from .transactions import atomic_operation, read_operation
 
 STATE = "discovery_frontiers"
 
@@ -702,13 +702,14 @@ def _native_binding(c, task):
     return digest({key: value for key, value in task.items() if key not in {"control", "native_lease", "execution_role", "intended_profile", "instructions"}})
 
 
+@read_operation
 def list_native_tasks(c, *, limit=100, include_deferred=False):
     if type(limit) is not int or not 1 <= limit <= 1000:
         raise ValueError("Native task list limit must be 1..1000")
-    candidates = _native_candidates(c, hydrate=False)
-    with c.store._transaction() as conn:
-        _native_controls(conn)
-        controls = {row["task_id"]: dict(row) for row in conn.execute("SELECT * FROM native_task_control")}
+    candidates = _compute_native_candidates(c, hydrate=False)
+    with c.store._connection() as conn:
+        exists = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='native_task_control'").fetchone()
+        controls = {row["task_id"]: dict(row) for row in conn.execute("SELECT * FROM native_task_control")} if exists else {}
     from .execution_policy import native_rank, primary_pending, load
     now = time.time()
     tasks = []
@@ -1105,7 +1106,7 @@ def discovery_status(c):
     frontier_check = frontiers.readiness(state, pending_semantic_jobs=pending_semantic,
                                         missing_texts_current=True, durable_validation_passed=True)
     operational = c.store.status()
-    pending_native = _native_candidates(c, hydrate=False)
+    pending_native = _compute_native_candidates(c, hydrate=False)
     from .workflow import enabled, active_jobs
     if enabled(c):
         operational = dict(operational, **active_jobs(c))

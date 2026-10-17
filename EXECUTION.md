@@ -149,9 +149,12 @@ restored ledger invalidates that checkpoint and triggers reconstruction. Restore
 only while all processes are stopped; keep original envelopes/receipts together
 with their run and do not manually prune the pending index.
 
-Ordinary local CLI mutations share a short coordination lock. `run` and
-`fetch-source` retain their short store transactions and execute network requests
-outside that extra lock. Do not add a command-wide wrapper around them. At a
+Ordinary local CLI mutations and individual ledger write transactions share the
+same coordination lock. Source workers wait for dispatch/publication transactions
+before beginning a write; nested operations retain their atomic savepoints.
+Status and native-task listings use read snapshots without updating caches or
+initializing tables. `run` and `fetch-source` execute network requests outside
+the write lock. Do not add a command-wide wrapper around them. At a
 checkpoint, use `supervise --mode checkpoint`, drain the source runner and workers,
 then hold the publisher and validate/deliver the quiet snapshot. Reopen the
 publication gate and return supervision to active mode only when those checks pass
