@@ -1,6 +1,6 @@
 {
   "calibration": "Versioned compact seed reference is coordinator-only; it is never included in model source packets or ordinary reader prompts.",
-  "created_at": "2026-10-16T19:53:26.545822+00:00",
+  "created_at": "2026-10-17T04:26:44.118924+00:00",
   "excluded": [
     "source PDFs",
     "run history",
@@ -14,8 +14,8 @@
     ".gitignore": "5950d2ee44c8f4b6cd58507b3fefe4f209079c5f4e1c3adf98e52c8bb3aa3d57",
     "AGENTS.md": "07d84ac4ccb37ce106850cf189ec176be664f04e84db4deaa64139bcf50355a1",
     "CLAUDE.md": "612f3b78552bc55a779fbea65f3c438fdcd8d4b4bc1415c92c62f804be8d416e",
-    "EXECUTION.md": "5c52c01462fded8b0732dabc4eda513477156db126c7591815f6fe5021ea4133",
-    "README.md": "da5d89a70e827e3dc44699151847a15409af9c1167c35be50ad0384e57b03960",
+    "EXECUTION.md": "74950c20c32e905461d259014d189669f38973ec0b4011e5c9b2e6e451819b20",
+    "README.md": "35aa2024b248e73cc8115d7401c7ed988b9859f2ceafc900ff439b5a77e2f663",
     "agent_candidates.json": "65507ce12b862feed3aee48bde53084e4f8cea8f8e5596afbea91e38231df616",
     "bootstrap.py": "453a92a7bd78989bc0480fb01a6d38667c7f2cab641e6c88212978d6884381ad",
     "development/prospect_contract_v1.md": "7940a69a378a49b18d130be127cbde180d8653ac4e819751a4a524a08af91fcd",
@@ -107,7 +107,7 @@
     "sweep/presentation.py": "b83e6a83127d8c497b3701c7d6db4a16b4bf084d034f6a9ab145ed9f73f73411",
     "sweep/profiles.py": "30c03b231e6dc3bf9b22d2cf86451a79a938a8781bdca119f1493294e7ed8650",
     "sweep/provider_docs.json": "b1f723f002fe80e3717fa600edd46d593fd67a4791391ddeab9b6e93e5985b5a",
-    "sweep/publication.py": "e1b7bdb7d35aaa54a730f9369b8bae9cb7e0e64076a91e0dc7a71e9c6ed48370",
+    "sweep/publication.py": "75e70b9b4e2ed8a4014096f45b91bba1f70b9a4fc09abccde0a68c28a746d68d",
     "sweep/reading.py": "1fd354ee3f659df27a378209ebbaa02183badfc822a22627a94e979533e2b1b4",
     "sweep/recovery.py": "77d3041c70665d6748f0935f6095ab375327a9c08f3f81474d8f64c5952ca895",
     "sweep/sanity.py": "7c5d5b77ae280524a1c15490e3cb9998e8fb26c8501c14759c8c213a7a259347",

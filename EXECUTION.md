@@ -101,6 +101,9 @@ profile hashes, lease, result and source-only `execution_provenance`.
 ```
 
 All three files must be inside this run. `staged` means queued, not committed.
+Staging checks the envelope and prepared result before installing a queue entry.
+It does not consume a lease or run inference. A rejection leaves the worker's
+original files intact; inspect the reported field and retain the failed draft.
 The publisher commits through the existing validators and fenced submission API,
 with its acknowledgement in the same transaction. It retains immutable envelopes
 and receipts under `intake/publication-inbox-v1/`. A lost acknowledgement is
@@ -128,6 +131,17 @@ After resolving a specific blocker, use `publication-reconcile --run-id RUN_ID
 --request-id REQUEST_ID --actor SUPERVISOR --reason "Evidence of the resolved
 condition"`. It rechecks the exact saved envelope through the same fences and
 preserves the original blocker receipt; it does not clear holds or rerun inference.
+
+For a transport-only correction, such as placing unchanged decisions inside the
+required `result` object, save a separate corrected envelope and a short receipt
+linking both files and confirming the decisions are unchanged. Retain the original
+worker provenance, actor, bindings and lease. Stage the corrected file as a new
+request; never edit or delete an immutable inbox entry or its blocker receipt.
+If the corrected answer already completed through supervised `submit`, staging it
+reconciles only an exact match to the committed result, actor and provenance;
+it does not submit again. A malformed older entry remains visibly blocked and
+does not prevent unrelated publication or refill. Different judgments, changed
+sources or recovered leases require the existing review/recovery workflow.
 
 Normal polling and repeated CLI handoffs use the pending index and a ledger-bound
 index checkpoint, without scanning all settled envelopes each time. An older

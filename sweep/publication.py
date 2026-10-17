@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import time
 
+from jsonschema import ValidationError
+
 from sweep import discovery
 from sweep.common import canonical, digest, inside, save_json
 from sweep.coordinator import validate_execution_provenance
@@ -23,6 +25,15 @@ class Reconcile(ValueError):
 
 def immutable(path, value):
     _publish_immutable(path, value, conflict_reason='Publication inbox bytes changed')
+
+
+def failure_reason(error):
+    # jsonschema's full rendering can repeat an entire paper/answer. The original
+    # immutable input remains available; keep the operational receipt compact.
+    if isinstance(error, ValidationError):
+        location = '/'.join(map(str, error.absolute_path)) or '<result>'
+        return ('Result schema validation failed at ' + location + ': ' + error.message)[:2000]
+    return str(error)[:2000]
 
 
 class PublicationLane:
@@ -58,8 +69,9 @@ class PublicationLane:
         for name, path in [('answer.json', answer_path), ('settings.json', proof_path), ('pointer.json', pointer_path)]:
             path = inside(Path(path).resolve(), self.root)
             files[name] = path.read_bytes()
-            json.loads(files[name])
-        data = json.loads(files['answer.json'])
+        values = {name: json.loads(raw) for name, raw in files.items()}
+        self.validate_shapes(kind, values)
+        data = values['answer.json']
         fence = {k: data.get(k) for k in ('owner', 'token')} if kind == 'model' else data.get('native_lease', {})
         if not isinstance(fence, dict) or not isinstance(fence.get('owner'), str) or type(fence.get('token')) is not int:
             raise ValueError('A bound existing lease is required; no automatic recovery')
@@ -70,6 +82,8 @@ class PublicationLane:
         target = self.inbox / identifier
         with self.lock():
             self.require_open()
+            if kind == 'model':
+                self.validate_prepared_result(entity_id, data)
             for name, value in files.items():
                 immutable(target / name, value)
             self.mark_pending(identifier)
@@ -78,6 +92,54 @@ class PublicationLane:
             # the already-running publisher would not notice until restart.
             immutable(target / 'request.json', (canonical(manifest) + '\n').encode())
         return identifier
+
+    @staticmethod
+    def validate_shapes(kind, values):
+        for name in ('answer.json', 'settings.json', 'pointer.json'):
+            if not isinstance(values[name], dict):
+                raise Reconcile(name + ' must contain a JSON object')
+        answer, proof, pointer = (values[name] for name in
+                                 ('answer.json', 'settings.json', 'pointer.json'))
+        observations = proof.get('actual_local_turn_settings')
+        if not isinstance(observations, list) or not observations or any(
+                not isinstance(row, dict) for row in observations):
+            raise Reconcile('Observed settings must be a nonempty list of objects')
+        if any(not isinstance(pointer.get(k), str) or not pointer[k].strip()
+               for k in ('session_id', 'agent_path')):
+            raise Reconcile('Missing exact worker identity pointer')
+        if kind == 'model':
+            if not isinstance(answer.get('result'), dict):
+                raise Reconcile('Model envelope requires a result object; retain the original and correct only transport explicitly')
+            if not isinstance(answer.get('execution_provenance'), dict):
+                raise Reconcile('Model envelope requires source-only execution_provenance')
+
+    def validate_prepared_result(self, entity_id, answer):
+        # Reuse the validators for the worker's prepared source. Do not prepare a new task,
+        # change its lease, project a result or reinterpret science during staging.
+        job = self.c.store.job(entity_id)
+        if answer.get('job_id') != entity_id or not job:
+            raise Reconcile('Unknown or mismatched existing job')
+        path = inside(self.root / 'jobs' / entity_id / 'schema.json', self.root)
+        schema = json.loads(path.read_bytes())
+        if digest(schema) != answer.get('schema_sha256'):
+            raise Reconcile('Prepared answer schema binding changed')
+        source = json.loads(path.with_name('source.json').read_bytes())
+        if digest(source) != answer.get('source_sha256'):
+            raise Reconcile('Prepared answer source binding changed')
+        try:
+            if job['stage'] == 'reader':
+                # Combined readers validate each part through the existing
+                # workflow; the nested reader schema has its own local $refs.
+                from .workflow import validate_reader
+                validate_reader(answer['result'], source, job['payload'])
+            else:
+                from .screening import validate
+                decisions = answer['result'].get('decisions')
+                if not isinstance(decisions, list) or any(not isinstance(row, dict) for row in decisions):
+                    raise Reconcile('Screening result schema requires a decisions array of objects')
+                validate(answer['result'], job['stage'], source['papers'])
+        except ValidationError as error:
+            raise Reconcile(failure_reason(error)) from error
 
     def mark_pending(self, identifier):
         immutable(self.pending / (identifier + '.json'), (identifier + '\n').encode())
@@ -127,7 +189,13 @@ class PublicationLane:
             raise ValueError('Invalid queue identity')
         folder = inside(self.inbox / identifier, self.root)
         manifest = json.loads((folder / 'request.json').read_bytes())
-        if digest(manifest) != identifier or set(manifest['files']) != {'answer.json', 'settings.json', 'pointer.json'}:
+        if (not isinstance(manifest, dict) or digest(manifest) != identifier
+                or not isinstance(manifest.get('files'), dict)
+                or set(manifest['files']) != {'answer.json', 'settings.json', 'pointer.json'}
+                or manifest.get('kind') not in ('model', 'native')
+                or any(not isinstance(manifest.get(k), str) or not manifest[k].strip()
+                       for k in ('actor', 'entity_id', 'owner'))
+                or type(manifest.get('token')) is not int):
             raise Reconcile('Publication manifest changed')
         values = {}
         for name, expected in manifest['files'].items():
@@ -169,6 +237,7 @@ class PublicationLane:
         for key in ('job_id', 'owner', 'token', 'prompt_sha256', 'schema_sha256', 'source_sha256', 'intended_profile_sha256'):
             if key not in answer or answer[key] != task.get(key):
                 raise Reconcile('Prepared answer binding changed: ' + key)
+        self.validate_prepared_result(job['id'], answer)
         if job['state'] == 'complete':
             # Retrospective handover: reconcile an answer that the old supervisor
             # already committed, without resubmitting or changing its attribution.
@@ -229,6 +298,7 @@ class PublicationLane:
                 else:
                     if (self.inbox / identifier / 'accepted.json').exists():
                         raise Reconcile('Unbacked file receipt: inspect restored database and receipt before publication')
+                    self.validate_shapes(manifest['kind'], values)
                     path = self.inbox / identifier / 'answer.json'
                     disposition = self._model(c, manifest, values, path) if manifest['kind'] == 'model' else self._native(c, manifest, values)
                     if fault:
@@ -282,11 +352,18 @@ class PublicationLane:
                 results.append(self.publish(path.parent.name))
             except Hold:
                 raise
-            except ValueError as error:
+            except (ValueError, ValidationError) as error:
                 # A global integrity checkpoint is a temporary global hold,
                 # not evidence that every individual draft is defective.
                 require_integrity(self.c)
-                receipt = {'status': 'needs-reconciliation', 'reason': str(error), 'at': time.time()}
+                receipt = {'status': 'needs-reconciliation', 'request_sha256': marker.stem,
+                           'reason': failure_reason(error), 'error_type': type(error).__name__, 'at': time.time()}
+                try:
+                    request = json.loads(path.read_bytes())
+                except ValueError:
+                    request = None
+                if isinstance(request, dict) and digest(request) == marker.stem:
+                    receipt.update(entity_id=request.get('entity_id'), kind=request.get('kind'))
                 with self.lock():
                     blocked = path.parent / 'blocked.json'
                     if blocked.exists():
