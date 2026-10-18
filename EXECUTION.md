@@ -1180,9 +1180,11 @@ Measure the new complete reader prompt once. A now-fitting successor can proceed
 through normal leased admission; a still-oversized source stays deferred without
 repeat retries. Do not delete genuine text, appendix sections, references, tables
 or figures to fit a cap. Long theses need a separately verified context strategy.
-`max_input_bytes` is a coarse operational guard, not the model context window;
-the adapter's current context/cost bound also conservatively uses UTF-8 bytes as
-a token upper bound. Raising only the byte cap may still fail that bound. Do not
+`max_input_bytes` is a coarse operational guard, not the model context window.
+Default context admission and cost/reservation bounds use UTF-8 bytes as a
+conservative token upper bound. Raising only the byte cap can still fail context
+admission. The explicit local strategy below changes context estimation only;
+existing budget bounds and recorded usage remain unchanged. Do not
 change plan-bound limits, use unverified token estimates, truncate sources or
 silently split scientific readings. The supported explicit input-byte successor
 procedure below records an authorized allowance without modifying the original
@@ -1218,7 +1220,10 @@ An exact unresolved source can be held without stopping unrelated processing:
 
 Repeat `--job-id` to change several holds atomically. The control binds the immutable
 retrieval payload, affects new admission and associated helper dispatch, and
-preserves owned work, results and history. It does not hold publication or models.
+preserves owned work, results and history. Parked retrieval jobs are valid hold
+bindings: the control neither changes their historical rows nor unparks them.
+Use the actual current immutable job, rather than requiring it to be pending.
+The hold does not stop publication or unrelated models.
 A genuinely supplied new source generation receives a separate binding; the old
 hold remains recorded. Locator/abstract rediscovery retains the source hold on
 metadata successors; only an explicit release, source retry or genuinely supplied
@@ -1268,10 +1273,58 @@ respect profile/budget/host holds and shared slots.
 Only current, unassessed, unowned ordinary readers with verified byte-limit
 nonadmission qualify. Unknown/admitted outcomes, active tickets, changed sources,
 extra dependencies and calibration rereads are refused. Repeating an identical
-apply returns the same successor. Context and cost checks must pass as well;
+apply returns the same successor. A later adapter continuation retains this
+authorization only on receipt-verified, identical-payload successors; copying a
+payload without that exact history is refused. Context and cost checks must pass as well;
 these checks cannot establish a provider's actual context size. A later genuine
 context rejection stays blocked for explicit review; never truncate, silently
 split, refund an unknown outcome or switch models to obtain admission.
+
+
+### Explicit local text context estimation
+
+When a complete long text exceeds the default byte-based context bound, the
+operator may select `local-openai-text-v1` separately from the byte allowance:
+
+```sh
+.venv/bin/python -B -m sweep reader-capacity --run-id RUN_ID --job-id J000000000002 \
+  --max-input-bytes 1100000 --actor supervisor --reason 'Authorized complete long-document input' \
+  --access-evidence 'Observed current harness access; provider context remains unverified' \
+  --context-accounting local-openai-text-v1 \
+  --accounting-evidence 'Authorize the named local estimate and fixed headroom; actual model tokenizer remains unverified'
+```
+
+Preview measures the whole unchanged prompt, schema and known operational base
+with pinned `tiktoken==0.14.0`, using the larger plain-text count from
+`o200k_base` and `cl100k_base`, plus a fixed **32,768-token context overhead
+reserve**. Output allowance is added before comparison with the existing context
+limit. Special-token-looking paper text is counted literally. Both vocabulary
+assets are hash-bound to the immutable runtime and stored once per release;
+counting performs no network access or API call. Their [MIT notice](sweep/tokenizer_LICENSE.txt)
+is included. Use the release's normal bootstrap to install its pinned dependency.
+A missing/wrong dependency, changed asset or known incompatible model encoding
+blocks the operation; there is no hidden fallback.
+
+This is an explicitly authorized **local estimate**, not a provider-exact request
+count, a proven model-tokenizer mapping or a verified context capacity. The proof
+records component counts, asset/library versions, reserved headroom, available
+mapping information and those unknowns. Do not infer a mapping from an unrecognized
+model alias. The strategy currently supports fresh manual source-only exchange and
+Codex `source-only-v1`; it does not authorize another adapter or billing route.
+
+Repeat the same reviewed command with `--apply` to create its one successor. Its
+effective profile records `context_accounting`; the original plan/profile and
+source remain intact. The actual context ceiling, output allowance, model, effort,
+byte ceiling, billing and total resources remain independently enforced. The
+original and effective profile holds both apply. Default profiles and existing
+byte-only grants do not acquire this strategy automatically. New plans may select
+it explicitly as part of their recorded resource agreement.
+
+Local estimates never replace actual usage, refund an unknown outcome, relax an
+API cost ceiling or renew a source-acquisition allowance. If this check still fails,
+or the real harness later rejects context, keep that individual block for review.
+No silent splitting, truncation, larger context claim, automatic retry or extra
+reading is authorized by this option.
 
 ## Routine source acquisition and recovery
 

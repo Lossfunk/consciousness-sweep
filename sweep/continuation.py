@@ -278,6 +278,66 @@ def rebind_unadmitted_request(c, job):
         reason = "Confirmed unadmitted request rebound to explicitly continued adapter; original source/settings/receipt retained"
         view.store.supersede_job(job["id"], successor, reason)
         view.store.defer(job["id"], job["owner"], job["token"], reason)
-        view.store._event(conn, "request_runtime_rebound", {"job_id": job["id"], "successor_id": successor,
-            "receipt_sha256": file_hash(directory / "receipt.json"), "reason": reason})
+        evidence={"job_id":job["id"],"successor_id":successor,
+            "receipt_sha256":file_hash(directory/"receipt.json"),"reason":reason}
+        event_id=view.store._event(conn,"request_runtime_rebound",evidence)
+        view.store.set_state('request-runtime-rebind:'+successor,{'event_id':event_id,'evidence':evidence},
+            'Indexed exact rebound event; original request and authorization remain authoritative')
     return True
+
+
+def valid_runtime_successor(c, conn, row, payload, event, *, expected_profile=None):
+    """Prove the existing nonadmitted adapter rebind, without weakening sources."""
+    if (not event or event.get('job_id')!=row['job_id']
+            or event.get('successor_id')!=row['replacement_job_id']
+            or event.get('reason')!=row['reason']):
+        return False
+    old=c.store.job(row['job_id']);new=c.store.job(row['replacement_job_id'])
+    if (not old or not new or old['stage']!=new['stage'] or old['payload']!=payload
+            or new['payload']!=payload or old['state']!='pending' or old['owner'] is not None
+            or old['result'] is not None):
+        return False
+    if conn.execute("SELECT 1 FROM reservations WHERE job_id=? AND state!='released'",(old['id'],)).fetchone():
+        return False
+    if conn.execute('SELECT 1 FROM dependencies WHERE dependency_id=?',(old['id'],)).fetchone():
+        return False
+    directory=c.run_dir/'jobs'/old['id']/'execution'
+    try:
+        receipt=json.loads((directory/'receipt.json').read_bytes())
+        binding=json.loads((directory/'binding.json').read_bytes())
+        from . import adapters
+        from .recovery import _source
+        profile=expected_profile if expected_profile is not None else c.profile_for_job(old)
+        _,(prompt,schema)=_source(c,old)
+        if (receipt.get('admission')!='not-admitted' or not receipt.get('completed_at')
+                or receipt.get('binding_sha256')!=file_hash(directory/'binding.json')
+                or event.get('receipt_sha256')!=file_hash(directory/'receipt.json')
+                or binding.get('version')!=adapters.VERSION or binding.get('profile')!=profile
+                or not compatible_adapter_hash(c,binding.get('adapter_source_sha256'))
+                or receipt.get('requested_model')!=profile['model']
+                or receipt.get('requested_effort')!=profile['effort']
+                or binding.get('prompt_sha256')!=file_hash(directory/'prompt.txt')
+                or (directory/'prompt.txt').read_bytes()!=prompt.encode()
+                or binding.get('schema_sha256')!=file_hash(directory/'schema.json')
+                or json.loads((directory/'schema.json').read_bytes())!=schema):
+            return False
+        if binding.get('base_instructions_sha256') is not None:
+            if binding['base_instructions_sha256']!=file_hash(directory/'base_instructions.txt'):
+                return False
+    except (OSError,ValueError,KeyError,TypeError):
+        return False
+    return True
+
+
+def runtime_rebound_event(conn, parent_id, child_id):
+    cached=conn.execute('SELECT value FROM meta WHERE key=?',('state:request-runtime-rebind:'+child_id,)).fetchone()
+    if cached:
+        value=json.loads(cached[0])
+        row=conn.execute("SELECT payload FROM events WHERE id=? AND kind='request_runtime_rebound'",(value.get('event_id'),)).fetchone()
+        if not row or json.loads(row[0])!=value.get('evidence'):return None
+        result=json.loads(row[0])
+    else:
+        # Compatibility with pre-index predecessor events; no history rewrite.
+        row=conn.execute("SELECT payload FROM events WHERE kind='request_runtime_rebound' AND json_extract(payload,'$.job_id')=? ORDER BY id DESC LIMIT 1",(parent_id,)).fetchone()
+        result=json.loads(row[0]) if row else None
+    return result if result and result.get('job_id')==parent_id and result.get('successor_id')==child_id else None

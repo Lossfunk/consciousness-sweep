@@ -71,7 +71,7 @@ def _failure_policy(category, admission="not-admitted", retry_after_seconds=None
         "authentication", "authorization-required", "credential-unset", "cli-unavailable",
         "subscription-attestation-required", "unsupported-cli-version", "configuration-error",
         "unknown-configuration-field", "unsupported-cli-argument", "base-instructions-unreadable",
-        "local-app-server-startup", "context-limit", "source-byte-limit", "request-cost-limit",
+        "local-app-server-startup", "context-limit", "source-byte-limit", "token-counting-unavailable", "request-cost-limit",
         "request-rejected", "model-unavailable", "billing-capacity-unavailable",
     }
     retryable = category == "provider-limit" and admission == "not-admitted"
@@ -96,7 +96,9 @@ def _local_failure_category(reason):
         return "subscription-attestation-required"
     if reason.startswith("Claude CLI "):
         return "unsupported-cli-version"
-    if reason.startswith("Conservative source/context bound"):
+    if reason.startswith('Local context accounting unavailable:'):
+        return 'token-counting-unavailable'
+    if reason.startswith(("Conservative source/context bound", "Local text/context estimate")):
         return "context-limit"
     if reason.startswith("Conservative per-request cost"):
         return "request-cost-limit"
@@ -411,36 +413,52 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def _request_bound(profile, prompt, schema):
-    # UTF-8 bytes is a deliberately conservative token bound; 1024 covers message
-    # framing. No source text is silently truncated to fit a model or budget.
+def _capacity_bounds(profile, prompt, schema):
+    # Preserve byte-based billing/reservation bounds. Only an explicitly selected
+    # local strategy changes context estimation; it never claims provider identity.
     input_bound = len(prompt.encode()) + len(_bytes(schema)) + 1024
-    if profile.get("codex_context") == "source-only-v1":
-        input_bound += len(CODEX_SOURCE_INSTRUCTIONS.encode())
-    if profile.get("context_window_tokens") and input_bound + profile["max_output_tokens"] > profile["context_window_tokens"]:
-        return "Conservative source/context bound exceeds the selected profile; supply a validated larger-context profile or source strategy.", input_bound, None
+    base = CODEX_SOURCE_INSTRUCTIONS if profile.get('codex_context')=='source-only-v1' else ''
+    input_bound += len(base.encode())
+    context_input, measurement = input_bound, None
+    if profile.get('context_accounting'):
+        from .token_counting import measure, CountingUnavailable
+        try:
+            measurement = measure(profile, prompt, _bytes(schema).decode(), base)
+        except CountingUnavailable as exc:
+            return 'Local context accounting unavailable: '+str(exc), input_bound, None, None
+        context_input = measurement['context_input_token_estimate']
+    if profile.get('context_window_tokens') and context_input + profile['max_output_tokens'] > profile['context_window_tokens']:
+        reason = ('Local text/context estimate plus reserved headroom exceeds the unchanged selected profile.' if measurement else
+            'Conservative source/context bound exceeds the selected profile; supply a validated larger-context profile or source strategy.')
+        return reason, input_bound, None, measurement
     cost = None
-    if profile["billing_route"] == "api":
-        a, b = profile.get("input_price_per_million"), profile.get("output_price_per_million")
+    if profile['billing_route']=='api':
+        a,b = profile.get('input_price_per_million'),profile.get('output_price_per_million')
         if a is not None and b is not None:
-            cost = (input_bound * a + profile["max_output_tokens"] * b) / 1e6
-            if cost > profile["max_request_usd"]:
-                return "Conservative per-request cost exceeds the authorized ceiling; no request admitted.", input_bound, cost
-    return None, input_bound, cost
+            cost = (input_bound*a + profile['max_output_tokens']*b)/1e6
+            if cost > profile['max_request_usd']:
+                return 'Conservative per-request cost exceeds the authorized ceiling; no request admitted.',input_bound,cost,measurement
+    return None,input_bound,cost,measurement
+
+
+def _request_bound(profile, prompt, schema):
+    return _capacity_bounds(profile,prompt,schema)[:3]
 
 
 def request_capacity(profile, prompt, schema):
     """One non-admitting packet check for automatic and agent work exchange."""
-    p = validate_profile(profile)
-    prompt_bytes = len(prompt.encode("utf-8"))
-    if prompt_bytes > p["max_input_bytes"]:
-        return {"reason": "Complete source packet exceeds profile byte limit; no truncation or model call performed.",
-                "prompt_bytes": prompt_bytes, "max_input_bytes": p["max_input_bytes"],
-                **_failure_policy("source-byte-limit")}
-    problem, input_bound, cost_bound = _request_bound(p, prompt, schema)
-    return {"reason": problem, "prompt_bytes": prompt_bytes, "max_input_bytes": p["max_input_bytes"],
-            "conservative_input_token_bound": input_bound, "conservative_request_cost_usd": cost_bound,
-            **(_failure_policy(_local_failure_category(problem)) if problem else {})}
+    p=validate_profile(profile)
+    prompt_bytes=len(prompt.encode('utf-8'))
+    if prompt_bytes > p['max_input_bytes']:
+        return {'reason':'Complete source packet exceeds profile byte limit; no truncation or model call performed.',
+            'prompt_bytes':prompt_bytes,'max_input_bytes':p['max_input_bytes'],**_failure_policy('source-byte-limit')}
+    problem,input_bound,cost_bound,measurement=_capacity_bounds(p,prompt,schema)
+    result={'reason':problem,'prompt_bytes':prompt_bytes,'max_input_bytes':p['max_input_bytes'],
+        'conservative_input_token_bound':input_bound,'conservative_request_cost_usd':cost_bound,
+        **(_failure_policy(_local_failure_category(problem)) if problem else {})}
+    if measurement:
+        result['context_measurement']=measurement
+    return result
 
 
 def _http(profile, prompt, schema):
@@ -588,6 +606,8 @@ def execute(profile: dict, prompt: str, schema: dict, work_dir: Path, *, before_
             return finish(**capacity)
         receipt.update(conservative_input_token_bound=capacity["conservative_input_token_bound"],
                        conservative_request_cost_usd=capacity["conservative_request_cost_usd"])
+        if capacity.get('context_measurement'):
+            receipt['context_measurement'] = capacity['context_measurement']
         receipt.update(input_bound_scope="submitted-packet-only" if p["adapter"] in {"codex", "claude"} else "submitted-request-estimate",
                        harness_overhead_tokens=None)
         if capacity["reason"]:

@@ -25,7 +25,7 @@ PROFILE_KEYS = {"adapter", "model", "effort", "billing_route", "authorized", "ti
                 "parameters", "effort_parameter", "response_format", "max_request_usd",
                 "input_price_per_million", "output_price_per_million", "max_calls", "max_tokens",
                 "max_spend_usd", "profile_id", "qualification_record", "notes", "max_turns",
-                "subscription_extra_usage_disabled", "codex_context"}
+                "subscription_extra_usage_disabled", "codex_context", "context_accounting"}
 
 
 def _number(value, name, minimum=0, integer=False, nullable=True):
@@ -114,6 +114,12 @@ def validate_profile(profile: dict) -> dict:
             _number(p[key], key, minimum=0)
     if "context_window_tokens" in p:
         _number(p["context_window_tokens"], "context_window_tokens", minimum=1, integer=True, nullable=False)
+    if "context_accounting" in p:
+        from .token_counting import METHOD
+        if (p['context_accounting'] != METHOD or p['adapter'] not in {'codex','manual'}
+                or p['adapter']=='codex' and p.get('codex_context')!='source-only-v1'
+                or not p.get('context_window_tokens')):
+            raise ValueError('Explicit local context accounting requires a bounded source-only Codex/manual text request')
     p.setdefault("qualification_status", "unqualified")
     if p["qualification_status"] not in {"unqualified", "commissioning", "provisional-prospects", "qualified"}:
         raise ValueError("Unknown qualification_status")

@@ -148,6 +148,11 @@ Preserve complete articles and relevant supplements. Use the explicit
 user authorizes a larger input-byte allowance: preview first, then create a bound
 successor while retaining the old job, limits, block and accounting. The command
 changes only that successor's byte ceiling; context/cost checks still apply.
+The supported local context strategy requires an explicit operator choice and
+evidence. It retains the original context/output limits, reserves overhead and
+records unknown model mapping/provider capacity. Never claim its local text count
+is a provider-exact count. Tokenizer dependencies/assets must match the release;
+no network counting, paid endpoint, implicit codec fallback or invented capacity.
 Never silently raise limits, truncate text or split a reading to evade a block.
 A genuinely changed source creates ordinary new source work.
 
@@ -175,7 +180,9 @@ all acquisition helpers to finish first. It waits for newly attached sources;
 retain its actual process/session handle and observe exits. Inspect
 `supervision.source_progress` for supplied documents awaiting processing, scoped
 holds and stage waiting times even while other workers are active. Use exact
-`source-hold`/`source-release` controls for affected retrieval jobs; broad source
+`source-hold`/`source-release` controls for affected retrieval jobs, including
+parked jobs whose rows/receipts remain unchanged; do not require pending state.
+Broad source
 shutdown is reserved for a demonstrated broader fault. `source-run --mode supplied`
 selects supplied local documents and makes no remote requests, including fallback.
 Its restricted scope does not mean missing remote evidence was searched.

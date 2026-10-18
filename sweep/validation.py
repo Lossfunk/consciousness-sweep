@@ -342,7 +342,7 @@ def validate(coordinator, *, deadline=None, persist=True):
                     require(isinstance(payload, dict), "Audit event payload must be an object")
                     kind = row["kind"]
                     key, value = None, None
-                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt", "job_superseded", "retrieval_parked", "workflow_reader_rebound"}:
+                    if kind in {"job_enqueued", "job_completed", "agent_submission", "model_receipt", "job_superseded", "retrieval_parked", "workflow_reader_rebound", "request_runtime_rebound"}:
                         key, value = payload["job_id"], payload
                     elif kind == "job_retry_authorized":
                         key, value = payload["parent_id"], payload
@@ -693,6 +693,10 @@ def validate(coordinator, *, deadline=None, persist=True):
                                 from .reader_capacity import validate as validate_capacity
                                 validate_capacity(coordinator, conn)
                                 changed = json.loads(capacity[0])['successor_job_id'] == row['replacement_job_id']
+                        if not changed:
+                            from .continuation import valid_runtime_successor
+                            changed = valid_runtime_successor(coordinator,conn,row,payload,
+                                history('request_runtime_rebound',row['job_id']))
                         if not changed:
                             # Historical supersession stays immutable. An explicit
                             # proven restoration may select the old completed view.

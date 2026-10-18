@@ -110,6 +110,8 @@ def main(argv=None):
             cmd.add_argument('--actor', required=True)
             cmd.add_argument('--reason', required=True)
             cmd.add_argument('--access-evidence', required=True)
+            cmd.add_argument('--context-accounting', choices=['local-openai-text-v1'])
+            cmd.add_argument('--accounting-evidence', help='Explicit authorization for a local estimate; model mapping/provider framing remain unverified')
             cmd.add_argument('--apply', action='store_true')
         if name == "supervise":
             cmd.add_argument("--mode", choices=["active", "checkpoint"], help="Record active supervision or hold new admissions for a coordinated checkpoint")
@@ -431,7 +433,7 @@ def main(argv=None):
                     elif args.command == 'reader-capacity':
                         from .reader_capacity import grant
                         result = grant(coordinator,args.job_id,args.max_input_bytes,args.actor,args.reason,
-                            args.access_evidence,apply=args.apply)
+                            args.access_evidence,apply=args.apply,context_accounting=args.context_accounting,accounting_evidence=args.accounting_evidence)
                     elif args.command == "source-retry":
                         from .source_intake import queue_retrieval
                         result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}
