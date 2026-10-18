@@ -66,7 +66,7 @@ LOCAL_COMMANDS = {'work', 'submit', 'native-work', 'native-submit', 'source',
     'retry', 'ingest', 'close-intake', 'reopen-intake', 'supervise', 'sanity',
     'validate', 'calibration-review', 'calibration-report', 'audit', 'deliver',
     'export', 'pause', 'resume', 'human-decision', 'search-hold', 'search-release',
-    'discovery-init', 'native-list', 'host-check'}
+    'discovery-init', 'native-list', 'host-check', 'source-hold', 'source-release', 'reader-capacity'}
 
 
 @contextmanager
@@ -93,6 +93,30 @@ def publisher_session(run):
                 fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as error:
             raise ValueError('A managed publisher already owns this run; inspect that session') from error
+        try:
+            yield
+        finally:
+            if os.name == 'nt':
+                handle.seek(0); msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+@contextmanager
+def source_session(run):
+    path = Path(run) / 'intake' / 'source-runner-session.lock'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('a+b') as handle:
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                handle.seek(0); handle.write(b'0'); handle.flush(); handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            raise ValueError('A managed source runner already owns this run; inspect that session') from error
         try:
             yield
         finally:

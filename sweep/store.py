@@ -957,12 +957,16 @@ class Store:
         eligible += job_filter(conn)
         from .search_holds import job_filter as search_hold_filter
         eligible += search_hold_filter()
+        from .source_work import job_filter as source_hold_filter
+        eligible += source_hold_filter()
+        from .reader_capacity import job_filter as capacity_hold_filter
+        eligible += capacity_hold_filter()
         rounds = load(conn)["retrieval_max_rounds"]
         if rounds is not None:
             eligible += " AND (j.stage!='retrieval' OR (SELECT count(*) FROM retrieval_attempts a WHERE a.job_id=j.id)<" + str(rounds) + ")"
         return eligible, args
 
-    def claim(self, stages, owner, lease_seconds=300, limit=1, calibration_reviews=None, local_retrieval_only=False):
+    def claim(self, stages, owner, lease_seconds=300, limit=1, calibration_reviews=None, local_retrieval_only=False, source_capacity=False):
         if not stages or not owner or not 1 <= limit <= 1000 or lease_seconds <= 0:
             raise ValueError("Claim requires stages, owner, bounded limit and positive lease")
         now = time.time()
@@ -972,6 +976,14 @@ class Store:
             from .supervision import admission_hold
             if admission_hold(conn, self.run_dir):
                 return []
+            if source_capacity:
+                if not set(stages).issubset({'retrieval','search','abstract-lookup'}):
+                    raise ValueError('Source capacity applies only to source-stage claims')
+                plan = json.loads(conn.execute("SELECT value FROM meta WHERE key='plan'").fetchone()[0])
+                owned = conn.execute("SELECT count(*) FROM jobs WHERE state='running' AND stage IN ('retrieval','search','abstract-lookup')").fetchone()[0]
+                limit = min(limit, max(0, plan.get('resources',{}).get('retrieval_workers',2)-owned))
+                if limit == 0:
+                    return []
             eligible, args = self.claimable_sql(conn, stages, now=now,
                 calibration_reviews=calibration_reviews, local_retrieval_only=local_retrieval_only)
             from .execution_policy import free_slots

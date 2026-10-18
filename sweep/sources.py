@@ -286,9 +286,10 @@ def _retry_after(headers):
 
 class SourceClient:
     def __init__(self, transport=None, *, timeout=30, max_attempts=3, sleep=time.sleep,
-                 openalex_key_env="OPENALEX_API_KEY", max_download_bytes=64 * 1024 * 1024, deadline=None):
+                 openalex_key_env="OPENALEX_API_KEY", max_download_bytes=64 * 1024 * 1024, deadline=None, offline=False):
         if timeout <= 0 or not 1 <= max_attempts <= 3:
             raise ValueError("Positive timeout and one to three attempts required")
+        self.offline = offline
         self.transport = transport or public_transport
         self.timeout, self.max_attempts, self.sleep = timeout, max_attempts, sleep
         # Store only the environment variable name. Never persist credentials.
@@ -299,6 +300,8 @@ class SourceClient:
         self.deadline = deadline
 
     def get(self, url, *, json_response=False, text_only=False, material_kind=None):
+        if self.offline:
+            raise SourceError('unavailable', 'Supplied-only source session: network acquisition intentionally not attempted')
         safe_url(url, resolve=False)
         if text_only:
             from .source_scope import check

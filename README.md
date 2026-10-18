@@ -59,7 +59,9 @@ papers awaiting scientific assessment. When continuing earlier work, native
 follow-ups for completed contextual readings use a separate background queue;
 outstanding prospects and ready new work take priority. Eligible seed citations,
 deeper citations and earned query windows share bounded search admission.
-Workers refill available slots as results arrive. Lightweight checks run
+Workers refill available slots as results arrive. A [managed source runner](EXECUTION.md#managed-source-execution)
+processes downloaded documents alongside acquisition helpers; exact source holds
+leave unrelated work available. Lightweight checks run
 incrementally; full validation and delivery occur at coordinated quiet checkpoints.
 
 ## Get started
@@ -147,12 +149,13 @@ through a [managed publication and worker exchange](EXECUTION.md#managed-worker-
 Completed answers are committed before new tasks are offered. Durable dispatch
 tickets prevent an interrupted supervisor from silently spawning a second reader;
 the active harness supplies each fresh worker and its observed execution identity. Oversized requests stay blocked
-without occupying worker slots or repeatedly returning on resume. Combined reading uses this exchange because it reserves
+without occupying slots; [explicit input capacity recovery](EXECUTION.md#explicit-reader-input-capacity)
+retains the original request and records any authorized larger allowance. Combined reading uses this exchange because it reserves
 scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r60**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r62**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded

@@ -1184,7 +1184,94 @@ or figures to fit a cap. Long theses need a separately verified context strategy
 the adapter's current context/cost bound also conservatively uses UTF-8 bytes as
 a token upper bound. Raising only the byte cap may still fail that bound. Do not
 change plan-bound limits, use unverified token estimates, truncate sources or
-silently split scientific readings. Preserve all resource and isolation controls.
+silently split scientific readings. The supported explicit input-byte successor
+procedure below records an authorized allowance without modifying the original
+plan. Preserve all resource and isolation controls.
+
+## Managed source execution
+
+Run one source processor alongside acquisition helpers, readers and the publisher.
+It acquires its own exclusive session lock, with short existing write transactions;
+it never holds the publication lock across download or extraction. The supervisor
+keeps its original process/session handle and observes its actual exit. Ordinary
+acquisition helpers do not prevent it from processing their supplied documents.
+
+```sh
+.venv/bin/python -B -m sweep source-run --run-id RUN_ID --watch --max-seconds 600
+```
+
+This command disables automatic model inference. It uses the recorded retrieval
+worker allowance, per-request deadlines, acquisition rounds, scope and search
+backpressure. `--watch` waits for later attachments, including when other work is
+blocked. The session duration bounds this invocation only; it does not renew any
+paper's acquisition allowance or impose a new total run cap. STOP, coordinated
+checkpoint and writer holds prevent admission. Existing owned work retains its
+normal completion and fencing rules. Use this published runner instead of adding
+run-specific wrappers or rules requiring all helpers to drain first.
+
+An exact unresolved source can be held without stopping unrelated processing:
+
+```sh
+.venv/bin/python -B -m sweep source-hold --run-id RUN_ID --job-id J000000000001 --actor supervisor --reason 'Unresolved source binding'
+.venv/bin/python -B -m sweep source-release --run-id RUN_ID --job-id J000000000001 --actor supervisor --reason 'Binding resolved' --evidence 'Verified repair receipt'
+```
+
+Repeat `--job-id` to change several holds atomically. The control binds the immutable
+retrieval payload, affects new admission and associated helper dispatch, and
+preserves owned work, results and history. It does not hold publication or models.
+A genuinely supplied new source generation receives a separate binding; the old
+hold remains recorded. Locator/abstract rediscovery retains the source hold on
+metadata successors; only an explicit release, source retry or genuinely supplied
+source revision changes that boundary. Metadata can revise screening but cannot
+renew an exhausted acquisition pass.
+
+For a restricted local processing session:
+
+```sh
+.venv/bin/python -B -m sweep source-run --run-id RUN_ID --mode supplied --watch --max-seconds 600
+```
+
+`supplied` selects local manifests and forbids network transport and fallback.
+Identity must still be supported by the supplied text. Remote identity, source or
+supplement gaps remain explicit. This differs from legacy `run --local-only`,
+which disables automatic inference but can still access the network.
+
+`status` and `supervise` include `supervision.source_progress`: eligible retrievals,
+supplied documents, oldest waiting ages, exact source holds, last source completion
+and the runner's recorded observation. The observation is not proof that a process
+still lives. A stage can need attention while other workers are busy. Preserve
+actual host handles and respect termination-evidence requirements on recovery.
+
+## Explicit reader input capacity
+
+The byte guard is distinct from provider context capacity. First verify that a
+large packet contains the complete intended main/supplementary text and record
+any extraction-scope issue. Keep originals and hashes. A genuinely long complete
+source may receive an explicit per-request input-byte allowance authorized by the
+user, with observable harness access evidence and provider-capacity unknowns kept
+honest. Preview creates no new job or source file:
+
+```sh
+.venv/bin/python -B -m sweep reader-capacity --run-id RUN_ID --job-id J000000000002 --max-input-bytes 1100000 --actor supervisor --reason 'Authorized complete long-document input allowance' --access-evidence 'Observed harness access; provider context capacity remains unverified'
+```
+
+Inspect the exact packet/prompt hashes, original and effective profiles, input
+size and authorization. Repeat the same command with `--apply` only within the
+recorded resource authorization. It creates one ordinary pending reader successor
+and retires the blocked original from admission. The original plan, job, prepared
+inputs, block, source generation, allocated IDs and accounting remain intact.
+Only the successor's input-byte ceiling changes; model, effort, billing, output
+limit, scientific rubric and total allowance stay the same. Its effective profile
+is exposed in task and submission verification. Normal claims/dispatch still
+respect profile/budget/host holds and shared slots.
+
+Only current, unassessed, unowned ordinary readers with verified byte-limit
+nonadmission qualify. Unknown/admitted outcomes, active tickets, changed sources,
+extra dependencies and calibration rereads are refused. Repeating an identical
+apply returns the same successor. Context and cost checks must pass as well;
+these checks cannot establish a provider's actual context size. A later genuine
+context rejection stays blocked for explicit review; never truncate, silently
+split, refund an unknown outcome or switch models to obtain admission.
 
 ## Routine source acquisition and recovery
 
@@ -1259,7 +1346,7 @@ current. Identical bytes alone do not revive an older calibration generation.
 | Confirmed authentication/quota repair | `resume --resolve-access-blocks --access-block BLOCK_KEY --reason REASON` for the repaired scope under unchanged settings. |
 | Unknown/admitted model failure | Preserve its charge and receipt; `retry` only when termination is established and another charged attempt fits the existing agreement. |
 | Host network or CLI state unavailable | Inspect `host-check` and `status.host_access`; restore the approved launch environment and resolve only the repaired hold. Local work can continue. |
-| Input too large or budget exhausted | Surface the exact block. Do not truncate text, raise a bound limit, switch model/billing route or call it completion. |
+| Input too large or budget exhausted | Surface the exact block. Complete long inputs may use the explicitly authorized [input-capacity successor](#explicit-reader-input-capacity); keep the original plan and every budget/access hold. Never truncate, silently raise limits, switch model/billing route or call a block completion. |
 | Integrity/storage failure | Stop admissions, preserve diagnostics, investigate read-only and validate using the bound release. No in-run code/database repair. |
 | Calibration disagreement | Check source coverage, compare claims and reasons, preserve departures and unresolved evidence. Use only an already authorized isolated alternative reader. |
 

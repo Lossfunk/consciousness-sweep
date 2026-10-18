@@ -791,7 +791,9 @@ class Coordinator:
             client = None
             if enabled(self):
                 deadline = min(deadline or float("inf"), time.monotonic() + contract()["automatic_acquisition_seconds"])
-                client = SourceClient(max_attempts=1, deadline=deadline)
+            if enabled(self) or getattr(self,"source_mode","all")=="supplied":
+                client = SourceClient(max_attempts=1 if enabled(self) else 3, deadline=deadline,
+                                      offline=getattr(self,"source_mode","all")=="supplied")
             result = retrieve(paper, directory, provided_paths=paper.get("provided_paths", []),
                               deadline=deadline, client=client, text_only=enabled(self),
                               previous_result=previous, source_generation=payload.get("source_generation", 1))
@@ -815,6 +817,8 @@ class Coordinator:
         profile_hash = profile_fingerprint(profile)
         block_keys = ("access-block:budget", "access-block:profile:" + profile_hash,
                       "access-block:job:" + job["id"])
+        from .reader_capacity import profile_block_keys
+        block_keys += profile_block_keys(self, job)
 
         class AccessBlocked(RuntimeError):
             pass
@@ -1021,7 +1025,11 @@ class Coordinator:
                 raise ValueError("Seed second-read settings differ from their bound profile")
             return profile
         stage = job["stage"]
-        return self.execution_profiles["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]
+        base = self.execution_profiles["reader" if stage == "reader" else "rescue" if stage in {"rescue", "audit"} else stage]
+        if stage == 'reader':
+            from .reader_capacity import profile
+            return profile(self, job, base)
+        return base
 
     def reconcile_calibration(self):
         if self.plan.get("mode") != "discovery" or not self._calibration_dirty:
@@ -1251,6 +1259,8 @@ class Coordinator:
             reader_id = self.store.enqueue("reader", pid + ":" + str(generation) + ":" + packet_hash,
                 reader_payload(self, {"paper_id": pid, "packet_path": relative, "packet_sha256": packet_hash, "source_generation": generation}),
                 priority=130 if current.get("seed_role") == "empirical-seed" else 30)
+            from .reader_capacity import successor
+            reader_id = successor(self, reader_id)
             completed = self.store.job(reader_id)
             if completed["state"] == "complete":
                 self._project_reader(completed)
@@ -1307,8 +1317,18 @@ class Coordinator:
         self.store.set_state("audit_revision", revision, "Current exclusion index sampled at this durable screening revision")
         return scheduled
 
-    def run(self, *, max_seconds=None, progress=None, automatic_models=True, watch=False, defer_checkpoint=False):
+    def run(self, *, max_seconds=None, progress=None, automatic_models=True, watch=False, defer_checkpoint=False, source_mode=None, _source_session=False):
+        if not _source_session:
+            from .coordination import source_session
+            with source_session(self.run_dir):
+                return self.run(max_seconds=max_seconds,progress=progress,automatic_models=automatic_models,
+                    watch=watch,defer_checkpoint=defer_checkpoint,source_mode=source_mode,_source_session=True)
         from .validation import require_integrity, validate
+        wait_for_sources = source_mode is not None
+        source_mode = "all" if source_mode is None else source_mode
+        if source_mode not in {'all','supplied'} or source_mode == 'supplied' and automatic_models:
+            raise ValueError('Supplied-only source processing requires model execution disabled')
+        self.source_mode = source_mode
         require_integrity(self)
         from .supervision import admission_hold
         with self.store._connection() as conn:
@@ -1390,8 +1410,8 @@ class Coordinator:
                 if time.monotonic() - last_compact >= 1:
                     coalesce(self)
                     last_compact = time.monotonic()
-                network = ["retrieval", "abstract-lookup"] if enabled(self) else ["retrieval"]
-                if self.plan.get("mode") == "discovery" and not backlog["search_admission_paused"] and not network_held:
+                network = ["retrieval", "abstract-lookup"] if enabled(self) and source_mode != "supplied" else ["retrieval"]
+                if source_mode != "supplied" and self.plan.get("mode") == "discovery" and not backlog["search_admission_paused"] and not network_held:
                     network.append("search")
                 for stages, limit, kind in (([] if capped else automated, model_workers, "model"), (network, retrieval_workers, "retrieval")):
                     capacity = limit - sum(x[1] == kind for x in active.values())
@@ -1403,7 +1423,8 @@ class Coordinator:
                     if capacity > 0 and stages:
                         for job in self.store.claim(stages, owner, lease_seconds=1800, limit=capacity,
                                                     calibration_reviews=False if kind == "model" else None,
-                                                    local_retrieval_only=network_held and kind == "retrieval"):
+                                                    local_retrieval_only=(network_held or source_mode=="supplied") and kind == "retrieval",
+                                                    source_capacity=kind == 'retrieval'):
                             active[pool.submit(self.execute_job, job)] = (job, kind)
                 if active:
                     finished, _ = wait(active, timeout=min(0.5, remaining()), return_when=FIRST_COMPLETED)
@@ -1422,7 +1443,7 @@ class Coordinator:
                         clauses, wait_args = [], []
                         if network:
                             clauses.append("(stage IN (" + ",".join("?" for _ in network) + ")" +
-                                (" AND " + self.store.local_retrieval_sql("jobs", untried_during_hold=True) if network_held else "") + ")")
+                                (" AND " + self.store.local_retrieval_sql("jobs", untried_during_hold=True) if network_held or source_mode=="supplied" else "") + ")")
                             wait_args.extend(network)
                         if not capped and automated:
                             clauses.append("(stage IN (" + ",".join("?" for _ in automated) + ") AND coalesce(json_extract(payload,'$.calibration_review'),0)=0)")
@@ -1432,10 +1453,17 @@ class Coordinator:
                         with self.store._connection() as conn:
                             from .execution_policy import job_filter
                             from .search_holds import job_filter as search_hold_filter
-                            queue_filter = job_filter(conn).replace("j.", "jobs.") + search_hold_filter("jobs")
+                            from .source_work import job_filter as source_hold_filter
+                            from .reader_capacity import job_filter as capacity_hold_filter
+                            queue_filter = job_filter(conn).replace("j.", "jobs.") + search_hold_filter("jobs") + source_hold_filter("jobs") + capacity_hold_filter("jobs")
                             row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND id NOT IN (SELECT job_id FROM job_supersessions) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||jobs.id AND json_extract(m.value,'$.active')=1) AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=jobs.id AND p.state!='complete') AND (" + " OR ".join(clauses or ["0"]) + ")" + queue_filter, wait_args).fetchone()
                         next_at = row[0] if row else None
                         if not watch or next_at is None:
+                            if watch and not automatic_models and wait_for_sources:
+                                # New source attachments can arrive while helpers work.
+                                # No ready source job is a wait, never a model-access failure.
+                                time.sleep(min(1, remaining()))
+                                continue
                             if blocks or network_held or host_state.get("codex_state"):
                                 exit_reason = "Access or budget requires a recorded resolution; pending work is preserved"
                             elif capped:

@@ -143,9 +143,13 @@ schema, prompt and profile, and the original reader's execution provenance.
 execution before handing a model task to a worker. A capacity rejection is a
 durable job-scoped block and releases its undispatched lease atomically. Continue
 with other ready tasks; do not clear the block or repeatedly reclaim it unchanged.
-Do not truncate articles, remove relevant supplements or raise bound limits to
-get past the check. A different capacity profile/source strategy requires a
-recorded supported continuation; a genuinely changed source creates new work.
+Preserve complete articles and relevant supplements. Use the explicit
+[reader capacity procedure](EXECUTION.md#explicit-reader-input-capacity) when the
+user authorizes a larger input-byte allowance: preview first, then create a bound
+successor while retaining the old job, limits, block and accounting. The command
+changes only that successor's byte ceiling; context/cost checks still apply.
+Never silently raise limits, truncate text or split a reading to evade a block.
+A genuinely changed source creates ordinary new source work.
 
 Use the [managed worker exchange](EXECUTION.md#managed-worker-exchange) for sustained
 manual/harness execution. Keep one managed `publication-watch` session. Stage
@@ -163,6 +167,18 @@ in an additional command-wide lock: their bounded network requests must not bloc
 completed reader publication. Ordinary local CLI mutations already share the
 publication lock. At checkpoints, hold admissions, drain the source runner and
 workers, then stop/hold the publisher before validation and delivery.
+
+Use one managed `source-run --watch` alongside acquisition helpers and model
+workers. It disables automatic inference and uses the same source readiness
+predicate as supervision. Do not wrap it in an extra publication lock or require
+all acquisition helpers to finish first. It waits for newly attached sources;
+retain its actual process/session handle and observe exits. Inspect
+`supervision.source_progress` for supplied documents awaiting processing, scoped
+holds and stage waiting times even while other workers are active. Use exact
+`source-hold`/`source-release` controls for affected retrieval jobs; broad source
+shutdown is reserved for a demonstrated broader fault. `source-run --mode supplied`
+selects supplied local documents and makes no remote requests, including fallback.
+Its restricted scope does not mean missing remote evidence was searched.
 
 Keep authorized slots occupied with independent ready work. Refill as each worker
 finishes; do not wait for a whole batch. Combined reading is agent-mediated; the

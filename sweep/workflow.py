@@ -342,6 +342,10 @@ def route_after_screen(c, pid, stage, needs_abstract):
     if paper.get("screening_current", {}).get("decision") == "uncertain":
         defer_paper(c, pid, "abstract-uncertain", "Uncertain abstract retained for optional later coverage, not excluded")
         return True
+    if deferred(paper) and paper['workflow_defer'].get('category') == 'unavailable-source':
+        c.store.update_paper(pid, {'status':'source-missing'},
+            'New semantic evidence retained; exhausted acquisition remains settled until supplied text or explicit retry')
+        return True
     if deferred(paper):
         prior = paper["workflow_defer"].get("evidence_sha256")
         current = digest({k: paper.get(k) for k in ("title", "abstract")})
@@ -541,6 +545,9 @@ def acquisition_tasks(c):
     tasks = [json.loads(r[0]) for r in rows]
     now = time.time()
     for task in tasks:
+        from .source_work import held_paper
+        if held_paper(c, task['paper_id']):
+            task['dispatch_block'] = {'code':'source-work-held', 'reason':'Exact source work held; unrelated papers remain eligible'}
         if task.get('deadline_at') is not None and now >= task['deadline_at']:
             task['dispatch_block'] = {'code': 'acquisition-deadline-exhausted',
                 'reason': 'Original acquisition allowance exhausted; coverage remains unresolved. No automatic clock renewal.'}

@@ -218,11 +218,14 @@ def _snapshot(c, conn, now, *, queue_pressure=None):
         action = "Inspect unresolved obligations and deferred work; this is not scientific completion."
     if integrity_error or timed_out or hold:
         actionable = False
+    from .source_work import snapshot as source_snapshot
+    source_progress = source_snapshot(c, now)
     wakeup = saved.get("wakeup")
     return {"state": state, "next_action": action, "observed_at": now,
         "active_workers": total_owned, "active_inference_workers": model_owned,
         "expired_owned_leases": expired, "free_inference_slots": slots, "free_retrieval_slots": network_slots,
         "eligible_work": ready, "dispatch_needed": actionable,
+        "source_progress": source_progress,
         "held_search_windows": held_windows,
         "projection_needed": projection_needed,
         "native_readiness_current": native_current,

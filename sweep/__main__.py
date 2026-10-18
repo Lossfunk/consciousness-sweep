@@ -84,7 +84,7 @@ def main(argv=None):
     init = sub.add_parser("init", help="Initialize new durable state; never overwrite")
     init.add_argument("--plan", type=Path, required=True)
     init.add_argument("--run-id", required=True)
-    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "native-records", "source-retry", "fetch-source", "host-check", "continue-run", "supervise", "search-hold", "search-release"):
+    for name in ("ingest", "close-intake", "reopen-intake", "run", "work", "submit", "status", "estimate", "validate", "sanity", "calibration-report", "calibration-review", "audit", "deliver", "export", "pause", "resume", "recover", "retry", "human-decision", "source", "discovery-init", "native-work", "native-submit", "native-list", "native-defer", "native-recover", "native-allocate", "native-records", "source-retry", "fetch-source", "host-check", "continue-run", "supervise", "search-hold", "search-release", "source-hold", "source-release", "source-run", "reader-capacity"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--run-id", required=True)
         if name in {"ingest", "submit", "native-submit", "calibration-review"}:
@@ -95,6 +95,22 @@ def main(argv=None):
             cmd.add_argument("--reason", required=True)
             if name == "search-release":
                 cmd.add_argument("--evidence", required=True, help="Source or repair receipt that resolves this operational hold")
+        if name in {"source-hold", "source-release"}:
+            cmd.add_argument('--job-id', action='append', required=True)
+            cmd.add_argument('--actor', required=True)
+            cmd.add_argument('--reason', required=True)
+            if name == 'source-release': cmd.add_argument('--evidence', required=True)
+        if name == 'source-run':
+            cmd.add_argument('--mode', choices=['all','supplied'], default='all')
+            cmd.add_argument('--max-seconds', type=optional_limit)
+            cmd.add_argument('--watch', action='store_true')
+        if name == 'reader-capacity':
+            cmd.add_argument('--job-id', required=True)
+            cmd.add_argument('--max-input-bytes', required=True, type=int)
+            cmd.add_argument('--actor', required=True)
+            cmd.add_argument('--reason', required=True)
+            cmd.add_argument('--access-evidence', required=True)
+            cmd.add_argument('--apply', action='store_true')
         if name == "supervise":
             cmd.add_argument("--mode", choices=["active", "checkpoint"], help="Record active supervision or hold new admissions for a coordinated checkpoint")
             cmd.add_argument("--actor")
@@ -405,6 +421,17 @@ def main(argv=None):
                             result = fetch(coordinator, args.paper_id, args.url, role=args.role,
                                 association_reason=args.association_reason, reason=args.reason, actor=args.actor,
                                 material_kind=args.material_kind)
+                    elif args.command in {'source-hold','source-release'}:
+                        from .source_work import change
+                        result = change(coordinator,args.job_id,args.actor,args.reason,
+                            release=args.command=='source-release',evidence=getattr(args,'evidence',None))
+                    elif args.command == 'source-run':
+                        from .source_work import run as source_run
+                        result = source_run(coordinator,mode=args.mode,max_seconds=args.max_seconds,watch=args.watch)
+                    elif args.command == 'reader-capacity':
+                        from .reader_capacity import grant
+                        result = grant(coordinator,args.job_id,args.max_input_bytes,args.actor,args.reason,
+                            args.access_evidence,apply=args.apply)
                     elif args.command == "source-retry":
                         from .source_intake import queue_retrieval
                         result = {"job_id": queue_retrieval(coordinator, args.paper_id, args.reason, force_retry=True)}

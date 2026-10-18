@@ -405,8 +405,17 @@ def validate(coordinator, *, deadline=None, persist=True):
                 from .search_holds import validate as validate_search_holds
                 validate_search_holds(conn, history=True)
                 checked("search_window_holds")
+
             except (ValueError, KeyError, TypeError) as exc:
                 error("search_window_holds", "query-windows", exc)
+            from .source_work import validate as validate_source_work
+            from .reader_capacity import validate as validate_reader_capacity
+            for code, check in (('source_work_holds', lambda:validate_source_work(conn)),
+                                ('reader_input_capacity', lambda:validate_reader_capacity(coordinator,conn))):
+                try:
+                    check(); checked(code)
+                except (ValueError, KeyError, TypeError, OSError) as exc:
+                    error(code, code, exc)
             for issue in coordinator.store.native_id_errors(conn):
                 error("native_identifier_registry", "native", issue)
             checked("native_identifier_registry")
@@ -677,6 +686,13 @@ def validate(coordinator, *, deadline=None, persist=True):
                         if not changed and saved["stage"] == "reader":
                             proof = history("workflow_reader_rebound", row["job_id"])
                             changed = workflow.valid_reader_successor(conn, row, payload, proof)
+                        if not changed and saved['stage'] == 'reader':
+                            capacity = conn.execute("SELECT value FROM meta WHERE key=?",
+                                ('state:reader-input-capacity:'+row['job_id'],)).fetchone()
+                            if capacity:
+                                from .reader_capacity import validate as validate_capacity
+                                validate_capacity(coordinator, conn)
+                                changed = json.loads(capacity[0])['successor_job_id'] == row['replacement_job_id']
                         if not changed:
                             # Historical supersession stays immutable. An explicit
                             # proven restoration may select the old completed view.
