@@ -256,9 +256,18 @@ class Coordinator:
 
     def reconcile_metadata(self, pid):
         """Schedule genuinely enriched evidence, preserving a full-reader result."""
+        identities = list(dict.fromkeys([pid] if isinstance(pid, str) else pid))
+        for batch in chunks(identities, 10):
+            self._reconcile_metadata_batch(batch)
+
+    @atomic_operation
+    def _reconcile_metadata_batch(self, identities):
+        # Bind evidence checks, queue admission and reconciliation flags to one
+        # snapshot. A concurrent reader/source publication must commit entirely
+        # before or after these decisions, never between the check and update.
         from .source_intake import queue_retrieval
         pending = []
-        for identity in dict.fromkeys([pid] if isinstance(pid, str) else pid):
+        for identity in identities:
             paper = self.store.paper(identity)
             # Frozen discovery anchors supply citations; a metadata rediscovery
             # does not turn them into new empirical candidates. Explicit source
