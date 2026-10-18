@@ -89,7 +89,7 @@ def _quiet(conn, run, repair_validation=None):
     return event
 
 
-def prepare(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None):
+def prepare(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None, reconcile_readings=None):
     run, previous_release = Path(run).resolve(), Path(previous_release).resolve()
     if not str(actor).strip() or not str(reason).strip():
         raise ValueError("Continuation requires the authorizing actor and reason")
@@ -125,6 +125,12 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
         from .workflow import transition_preview
         preview = transition_preview(conn, validate_policy(policy))
         previous_policy = validate_policy(prior["policy"] if prior else plan.get("resources", {}).get("operational_policy", {}))
+        identical_readings = []
+        if reconcile_readings:
+            if repair_validation or title_profile is not None or validate_policy(policy) != previous_policy:
+                raise ValueError("Identical-reading reconciliation must preserve policy/profiles and requires passing predecessor validation")
+            from .identical_reading_repair import prove
+            identical_readings = [prove(conn, run, pid) for pid in dict.fromkeys(reconcile_readings)]
         if previous_policy.get("workflow") == "focused-v1" and validate_policy(policy).get("workflow") != "focused-v1":
             raise ValueError("Returning to exhaustive legacy coverage needs a separate reviewed transition; deferred work cannot silently disappear")
     repair_evidence = None
@@ -140,6 +146,7 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
         "policy": validate_policy(policy), "actor": actor.strip(), "reason": reason.strip(),
         "snapshot_event_id": snapshot, "changed_runtime_files": changed,
         "validator_repair": repair_evidence,
+        "identical_reading_reconciliation": identical_readings,
         "scientific_inputs_changed": False, "model_profiles_changed": title_profile is not None,
         "title_profile_history": title_history, "title_profile_replacements": title_jobs,
         "workflow_transition": preview,
@@ -149,8 +156,9 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
         "status": "ready-for-explicit-apply"}
 
 
-def apply(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None):
-    receipt = prepare(run, previous_release, policy, actor, reason, title_profile, repair_validation=repair_validation)
+def apply(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None, reconcile_readings=None):
+    receipt = prepare(run, previous_release, policy, actor, reason, title_profile,
+                      repair_validation=repair_validation, reconcile_readings=reconcile_readings)
     run = Path(run).resolve()
     from .backup_storage import require_space
     require_space(run, (run / "state.sqlite3").stat().st_size)
@@ -184,6 +192,9 @@ def apply(run, previous_release, policy, actor, reason, title_profile=None, *, r
         from . import source_generation_repair
         if repair_validation == source_generation_repair.REPAIR:
             source_generation_repair.apply(conn, receipt['validator_repair'], actor, reason)
+        if receipt['identical_reading_reconciliation']:
+            from .identical_reading_repair import apply as reconcile_identical
+            reconcile_identical(conn, run, receipt['identical_reading_reconciliation'], actor, reason)
         from .title_profiles import replace_pending
         replace_pending(conn, run, receipt)
         # Fence older binaries, even though the historical plan still names them.

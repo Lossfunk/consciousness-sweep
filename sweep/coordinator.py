@@ -1576,6 +1576,14 @@ class Coordinator:
             from .workflow import coverage
             coverage_summary = coverage(self)
             save_json(staging / "coverage.json", coverage_summary)
+            alternatives = {}
+            with (staging / 'alternative-readings.jsonl').open('w') as separate, self.store._connection() as conn:
+                for saved in conn.execute("SELECT value FROM meta WHERE key LIKE 'state:alternative-reading:%' ORDER BY key"):
+                    value = json.loads(saved[0])
+                    reference = {k:value[k] for k in ('original_reader_job','alternative_reader_job','packet_sha256','reason')}
+                    alternatives.setdefault(value['paper_id'],[]).append(reference)
+                    job = self.store.job(value['alternative_reader_job'])
+                    separate.write(canonical(dict(value,reader_result=job['result'])) + '\n')
             with tmp.open("w") as out, index_tmp.open("w") as index, (staging / "deferred.jsonl").open("w") as deferred_out:
                 scope = self.status().get("discovery", {}) if self.plan.get("mode") == "discovery" else {}
                 checks = '<p><a href="sanity.json">Record sanity check</a>' if (directory / "sanity.json").exists() else '<p>'
@@ -1586,6 +1594,8 @@ class Coordinator:
                     checks += ' · <a href="' + generation + '/coverage.json">Selective coverage</a> · <a href="' + generation + '/deferred.jsonl">Deferred papers</a>'
                     checks += '</p><p>focused-v1: ' + html.escape(str(coverage_summary["deferred_papers"])) + '. Deferred coverage is not scientific saturation.'
                 checks += '</p>'
+                if alternatives:
+                    checks += '<p><a href="' + generation + '/alternative-readings.jsonl">Preserved alternative readings</a></p>'
                 index.write(INDEX_START.replace('<button id="all">', depth_limit_notice(scope) + checks + '<button id="all">'))
                 while True:
                     check_deadline()
@@ -1608,6 +1618,8 @@ class Coordinator:
                         supplement = self.store.get_state('native-record-supplement:' + paper['reader_job'])
                         if supplement:
                             row['native_record_supplement'] = supplement
+                        if paper['paper_id'] in alternatives:
+                            row['alternative_readings'] = alternatives[paper['paper_id']]
                         out.write(canonical(row) + "\n")
                         check_deadline()
                         (staging / "papers" / (paper["paper_id"] + ".html")).write_text(paper_page(paper).replace('href="../index.html"', 'href="../../index.html"'))

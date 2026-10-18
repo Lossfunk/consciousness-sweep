@@ -350,9 +350,10 @@ def validate(coordinator, *, deadline=None, persist=True):
                         require(str(payload.get("reason", "")).strip(), "Paper update lacks a reason")
                         if 'retired_source_generation' in payload.get('changes', {}):
                             from .source_generation_repair import REPAIR
+                            from .identical_reading_repair import REPAIR as IDENTICAL_REPAIR
                             proof = payload.get('source_generation_repair', {})
                             changes = payload['changes']
-                            require(payload.get('repair') == REPAIR and payload.get('actor')
+                            require(payload.get('repair') in {REPAIR, IDENTICAL_REPAIR} and payload.get('actor')
                                     and proof.get('paper_id') == payload['paper_id']
                                     and proof.get('changes') == changes and proof.get('metadata_event_ids')
                                     and type(changes.get('source_generation')) is int
@@ -361,9 +362,17 @@ def validate(coordinator, *, deadline=None, persist=True):
                                     'Retired source generation lacks an attributed repair proof')
                             conn.execute('INSERT OR REPLACE INTO audit_history VALUES(?,?,?,?)',
                                 ('source_generation_repair', payload['paper_id'], canonical(payload), row['id']))
+                            if payload.get('repair') == IDENTICAL_REPAIR:
+                                from .identical_reading_repair import verify_archive
+                                archive = conn.execute('SELECT value FROM meta WHERE key=?',
+                                    ('state:alternative-reading:'+proof['alternative_reader_job'],)).fetchone()
+                                require(archive is not None, 'Identical-source repair lost its alternative reading')
+                                archive = json.loads(archive[0])
+                                require(all(archive.get(k) == v for k,v in proof.items()), 'Alternative differs from its repair proof')
+                                verify_archive(conn,archive)
                         if "human_decision" in payload.get("changes", {}):
                             key, value, kind = payload["paper_id"], payload, "human_decision"
-                    elif kind == "control_updated" and payload.get("key", "").startswith(("native-assessment:", "native-record-supplement:", "native-dispatch-hold:")):
+                    elif kind == "control_updated" and payload.get("key", "").startswith(("native-assessment:", "native-record-supplement:", "native-dispatch-hold:", "alternative-reading:")):
                         key, value = payload["key"], payload
                     if key is not None:
                         conn.execute("INSERT OR REPLACE INTO audit_history VALUES(?,?,?,?)", (kind, key, canonical(value), row["id"]))
@@ -631,6 +640,18 @@ def validate(coordinator, *, deadline=None, persist=True):
 
             from .discovery_validation import validate_discovery
             validate_discovery(coordinator, conn, error, checked)
+            for row in conn.execute("SELECT key,value FROM meta WHERE key LIKE 'state:alternative-reading:%'"):
+                try:
+                    from .identical_reading_repair import verify_archive
+                    value = json.loads(row['value'])
+                    event = history('control_updated', row['key'][len('state:'):])
+                    require(event is not None and event.get('value') == value, 'Alternative reading differs from its audit history')
+                    require(row['key'] == 'state:alternative-reading:'+value['alternative_reader_job'], 'Alternative reading key differs from its job')
+                    verify_archive(conn,value)
+                    checked('preserved_alternative_readings')
+                except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                    error('alternative_reading', row['key'], exc)
+
             from .calibration import validate_records
             for issue in validate_records(coordinator, conn):
                 error(issue["code"], issue["entity"], issue["reason"])
@@ -656,6 +677,17 @@ def validate(coordinator, *, deadline=None, persist=True):
                         if not changed and saved["stage"] == "reader":
                             proof = history("workflow_reader_rebound", row["job_id"])
                             changed = workflow.valid_reader_successor(conn, row, payload, proof)
+                        if not changed:
+                            # Historical supersession stays immutable. An explicit
+                            # proven restoration may select the old completed view.
+                            from .identical_reading_repair import REPAIR as IDENTICAL_REPAIR
+                            restoration = history('source_generation_repair', payload['paper_id']) or {}
+                            proof = restoration.get('source_generation_repair', {})
+                            completed = conn.execute('SELECT state FROM jobs WHERE id=?', (row['job_id'],)).fetchone()
+                            changed = (restoration.get('repair') == IDENTICAL_REPAIR and completed[0] == 'complete'
+                                and row['job_id'] == proof.get('original_'+saved['stage']+'_job')
+                                and row['replacement_job_id'] == proof.get('alternative_retrieval_job')
+                                and paper.get(saved['stage']+'_job') == row['job_id'])
                         require(changed, "Superseded source job still has current inputs")
                     checked("job_supersessions")
                 except (ValueError, KeyError, TypeError, AttributeError) as exc:

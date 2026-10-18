@@ -21,6 +21,26 @@ def next_generation(paper):
     return max(paper.get("source_generation", 1), paper.get("retired_source_generation", 0)) + 1
 
 
+def retained_packet_job(coordinator, paper):
+    """Discovery metadata locates sources; it does not replace verified evidence.
+
+    Explicit attachment/retry advances the generation before reaching here.
+    Changed supplied files must still enter the normal source revision path.
+    """
+    generation = paper.get('source_generation', 1)
+    if (not paper.get('packet_path') or paper.get('packet_source_generation') != generation
+            or paper.get('current_source_generation') != generation):
+        return None
+    job = coordinator.store.job(paper.get('retrieval_job')) if paper.get('retrieval_job') else None
+    if not job or job['state'] != 'complete' or job['stage'] != 'retrieval':
+        return None
+    bound = job['payload'].get('source_manifest', {})
+    if (job['payload'].get('source_generation') != generation or any(paper.get(k) != bound.get(k)
+            for k in ('provided_paths', 'fulltext_path', 'pdf_path', 'local_path'))):
+        return None
+    return job['id']
+
+
 @atomic_operation
 def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
     """Bind acquisition to immutable inputs; explicit retries preserve old jobs."""
@@ -29,6 +49,12 @@ def queue_retrieval(coordinator, paper_id, reason, *, force_retry=False):
     paper = coordinator.store.paper(paper_id)
     if paper is None:
         raise ValueError("Unknown paper")
+    retained = retained_packet_job(coordinator, paper) if not force_retry else None
+    if retained:
+        if paper.get('retrieval_revision_pending'):
+            coordinator.store.update_paper(paper_id, {'retrieval_revision_pending': False},
+                'Rediscovered locations retained as metadata; unchanged verified source work is reused')
+        return retained
     generation = paper.get("source_generation", 1)
     manifest = source_manifest(paper)
     if force_retry or (paper.get("current_source_generation") == generation

@@ -106,6 +106,8 @@ def main(argv=None):
             from .source_generation_repair import REPAIR as SOURCE_REPAIR
             cmd.add_argument("--repair-validation", choices=[REPAIR, SOURCE_REPAIR], help="Explicit known repair; requires proven failure, quiet snapshot and passing replacement checks before backed-up apply")
             cmd.add_argument("--title-profile", type=Path, help="Explicit JSON {model,effort,access_evidence} for future/unadmitted title tasks only")
+            cmd.add_argument("--reconcile-identical-reading", action="append", default=[], metavar="PAPER_ID",
+                help="Explicitly restore a proven original reading after an identical-packet metadata reread; retain the extra reading separately")
             cmd.add_argument("--previous-release", type=Path, required=True)
             cmd.add_argument("--policy", type=Path, required=True)
             cmd.add_argument("--actor", required=True)
@@ -283,7 +285,7 @@ def main(argv=None):
                 operation = continuation.apply if args.apply else continuation.prepare
                 result = operation(run_dir, args.previous_release, json.loads(args.policy.read_text()), args.actor, args.reason,
                     json.loads(args.title_profile.read_text()) if args.title_profile else None,
-                    repair_validation=args.repair_validation)
+                    repair_validation=args.repair_validation, reconcile_readings=args.reconcile_identical_reading)
                 if args.apply:
                     from .execution_policy import park_exhausted
                     from .workflow import reconcile

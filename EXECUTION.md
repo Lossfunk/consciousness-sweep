@@ -924,6 +924,11 @@ must not be described as live-verified where only simulated transports were used
 
 ## Scheduling and source revisions
 
+Rediscovered URLs and bibliographic locations remain provenance. They do not replace
+a verified packet, invalidate an owned reader or commission another reading. Reuse
+completed source work; a changed, explicitly supplied main/supplement set or an
+explicit source retry follows the normal versioned acquisition path.
+
 The focused workflow retains the semantic title/abstract rubric and existing
 25-title/10-abstract batch bounds. Every paper has a source-specific decision and
 reason. Scientific exclusions are terminal for unchanged evidence; no automatic
@@ -1367,6 +1372,29 @@ A later continuation names the then-active release as `--previous-release`.
 Ordinary resume never changes policy or adds an allowance. A different scientific
 rubric or frozen input requires separate scientific review and is rejected here.
 
+### Identical-source rereading recovery
+
+For an accidentally completed reread after automatic metadata reconciliation, add
+`--reconcile-identical-reading PAPER_ID` to both continuation preview and apply.
+This is an explicit maintenance action, not ordinary resume. Keep the policy and
+profiles unchanged and require a fresh passing predecessor validation. The normal
+quiet checkpoint, backup and runtime fencing apply.
+
+The proof must recover the original completed reading from the run's own immutable
+jobs and history, verify the exact same packet, and exclude intervening source
+changes, comparison records, process activations or conflicting citation/prospect
+routes. Unsupported cases remain held for separate review. The repair restores the
+original current reading and experiment IDs, retains the extra reading separately,
+and retires the accidental source generation so it cannot be reused. Both jobs,
+all allocated IDs, metadata encounters, existing search obligations and charges
+remain intact. It does not merge experiments or decide between scientific claims.
+
+The continuation receipt names both readings and their evidence. Delivery includes
+`alternative-readings.jsonl` within its immutable generation and references the
+extra reading in `prospects.jsonl`. Verify preservation and run new-runtime sanity,
+full validation and delivery before clearing STOP/HOLD or reactivating a schedule.
+A failed check must prevent every subsequent resume or scheduling action.
+
 ### Validator-only recovery
 
 When the active release falsely rejects a parked acquisition after bibliographic
@@ -1391,9 +1419,9 @@ scientific judgment or charge is rewritten to make validation succeed.
 
 ### Retained-packet generation recovery
 
-Bibliographic rediscovery preserves an existing verified packet's generation until
-replacement source work is actually admitted. Deferred readings retain their
-original source and assessment; a newly supplied text still reopens acquisition.
+Bibliographic rediscovery preserves an existing verified packet and its reading,
+including owned and completed work. Deferred readings retain their original source
+and assessment; a newly supplied text still reopens acquisition.
 
 For a proven historical metadata-only increment that left a deferred reading on
 its original packet, use `--repair-validation retained-packet-metadata-generation-v1`
