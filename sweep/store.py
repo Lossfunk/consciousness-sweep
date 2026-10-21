@@ -662,6 +662,9 @@ class Store:
                                                   "provenance": provenance})
         conn.execute("INSERT INTO encounters(paper_id,at,provenance) VALUES(?,?,?)",
                      (paper_id, time.time(), _json(provenance)))
+        if is_new:
+            from .index_limit import record_boundary
+            record_boundary(conn, self)
         return paper_id, is_new
 
     def _enrich_metadata(self, conn, paper_id, incoming, provenance):
@@ -961,6 +964,8 @@ class Store:
         eligible += source_hold_filter()
         from .reader_capacity import job_filter as capacity_hold_filter
         eligible += capacity_hold_filter()
+        from .index_limit import job_filter as index_limit_filter
+        eligible += index_limit_filter(conn)
         rounds = load(conn)["retrieval_max_rounds"]
         if rounds is not None:
             eligible += " AND (j.stage!='retrieval' OR (SELECT count(*) FROM retrieval_attempts a WHERE a.job_id=j.id)<" + str(rounds) + ")"

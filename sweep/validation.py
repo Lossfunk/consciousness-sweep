@@ -410,8 +410,10 @@ def validate(coordinator, *, deadline=None, persist=True):
                 error("search_window_holds", "query-windows", exc)
             from .source_work import validate as validate_source_work
             from .reader_capacity import validate as validate_reader_capacity
+            from .index_limit import validate as validate_index_limit
             for code, check in (('source_work_holds', lambda:validate_source_work(conn)),
-                                ('reader_input_capacity', lambda:validate_reader_capacity(coordinator,conn))):
+                                ('reader_input_capacity', lambda:validate_reader_capacity(coordinator,conn)),
+                                ('indexed_paper_limit', lambda:validate_index_limit(coordinator,conn))):
                 try:
                     check(); checked(code)
                 except (ValueError, KeyError, TypeError, OSError) as exc:

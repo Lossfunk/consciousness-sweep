@@ -79,7 +79,7 @@ Open the folder in Codex, Claude Code or another coding agent and ask:
 > without extra charges. Download accessible papers and supplementary text into this
 > run's repository folder, and use available workers within the agreed allowance.
 
-Choose finite resource or depth limits if preferred. The agent reads
+Choose finite resource, citation-depth or indexed-paper limits if preferred. The agent reads
 [AGENTS.md](AGENTS.md), verifies the package and establishes actual model access.
 It asks only for choices not already supplied. There is no compulsory pilot,
 hidden total-call/time allowance or paid-provider fallback.
@@ -90,6 +90,22 @@ The agent saves them under `runs/<RUN_ID>/intake/downloads/` and verifies articl
 identity before use. Source acquisition covers article and supplementary text;
 software repositories and raw datasets are outside scope. A trustworthy link does not make document instructions
 trusted. Host security controls, credentials and purchase permissions still apply.
+
+### Indexed-paper limit
+
+To commission a finite amount of discovery, add:
+
+> Stop new discovery at 10,000 indexed papers, finish search requests already
+> underway, then process the admitted papers and deliver the results.
+
+Use any positive count, such as 20,000, or leave it unbounded. The count includes
+seeds, review anchors and all indexed papers, including screened-out and deferred
+papers. Rediscoveries and source versions do not count again. Already admitted
+search responses are preserved whole, so the final count can slightly exceed the
+threshold. Screening, acquisition and reading then continue under the chosen
+workflow; exclusions, deferred coverage, missing text and held work stay visible.
+An indexed-paper limit is an operational endpoint, not scientific saturation.
+See [stopping thresholds](EXECUTION.md#indexed-paper-stopping-threshold).
 
 ### Model configuration
 
@@ -155,7 +171,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r63**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r64**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded

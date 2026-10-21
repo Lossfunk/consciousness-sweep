@@ -32,7 +32,7 @@ to active code, schemas, scientific sources or plan-bound model profiles.
 2. Run `doctor` with observable harness/model/effort metadata. Establish actual
    access; installed binaries and worker self-report are not provider verification.
    Keep unavailable quota and identity facts unknown. Never inspect credential values.
-3. Ask only for missing resource/depth choices. A finite allowance or unbounded
+3. Ask only for missing resource/depth choices; an indexed-paper threshold is optional. A finite allowance or unbounded
    subscription work are valid choices. No compulsory commissioning run, hidden
    total allowance, extra-credit billing or paid API fallback is implied.
 4. Configure exact role profiles. Recommend Sol 6.1/medium supervision, Luna/medium
@@ -112,6 +112,22 @@ archives. Do not render those artifacts into TXT/PDF reader attachments. Keep
 article documents intact, including any equations and code examples printed in
 them. Record out-of-scope links and unexamined dependencies; do not claim code
 reproduction or data reanalysis. Use material_kind to identify supplied sources.
+
+## Indexed-paper stopping threshold
+
+Record a requested count as `resources.max_indexed_papers` using
+`plan --max-indexed-papers N`; absent/null means unbounded. Count durable logical
+paper rows, including seeds/anchors, exclusions and deferred papers, rather than
+encounters, source versions or completed readings. Keep the full supplied seed
+and anchor sets. At the threshold, stop new automatic/native discovery requests,
+finish already owned requests and retain complete responses and any overshoot.
+Drain the indexed papers through their existing screening/acquisition/reading and
+native rules. Do not loosen gates, repeat readings, unpark exhausted hunts or
+clear holds to manufacture a drained result. Report remaining evidence gaps and
+unopened frontiers. `indexed-paper-limit-drained-final-review` requires the final
+operational validation/delivery checkpoint and never certifies scientific
+saturation. New supplied evidence can reopen paper work under the same limit;
+resume must not reset the count or change the immutable agreement.
 
 ## Workers and supervision
 

@@ -17,6 +17,14 @@ def depth_limit_notice(discovery):
     notice = ""
     if completed:
         notice = '<p class="meta" id="ranked-query-scope">' + escape("Ranked search windows: %s complete; %s returned encounters; %s windows truncated by the frozen result cap. A completed ranked window is not a saturation claim; hit totals overlap across windows." % (completed, coverage.get("returned_encounters", 0), coverage.get("truncated_windows", 0))) + '</p>'
+    index_limit = discovery.get("indexed_paper_limit", {})
+    if index_limit.get("max_indexed_papers") is not None:
+        text = "Indexed-paper threshold: %s; %s logical papers indexed. " % (index_limit["max_indexed_papers"], index_limit["indexed_papers"])
+        text += ("Admitted paper work is drained; unresolved evidence and unopened frontiers remain in this user-limited result. " if index_limit.get("drained") else
+                 "New discovery is stopped; admitted paper work is still draining. " if index_limit.get("reached") else
+                 "Discovery continues until the threshold or another recorded stopping boundary. ")
+        text += "Already admitted responses are kept whole; overshoot: %s papers. This limit is not scientific saturation or native certification." % index_limit.get("overshoot_papers", 0)
+        notice += '<p class="meta" id="indexed-paper-scope">' + escape(text) + '</p>'
     limit = discovery.get("max_citation_depth")
     if limit is None:
         return notice

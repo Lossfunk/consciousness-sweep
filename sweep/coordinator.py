@@ -1413,6 +1413,11 @@ class Coordinator:
                 network = ["retrieval", "abstract-lookup"] if enabled(self) and source_mode != "supplied" else ["retrieval"]
                 if source_mode != "supplied" and self.plan.get("mode") == "discovery" and not backlog["search_admission_paused"] and not network_held:
                     network.append("search")
+                if source_mode != "supplied" and self.plan.get("mode") == "discovery" and "search" not in network:
+                    from .index_limit import reached as index_limit_reached
+                    with self.store._connection() as conn:
+                        if index_limit_reached(conn):
+                            network.append("search")  # claim predicate permits saved local responses only
                 for stages, limit, kind in (([] if capped else automated, model_workers, "model"), (network, retrieval_workers, "retrieval")):
                     capacity = limit - sum(x[1] == kind for x in active.values())
                     if kind == "model" and capacity > 0 and not capped and review_automatic:
@@ -1433,6 +1438,14 @@ class Coordinator:
                         finish(future, job)
                 else:
                     self.project_results()
+                    from .index_limit import reached as index_limit_reached, snapshot as index_limit_snapshot
+                    with self.store._connection() as conn:
+                        index_limited = index_limit_reached(conn)
+                    if index_limited:
+                        from .discovery import _compute_native_candidates
+                        if index_limit_snapshot(self, _compute_native_candidates(self, hydrate=False))["drained"]:
+                            exit_reason = "Indexed-paper threshold reached and admitted paper work drained; deferred frontiers and evidence gaps retained"
+                            break
                     before = self.store.count_jobs()
                     if self.store.get_state("audit_revision") != self.store.get_state("screen_revision", 0):
                         self.audit()
@@ -1456,6 +1469,8 @@ class Coordinator:
                             from .source_work import job_filter as source_hold_filter
                             from .reader_capacity import job_filter as capacity_hold_filter
                             queue_filter = job_filter(conn).replace("j.", "jobs.") + search_hold_filter("jobs") + source_hold_filter("jobs") + capacity_hold_filter("jobs")
+                            from .index_limit import job_filter as index_limit_filter
+                            queue_filter += index_limit_filter(conn, "jobs")
                             row = conn.execute("SELECT min(available_at) FROM jobs WHERE state='pending' AND id NOT IN (SELECT job_id FROM job_supersessions) AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key='state:access-block:job:'||jobs.id AND json_extract(m.value,'$.active')=1) AND NOT EXISTS (SELECT 1 FROM dependencies d JOIN jobs p ON p.id=d.dependency_id WHERE d.job_id=jobs.id AND p.state!='complete') AND (" + " OR ".join(clauses or ["0"]) + ")" + queue_filter, wait_args).fetchone()
                         next_at = row[0] if row else None
                         if not watch or next_at is None:
@@ -1583,7 +1598,13 @@ class Coordinator:
                     "operational_validation_current": validation_current,
                     "required": info["final_review_required"],
                     "reason": "Current frontier evidence leaves no queued work; final scientific review and native certification are separate requirements."}
+            index_limit = info["indexed_paper_limit"]
+            status["indexed_paper_limit"] = index_limit
+            if index_limit["reached"]:
+                status["status"] = ("indexed-paper-limit-drained-final-review" if index_limit["drained"]
+                                    else "indexed-paper-limit-draining")
             status["citation_expansion_status"] = (
+                "indexed-paper-limit" if index_limit["reached"] else
                 "depth-limited" if info.get("depth_limited_obligations") else
                 "depth-provenance-unresolved" if info.get("depth_unresolved_obligations") else
                 "within-limit" if self.plan["resources"].get("max_citation_depth") is not None else "unbounded")

@@ -143,7 +143,7 @@ def _snapshot(c, conn, now, *, queue_pressure=None):
                 continue
             ready["model"] += 1
         else:
-            if (stage == "search" and pressured) or (stage in {"search", "abstract-lookup"} and host.get("network")):
+            if (stage == "search" and pressured and not c.store.get_state("index-limit-saved-search:" + row["id"])) or (stage in {"search", "abstract-lookup"} and host.get("network")):
                 continue
             if stage == "retrieval" and host.get("network") and not row["local_source"]:
                 continue
@@ -216,6 +216,10 @@ def _snapshot(c, conn, now, *, queue_pressure=None):
         pending = conn.execute("SELECT count(*) FROM jobs j WHERE j.state IN ('pending','failed','parked') AND NOT EXISTS(SELECT 1 FROM job_supersessions s WHERE s.job_id=j.id) AND NOT EXISTS(SELECT 1 FROM retry_links r WHERE r.parent_id=j.id)").fetchone()[0]
         state = "blocked-or-waiting" if pending or blocks or held_windows else "no-ready-work"
         action = "Inspect unresolved obligations and deferred work; this is not scientific completion."
+    from .index_limit import snapshot as index_limit_snapshot
+    index_limit = index_limit_snapshot(c, cached.get("tasks", []) if c.plan.get("mode") == "discovery" and native_current else [])
+    if index_limit["reached"] and index_limit["drained"] and native_current and not (integrity_error or timed_out or hold or actionable):
+        state, action = "indexed-paper-limit-drained", "Validate and deliver the user-limited checkpoint; preserve unopened frontiers and report evidence gaps. This is not scientific saturation."
     if integrity_error or timed_out or hold:
         actionable = False
     from .source_work import snapshot as source_snapshot
@@ -224,7 +228,7 @@ def _snapshot(c, conn, now, *, queue_pressure=None):
     return {"state": state, "next_action": action, "observed_at": now,
         "active_workers": total_owned, "active_inference_workers": model_owned,
         "expired_owned_leases": expired, "free_inference_slots": slots, "free_retrieval_slots": network_slots,
-        "eligible_work": ready, "dispatch_needed": actionable,
+        "eligible_work": ready, "dispatch_needed": actionable, "indexed_paper_limit": index_limit,
         "source_progress": source_progress,
         "held_search_windows": held_windows,
         "projection_needed": projection_needed,

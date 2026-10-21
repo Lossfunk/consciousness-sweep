@@ -329,6 +329,8 @@ def execute_search(c, job, client=None):
         owned = c.store._owned(conn, job["id"], job["owner"], job["token"])
         payload = json.loads(owned["payload"])
         require_unheld(c, payload)
+    from .index_limit import require_saved_response
+    require_saved_response(c, job["id"])
     state = c.store.get_state(STATE) or {}
     obligation = state.get("citation_obligations", {}).get(payload.get("obligation_id"))
     if obligation and payload.get("coverage_generation", 0) != obligation.get("coverage_generation", 0):
@@ -1101,6 +1103,9 @@ def _submit_source_resolution(c, task_id, payload, actor):
         # it without another network call or separate scientific interpretation.
         job_id = c.store.enqueue("search", digest({"request": request, "resolution": generation}), request, priority=10)
         sources.save_snapshot(c.run_dir / "searches" / (job_id + ".json"), snapshot)
+        from .index_limit import save_ready
+        saved = c.run_dir / "searches" / (job_id + ".json")
+        save_ready(c, job_id, str(saved.relative_to(c.run_dir)), file_hash(saved))
     else:
         if request["source"] == "publisher-or-repository-reference-list":
             raise ValueError("Publisher reference-list fallback requires extracted-reference-list work, not a network adapter retry")
@@ -1133,6 +1138,10 @@ def discovery_status(c):
         search_holds = records(conn)
     exhausted = (not search_holds and frontier_check["ready"] and not pending_native and not operational["unfinished"]
                  and not operational["failed"] and not c.store.unprojected_results(limit=1))
+    from .index_limit import snapshot as index_limit_snapshot
+    index_limit = index_limit_snapshot(c, pending_native)
+    if index_limit["reached"]:
+        exhausted = False
     task = next_native_task(c)
     task_summary = {key: task.get(key) for key in ("task", "task_id", "paper_id", "reason") if task.get(key) is not None} if task else None
     windows = {**state["blind_windows"], **state["process_windows"]}
@@ -1146,8 +1155,11 @@ def discovery_status(c):
         "meaning": "Completing a ranked window covers its authorized return only; truncated windows do not establish source exhaustion. Totals count cross-window overlap."}
     return {"initialized": True, "phase": state["phase"], "pending_agent_task": task_summary,
             "operational_frontiers_exhausted": exhausted,
+            "indexed_paper_limit": index_limit,
             "held_search_windows": search_holds,
-            "checkpoint": "operational-frontiers-exhausted-final-review" if exhausted else "frontier-work-pending",
+            "checkpoint": ("indexed-paper-limit-drained-final-review" if index_limit["drained"] else
+                           "indexed-paper-limit-draining" if index_limit["reached"] else
+                           "operational-frontiers-exhausted-final-review" if exhausted else "frontier-work-pending"),
             "pending_native_tasks": len(pending_native),
             "latest_citation_wave": state["citation_wave_audits"][-1] if state["citation_wave_audits"] else None,
             "final_review_required": ["Reconcile missing texts and unresolved readings", "Resolve any remaining scientific uncertainties", "Complete frozen native records, derived exports and native validation"],

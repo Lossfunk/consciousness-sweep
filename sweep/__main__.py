@@ -48,6 +48,8 @@ def main(argv=None):
                       help="User-selected execution-session cap, or unbounded (no default cap)")
     plan.add_argument("--max-citation-depth", type=optional_limit, default=argparse.SUPPRESS,
                       help="Maximum citation hops (0 = roots only), or unbounded; overrides --config")
+    plan.add_argument("--max-indexed-papers", type=optional_limit, default=argparse.SUPPRESS,
+                      help="Stop new discovery at this indexed-paper count, finish admitted responses, then drain paper work; or unbounded")
     plan.add_argument("--mode", choices=["corpus", "discovery"],
                       help="Explicit run mode; overrides mode in --config")
     plan.add_argument("--logical-papers", type=int)
@@ -264,7 +266,8 @@ def main(argv=None):
                 draft["resources"]["authorized"] = args.authorize
                 draft["workload"] = {"logical_papers": args.logical_papers} if args.logical_papers is not None else {}
             for flag, key in (("workers", "model_workers"), ("max_calls", "max_calls"),
-                              ("max_seconds", "max_wall_seconds"), ("max_citation_depth", "max_citation_depth")):
+                              ("max_seconds", "max_wall_seconds"), ("max_citation_depth", "max_citation_depth"),
+                              ("max_indexed_papers", "max_indexed_papers")):
                 if hasattr(args, flag):
                     draft["resources"][key] = getattr(args, flag)
             policy = draft["resources"].setdefault("operational_policy", {})

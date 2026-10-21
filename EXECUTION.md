@@ -215,7 +215,8 @@ alone does not authorize a different provider. `--config` uses the file's values
 not the convenience preset's command-line defaults. `plan` defaults to
 `operational_policy.workflow="focused-v1"`; it requires exactly one acquisition
 round. `legacy` is supported only for explicit historical-workflow compatibility. The explicitly supplied
-`--mode`, `--workers`, `--max-calls`, `--max-seconds` and `--max-citation-depth`
+`--mode`, `--workers`, `--max-calls`, `--max-seconds`, `--max-citation-depth` and
+`--max-indexed-papers`
 flags override their configuration fields. Call/time limits are optional: JSON
 `null` or CLI `unbounded` means no user-imposed cap. Finite limits remain positive.
 Subscription limits still apply; a quota pause does not certify completion.
@@ -224,6 +225,46 @@ call/time limits are unbounded.
 Call, token and spending caps belong in `resources`; per-profile versions of
 those caps are rejected because the coordinator budgets adapter invocations
 across the run. External supervisor/native calls require separate usage tracking.
+
+### Indexed-paper stopping threshold
+
+For a finite indexed corpus, set `resources.max_indexed_papers` to a positive
+integer before initialization, or supply `plan --max-indexed-papers 10000`.
+`null`, omission or `--max-indexed-papers unbounded` leaves discovery unbounded by
+paper count. This is independent of citation depth: either boundary may stop new
+expansion while papers already indexed continue through the configured workflow.
+The count is the durable logical-paper table size, including the fixed seeds and
+anchors, exclusions, unresolved and deferred papers. A rediscovery or source
+revision does not add a paper. IDs reserved but never used are not counted.
+
+At the threshold, new search claims/admissions and unowned native source-window
+requests stop. Queued requests and scientific frontiers remain pending; they are
+not falsely marked complete. Already owned searches finish, their full immutable
+responses and every encounter are preserved, and all newly indexed results are
+screened. Concurrent responses and the mandatory full seed/anchor initialization
+can exceed the threshold; `indexed_paper_limit.overshoot_papers` reports the actual
+excess. No response is truncated to obtain an exact number.
+
+Existing screening, abstract lookup, bounded acquisition, reading and scientific
+native assessments continue under their original rules. The limit does not
+require reading excluded/coverage-deferred papers or change missing-source and
+budget/access/lease holds. Failed, active and unprojected work prevents a drained
+claim. A completed source worker may supply a verified local reference snapshot;
+that saved response can project, but a missing/changed snapshot cannot silently
+trigger another network request.
+
+Status reports `indexed-paper-limit-draining` until the remaining in-scope paper
+work and admitted requests settle, then `indexed-paper-limit-drained-final-review`.
+At that point stop/drain managed workers, run the normal quiet validation/delivery
+checkpoint, and report the user-limited results, unresolved evidence and unopened
+frontiers. The source watch loop can exit at the drained boundary; the supervisor
+must not keep waking to fetch deferred windows. This is not scientific saturation
+or native-ledger certification. The threshold and durable count survive resume.
+New supplied evidence reopens the relevant paper work without reopening discovery
+beyond the same threshold; changing the plan requires a new explicitly versioned
+agreement, never an in-place plan edit.
+
+### Citation-depth limit
 
 For discovery runs, `resources.max_citation_depth` accepts `null` (no depth cap)
 or a nonnegative integer. The equivalent startup flag is

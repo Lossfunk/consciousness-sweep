@@ -45,4 +45,5 @@ def annotate(c, tasks):
         held = holds.get(task['task_id'])
         if held and held.get('active') and held['binding'] == binding(c, task):
             task['dispatch_block'] = {'code': 'awaiting-changed-evidence', 'reason': held['reason']}
-    return tasks
+    from .index_limit import annotate as annotate_index_limit
+    return annotate_index_limit(c, tasks)

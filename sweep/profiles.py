@@ -18,7 +18,7 @@ ROLES = ("title", "abstract", "rescue", "reader")
 RESOURCE_KEYS = {"authorized", "cpu_workers", "model_workers", "retrieval_workers",
                  "discovery_buffer_papers", "sanity_interval_seconds", "memory_limit_bytes",
                  "gpu_memory_limit_bytes", "max_calls", "max_tokens", "max_spend_usd",
-                 "max_wall_seconds", "max_citation_depth", "operational_policy"}
+                 "max_wall_seconds", "max_citation_depth", "max_indexed_papers", "operational_policy"}
 PROFILE_KEYS = {"adapter", "model", "effort", "billing_route", "authorized", "timeout_seconds",
                 "max_attempts", "cli_path", "endpoint_url", "credential_env", "argv", "environment_names",
                 "max_input_bytes", "max_output_tokens", "context_window_tokens", "qualification_status",
@@ -207,7 +207,7 @@ def recommend(inventory: dict) -> dict:
             "resources": {"authorized": False, "cpu_workers": max(1, min(2, int(cores))), "model_workers": 2,
                           "retrieval_workers": 4, "memory_limit_bytes": int(memory * 0.5) if memory else None,
                           "gpu_memory_limit_bytes": None, "max_calls": None, "max_tokens": None,
-                          "max_spend_usd": 0, "max_wall_seconds": None, "max_citation_depth": None},
+                          "max_spend_usd": 0, "max_wall_seconds": None, "max_citation_depth": None, "max_indexed_papers": None},
             "reason": note, "remote_resources": "Ask only for additional hosts/quotas and permitted use; no inference performed."}
 
 
@@ -243,6 +243,9 @@ def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict 
     for key in ("max_spend_usd", "max_wall_seconds"):
         r.setdefault(key, None)
         _number(r[key], key, minimum=0)
+    r.setdefault("max_indexed_papers", None)
+    if r["max_indexed_papers"] is not None and (type(r["max_indexed_papers"]) is not int or r["max_indexed_papers"] < 1):
+        raise ValueError("max_indexed_papers must be null or a positive integer")
     r.setdefault("max_citation_depth", None)
     depth = r["max_citation_depth"]
     if depth is not None and (type(depth) is not int or depth < 0):
@@ -252,6 +255,8 @@ def build_plan(inventory: dict, profiles: dict, resources: dict, workload: dict 
     cores = inventory.get("cpu", {}).get("usable_cores")
     memory = inventory.get("memory", {}).get("usable_limit_bytes")
     warnings = []
+    if r["max_indexed_papers"] is not None:
+        warnings.append("Indexed-paper threshold stops new search requests, finishes admitted responses (possible overshoot), and drains existing papers; it is not scientific saturation.")
     if depth is not None:
         warnings.append("Citation expansion is bounded at depth %d from each seed or independent query root. Papers at the boundary remain screenable; deferred expansion is not scientific saturation." % depth)
     if cores and r["cpu_workers"] > max(1, math.ceil(cores)):

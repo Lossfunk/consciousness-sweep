@@ -55,12 +55,17 @@ def pressure(coordinator):
         with coordinator.store._connection() as conn:
             deferred = conn.execute("SELECT count(*) FROM papers p WHERE p.status IN ('retrieval-pending','reader-pending') AND " + uncertain_sql()).fetchone()[0]
     backlog = total - deferred - contextual
+    from .index_limit import reached
+    with coordinator.store._connection() as conn:
+        index_limit_reached = reached(conn)
     return {"papers_waiting": backlog, "total_papers_waiting": total, "deferred_uncertain": deferred,
             "background_contextual_native": contextual, "by_status": counts,
-            "high_water_papers": high, "search_admission_paused": backlog >= high,
+            "high_water_papers": high, "search_admission_paused": backlog >= high or index_limit_reached,
+            "indexed_paper_limit_reached": index_limit_reached,
             "queued_search_jobs": search_jobs, "held_search_jobs": held_search_jobs,
             "search_queue_target": max(2, 2 * resources.get("retrieval_workers", 2)),
-            "scope": "temporary admission control, not a search or paper limit"}
+            "scope": ("User-selected indexed-paper threshold reached; drain admitted paper work and retain unopened searches" if index_limit_reached else
+                      "temporary admission control, not a search or paper limit")}
 
 
 def coalesce(coordinator, *, max_candidates=100):
