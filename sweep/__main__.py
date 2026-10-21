@@ -129,6 +129,13 @@ def main(argv=None):
             cmd.add_argument("--reconcile-identical-reading", action="append", default=[], metavar="PAPER_ID",
                 help="Explicitly restore a proven original reading after an identical-packet metadata reread; retain the extra reading separately")
             cmd.add_argument("--previous-release", type=Path, required=True)
+            count = cmd.add_mutually_exclusive_group()
+            count.add_argument('--max-indexed-papers', type=optional_limit, default=argparse.SUPPRESS,
+                help='Explicit total indexed-paper threshold, or unbounded; preserves the original plan')
+            count.add_argument('--additional-indexed-papers', type=int,
+                help='Add a positive count above the greater of the current finite threshold and indexed total')
+            cmd.add_argument('--indexed-paper-agreement',
+                help='Unique authorization ID required for a count change; reuse is refused without granting again')
             cmd.add_argument("--policy", type=Path, required=True)
             cmd.add_argument("--actor", required=True)
             cmd.add_argument("--reason", required=True)
@@ -306,7 +313,10 @@ def main(argv=None):
                 operation = continuation.apply if args.apply else continuation.prepare
                 result = operation(run_dir, args.previous_release, json.loads(args.policy.read_text()), args.actor, args.reason,
                     json.loads(args.title_profile.read_text()) if args.title_profile else None,
-                    repair_validation=args.repair_validation, reconcile_readings=args.reconcile_identical_reading)
+                    repair_validation=args.repair_validation, reconcile_readings=args.reconcile_identical_reading,
+                    max_indexed_papers=getattr(args, 'max_indexed_papers', ...),
+                    additional_indexed_papers=args.additional_indexed_papers,
+                    indexed_paper_agreement=args.indexed_paper_agreement)
                 if args.apply:
                     from .execution_policy import park_exhausted
                     from .workflow import reconcile

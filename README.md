@@ -105,6 +105,9 @@ search responses are preserved whole, so the final count can slightly exceed the
 threshold. Screening, acquisition and reading then continue under the chosen
 workflow; exclusions, deferred coverage, missing text and held work stay visible.
 An indexed-paper limit is an operational endpoint, not scientific saturation.
+The same run can later continue with an additional paper allowance, such as
+5,000 more. Completed work and the original count remain; an explicit backed-up
+agreement raises the threshold. Ordinary resume keeps the existing allowance.
 See [stopping thresholds](EXECUTION.md#indexed-paper-stopping-threshold).
 
 ### Model configuration
@@ -171,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r64**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r65**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded

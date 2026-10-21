@@ -47,6 +47,8 @@ def require_compatible(run, plan, target):
                 previous_history = history(previous)
                 if history(current)[:len(previous_history)] != previous_history:
                     raise ValueError("Title profile history changed during continuation")
+                from .index_limit import validate_history as validate_index_history
+                validate_index_history(plan, current, previous)
                 active, previous = current['target_runtime'], current
             if receipt != previous or receipt["target_runtime"] != target:
                 raise ValueError("Continuation binding/history mismatch; execution refused")
@@ -89,7 +91,8 @@ def _quiet(conn, run, repair_validation=None):
     return event
 
 
-def prepare(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None, reconcile_readings=None):
+def prepare(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None, reconcile_readings=None,
+            max_indexed_papers=..., additional_indexed_papers=None, indexed_paper_agreement=None):
     run, previous_release = Path(run).resolve(), Path(previous_release).resolve()
     if not str(actor).strip() or not str(reason).strip():
         raise ValueError("Continuation requires the authorizing actor and reason")
@@ -125,6 +128,15 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
         from .workflow import transition_preview
         preview = transition_preview(conn, validate_policy(policy))
         previous_policy = validate_policy(prior["policy"] if prior else plan.get("resources", {}).get("operational_policy", {}))
+        from .index_limit import preview as index_preview, history as index_history
+        index_changes = index_preview(conn, plan, prior, max_indexed_papers, additional_indexed_papers,
+                                      indexed_paper_agreement, actor, reason)
+        index_changed = len(index_changes) != len(index_history(prior))
+        if index_changed and (repair_validation or reconcile_readings or title_profile is not None
+                              or validate_policy(policy) != previous_policy):
+            raise ValueError("Indexed-paper agreement must preserve policy/profiles and use passing predecessor validation; apply repairs separately")
+        from .index_limit import saved_searches
+        index_saved = saved_searches(conn, run) if index_changed and index_changes[-1]['limit'] is not None else []
         identical_readings = []
         if reconcile_readings:
             if repair_validation or title_profile is not None or validate_policy(policy) != previous_policy:
@@ -149,6 +161,9 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
         "identical_reading_reconciliation": identical_readings,
         "scientific_inputs_changed": False, "model_profiles_changed": title_profile is not None,
         "title_profile_history": title_history, "title_profile_replacements": title_jobs,
+        "indexed_paper_history": index_changes,
+        "indexed_paper_limit_changed": index_changed,
+        "indexed_paper_saved_searches": index_saved,
         "workflow_transition": preview,
         "workflow_contract": contract(validate_policy(policy).get("workflow", "legacy")),
         "coverage_and_review_changed": validate_policy(policy).get("workflow", "legacy") !=
@@ -156,9 +171,12 @@ def prepare(run, previous_release, policy, actor, reason, title_profile=None, *,
         "status": "ready-for-explicit-apply"}
 
 
-def apply(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None, reconcile_readings=None):
+def apply(run, previous_release, policy, actor, reason, title_profile=None, *, repair_validation=None, reconcile_readings=None,
+          max_indexed_papers=..., additional_indexed_papers=None, indexed_paper_agreement=None):
     receipt = prepare(run, previous_release, policy, actor, reason, title_profile,
-                      repair_validation=repair_validation, reconcile_readings=reconcile_readings)
+                      repair_validation=repair_validation, reconcile_readings=reconcile_readings,
+                      max_indexed_papers=max_indexed_papers, additional_indexed_papers=additional_indexed_papers,
+                      indexed_paper_agreement=indexed_paper_agreement)
     run = Path(run).resolve()
     from .backup_storage import require_space
     require_space(run, (run / "state.sqlite3").stat().st_size)
@@ -189,6 +207,11 @@ def apply(run, previous_release, policy, actor, reason, title_profile=None, *, r
         event = conn.execute("INSERT INTO events(at,kind,payload) VALUES(?,'runtime_continued',?)", (time.time(), canonical(receipt))).lastrowid
         receipt["event_id"] = event
         conn.execute("INSERT OR REPLACE INTO meta VALUES('state:runtime_continuation',?)", (canonical(receipt),))
+        from .index_limit import record_boundary
+        from .store import Store
+        from .index_limit import carry_saved_searches
+        carry_saved_searches(conn, run, receipt['indexed_paper_saved_searches'], Store)
+        record_boundary(conn, Store)
         from . import source_generation_repair
         if repair_validation == source_generation_repair.REPAIR:
             source_generation_repair.apply(conn, receipt['validator_repair'], actor, reason)

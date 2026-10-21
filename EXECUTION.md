@@ -264,6 +264,49 @@ New supplied evidence reopens the relevant paper work without reopening discover
 beyond the same threshold; changing the plan requires a new explicitly versioned
 agreement, never an in-place plan edit.
 
+An existing run can adopt a threshold through `continue-run`. First follow the
+quiet checkpoint, predecessor validation and backup procedure in
+[versioned continuation](#versioned-operational-continuation). Preserve the exact
+current policy and profiles. Preview, inspect, then repeat with `--apply`:
+
+```sh
+.venv/bin/python -B -m sweep --root /local/run-repository continue-run \
+  --run-id RUN_ID --previous-release /local/active-release \
+  --policy /local/run-repository/runs/RUN_ID/intake/workflow-policy.json \
+  --max-indexed-papers 10000 --indexed-paper-agreement indexed-10000-v1 \
+  --actor supervising-agent --reason 'User authorized 10000 total indexed papers'
+```
+
+For a later user-authorized extension, use the same run and the then-active
+release (which may also be the target release):
+
+```sh
+.venv/bin/python -B -m sweep --root /local/run-repository continue-run \
+  --run-id RUN_ID --previous-release /local/active-release \
+  --policy /local/run-repository/runs/RUN_ID/intake/workflow-policy.json \
+  --additional-indexed-papers 5000 --indexed-paper-agreement indexed-add-5000-v2 \
+  --actor supervising-agent --reason 'User authorized another 5000 indexed papers'
+```
+
+The new ceiling is `max(current indexed count, previous finite ceiling) + N`.
+For example, a drained run at 10,020 with a 10,000 threshold gets a 15,020
+threshold after 5,000 more are authorized. Before reaching the old threshold,
+an extension adds N to the existing ceiling. Counts never restart at zero.
+A previous finite limit and a positive integer are required for an addition.
+An explicit total may instead be set, including `unbounded`.
+
+Each count change requires a unique agreement ID. Reusing an applied ID is
+refused without changing the allowance; inspect the recorded receipt if an apply
+reply was interrupted. A runtime-only continuation inherits the full agreement
+history, and ordinary `resume` grants no new allowance. Historical boundary
+receipts, pending frontiers, source holds, charges and original plan bytes remain
+intact. Already retrieved predecessor snapshots are bound for local projection,
+so adoption cannot lose a complete response or authorize a replacement request.
+After apply, keep STOP until new-runtime sanity, full validation, delivery and
+preservation checks pass; then resume the same run. Budget/access/depth limits
+still apply independently. A count change cannot be combined with a validator
+repair, reading reconciliation or policy/profile change.
+
 ### Citation-depth limit
 
 For discovery runs, `resources.max_citation_depth` accepts `null` (no depth cap)

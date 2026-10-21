@@ -128,6 +128,13 @@ unopened frontiers. `indexed-paper-limit-drained-final-review` requires the fina
 operational validation/delivery checkpoint and never certifies scientific
 saturation. New supplied evidence can reopen paper work under the same limit;
 resume must not reset the count or change the immutable agreement.
+To adopt a count in an existing run or add a further allowance, use the quiet,
+backed-up `continue-run` procedure with an explicit unique
+`--indexed-paper-agreement` and either `--max-indexed-papers N` or
+`--additional-indexed-papers N`. Preserve the policy, profiles, original plan,
+holds and accounting. An extension adds N above the greater of the current
+indexed count and finite ceiling, so any overshoot consumes no future allowance.
+Never repeat an applied agreement ID or edit the plan/ledger to extend a run.
 
 ## Workers and supervision
 
