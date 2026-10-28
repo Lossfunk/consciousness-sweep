@@ -174,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r68**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r69**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -205,8 +205,12 @@ extra scoring targets. Nothing runs automatically at
 assessments do not acquire invented scores.
 
 Ranking produces provisional primary/support tiers and reference-relative indices.
-A separate optional pass assigns 0–4 factor and fit grades with reasons. The index
-is derived from placement against the fixed reference papers, not an absolute
+A separate optional pass assigns 0–4 factor and fit grades with reasons.
+The managed Codex launcher uses a fresh process and supplied inputs, disables
+unnecessary capabilities and audits the complete execution log. Acceptance requires
+no observed tool calls and a matching final answer; it does not certify an empty
+tool registry. Missing or incomplete audit evidence leaves the result unverified.
+The index is derived from placement against the fixed reference papers, not an absolute
 strength estimate or probability. Missing references produce ranges. Different
 batches do not establish a resolved global order. Expand each entry to inspect
 its unchanged assessment, annotations and provenance.

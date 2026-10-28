@@ -247,6 +247,63 @@ def _receipt(directory):
     return value
 
 
+def _audit_record(directory, receipt, events_path=None, *, write=False):
+    """Attach the first raw log and bind a reproducible audit to immutable evidence."""
+    from .advisory_execution import audit_events
+    path = directory / "events.jsonl"
+    if events_path is not None:
+        _stage_bytes(path, Path(events_path).read_bytes())
+    if not path.is_file():
+        return {"status": "execution-unverified", "tool_use_observed": None,
+                "issues": ["execution-log-unavailable"], "tool_availability": "not-certified-empty"}
+    audit = audit_events(path.read_bytes(), _read(directory / "answer.json"))
+    audit.update({k: receipt[k] for k in ("binding_sha256", "dispatch_id", "answer_sha256", "execution_sha256")})
+    target = directory / "execution-audit.json"
+    if target.exists():
+        if _read(target) != audit:
+            raise ValueError("Saved advisory execution audit or log changed")
+    elif write:
+        _once(target, audit)
+    else:
+        return {"status": "execution-unverified", "tool_use_observed": None,
+                "issues": ["execution-audit-not-recorded"], "tool_availability": "not-certified-empty"}
+    return audit
+
+
+def _effective_receipt(directory, receipt, audit, *, current=True):
+    # The first submission receipt is never rewritten when a saved log arrives later.
+    result = dict(receipt)
+    ready = receipt["status"] in {"accepted-advisory", "execution-unverified"}
+    mismatch = any(audit.get(key) is not None and audit[key] != receipt["requested_profile"][role]
+                   for key, role in (("observed_model", "model"), ("observed_effort", "effort")))
+    verified = audit["status"] == "verified-no-tool-use" and not mismatch
+    result.update(accepted=ready and verified and current, status=("accepted-advisory" if ready and verified and current else
+                  "profile-mismatch" if mismatch else audit["status"] if ready and not verified else
+                  "stale-at-submission" if ready and not current else receipt["status"]),
+                  source_current_at_check=current,
+                  execution_audit=audit, original_receipt_status=receipt["status"],
+                  immutable_receipt_sha256=result.pop("receipt_sha256"))
+    return result
+
+
+def _stage_bytes(path, data):
+    if path.exists():
+        if path.read_bytes() != data:
+            raise ValueError("Different submission already staged: " + path.name)
+        return
+    fd, temporary = tempfile.mkstemp(prefix=".received-", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "wb") as out:
+            out.write(data); out.flush(); os.fsync(out.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            if path.read_bytes() != data:
+                raise ValueError("Another submission staged different bytes")
+    finally:
+        os.unlink(temporary)
+
+
 def _job(workspace, entry):
     origin = Path(entry.get("origin_workspace") or workspace).resolve()
     jid = entry["job_id"]
@@ -311,7 +368,10 @@ def prepare(export, workspace, *, model, effort, harness, actor, reason, kinds=(
             if not receipt_path.exists():
                 raise ValueError("Unsettled previous advisory work; inspect its original workspace before issuing overlapping work")
             receipt = _receipt(directory)
-            if set(job["targets"]) <= set(selected) and receipt.get("accepted") and _current(job, rows, policy, refs):
+            effective = _effective_receipt(directory, receipt, _audit_record(directory, receipt))
+            if receipt.get("status") in {"accepted-advisory", "execution-unverified"} and not effective["accepted"]:
+                raise ValueError("Saved advisory answer needs execution-log reconciliation; do not commission overlapping inference")
+            if set(job["targets"]) <= set(selected) and effective["accepted"] and _current(job, rows, policy, refs):
                 if _bytes_hash((directory / "answer.json").read_bytes()) != receipt["answer_sha256"]:
                     raise ValueError("Previous advisory answer changed")
                 jobs.append(dict(entry, origin_workspace=str(directory.parent.parent), reused=True))
@@ -410,7 +470,7 @@ def _validate_answer(job, answer, schema):
                     raise ValueError("Known rating requires source locations and no unknown assertion")
 
 
-def submit(workspace, job_id, answer_path, execution_path):
+def submit(workspace, job_id, answer_path, execution_path, *, events_path=None):
     root, manifest = _manifest(workspace)
     entry = next((e for e in manifest["jobs"] if e["job_id"] == job_id), None)
     if not entry:
@@ -429,34 +489,20 @@ def submit(workspace, job_id, answer_path, execution_path):
     if execution.get("outcome") != "completed" or "reported" not in execution or "usage" not in execution:
         raise ValueError("Record completed outcome, reported identity and usage; retain nulls for unknowns")
     _validate_answer(job, answer, _read(directory / "schema.json"))
+    fresh = _current(job, _rows(manifest["export_path"]), _read(root / "policy.json"))
     if (directory / "receipt.json").exists():
         prior = _receipt(directory)
         if prior["answer_sha256"] != _bytes_hash(Path(answer_path).read_bytes()) or prior["execution_sha256"] != _bytes_hash(Path(execution_path).read_bytes()):
             raise ValueError("First advisory submission is immutable; different answers must remain separate alternatives")
-        return prior
+        return _effective_receipt(directory, prior, _audit_record(directory, prior, events_path, write=True), current=fresh)
     reported = execution["reported"] or {}
     mismatch = isinstance(reported, dict) and any(reported.get(k) is not None and reported[k] != job["profile"][k] for k in ("model", "effort", "harness"))
-    fresh = _current(job, _rows(manifest["export_path"]), _read(root / "policy.json"))
     accepted = fresh and not mismatch
     # Preserve the exact received bytes, even if evidence changed during inference.
-    for name, source in (("answer.json", answer_path), ("execution.json", execution_path)):
-        data = Path(source).read_bytes()
-        dest = directory / name
-        if dest.exists() and dest.read_bytes() != data:
-            raise ValueError("Different submission already staged")
-        if not dest.exists():
-            fd, tmp = tempfile.mkstemp(prefix=".received-", dir=str(directory))
-            try:
-                with os.fdopen(fd, "wb") as out:
-                    out.write(data); out.flush(); os.fsync(out.fileno())
-                try:
-                    os.link(tmp, dest)
-                except FileExistsError:
-                    if dest.read_bytes() != data:
-                        raise ValueError("Another submission staged different received bytes")
-            finally:
-                os.unlink(tmp)
-    receipt = {"job_id": job_id, "accepted": accepted, "status": "accepted-advisory" if accepted else "profile-mismatch" if mismatch else "stale-at-submission",
+    answer_bytes, execution_bytes = Path(answer_path).read_bytes(), Path(execution_path).read_bytes()
+    _stage_bytes(directory / "answer.json", answer_bytes)
+    _stage_bytes(directory / "execution.json", execution_bytes)
+    receipt = {"job_id": job_id, "accepted": False, "status": "execution-unverified" if accepted else "profile-mismatch" if mismatch else "stale-at-submission",
                "answer_sha256": _bytes_hash(Path(answer_path).read_bytes()), "execution_sha256": _bytes_hash(Path(execution_path).read_bytes()),
                "binding_sha256": job["binding_sha256"], "dispatch_id": ticket["dispatch_id"],
                "requested_profile": job["profile"], "reported_identity": execution["reported"], "identity_verification": "unverified",
@@ -469,8 +515,8 @@ def submit(workspace, job_id, answer_path, execution_path):
         prior = _receipt(directory)
         if any(prior[k] != receipt[k] for k in ("answer_sha256", "execution_sha256", "binding_sha256", "dispatch_id")):
             raise
-        return prior
-    return receipt
+        return _effective_receipt(directory, prior, _audit_record(directory, prior, events_path, write=True), current=fresh)
+    return _effective_receipt(directory, receipt, _audit_record(directory, receipt, events_path, write=True), current=fresh)
 
 
 def indices(job, result, role):
@@ -506,12 +552,15 @@ def status(workspace):
         directory, job = _job(root, entry)
         fresh = _current(job, rows, policy, references)
         receipt = _receipt(directory) if (directory / "receipt.json").exists() else None
-        state = receipt["status"] if receipt and not receipt["accepted"] else "current" if receipt and receipt["accepted"] and fresh else "stale" if not fresh else "dispatched-outcome-pending" if (directory / "dispatch.json").exists() else "prepared"
+        if receipt:
+            receipt = _effective_receipt(directory, receipt, _audit_record(directory, receipt), current=fresh)
+        terminal = _read(directory / "codex-terminal.json") if (directory / "codex-terminal.json").exists() else None
+        state = receipt["status"] if receipt and not receipt["accepted"] else "current" if receipt and receipt["accepted"] and fresh else "stale" if not fresh else terminal["status"] if terminal else "dispatched-outcome-pending" if (directory / "dispatch.json").exists() else "prepared"
         if state == "current":
             if _bytes_hash((directory / "answer.json").read_bytes()) != receipt["answer_sha256"]:
                 raise ValueError("Accepted advisory answer changed")
             covered.update(job["targets"])
-        states.append({"job_id": job["job_id"], "kind": job["kind"], "state": state, "source_current": fresh, "targets": job["targets"], "reused": entry["reused"]})
+        states.append({"job_id": job["job_id"], "kind": job["kind"], "state": state, "source_current": fresh, "targets": job["targets"], "reused": entry["reused"], "execution_audit": receipt.get("execution_audit") if receipt else None})
     return {"workspace": str(root), "jobs": states, "unscored": manifest["unscored"],
             "target_policy": "flagged-prospects-only-v1",
             "new_prospects_since_snapshot": sorted(_prospects(rows) - set(manifest.get("export_prospect_paper_ids", manifest["selected"]))),
@@ -527,6 +576,7 @@ def render(workspace):
                     "source_binding": {k: row.get(k) for k in ("source_generation", "assessment_source_generation", "assessment_packet_sha256", "reader_job")},
                     "ranking": {}, "factor_ratings": [], "jobs": []} for pid, row in snapshot.items()}
     states = {j["job_id"]: j["state"] for j in summary["jobs"]}
+    audits = {j["job_id"]: j["execution_audit"] for j in summary["jobs"]}
     for entry in manifest["jobs"]:
         directory, job = _job(root, entry)
         if states[job["job_id"]] != "current":
@@ -544,7 +594,8 @@ def render(workspace):
                 if pid in job["targets"]:
                     output[pid]["factor_ratings"].append(rating)
         for pid in job["targets"]:
-            output[pid]["jobs"].append({"job_id": job["job_id"], "requested_profile": job["profile"], "identity_verification": "unverified"})
+            output[pid]["jobs"].append({"job_id": job["job_id"], "requested_profile": job["profile"], "identity_verification": "unverified",
+                                        "execution_audit": audits[job["job_id"]]})
     rows = list(output.values())
     data = {"format": "advisory-review-v1", "rendered_at": datetime.now(timezone.utc).isoformat(), "snapshot_prepared_at": manifest["created_at"], "meaning": "Cohort-dependent reference indices, not stable absolute strength or scientific eligibility", "status": summary, "papers": rows}
     # Derived files are replaceable; immutable requests, answers and receipts are not.
@@ -586,9 +637,13 @@ def main(argv=None):
     p.add_argument("--max-prompt-bytes", type=int)
     p = sub.add_parser("claim", help="Create a one-time dispatch ticket before launching a review worker")
     p.add_argument("--workspace", required=True, type=Path); p.add_argument("--job-id", required=True); p.add_argument("--owner", required=True)
+    p = sub.add_parser("run", help="Run one prepared Codex advisory job with managed logging and no automatic retry")
+    p.add_argument("--workspace", required=True, type=Path); p.add_argument("--job-id", required=True)
+    p.add_argument("--owner", required=True); p.add_argument("--executable", type=Path)
     p = sub.add_parser("submit", help="Accept a bound answer and external execution receipt without altering scientific state")
     p.add_argument("--workspace", required=True, type=Path); p.add_argument("--job-id", required=True)
     p.add_argument("--answer", required=True, type=Path); p.add_argument("--execution", required=True, type=Path)
+    p.add_argument("--events", type=Path, help="Complete raw Codex JSONL; absent/invalid evidence is retained unverified, never accepted")
     for name in ("status", "render"):
         p = sub.add_parser(name); p.add_argument("--workspace", required=True, type=Path)
     args = parser.parse_args(argv)
@@ -601,11 +656,14 @@ def main(argv=None):
         elif args.command == "claim":
             result = claim(args.workspace, args.job_id, owner=args.owner)
         elif args.command == "submit":
-            result = submit(args.workspace, args.job_id, args.answer, args.execution)
+            result = submit(args.workspace, args.job_id, args.answer, args.execution, events_path=args.events)
+        elif args.command == "run":
+            from .advisory_execution import run_job
+            result = run_job(args.workspace, args.job_id, owner=args.owner, executable=args.executable)
         else:
             result = status(args.workspace) if args.command == "status" else render(args.workspace)
         print(json.dumps(result, indent=2, ensure_ascii=True))
-        return 0
+        return 2 if args.command in {"submit", "run"} and result.get("accepted") is False else 0
     except (ValueError, KeyError, OSError, TypeError) as exc:
         print(json.dumps({"error": str(exc), "scope": "advisory-only; sweep state unchanged"}), file=__import__('sys').stderr)
         return 2

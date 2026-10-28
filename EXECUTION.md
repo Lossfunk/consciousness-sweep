@@ -1879,21 +1879,65 @@ Each job has `request.json`, `prompt.txt` and `schema.json`. Locate jobs with:
 
 ```sh
 .venv/bin/python -B -m sweep advisory status --workspace workspace/review-RUN_ID-001
+```
+
+For Codex, use one managed invocation per prepared job:
+
+```sh
+.venv/bin/python -B -m sweep advisory run \
+  --workspace workspace/review-RUN_ID-001 --job-id JOB_ID --owner review-worker-001
+```
+
+The command claims the job exactly once, launches the exact requested model/effort
+in a fresh Codex CLI process with a temporary working directory, ignores user
+configuration/project documents, disables memory and unnecessary capabilities,
+and supplies the complete prompt on stdin and schema through the CLI. It uses the
+existing ChatGPT login and removes ambient API-key/base-URL overrides. There is no
+provider, model or billing fallback. `--executable PATH` selects an explicit Codex
+binary when necessary; its version and hash are recorded. Existing tickets never
+start another process. Keep the command managed until actual exit; if the result
+is interrupted, inspect its saved ticket and invocation rather than relaunching.
+Run only within the authorized allowance and currently free shared capacity.
+
+The annotator must not browse, call tools, inspect other files, inherit supervisor
+history/project context or use previous advisory grades. The launcher supplies
+only its bound prompt/schema contents and handles all persistence. This role is a
+`post-reading-review-annotator`, permitted to see fixed assessments and static
+reference profiles; scientific readers must never receive that evaluator material.
+
+The execution contract audits **actual tool use**, not an empty advertised tool
+registry. Tool availability may remain visible and is recorded as
+`not-certified-empty`. A complete matching single-turn Codex JSONL stream with no
+observed tool calls is required for acceptance. Known tool events reject the
+response; malformed, truncated, unsupported or missing logs leave it unverified.
+A detected profile mismatch is also rejected. This does not certify enforced tool
+absence, absence of undisclosed context or exact provider identity. Input isolation
+remains a launcher/supervisor responsibility. The managed launcher records its
+command, source hashes, fresh working directory and observed execution evidence.
+
+`codex-launch.json`, `codex-events.jsonl`, `codex-stderr.txt`, `codex-answer.json`
+and `codex-execution.json` retain the original invocation evidence. Normal submission
+also retains exact `answer.json`, `execution.json`, `events.jsonl` and a reproducible
+`execution-audit.json`. The original submission `receipt.json` remains immutable;
+CLI/status/render derive effective acceptance using its separate audit. A missing
+log can be attached later by resubmitting the same original answer and execution
+receipt with `--events`, without another model call or rewriting the first receipt.
+Never replace a saved answer or log with a cleaner one. Retain failed/unknown calls
+and usage; there is no automatic retry or refund. An unverified saved answer blocks
+commissioning overlapping replacement work through `--previous`.
+
+For an external Codex launcher, first reserve exactly one dispatch ticket:
+
+```sh
 .venv/bin/python -B -m sweep advisory claim \
   --workspace workspace/review-RUN_ID-001 --job-id JOB_ID --owner review-worker-001
 ```
 
-Dispatch only if `new_dispatch` is true. The supervisor/launcher reads exactly
-that job's `prompt.txt` and `schema.json` and supplies their complete contents to
-a fresh annotator under the returned exact requested profile and recorded timeout.
-The annotator itself has no tools or file access: it does not open even those two
-files. No browsing, shell, other documents, project context, inherited supervisor
-conversation or previous scores are supplied. The launcher handles claiming,
-submission and persistence outside the annotator. This is a
-`post-reading-review-annotator`, not a source-only scientific reader: it receives fixed assessments and static reference
-profiles but cannot revise them. Keep reference cards and old assessments away
-from the scientific reader role. Advisory calls share the authorized harness
-capacity and spending agreement; they are external work, not adapter-counted calls.
+Dispatch only when `new_dispatch` is true, using the returned profile and timeout.
+Retain its complete raw JSONL stream. The current log auditor supports Codex JSONL;
+unsupported harness logs stay unverified rather than triggering a fallback. Advisory
+consumption is external to ordinary adapter counters and still belongs in the
+whole-workflow resource account.
 
 The worker returns the schema-bound envelope containing `job_id`,
 `binding_sha256` and `result`. Save that answer unchanged. The supervisor separately
@@ -1917,7 +1961,8 @@ requested annotation. Do not infer a refund or silently switch configurations.
 ```sh
 .venv/bin/python -B -m sweep advisory submit \
   --workspace workspace/review-RUN_ID-001 --job-id JOB_ID \
-  --answer workspace/answer.json --execution workspace/execution.json
+  --answer workspace/answer.json --execution workspace/execution.json \
+  --events workspace/codex-events.jsonl
 .venv/bin/python -B -m sweep advisory render --workspace workspace/review-RUN_ID-001
 ```
 
@@ -1961,7 +2006,10 @@ changes eligibility, closes frontiers or blocks scientific delivery.
 
 For an older paused run, the new review command can operate from a separate release
 using the older release's published JSONL as `--export` and a separate workspace.
-It never opens the SQLite database. Keep preparing, validating, delivering and
+It never opens the SQLite database. Unclaimed prospect-only jobs prepared by r68
+can be run directly from the newer separate advisory release: their IDs, prompt,
+schema, policy and source bindings are checked without changing those inputs.
+Do not edit an active release to add the launcher. Keep preparing, validating, delivering and
 resuming that run with its bound release; advisory use alone needs no continuation
 or code replacement inside the active release.
 

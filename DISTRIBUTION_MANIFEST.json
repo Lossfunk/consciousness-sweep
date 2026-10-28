@@ -1,6 +1,6 @@
 {
   "calibration": "Versioned compact seed reference is coordinator-only; it is never included in model source packets or ordinary reader prompts.",
-  "created_at": "2026-10-28T06:16:02.304452+00:00",
+  "created_at": "2026-10-28T09:07:05.895802+00:00",
   "excluded": [
     "source PDFs",
     "run history",
@@ -12,10 +12,10 @@
   "files": {
     ".gitattributes": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da",
     ".gitignore": "5950d2ee44c8f4b6cd58507b3fefe4f209079c5f4e1c3adf98e52c8bb3aa3d57",
-    "AGENTS.md": "b1376ff1ef377172bf552dc804e1f708ecb45b70b717d6728548d474fc2b309d",
+    "AGENTS.md": "8b7fa61c9ae3504df4201179a2363557a6ba6bfe883442d7aa104a9fd58a9e4f",
     "CLAUDE.md": "612f3b78552bc55a779fbea65f3c438fdcd8d4b4bc1415c92c62f804be8d416e",
-    "EXECUTION.md": "d3ec2732a0a9d5d76a9a02192232d53bc1fd7827a28d0389e5ac3e2ee0c31f01",
-    "README.md": "5a0f59b342d90f8cbfb650fe34116521b0cafd35b737a52df22a0c87a28309b4",
+    "EXECUTION.md": "cd5bd6a6a87f94a9f5c6c02eb8adfcbdbcafe9cb4523ed159c287effb2dd2f98",
+    "README.md": "6c125ceeea06cd3e81a2f6b3153bc64eb4c49965443e672220d61bb17d3d1b70",
     "agent_candidates.json": "65507ce12b862feed3aee48bde53084e4f8cea8f8e5596afbea91e38231df616",
     "bootstrap.py": "453a92a7bd78989bc0480fb01a6d38667c7f2cab641e6c88212978d6884381ad",
     "development/prospect_contract_v1.md": "7940a69a378a49b18d130be127cbde180d8653ac4e819751a4a524a08af91fcd",
@@ -86,7 +86,8 @@
     "sweep/__main__.py": "d9be4796963ecfc85fe3c050332591ec3833d2d02d4bde034b2275bec94b3678",
     "sweep/access_control.py": "2fb3b3103b0a68595a76637a05439419826682cd3f3d98519a367faa84398e12",
     "sweep/adapters.py": "212668aaf139fa20ba7714f1f497bb0d4c9d6fd6d82ff2c57f09555a4f68daf6",
-    "sweep/advisory.py": "e5f19d463ca1e99539a9dbff71ab5ec6e32f07cd232a793814ea9b3f90e39acb",
+    "sweep/advisory.py": "1d1b180b13ec550bcdf1aef9c88858844891f7560445fa35a4da8fc7f6d376f5",
+    "sweep/advisory_execution.py": "38d630ef129e41791c76e814cce4cccfed148bc2253bff78ece6248fcea57a4d",
     "sweep/advisory_policy.json": "3424d98bf3908e99fc66012692ea91c4bde4679c570fb02b4214759cc2ef7518",
     "sweep/backup_storage.py": "ec4802a85bd971b5c1004794e80213c93fb3bb83e77dd139ceb87527a09d960f",
     "sweep/calibration.py": "ebb7bc0b04c3497e800361dcd3a9bcf2c38c887f6aad9c58ebd07e302871fc8d",

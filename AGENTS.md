@@ -290,11 +290,17 @@ as comparison inputs without becoming extra scoring targets.
 Use the separate `post-reading-review-annotator` role with explicit accessible,
 authorized settings; Sol 6.1/medium is the recommended retained configuration.
 The supervisor/launcher reads the assigned prompt and schema files and supplies
-only their complete contents to that worker. The annotator itself has no tools or
-file access, including no browsing, shell or opening those files. The launcher
-handles claims, persistence and submission outside the annotator. Static reference
-cards and existing assessments are permitted for this role and must never enter source-only
-scientific readers. Use no inherited supervisor conversation or prior advisory grades.
+only their complete contents to that worker. Prohibit browsing, shell, file access
+and all other tool use by the annotator; it must not open even those two files.
+Disable unnecessary capabilities. An empty advertised tool registry is not required
+or certified. Use `advisory run` for managed Codex execution, or supply the complete
+Codex JSONL log with `advisory submit --events`. Acceptance requires a matching
+completed response and no observed tool calls. Missing, malformed or unsupported
+logs remain unverified; tool-using responses are rejected with their evidence and
+usage preserved. Logs audit observed execution, not enforced tool absence or proof
+of context isolation. The launcher handles claims, persistence and submission outside
+the annotator. Static reference cards and existing assessments are permitted for
+this role and must never enter source-only scientific readers. Use no inherited supervisor conversation or prior advisory grades.
 Keep model work within the agreed allowance and shared capacity; external consumption
 is not automatically included in adapter counters.
 
