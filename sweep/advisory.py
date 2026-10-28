@@ -131,6 +131,12 @@ def _available(rows):
             and isinstance(row["assessment"].get("claims"), list) and row["assessment"]["claims"]}
 
 
+def _prospects(rows):
+    """Advisory targets are resource-scoped by the existing paper-level flag."""
+    return {pid for pid, row in rows.items() if isinstance(row.get("assessment"), dict)
+            and row["assessment"].get("paper_decision") == "prospect"}
+
+
 def _references(rows, policy):
     available = _available(rows)
     by_doi = {}
@@ -261,7 +267,8 @@ def _job(workspace, entry):
 def _current(job, rows, policy, references=None):
     present = all(pid in rows and isinstance(rows[pid].get("assessment"), dict)
                   and rows[pid]["assessment"].get("claims") for pid in job["cohort"])
-    return (present and _binding(rows, job["cohort"]) == job["row_bindings"] and
+    return (present and all(rows[pid]["assessment"].get("paper_decision") == "prospect" for pid in job["targets"]) and
+            _binding(rows, job["cohort"]) == job["row_bindings"] and
             (job["kind"] != "ranking" or (references if references is not None else _references(rows, policy)) == job["references"]))
 
 
@@ -278,9 +285,12 @@ def prepare(export, workspace, *, model, effort, harness, actor, reason, kinds=(
         raise ValueError("Unknown advisory kind")
     export_bytes = export.read_bytes()
     rows = _parse_rows(export_bytes)
-    selected = sorted(rows if paper_ids is None else paper_ids)
+    prospects = _prospects(rows)
+    selected = sorted(prospects if paper_ids is None else paper_ids)
     if len(set(selected)) != len(selected) or set(selected) - rows.keys():
         raise ValueError("Duplicate or unknown selected paper ID")
+    if set(selected) - prospects:
+        raise ValueError("Advisory targets must be flagged prospects; context, unresolved and unassessed papers are outside scoring scope")
     policy = _read(Path(__file__).with_name("advisory_policy.json"))
     available = _available(rows)
     refs = _references(rows, policy)
@@ -348,12 +358,16 @@ def prepare(export, workspace, *, model, effort, harness, actor, reason, kinds=(
                      "schema_sha256": _bytes_hash((directory / "schema.json").read_bytes())})
     m = {"format": "advisory-workspace-v1", "export_path": str(export), "export_sha256": _bytes_hash(export_bytes),
          "policy_sha256": _hash(policy), "profile": profile, "selected": selected, "jobs": jobs,
-         "export_assessed_paper_ids": sorted(available), "snapshot_sha256": _hash(snapshot),
+         "export_assessed_paper_ids": sorted(available), "export_prospect_paper_ids": sorted(prospects),
+         "export_assessed_prospect_paper_ids": sorted(set(available) & prospects),
+         "target_policy": "flagged-prospects-only-v1", "snapshot_sha256": _hash(snapshot),
          "unscored": [{"paper_id": p, "reason": "No extracted full-text claims in this export"} for p in selected if p not in available],
          "created_at": datetime.now(timezone.utc).isoformat(), "purpose": "Optional advisory human review; no sweep state changes"}
     m["manifest_sha256"] = _hash(m)
     _once(workspace / "manifest.json", m)
-    return {"workspace": str(workspace), "new_jobs": len(planned), "reused_jobs": len(jobs) - len(planned), "unscored": m["unscored"]}
+    return {"workspace": str(workspace), "new_jobs": len(planned), "reused_jobs": len(jobs) - len(planned), "unscored": m["unscored"],
+            "selected_papers": len(selected), "target_policy": m["target_policy"],
+            "nonprospect_papers_skipped": len(rows) - len(prospects)}
 
 
 def claim(workspace, job_id, *, owner):
@@ -365,7 +379,7 @@ def claim(workspace, job_id, *, owner):
     if (directory / "receipt.json").exists() or (directory / "dispatch.json").exists():
         return {"new_dispatch": False, "job_id": job_id, "reason": "Already dispatched or settled; do not launch another call"}
     if not _current(job, _rows(manifest["export_path"]), _read(root / "policy.json")):
-        raise ValueError("Source export changed; do not dispatch stale advisory work")
+        raise ValueError("Advisory evidence or prospect scope changed; do not dispatch stale advisory work")
     ticket = {"dispatch_id": uuid.uuid4().hex, "job_id": job_id, "binding_sha256": job["binding_sha256"], "owner": owner,
               "requested_profile": job["profile"], "timeout_seconds": job["timeout_seconds"], "claimed_at": datetime.now(timezone.utc).isoformat()}
     try:
@@ -499,7 +513,9 @@ def status(workspace):
             covered.update(job["targets"])
         states.append({"job_id": job["job_id"], "kind": job["kind"], "state": state, "source_current": fresh, "targets": job["targets"], "reused": entry["reused"]})
     return {"workspace": str(root), "jobs": states, "unscored": manifest["unscored"],
-            "new_assessed_since_snapshot": sorted(set(_available(rows)) - set(manifest["export_assessed_paper_ids"])),
+            "target_policy": "flagged-prospects-only-v1",
+            "new_prospects_since_snapshot": sorted(_prospects(rows) - set(manifest.get("export_prospect_paper_ids", manifest["selected"]))),
+            "new_assessed_since_snapshot": sorted((set(_available(rows)) & _prospects(rows)) - set(manifest.get("export_assessed_prospect_paper_ids", manifest["export_assessed_paper_ids"]))),
             "scope": "Advisory only; no sweep queue, stopping or scientific state changes"}
 
 
@@ -560,12 +576,12 @@ def render(workspace):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    p = sub.add_parser("prepare", help="Prepare explicit fresh review work from a published assessment export")
+    p = sub.add_parser("prepare", help="Prepare prospect-only review work from a published assessment export")
     p.add_argument("--export", required=True, type=Path); p.add_argument("--workspace", required=True, type=Path)
     p.add_argument("--model", required=True); p.add_argument("--effort", required=True); p.add_argument("--harness", required=True)
     p.add_argument("--actor", required=True); p.add_argument("--reason", required=True)
     p.add_argument("--kind", action="append", choices=["ranking", "factors"])
-    p.add_argument("--paper-id", action="append"); p.add_argument("--batch-size", type=int, default=20)
+    p.add_argument("--paper-id", action="append", help="Optional subset of flagged prospects; non-prospect IDs are rejected"); p.add_argument("--batch-size", type=int, default=20)
     p.add_argument("--previous", type=Path); p.add_argument("--timeout-seconds", type=int, default=900)
     p.add_argument("--max-prompt-bytes", type=int)
     p = sub.add_parser("claim", help="Create a one-time dispatch ticket before launching a review worker")

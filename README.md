@@ -174,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r67**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r68**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -196,7 +196,11 @@ contain useful, contextual and unresolved claims together.
 When requested, run the [advisory review exchange](EXECUTION.md#on-demand-advisory-review)
 after a quiet delivery checkpoint: at a pause, after an indexed-paper allowance
 has drained, or at another agreed review milestone. It uses completed extractions;
-it does not commission another full-text reading. Nothing runs automatically at
+it does not commission another full-text reading. Scoring targets only papers whose
+existing full-text assessment has `paper_decision: prospect`. Context, unresolved
+and unassessed papers receive no scoring jobs. Available fixed references remain
+comparison inputs, even if their current paper decision differs; they do not become
+extra scoring targets. Nothing runs automatically at
 10,000 papers or on every worker completion. Indexed papers without full-text
 assessments do not acquire invented scores.
 

@@ -1844,9 +1844,14 @@ This exchange is separate from scientific reading and the ledger. Use it only
 when requested, within the existing resource agreement. At a pause, at the end of
 admitted work (for example after a 10,000-indexed-paper limit), or at another agreed
 milestone, first publish a quiet validated delivery using the run's active release.
-An indexed-paper count includes excluded and unread papers; review annotates only
-exported full-text assessments with extracted claims. No new source hunt or full-text
-reading is required to fill a score.
+An indexed-paper count includes excluded and unread papers. Review targets only
+exported papers whose existing assessment has `paper_decision: prospect`, and
+annotates their extracted full-text claims. Context, unresolved and unassessed
+papers receive no scoring jobs; do not score them later as a routine second pass.
+Keep all claims within a selected prospect intact, including qualified, contextual
+and unresolved claims. Available fixed reference papers remain comparison inputs,
+even when they are not prospects; they are not added as extra scoring targets.
+No new source hunt or full-text reading is required to fill a score.
 
 Prepare ranking work from the published export, with exact available settings:
 
@@ -1860,10 +1865,11 @@ Prepare ranking work from the published export, with exact available settings:
 
 Add `--kind factors` to commission separate 0–4 factor and primary/support-fit
 annotations as well. Ranking and factor work are separate calls, preserving the
-retained ranking method. Default ranking batches contain 20 requested papers plus available reference
-papers. Factor batches target at most eight claims while keeping each paper
-intact; an unusually long paper gets its own job rather than being truncated. Use `--paper-id` repeatedly for a smaller scope or
-choose `--batch-size`. `--max-prompt-bytes` is an optional explicit per-request bound;
+retained ranking method. Default ranking batches contain 20 requested prospects
+plus available reference papers. Factor batches target at most eight claims while
+keeping each paper intact; an unusually long paper gets its own job rather than
+being truncated. Use `--paper-id` repeatedly for a smaller prospect subset
+(non-prospect IDs are rejected), or choose `--batch-size`. `--max-prompt-bytes` is an optional explicit per-request bound;
 an oversized request fails without truncation or inference. Each request records
 `--timeout-seconds` (default 900), which its supervising worker must enforce.
 There is no hidden total-call allowance and no automatic model execution.
@@ -1877,10 +1883,14 @@ Each job has `request.json`, `prompt.txt` and `schema.json`. Locate jobs with:
   --workspace workspace/review-RUN_ID-001 --job-id JOB_ID --owner review-worker-001
 ```
 
-Dispatch only if `new_dispatch` is true. Use a fresh annotator with the returned
-exact requested profile, prompt and schema, no tools or inherited conversation,
-and the recorded timeout. This is a `post-reading-review-annotator`, not a
-source-only scientific reader: it receives fixed assessments and static reference
+Dispatch only if `new_dispatch` is true. The supervisor/launcher reads exactly
+that job's `prompt.txt` and `schema.json` and supplies their complete contents to
+a fresh annotator under the returned exact requested profile and recorded timeout.
+The annotator itself has no tools or file access: it does not open even those two
+files. No browsing, shell, other documents, project context, inherited supervisor
+conversation or previous scores are supplied. The launcher handles claiming,
+submission and persistence outside the annotator. This is a
+`post-reading-review-annotator`, not a source-only scientific reader: it receives fixed assessments and static reference
 profiles but cannot revise them. Keep reference cards and old assessments away
 from the scientific reader role. Advisory calls share the authorized harness
 capacity and spending agreement; they are external work, not adapter-counted calls.
@@ -1923,7 +1933,7 @@ cross-batch total order. The user still decides primary/support acceptance throu
 the existing separate human-review workflow.
 
 At a later quiet checkpoint, reuse completed unchanged batches instead of
-commissioning the whole corpus again:
+commissioning all prospects again:
 
 ```sh
 .venv/bin/python -B -m sweep advisory prepare \
@@ -1938,7 +1948,8 @@ reference bindings and unchanged full job cohort. Reused jobs remain referenced
 at their original workspace with immutable answers/receipts; do not delete that
 workspace. Changed inputs create new advisory work and stale old indices. Unrelated
 new records do not invalidate an unchanged cohort. `status` separately lists
-assessments newly added since preparation. Choose only requested kinds again;
+newly flagged prospects and newly scoreable prospect assessments since preparation;
+newly assessed context/unresolved papers do not create scoring work. Choose only requested kinds again;
 unchanged factor results are reused only when factor work is included.
 
 An unsettled overlapping prior job blocks issuance of a duplicate advisory call.
@@ -2023,5 +2034,6 @@ No paper-specific bonuses, forced reference labels or silent relabeling were add
 Fine support ordering remains provisional and sensitive to cohort and judgment.
 Scoring cannot repair missing or incorrect extraction. This internal calibration
 does not establish reliability across thousands of papers; keep reasons, ties,
-source questions and human review visible. Raw calibration answers and expected
+source questions and human review visible. The historical calibration also tested context/unresolved cases; production
+scoring targets only flagged prospects. Raw calibration answers and expected
 orders stay outside the portable distribution and scientific-reader context.

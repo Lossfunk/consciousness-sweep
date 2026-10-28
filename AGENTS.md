@@ -282,11 +282,18 @@ Only when indicated by the user or an already recorded review schedule, use the
 published delivery. Suitable moments include a pause or completion of the admitted
 work under an indexed-paper allowance. It is not a new scientific stage or a
 mandatory completion gate. Do not trigger it on every reading or threshold crossing.
+Target only full-text-assessed papers already flagged `paper_decision: prospect`.
+Do not score context, unresolved or unassessed papers as a later routine pass.
+Keep a selected prospect's complete claims. Fixed references may accompany ranking
+as comparison inputs without becoming extra scoring targets.
 
 Use the separate `post-reading-review-annotator` role with explicit accessible,
 authorized settings; Sol 6.1/medium is the recommended retained configuration.
-Give that worker only its bound advisory prompt and schema. Static reference cards
-and existing assessments are permitted for this role and must never enter source-only
+The supervisor/launcher reads the assigned prompt and schema files and supplies
+only their complete contents to that worker. The annotator itself has no tools or
+file access, including no browsing, shell or opening those files. The launcher
+handles claims, persistence and submission outside the annotator. Static reference
+cards and existing assessments are permitted for this role and must never enter source-only
 scientific readers. Use no inherited supervisor conversation or prior advisory grades.
 Keep model work within the agreed allowance and shared capacity; external consumption
 is not automatically included in adapter counters.
