@@ -7,12 +7,83 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 
 from .adapters import CODEX_CONFIG, CODEX_SOURCE_CONFIG, _environment, _metadata, _run
+
+
+TRANSPORT_VERSION = "advisory-chatgpt-no-replay-v1"
+TRANSPORT_PROFILE = "sweep-chatgpt-no-replay"
+
+
+def transport_policy(timeout):
+    if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
+        raise ValueError("Positive bound advisory timeout required")
+    return {"version": TRANSPORT_VERSION, "config_id": TRANSPORT_PROFILE,
+            "request_max_retries": 0, "stream_max_retries": 0,
+            "unbounded_connection_retries": False, "stream_idle_timeout_ms": max(1, int(timeout * 1000)),
+            "supports_websockets": False, "transport": "https-event-stream", "auth": "existing-chatgpt-login", "endpoint_override": None}
+
+
+def transport_settings(timeout):
+    policy = transport_policy(timeout)
+    prefix = "model_providers." + TRANSPORT_PROFILE + "."
+    provider = {"name": "OpenAI", "wire_api": "responses", "requires_openai_auth": True,
+                "supports_websockets": policy["supports_websockets"],
+                "request_max_retries": 0, "stream_max_retries": 0,
+                "stream_idle_timeout_ms": policy["stream_idle_timeout_ms"]}
+    return ["model_provider=" + json.dumps(TRANSPORT_PROFILE), 'forced_login_method="chatgpt"',
+            "features.unbounded_connection_retries=false"] + [prefix + k + "=" + json.dumps(v) for k, v in provider.items()]
+
+
+def retry_observed(raw):
+    # CLI diagnostics only; source/model text is not passed to this detector.
+    text = raw.decode("utf-8", errors="replace")
+    return bool(re.search(r"retrying\s+(?:sampling\s+request|stream|request)|reconnecting\s*\.\.\.|falling back (?:to https?|from websockets)", text, re.I))
+
+
+def audit_transport(directory, execution):
+    """Reproduce new managed-launch evidence without changing legacy audits."""
+    from .advisory import _read, _bytes_hash
+    if "transport_policy" not in execution:
+        return None
+    issues = []
+    try:
+        directory = Path(directory)
+        launch = _read(directory / "codex-launch.json")
+        job = _read(directory / "request.json")
+        expected = transport_policy(job["timeout_seconds"])
+        raw = (directory / "codex-stderr.txt").read_bytes()
+        if execution["transport_policy"] != expected or launch.get("transport_policy") != expected:
+            issues.append("transport-policy-mismatch")
+        if _bytes_hash((directory / "codex-launch.json").read_bytes()) != execution.get("launch_sha256"):
+            issues.append("launch-hash-mismatch")
+        if _bytes_hash(raw) != execution.get("stderr_sha256"):
+            issues.append("stderr-hash-mismatch")
+        argv = launch["argv"]
+        settings = {}
+        for index, value in enumerate(argv[:-1]):
+            if value == "-c":
+                key, separator, setting = argv[index + 1].partition("=")
+                if separator: settings[key] = setting
+        required = dict(value.split("=", 1) for value in transport_settings(job["timeout_seconds"]))
+        if any(settings.get(k) != value for k, value in required.items()):
+            issues.append("no-replay-controls-missing-or-overridden")
+        prefix = "model_providers." + TRANSPORT_PROFILE + "."
+        if any((k.startswith(prefix) and k not in required) or k in {"openai_base_url", "chatgpt_base_url"} for k in settings):
+            issues.append("unexpected-provider-endpoint-or-auth-setting")
+        observed = retry_observed(raw)
+    except (OSError, ValueError, KeyError, TypeError):
+        observed = None
+        issues.append("transport-evidence-unavailable")
+    return {"version": TRANSPORT_VERSION,
+            "status": "transport-retry-rejected" if observed else "transport-unverified" if issues else "configured-no-replay",
+            "retry_observed": observed, "issues": sorted(set(issues)),
+            "scope": "Configured CLI controls and observed stderr; not provider exactly-once execution or backend verification"}
 
 
 def audit_events(raw, answer):
@@ -125,7 +196,7 @@ def run_job(workspace, job_id, *, owner, executable=None):
                 "--sandbox", "read-only", "--cd", cwd, "--model", job["profile"]["model"],
                 "-c", "model_reasoning_effort=" + json.dumps(job["profile"]["effort"]),
                 "--json", "--output-schema", str(directory / "schema.json"), "-o", str(answer)]
-        for setting in CODEX_CONFIG + CODEX_SOURCE_CONFIG:
+        for setting in list(CODEX_CONFIG + CODEX_SOURCE_CONFIG) + transport_settings(job["timeout_seconds"]):
             argv += ["-c", setting]
         argv.append("-")
         a._once(directory / "codex-launch.json", {
@@ -134,6 +205,7 @@ def run_job(workspace, job_id, *, owner, executable=None):
             "executable_sha256": a._bytes_hash(Path(resolved).read_bytes()),
             "cli_version": version.stdout.decode("utf-8").strip(),
             "prompt_sha256": entry["prompt_sha256"], "schema_sha256": entry["schema_sha256"],
+            "transport_policy": transport_policy(job["timeout_seconds"]),
             "fresh_process_and_temporary_cwd": True, "project_documents_disabled": True,
             "tool_availability": "not-certified-empty", "billing": "Existing ChatGPT login; no API fallback"})
         try:
@@ -149,9 +221,11 @@ def run_job(workspace, job_id, *, owner, executable=None):
         "dispatch_id": ticket["dispatch_id"], "requested_profile": job["profile"],
         "outcome": "completed" if outcome["exit_code"] == 0 and not outcome["timed_out"] else "incomplete",
         "reported": {"harness": "codex", "model": metadata["observed_model"], "effort": metadata["observed_effort"], "provider_identity": None},
-        "usage": metadata["usage"], "process": outcome,
+        "usage": metadata["usage"], "process": outcome, "transport_policy": transport_policy(job["timeout_seconds"]),
+        "usage_scope": "Observed JSONL usage; unreported provider consumption remains unknown",
         "launch_sha256": a._bytes_hash((directory / "codex-launch.json").read_bytes()),
         "events_sha256": a._bytes_hash(events.read_bytes()), "stderr_sha256": a._bytes_hash(stderr.read_bytes())})
+    transport = audit_transport(directory, a._read(execution))
     if outcome["exit_code"] == 0 and not outcome["timed_out"] and answer.is_file():
         try:
             result = a.submit(root, job_id, answer, execution, events_path=events)
@@ -161,5 +235,7 @@ def run_job(workspace, job_id, *, owner, executable=None):
     else:
         result = {"accepted": False, "status": "execution-incomplete", "job_id": job_id,
                   "reason": "Saved process failure/timeout; model admission or charges may be unknown, no automatic retry"}
+    if transport and transport["status"] != "configured-no-replay" and not (directory / "receipt.json").exists():
+        result.update(accepted=False, status=transport["status"], transport_audit=transport)
     a._once(directory / "codex-terminal.json", result)
     return result

@@ -311,6 +311,15 @@ this role and must never enter source-only scientific readers. Use no inherited 
 Keep model work within the agreed allowance and shared capacity; external consumption
 is not automatically included in adapter counters.
 
+Use the managed launcher's explicit no-replay transport configuration. Preserve
+its transport-policy, launch and stderr evidence along with the ordinary event
+log. Retry/reconnect/fallback diagnostics or inconsistent controls leave an answer
+unaccepted even if its JSON is valid. Historical audits gain no retroactive
+transport guarantee. A terminal interruption keeps its ticket and unknown charges;
+never recycle it or reprepare its papers as if no call occurred. An explicit
+separate resource decision is required for another attempt. Independent unclaimed
+jobs can proceed under their remaining agreement using the fixed external release.
+
 Claim each prepared job once before inference. Keep its dispatch ticket, exact
 requested settings, returned envelope and execution receipt. Unknown outcome,
 usage or provider identity remains unknown; there is no automatic retry, refund,

@@ -1912,6 +1912,37 @@ start another process. Keep the command managed until actual exit; if the result
 is interrupted, inspect its saved ticket and invocation rather than relaunching.
 Run only within the authorized allowance and currently free shared capacity.
 
+The advisory launcher selects the local `sweep-chatgpt-no-replay` transport
+configuration with `requires_openai_auth=true` and forced ChatGPT login. It supplies
+no provider endpoint, API key or alternate billing route. This named configuration
+is necessary because current CLI versions reserve built-in provider IDs and reject
+`model_providers.openai` overrides. It is an explicit transport configuration of the
+same intended OpenAI-authenticated service, not provider-identity verification.
+
+Requests use HTTPS event streaming with WebSocket prewarming/fallback disabled,
+`request_max_retries=0`, `stream_max_retries=0`, and
+`features.unbounded_connection_retries=false`. The stream idle timeout equals the
+job's recorded per-request deadline; the independent process deadline still applies.
+Long reasoning can wait within that agreement without an earlier idle-triggered
+sampling replay. This adds no total time/call cap, changes no model/effort setting
+and implies no new provider or paid API fallback.
+
+New managed execution receipts bind that transport policy, launch arguments and
+stderr hash. A reproducible audit checks the configured controls and rejects
+observed retry/reconnect/transport-fallback diagnostics, even if a later response
+has valid JSON. Missing or inconsistent transport evidence remains unverified.
+These checks do not establish provider exactly-once execution or reveal unreported
+charges. Earlier accepted audits remain byte-for-byte historical evidence; they
+are not retroactively given transport guarantees.
+
+After a terminal interrupted call with no saved answer, keep its exact ticket,
+logs, unknown usage and unreviewed papers. Never redispatch that ticket, erase it,
+refund it or silently reprepare those papers. Another attempt needs explicit
+resource authorization and a separately preserved fresh request. Unclaimed,
+independent jobs may use the new immutable external launcher under the remaining
+agreement; diagnose access before filling slots. Do not patch a bound release or
+resume the scientific sweep to perform this recovery.
+
 The annotator must not browse, call tools, inspect other files, inherit supervisor
 history/project context or use previous advisory grades. The launcher supplies
 only its bound prompt/schema contents and handles all persistence. This role is a

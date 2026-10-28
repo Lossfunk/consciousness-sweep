@@ -272,6 +272,12 @@ def _audit_record(directory, receipt, events_path=None, *, write=False):
         return {"status": "execution-unverified", "tool_use_observed": None,
                 "issues": ["execution-log-unavailable"], "tool_availability": "not-certified-empty"}
     audit = audit_events(path.read_bytes(), _read(directory / "answer.json"))
+    from .advisory_execution import audit_transport
+    transport = audit_transport(directory, _read(directory / "execution.json"))
+    if transport is not None:
+        audit["transport_audit"] = transport
+        if transport["status"] != "configured-no-replay":
+            audit["status"] = transport["status"]
     audit.update({k: receipt[k] for k in ("binding_sha256", "dispatch_id", "answer_sha256", "execution_sha256")})
     target = directory / "execution-audit.json"
     if target.exists():
