@@ -166,6 +166,9 @@ def _factor_value_schema():
 
 
 def _schema(job):
+    if job.get("final_review_layout"):
+        from .advisory_final import schema
+        return schema(job)
     if job.get("ranking_layout"):
         from .advisory_rankings import schema
         return schema(job)
@@ -240,6 +243,10 @@ def _manifest(workspace):
         raise ValueError("Advisory source snapshot changed")
     if m.get("reference_baseline_sha256") and _hash(_read(workspace / "reference_baseline.json")) != m["reference_baseline_sha256"]:
         raise ValueError("Evaluator baseline changed")
+    if m.get("final_review_layout"):
+        for name in ("final_policy", "suggestions"):
+            if _hash(_read(workspace / (name + ".json"))) != m[name + "_sha256"]:
+                raise ValueError("Final advisory input changed: " + name)
     return workspace, m
 
 
@@ -326,16 +333,23 @@ def _job(workspace, entry):
     for name, key in (("prompt.txt", "prompt_sha256"), ("schema.json", "schema_sha256")):
         if _bytes_hash((directory / name).read_bytes()) != entry[key]:
             raise ValueError("Advisory work file changed: " + name)
-    if job.get("ranking_layout"):
+    if job.get("ranking_layout") or job.get("final_review_layout"):
         expected_baseline = origin / "reference_baseline.json"
         if Path(job["reference_baseline_path"]).resolve() != expected_baseline.resolve():
             raise ValueError("Evaluator baseline must belong to the bound workspace")
         if _hash(_read(expected_baseline)) != job["reference_baseline_sha256"]:
             raise ValueError("Bound evaluator baseline changed")
+    if job.get("final_review_layout"):
+        path = origin / "final_policy.json"
+        if Path(job["final_policy_path"]).resolve() != path.resolve() or _hash(_read(path)) != job["final_policy_sha256"]:
+            raise ValueError("Bound final policy changed or escaped its workspace")
     return directory, job
 
 
 def _current(job, rows, policy, references=None):
+    if job.get("final_review_layout"):
+        from .advisory_final import current
+        return current(job, rows, policy)
     if job.get("ranking_layout"):
         from .advisory_rankings import current
         return current(job, rows, policy)
@@ -483,6 +497,10 @@ def _validate_answer(job, answer, schema):
     if errors:
         raise ValueError("Invalid advisory answer: " + errors[0].message)
     body = answer["result"]
+    if job.get("final_review_layout"):
+        from .advisory_final import validate
+        validate(job, answer)
+        return
     if job.get("ranking_layout"):
         for role, head in body["placements"].items():
             for pid in job["targets"]:
@@ -585,6 +603,9 @@ def indices(job, result, role):
 
 def status(workspace):
     root, manifest = _manifest(workspace)
+    if manifest.get("final_review_layout"):
+        from .advisory_final import status as final_status
+        return final_status(root)
     policy, rows = _read(root / "policy.json"), _rows(manifest["export_path"])
     references = _references(rows, policy)
     states = []
@@ -611,6 +632,9 @@ def status(workspace):
 
 def render(workspace):
     root, manifest = _manifest(workspace)
+    if manifest.get("final_review_layout"):
+        from .advisory_final import render as final_render
+        return final_render(root)
     if manifest.get("ranking_layout"):
         from .advisory_rankings import render as fixed_render
         return fixed_render(root)
@@ -679,6 +703,12 @@ def main(argv=None):
     p.add_argument("--paper-id", action="append", help="Optional subset of flagged prospects; non-prospect IDs are rejected"); p.add_argument("--batch-size", type=int, default=20)
     p.add_argument("--previous", type=Path); p.add_argument("--replaces", type=Path, help="Explicitly commissioned replacement pass on the same export; preserves the prior review"); p.add_argument("--timeout-seconds", type=int, default=900)
     p.add_argument("--max-prompt-bytes", type=int)
+    p = sub.add_parser("prepare-final", help="Prepare independent Astra/xhigh review of firm primary/support suggestions")
+    p.add_argument("--suggestions", required=True, type=Path); p.add_argument("--workspace", required=True, type=Path)
+    p.add_argument("--actor", required=True); p.add_argument("--reason", required=True)
+    p.add_argument("--model", default="gpt-6-astra"); p.add_argument("--effort", default="xhigh"); p.add_argument("--harness", default="codex")
+    p.add_argument("--paper-id", action="append"); p.add_argument("--batch-size", type=int, default=10)
+    p.add_argument("--previous", type=Path); p.add_argument("--timeout-seconds", type=int, default=1800); p.add_argument("--max-prompt-bytes", type=int)
     p = sub.add_parser("claim", help="Create a one-time dispatch ticket before launching a review worker")
     p.add_argument("--workspace", required=True, type=Path); p.add_argument("--job-id", required=True); p.add_argument("--owner", required=True)
     p = sub.add_parser("run", help="Run one prepared Codex advisory job with managed logging and no automatic retry")
@@ -697,6 +727,12 @@ def main(argv=None):
                              actor=args.actor, reason=args.reason, kinds=args.kind or ("ranking",), paper_ids=args.paper_id,
                              batch_size=args.batch_size, previous=args.previous, timeout_seconds=args.timeout_seconds,
                              max_prompt_bytes=args.max_prompt_bytes, replaces=args.replaces)
+        elif args.command == "prepare-final":
+            from .advisory_final import prepare as prepare_final
+            result = prepare_final(args.suggestions, args.workspace, actor=args.actor, reason=args.reason,
+                                   model=args.model, effort=args.effort, harness=args.harness, paper_ids=args.paper_id,
+                                   batch_size=args.batch_size, previous=args.previous, timeout_seconds=args.timeout_seconds,
+                                   max_prompt_bytes=args.max_prompt_bytes)
         elif args.command == "claim":
             result = claim(args.workspace, args.job_id, owner=args.owner)
         elif args.command == "submit":

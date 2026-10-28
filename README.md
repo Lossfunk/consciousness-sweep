@@ -174,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r72**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r73**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -226,7 +226,24 @@ not resolve a fine global order. A comparability recommendation considers the
 coherent contribution and its credibility, rather than applying a score cutoff.
 Explicitly unrankable references leave honest ranges. Original assessments and
 reading gaps remain available per entry; factor grades require a separate optional
-pass and are never invented. No additional interpretation model is commissioned.
+pass and are never invented. Rendering needs no additional model.
+
+For a final researcher reading list, request the optional
+[independent final review](EXECUTION.md#independent-final-reading-review).
+It sends the firm primary/support candidates to **GPT-6 Astra at xhigh reasoning**,
+using the same saved scientific evidence and complete reference baseline. Astra
+receives neither Sol's scores nor its suggested roles. It can recommend primary,
+support, qualified, out or unresolved; a primary suggestion can become support,
+and a support suggestion can leave the final list. Qualified leads remain outside
+this final pass.
+
+The final output separates primary and support reading lists and preserves
+qualifications, disagreements, pending work and original Sol recommendations.
+These are evidence-based reading recommendations, not accepted scientific roles
+or a guarantee that the full texts have been independently verified. This step
+runs only when requested, within authorized resources. It never blocks or resumes
+the scientific sweep, changes its judgments or adds an automatic Astra call to
+ordinary scoring checkpoints.
 
 The managed Codex launcher uses a fresh process and supplied inputs, disables
 unnecessary capabilities and audits the complete execution log. Acceptance requires

@@ -326,6 +326,27 @@ human-review aids, never exclusions, paper-role decisions, citation/process gate
 scientific strength certification or stopping conditions. Do not modify an active
 release to install the tool; it may read its export externally without migration.
 
+For a requested final reading list, follow the Sol suggestion pass with
+[independent final review](EXECUTION.md#independent-final-reading-review).
+Prepare only the firm new primary/support candidates using `advisory prepare-final`;
+qualified/borderline leads and existing reference works stay outside this pass.
+Use exact `gpt-6-astra`/`xhigh`/Codex settings and the managed advisory launcher,
+without fallback or automatic retries. Establish access through the first ordinary
+requested job, not an extra compulsory pilot. Keep shared capacity and the user's
+billing agreement; unknown outcomes are not retry permission.
+
+The fresh `post-reading-final-reviewer` sees the saved scientific extractions and
+complete evaluator baseline, never Sol grades, suggested roles, coordinator
+history or earlier final answers. It compares both roles independently; roles may
+change, and qualified/out/unresolved results remain explicit. The coordinator
+retains original suggestions and final answers separately, including disagreements
+with scientific claim dispositions. Final lists recommend papers for human reading;
+they never promote scientific roles, exclude ledger records or clear holds.
+Source changes stale final recommendations. Reuse unchanged bound jobs through
+`--previous`; do not repeat unsettled, failed or unverified calls. A separate new
+release can review the published export externally without migrating or resuming
+a paused scientific run. No final-review calls are implied by a ranking-only request.
+
 ## Storage
 
 Do not create full database copies at ordinary checkpoints, heartbeat/status

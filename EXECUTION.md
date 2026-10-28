@@ -2068,6 +2068,95 @@ A replacement pass needs its own authorized allowance; no automatic retry, refun
 or new scientific-run continuation is implied.
 
 
+### Independent final reading review
+
+When the user requests a final reading list, review the firm new primary/support
+candidates from the completed Sol suggestion pass with **GPT-6 Astra / xhigh**.
+This is an optional final advisory stage, distinct from rendering or scientific
+reading. Ranking-only requests do not authorize it. It adds no eligibility,
+coverage, citation, discovery or completion gate to the scientific sweep.
+
+```sh
+.venv/bin/python -B -m sweep advisory prepare-final \
+  --suggestions workspace/review-RUN_ID-001 \
+  --workspace workspace/final-review-RUN_ID-001 \
+  --model gpt-6-astra --effort xhigh --harness codex \
+  --actor supervisor --reason "Requested independent final reading list"
+```
+
+Preparation reads accepted, current, hash-bound suggestion answers rather than
+editable HTML or `review.json`. It selects the union of firm primary-comparable
+and support-comparable new papers, deduplicated. Existing reference works,
+qualified leads, borderline label/rank cases and unrankable suggestions receive
+no final-review calls. `--paper-id` may select a smaller subset of these firm
+candidates; other IDs are rejected. Partial or unavailable upstream jobs remain
+visible as unreviewed scope and cannot manufacture a candidate.
+
+Default batches contain ten targets plus all eleven fixed evaluator references.
+Each target keeps all scientific claims and experiment structure. A fresh
+`post-reading-final-reviewer` receives only the bound evidence, factual reference
+profiles, qualitative rubric and response contract. **Sol scores, suggested roles
+and prior advisory reasons are not supplied.** Reference membership does not force
+an outcome. Astra independently compares both primary and support usefulness,
+including scope, achieved evidence and remaining alternatives, without new
+compulsory Bayes, equivalence, causal, replication or primary-grade support gates.
+
+The schema requires both comparisons and a recommendation for every target.
+A primary-comparable contribution gives a primary reading recommendation;
+otherwise a support-comparable contribution gives support. Remaining plausible
+leads are qualified. Missing comparison evidence remains unresolved; below both
+standards gives out. “Out” applies only to this reading list. Nothing changes the
+paper's scientific assessment, queue state or eligibility. A primary can become
+support or out, and a support can become primary when the independent evidence
+warrants it. Every positive recommendation needs a bound focal claim, closest
+reference and located evidence. Missing source evidence cannot be filled by model
+confidence or silently treated as disqualification.
+
+Inspect the prepared job count and input bytes, then run each job once within the
+requested allowance and observed shared capacity:
+
+```sh
+.venv/bin/python -B -m sweep advisory status --workspace workspace/final-review-RUN_ID-001
+.venv/bin/python -B -m sweep advisory run \
+  --workspace workspace/final-review-RUN_ID-001 --job-id JOB_ID --owner final-review-worker-001
+.venv/bin/python -B -m sweep advisory render --workspace workspace/final-review-RUN_ID-001
+```
+
+The same managed launcher, one-time tickets, exact-profile checks, immutable
+answers and complete JSONL no-observed-tool-use audits apply. Establish actual
+access through the first ordinary requested job; no extra commissioning call is
+required. If Astra/xhigh is unavailable, preserve the outcome and report the
+block. Never switch model, lower effort, retry unknown calls, add paid API fallback
+or increase the user's allowance implicitly. Observed usage is retained even for
+failed/unverified calls, and backend/provider identity can remain unknown.
+
+Each request records a 1,800-second timeout by default. `--timeout-seconds`,
+`--batch-size` and an explicit `--max-prompt-bytes` can be chosen at preparation;
+oversized work fails before inference without truncating evidence. There is no
+hidden total-call/time cap and no automatic dispatch or retry.
+
+Open the final workspace's `index.html` for the primary and support reading lists,
+qualified leads, out and unresolved cases. Individual detail pages retain the
+independent reasoning, both reference comparisons, limitations, original scientific
+claims and original Sol suggestion. `review.json` contains all structured results
+and execution coverage. Pending, stale, failed or unverified candidates are shown
+separately rather than silently dropped. Source revisions invalidate affected
+bound work; unrelated additions do not invalidate unchanged cohorts. Newly eligible
+suggestions are reported separately and are not automatically reviewed.
+
+For a later explicitly requested update, pass `--previous` with the prior final
+workspace to reuse accepted unchanged full cohorts under the same final policy,
+reference baseline, run/export and exact profile. Keep the original workspaces;
+unsettled or unaccepted overlapping calls block repeat inference. Do not treat a
+new empty workspace as permission to replay an unknown outcome.
+
+Use a separate immutable release/workspace to review an older paused run. Do not
+patch or migrate its active release, edit its ledger or resume it for this step.
+Final review evaluates the saved extractions; independent full-text verification
+or targeted retrieval is a separate request. “Final” means the last advisory
+selection step for researcher reading, not scientific certification or certainty.
+
+
 ### Rubric selection and calibration
 
 The retained qualitative advisory policy is `rank-calibrated-v2`. The production
@@ -2097,7 +2186,8 @@ Fresh isolated Codex sessions requested Sol 6.1/medium as the annotator and
 Astra 6/xhigh as the reference judge. Astra ranked the same fixed evidence without
 seeing Sol's grades, candidate rubric, weights or ranking. Exact backend/provider
 identity and credit cost remained unverified. Astra is a comparison judge, not
-ground truth, and is not a required production scoring call.
+ground truth. It is not a required ordinary scoring call; the independent final
+review above uses Astra only when that additional stage is requested.
 
 Selection prioritized relative order over exact numerical agreement. General
 rubric candidates were compared by the number of reversed strict Astra
