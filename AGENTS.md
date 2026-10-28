@@ -284,8 +284,15 @@ work under an indexed-paper allowance. It is not a new scientific stage or a
 mandatory completion gate. Do not trigger it on every reading or threshold crossing.
 Target only full-text-assessed papers already flagged `paper_decision: prospect`.
 Do not score context, unresolved or unassessed papers as a later routine pass.
-Keep a selected prospect's complete claims. Fixed references may accompany ranking
-as comparison inputs without becoming extra scoring targets.
+Keep a selected prospect's complete claims. Every ranking batch includes all
+three primary and eight support references from the frozen evaluator snapshot,
+independent of scientific-run retrieval. They are comparison subjects, not extra
+prospect targets or scientific ledger entries. Use the default fixed-reference
+workflow; never fill a missing baseline by borrowing another run's judgments.
+One scoring call returns per-ID primary/support placements and source-grounded
+comparability recommendations. Keep explicit unrankable outcomes and qualifications.
+Known references are not new discoveries; recommendations never assign final roles.
+No factor or interpretation pass is implied.
 
 Use the separate `post-reading-review-annotator` role with explicit accessible,
 authorized settings; Sol 6.1/medium is the recommended retained configuration.

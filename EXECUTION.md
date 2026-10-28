@@ -1849,8 +1849,14 @@ exported papers whose existing assessment has `paper_decision: prospect`, and
 annotates their extracted full-text claims. Context, unresolved and unassessed
 papers receive no scoring jobs; do not score them later as a routine second pass.
 Keep all claims within a selected prospect intact, including qualified, contextual
-and unresolved claims. Available fixed reference papers remain comparison inputs,
-even when they are not prospects; they are not added as extra scoring targets.
+and unresolved claims. The frozen evaluator snapshot in
+`sweep/advisory_references.json` supplies all
+three primaries and eight supports as explicit comparison subjects in every batch.
+Its scientific facts, source pointers, coverage and qualifications are fixed from
+the approved calibration material. It does not require those papers to be assessed
+inside this sweep. Never insert these evaluator records into the scientific ledger
+or supply them to scientific readers. Target and reference can be different
+extraction views of the same work; differences must be disclosed, not forced to tie.
 No new source hunt or full-text reading is required to fill a score.
 
 Prepare ranking work from the published export, with exact available settings:
@@ -1863,10 +1869,17 @@ Prepare ranking work from the published export, with exact available settings:
   --actor supervisor --reason "Requested advisory review at the settled checkpoint"
 ```
 
-Add `--kind factors` to commission separate 0–4 factor and primary/support-fit
-annotations as well. Ranking and factor work are separate calls, preserving the
-retained ranking method. Default ranking batches contain 20 requested prospects
-plus available reference papers. Factor batches target at most eight claims while
+The default ranking pass returns ordinal placements and primary/support
+comparability explanations together. No second interpretation model is needed.
+Default batches contain 20 prospects plus the eleven evaluator reference subjects.
+The JSON schema requires an entry for each ID under both heads; unresolved cases
+use an explicit null tier and reason. Do not fill omitted identities as if the
+worker judged them unrankable. The original qualitative `rank-calibrated-v2`
+criteria remain; the keyed representation prevents sparse tier arrays.
+
+An optional `--kind factors` preparation is separate and returns the existing
+0–4 factor grades. Do not combine it with ranking preparation or commission it
+merely to explain rankings. Factor batches target at most eight claims while
 keeping each paper intact; an unusually long paper gets its own job rather than
 being truncated. Use `--paper-id` repeatedly for a smaller prospect subset
 (non-prospect IDs are rejected), or choose `--batch-size`. `--max-prompt-bytes` is an optional explicit per-request bound;
@@ -1970,8 +1983,9 @@ Open `workspace/review-RUN_ID-001/index.html`; `review.json` preserves the compl
 annotation data. The view includes unchanged scientific assessments, factor grades
 when commissioned, source reasons and request provenance. Ranking indices equal
 100 times the fraction of fixed references ranked below a paper, with half-credit
-for ties. A reference's own self-tie is included. Missing, ambiguous or unrankable
-references create a range without renormalization. A zero means below the available
+for ties. A target representing a reference work is compared from its supplied
+extraction; matching identity does not force a self-tie. Unrankable reference
+positions create a range without renormalization. A zero means below the available
 reference standard, not scientific exclusion. Rank tiers are cohort-dependent;
 indices from different batches are approximate review aids rather than a resolved
 cross-batch total order. The user still decides primary/support acceptance through
@@ -2014,10 +2028,55 @@ resuming that run with its bound release; advisory use alone needs no continuati
 or code replacement inside the active release.
 
 
+### Reading list and score interpretation
+
+`advisory render` produces `index.html`, `reading-list.html`, per-paper detail
+pages and `review.json`. Reading lists distinguish primary-comparable candidates,
+qualified primary leads, support-comparable candidates and qualified support
+leads. These are advisory judgments from the supplied extractions. A paper can
+have high support usefulness and lower primary usefulness; neither is a final role.
+Original scientific claim dispositions and source gaps remain visible, including
+an explicit warning when the advisory focal claim was contextual or unresolved.
+
+The index is 100 times the fraction of fixed references ranked below a paper,
+with half-credit for ties. Three primary and eight support comparators make a
+coarse scale; it is not percentage strength, confidence or a probability of
+eligibility. Each entry shows above/tied/below/unresolved for the named references,
+the closest comparator, strongest coherent claim, source rationale and what remains
+missing for reference-level use. Comparability labels are semantic judgments with
+reasons, not thresholds derived from the index. For the reading list, a comparable
+label must also have an explicit at-or-above reference placement in that head;
+otherwise display it as borderline for review, preserving the raw label and score.
+This is an advisory consistency flag, not scientific exclusion or forced agreement. A positive recommendation requires
+a focal claim and evidence pointer; it must not fabricate missing evidence.
+
+Missing comparison positions remain unknown even when every reference record is
+supplied. Keep those ranges; do not take midpoints or force a point score. Indices
+and within-batch tiers do not resolve a precise global order across batches.
+Reference papers already among the prospects remain scored in the full table but
+are excluded from the suggested list of new discoveries. No factor grades, new
+scientific readings or interpretation calls are required to render this resource.
+
+An older incomplete-reference review remains historical output. A deliberately
+commissioned replacement uses a NEW workspace and `prepare --replaces OLD_WORKSPACE`
+with the same export and a nonempty commissioning reason. This checks for unsettled
+old dispatches and preserves the old pass; it does not repeat inference on its own.
+Do not pass it as `--previous`: a changed reference regime cannot silently reuse old
+indices or fill comparisons the worker never made. Reuse through `--previous`
+requires the same complete baseline, layout, input, cohort, policy and profile.
+A replacement pass needs its own authorized allowance; no automatic retry, refund
+or new scientific-run continuation is implied.
+
+
 ### Rubric selection and calibration
 
-The retained advisory policy is `rank-calibrated-v2`, with separate
-`boundary-v3` factor annotations. Its complete instructions, factor definitions
+The retained qualitative advisory policy is `rank-calibrated-v2`. The production
+representation uses required per-ID ordinal placements, plus direct comparability
+annotations, against the complete approved evaluator snapshot. These are formatting
+and reference-delivery changes, not new weights or forced reference ordering.
+Existing calibration results qualify the original qualitative rubric, not every
+new comparability label or a guarantee of perfect model agreement. Optional
+`boundary-v3` factor annotations remain separate. The complete instructions, factor definitions
 and reference profiles are distributed in `sweep/advisory_policy.json`. These are
 review preferences calibrated on saved scientific assessments, not new eligibility
 rules or a statistical model of scientific truth.

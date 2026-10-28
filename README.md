@@ -174,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r69**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r72**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -204,16 +204,34 @@ extra scoring targets. Nothing runs automatically at
 10,000 papers or on every worker completion. Indexed papers without full-text
 assessments do not acquire invented scores.
 
-Ranking produces provisional primary/support tiers and reference-relative indices.
-A separate optional pass assigns 0–4 factor and fit grades with reasons.
+Every ranking request includes the complete frozen evaluator baseline: Tsushima
+(2006), Persaud (2011) and Keizer (2015), plus the eight current supports. These
+are explicit comparison subjects even when the sweep has not obtained their texts.
+The reference facts and coverage come from the approved calibration snapshots;
+they never become scientific records or inputs to source-only readers.
+
+One scoring pass produces independent primary/support reference indices and
+paper-specific comparability recommendations. Every supplied ID must have an
+entry or an explicit unresolved result. The [suggested reading list](EXECUTION.md#reading-list-and-score-interpretation)
+separates comparable candidates, qualified leads and unresolved cases, with the
+closest reference, focal claim, source pointers and remaining limitations. Known
+reference works remain visible but are not presented as new discoveries. A
+comparable label unsupported by any at-or-above reference placement is flagged
+as borderline; the original model judgment and score remain preserved.
+
+An index counts the fraction of references ranked below a paper, with half-credit
+for ties. It is not a percentage of scientific strength or a probability. Even
+complete-reference indices are coarse and cohort-dependent; different batches do
+not resolve a fine global order. A comparability recommendation considers the
+coherent contribution and its credibility, rather than applying a score cutoff.
+Explicitly unrankable references leave honest ranges. Original assessments and
+reading gaps remain available per entry; factor grades require a separate optional
+pass and are never invented. No additional interpretation model is commissioned.
+
 The managed Codex launcher uses a fresh process and supplied inputs, disables
 unnecessary capabilities and audits the complete execution log. Acceptance requires
 no observed tool calls and a matching final answer; it does not certify an empty
 tool registry. Missing or incomplete audit evidence leaves the result unverified.
-The index is derived from placement against the fixed reference papers, not an absolute
-strength estimate or probability. Missing references produce ranges. Different
-batches do not establish a resolved global order. Expand each entry to inspect
-its unchanged assessment, annotations and provenance.
 
 These outputs never change scientific decisions, discovery eligibility, queues or
 stopping. The retained ranking policy is `rank-calibrated-v2`; experimental rubric

@@ -1,0 +1,1308 @@
+{
+  "version": "approved-framework-references-20261028-v1",
+  "purpose": "Static evaluator-only comparison subjects from the approved 22-paper calibration; role labels never force order",
+  "roles": {
+    "primary": {
+      "D01": {
+        "status": "matched",
+        "paper_id": "REF_D01",
+        "name": "Tsushima et al. (2006)",
+        "doi": "10.1126/science.1133197",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "D02": {
+        "status": "matched",
+        "paper_id": "REF_D02",
+        "name": "Persaud et al. (2011)",
+        "doi": "10.1016/j.neuroimage.2011.06.081",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "D03": {
+        "status": "matched",
+        "paper_id": "REF_D03",
+        "name": "Keizer et al. (2015)",
+        "doi": "10.3758/s13423-014-0706-2",
+        "origin": "fixed-evaluator-baseline"
+      }
+    },
+    "support": {
+      "D04": {
+        "status": "matched",
+        "paper_id": "REF_D04",
+        "name": "Lamy et al. (2015)",
+        "doi": "10.1177/0956797614556777",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "D05": {
+        "status": "matched",
+        "paper_id": "REF_D05",
+        "name": "Dali et al. (2023)",
+        "doi": "10.1371/journal.pone.0283158",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "D06": {
+        "status": "matched",
+        "paper_id": "REF_D06",
+        "name": "Murphy & Bloom (2015)",
+        "doi": "10.5539/ijps.v7n3p76",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "G13": {
+        "status": "matched",
+        "paper_id": "REF_G13",
+        "name": "More Power to the Unconscious: Conscious, but Not Unconscious, Exogenous Attention Requires Location Variation",
+        "doi": "10.1177/0956797614560770",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "G14": {
+        "status": "matched",
+        "paper_id": "REF_G14",
+        "name": "Disentangling perceptual awareness from nonconscious processing in rhesus monkeys (Macaca mulatta)",
+        "doi": "10.1073/pnas.2017543118",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "G15": {
+        "status": "matched",
+        "paper_id": "REF_G15",
+        "name": "Orienting Attention Without Awareness",
+        "doi": "10.1037/0096-1523.23.1.168",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "G16": {
+        "status": "matched",
+        "paper_id": "REF_G16",
+        "name": "Neural correlates of error awareness",
+        "doi": "10.1016/j.neuroimage.2006.11.014",
+        "origin": "fixed-evaluator-baseline"
+      },
+      "G17": {
+        "status": "matched",
+        "paper_id": "REF_G17",
+        "name": "Adaptation following errors: Error awareness predicts future performance",
+        "doi": "10.3758/s13421-021-01246-2",
+        "origin": "fixed-evaluator-baseline"
+      }
+    }
+  },
+  "papers": {
+    "REF_D01": {
+      "paper_id": "REF_D01",
+      "title": "Tsushima et al. (2006)",
+      "doi": "10.1126/science.1133197",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "Experiment 4 tested contracting-motion presence after the RSVP task: participants reported whether the display included contracting dots. The supplement identifies 5% as below the mean chance-level threshold. Experiment 5 adds explicitly perception-linked instructions: report whether any coherent motion was perceived; detection performance increased with coherence. These reports address the proposed X, unlike direction discrimination. However, numerical detection results and uncertainty bounds are not supplied. Chance-level performance does not establish unawareness, and increasing objective accuracy alone does not establish consciousness. Jointly, these observations support a plausible lower-/higher-access comparison, not a demonstrated unconscious/conscious division. Transfer from Experiment 5 is limited by its six-person sample, separate task days, and removal of central RSVP demands; sample overlap is unspecified.",
+            "comparison": "In Experiment 4, 15 participants identified central digits while irrelevant contracting-motion coherence varied. RSVP d′ at 5% was lower than at 0%, 10%, and 20%. The awareness test used motion-presence judgments rather than digit identification. Shared methods place that test after the main task, with a fixation point replacing the RSVP sequence.",
+            "contribution_reasoning": "The useful observation is poorer digit identification with weak, reportedly below-threshold contraction than with stronger contraction. This reverses the straightforward prediction that stronger physical distractor signals simply produce greater interference. Contracting motion also reduces the translating-eye-movement explanation. The contribution is a bounded relationship between perceptual accessibility of irrelevant motion and interference with another task, not evidence that awareness independently causes suppression. The aligned presence judgment makes this narrower comparison worth retaining despite uncertain awareness classification.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "asset-da60bf2662debfea258e",
+                "location_detail": "Experiment 4 threshold instructions and Fig. S2 caption",
+                "observation": "Presence judgments contrasted random dots with contracting-motion displays. At 5%, RSVP d′ was lower than at 0% (p < 0.01), 10% (p < 0.05), and 20% (p < 0.001); the caption places 5% below the mean chance-level threshold.",
+                "unit_ids": [
+                  "page:5",
+                  "page:6"
+                ]
+              },
+              {
+                "asset_id": "asset-0b85d69e06753780e0f4",
+                "location_detail": "Experiments 4–5 and Fig. 3 description",
+                "observation": "Experiment 4 used 15 participants. In Experiment 5, six participants showed maximal task-irrelevant MT+ activity at 5%, whereas task-relevant MT+ activity and detection performance increased with coherence.",
+                "unit_ids": [
+                  "page:3"
+                ]
+              },
+              {
+                "asset_id": "asset-da60bf2662debfea258e",
+                "location_detail": "Shared threshold procedure and Experiment 5 main-task instructions",
+                "observation": "The shared post-task threshold procedure used 915-ms displays without RSVP. Experiment 5 requested reports of perceived coherent-motion presence, with relevant and irrelevant tasks on separate, counterbalanced days.",
+                "unit_ids": [
+                  "page:3",
+                  "page:7",
+                  "page:8"
+                ]
+              }
+            ],
+            "downstream_use": "Y is interference with central digit identification, measured by RSVP d′. It is not direct discrimination of the distractor. No direction-specific or symbolic use of motion is established.",
+            "reason_and_vetting_question": "Retain as a limited prospect. Human vetting should judge whether the content-aligned presence reports and threshold description sufficiently support a provisional accessibility comparison, without treating threshold labels as proof of subjective invisibility.",
+            "remaining_alternative": "Coherence changes the focal input; internal evidence is not matched. Nonlinear motion processing, ambiguity-dependent competition, or detection attempts could produce the interference peak without awareness-dependent inhibitory control. MT+ and LPFC observations are compatible with inhibition but do not establish it causally.",
+            "supported_claim": "Weak contracting-motion distractors impaired digit identification more than stronger contracting distractors, with a plausibly aligned but incompletely characterized awareness comparison.",
+            "x_and_existence": "X is the presence of coherent contracting motion. Controlled signal-dot generation establishes its physical presence; the behavioral interference and motion-sensitive activity support processing. Its exact neural representation is not established."
+          },
+          {
+            "awareness_evidence": "Experiments 1–3 measured perceived translating-motion direction after RSVP. The actual threshold test used different directions and coherence levels from the main task. The article calls 5% chance-level, but that finding neither proves unconsciousness nor measures awareness of coherent-motion presence.",
+            "comparison": "Experiment 1, n = 15, compared translating distractors across coherence levels. Experiment 2, n = 10, lowered dot luminance and shifted both the reported threshold and interference dip toward higher coherence.",
+            "contribution_reasoning": "These experiments establish interpretable nonmonotonic interference and sensitivity to stimulus strength. They do not establish the required awareness comparison for the conservative presence-to-interference mapping. Keeping X as direction instead does not help: RSVP impairment does not demonstrate use of which direction was presented.",
+            "decision": "context",
+            "decisive_evidence": [
+              {
+                "asset_id": "asset-0b85d69e06753780e0f4",
+                "location_detail": "Experiment 1 result and Fig. 2 caption",
+                "observation": "RSVP d′ at 5% was lower than at 0% and 20% (both p < 0.001). Lower luminance shifted the dip to 30%, below performance at 20% and 40% (both p < 0.01).",
+                "unit_ids": [
+                  "page:2",
+                  "page:3"
+                ]
+              },
+              {
+                "asset_id": "asset-da60bf2662debfea258e",
+                "location_detail": "Experiment 1 threshold measurement",
+                "observation": "Participants selected the arrow representing perceived direction; testing sampled 4%, 11%, 18%, 25%, 32%, 39%, and 46%, rather than directly sampling 5%.",
+                "unit_ids": [
+                  "page:3",
+                  "page:4"
+                ]
+              }
+            ],
+            "downstream_use": "Digit-identification interference demonstrates distraction by the motion display, not use of its particular direction.",
+            "reason_and_vetting_question": "Context because the demonstrated downstream function and measured awareness content do not align. Vetting should not reinterpret failed direction discrimination as invisibility of motion presence.",
+            "remaining_alternative": "Participants could perceive motion presence without identifying direction. Threshold tracking can reflect sensory sensitivity rather than awareness-dependent control.",
+            "supported_claim": "Translating-motion interference peaks at intermediate signal strength, but its supplied awareness test concerns a different property from the demonstrated use.",
+            "x_and_existence": "Coherent translating motion is physically present. Its direction is experimentally specified, but direction-specific downstream use is not demonstrated."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The contracting-motion experiments provide the strongest content-aligned prospect. Translating-motion results remain contextual, and neural activity does not independently establish inhibitory control. Nonsignificant stronger-motion versus baseline differences do not demonstrate complete filtering or equivalence.",
+        "reading_gaps": [
+          "Graphical pixels were not supplied; only extracted text and captions were assessed.",
+          "Numerical psychometric results, threshold-estimation details, and per-coherence detection results are not supplied, limiting awareness classification."
+        ],
+        "source_identity": {
+          "reason": "The article and supplement contain matching title, authors, and DOI. Adjacent unrelated article text does not create an identity conflict.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [
+        {
+          "experiment_id": "P000001_E01",
+          "experiment_label": "Experiment 1: translating motion and RSVP",
+          "source_location": "asset-0b85d69e06753780e0f4 page:2-3 Fig2A; asset-da60bf2662debfea258e page:2-4",
+          "functional_structure_assessment": "scalar-justified",
+          "functional_structure_reason": "Coherence strengths operationalize one same-stage RSVP distractor-control function, not distinct Ys or a functional relation across independently varied task relations. Preserve its nonmonotonic profile as one scalar comparison. InExperiment5 direct motion report/neural relevance controls are supporting/contextual outcomes and do not supply a common behavioral factorial Y.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Genuine motion-X to behavioral distractor-control comparison with explicit awareness attempt; allocated comparison reservation does not certify its A/E/F or process route.",
+          "notes": "X is coherent translating motion content, operationalized by direction/coherence. Same RSVP instructions, randomized strengths and equated target lags keep the downstream comparison comparable. Post-task exact-motion direction judgments explicitly attempt to establish low/high perceptual regimes. RSVP d-prime is a defensible readout of regulation of distractor influence, distinct from reporting motion; this does not establish a particular inhibitory mechanism. 5% versus20% has a direct reported p<.001 contrast. Strong-A inference remains limited by absent focal subjective report/higher-regime critical result, different tested directions, threshold interpolation and unreported numerical sensitivity. More interference under the low regime does not itself show successful unaware control.",
+          "support_roles": []
+        },
+        {
+          "experiment_id": "P000001_E02",
+          "experiment_label": "Experiment 2: low-luminance translating motion",
+          "source_location": "asset-0b85d69e06753780e0f4 page:3 Fig2B; asset-da60bf2662debfea258e page:4",
+          "functional_structure_assessment": "scalar-justified",
+          "functional_structure_reason": "Coherence strengths operationalize one same-stage RSVP distractor-control function, not distinct Ys or a functional relation across independently varied task relations. Preserve its nonmonotonic profile as one scalar comparison. InExperiment5 direct motion report/neural relevance controls are supporting/contextual outcomes and do not supply a common behavioral factorial Y.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Genuine motion-X to behavioral distractor-control comparison with explicit awareness attempt; allocated comparison reservation does not certify its A/E/F or process route.",
+          "notes": "Same motion-X, awareness-threshold attempt and behavioral distractor-control Y coexist. Luminance manipulation shifts the dip and threshold toward higher coherence; RSVP30% poorer than20/40%, p<.01. This is an independently manipulated threshold-linked challenge to a simple stronger-motion/greater-disruption account, concerning the same Y asExperiment1. It is not an achieved first-order match or a self-sufficient strong awareness certification. Reported threshold/dip shift supports CORE despite incomplete numerical regime awareness evidence and transfer precision.",
+          "support_roles": [
+            "threshold-shift-first-order-control"
+          ]
+        },
+        {
+          "experiment_id": "P000001_E03",
+          "experiment_label": "Experiment 3: translating motion with eye tracking",
+          "source_location": "asset-0b85d69e06753780e0f4 page:3; asset-da60bf2662debfea258e page:4-5 FigS1",
+          "functional_structure_assessment": "scalar-justified",
+          "functional_structure_reason": "Coherence strengths operationalize one same-stage RSVP distractor-control function, not distinct Ys or a functional relation across independently varied task relations. Preserve its nonmonotonic profile as one scalar comparison. InExperiment5 direct motion report/neural relevance controls are supporting/contextual outcomes and do not supply a common behavioral factorial Y.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Genuine motion-X to behavioral distractor-control comparison with explicit awareness attempt; allocated comparison reservation does not certify its A/E/F or process route.",
+          "notes": "Same motion-X/awareness attempt/RSVP distractor-control relation is retained; authors report the performance pattern replicated, with no systematic eye-movement difference across coherence. FigureS1 caption describes a representative subject; unseen traces and absent numerical RSVP/threshold outcomes prevent stronger statistical or awareness conclusions. This is a physically separate robustness experiment, not a new function or a placeholder comparison.",
+          "support_roles": [
+            "eye-movement-robustness"
+          ]
+        },
+        {
+          "experiment_id": "P000001_E04",
+          "experiment_label": "Experiment 4: contracting motion and RSVP",
+          "source_location": "asset-0b85d69e06753780e0f4 page:3; asset-da60bf2662debfea258e page:5-6 FigS2",
+          "functional_structure_assessment": "scalar-justified",
+          "functional_structure_reason": "Coherence strengths operationalize one same-stage RSVP distractor-control function, not distinct Ys or a functional relation across independently varied task relations. Preserve its nonmonotonic profile as one scalar comparison. InExperiment5 direct motion report/neural relevance controls are supporting/contextual outcomes and do not supply a common behavioral factorial Y.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Genuine motion-X to behavioral distractor-control comparison with explicit awareness attempt; allocated comparison reservation does not certify its A/E/F or process route.",
+          "notes": "X is coherent contracting motion; post-task reports whether contraction is present directly attempt relevant awareness assessment. RSVP measures the same conservative distractor-control Y. Performance5% lower than0%,10%,20% (p<.01,.05,.001), with caption locating5% below the chance threshold. Contraction addresses large eye-movement confounding and supplies same-function convergence, without proving LPFC inhibition. Exact regime sensitivity and higher-regime awareness reporting remain incomplete; nonsignificant indirect nulls would not prove equivalence or positive control capacity.",
+          "support_roles": [
+            "eye-movement-robustness"
+          ]
+        },
+        {
+          "experiment_id": "P000001_E05",
+          "experiment_label": "Experiment 5: contracting motion fMRI and RSVP",
+          "source_location": "asset-0b85d69e06753780e0f4 page:3-4 Fig3-4 notes27-28; asset-da60bf2662debfea258e page:6-9",
+          "functional_structure_assessment": "scalar-justified",
+          "functional_structure_reason": "Coherence strengths operationalize one same-stage RSVP distractor-control function, not distinct Ys or a functional relation across independently varied task relations. Preserve its nonmonotonic profile as one scalar comparison. InExperiment5 direct motion report/neural relevance controls are supporting/contextual outcomes and do not supply a common behavioral factorial Y.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Genuine motion-X to behavioral distractor-control comparison with explicit awareness attempt; allocated comparison reservation does not certify its A/E/F or process route.",
+          "notes": "Motion-X, substantive perceptual-report/threshold-related awareness attempt and behavioral distractor-control Y coexist. RSVP dip and MT+peak occur at5%; task-irrelevant LPFC5% lower than10/20%,p<.05. Task-relevant motion reports are direct X registration, not a second downstream function. Cross-task BOLD differences and r=-.90 are mechanistic context with changed task requirements; they cannot certify awareness or a causal control mechanism. No same-sample focal RSVP awareness result with adequate regime sensitivity is supplied, and the separateExp4 threshold cannot transfer automatically. The RSVP profile remains one scalar Y; neural data do not manufacture a factorial behavioral relation.",
+          "support_roles": [
+            "mechanistic-context"
+          ]
+        }
+      ],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "D01",
+        "original_record_sha256": "00bde163166cdf12531be690c54668dc7e900796bfc367d23384e39c2b4dcbb8",
+        "calibration_input_sha256": "854de095c6b464f0c6c853d261b4b3cd7a930c38fc3c839f76d574f762151d38",
+        "source": "Saved pipeline snapshot in prospect-roles/dossiers.json; active run not accessed",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_D02": {
+      "paper_id": "REF_D02",
+      "title": "Persaud et al. (2011)",
+      "doi": "10.1016/j.neuroimage.2011.06.081",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "After discrimination, Guess/Seen asked whether the Up/Down decision was a mere guess or based on some awareness: 43% Seen in the normal field versus 3% in the blind field. This is content-linked access reporting, not awareness of correctness. Reports and wagers occurred in separate, interleaved same-day blocks using the same stimuli and contrasts, making condition-level transfer reasonable but not trial-specific. Historical descriptions support absent blind-field visual qualia, while described Schurger studies report awareness that something was presented. These unavailable originals and the broad prompt caution against treating the blind regime as wholly unconscious.",
+            "comparison": "Independent contrast staircases targeted approximately 75% discrimination accuracy; achieved overall accuracy was 76% normal versus 79% blind. This is positive bounded performance control, not equivalence inferred from p=0.34. Normal-field contrast was much lower. Similar wager frequencies, 66% versus 69% (p=0.32), do not establish equal metacognitive capacity. The extreme-contrast comparison challenges a simple stronger-input/better-monitoring explanation for this same Y.",
+            "contribution_reasoning": "The directly tested difference in accuracy-sensitive wagering supplies a downstream behavioral contribution beyond stimulus discrimination or neural activation. Active titration and the extreme-contrast result constrain explanations based solely on physical strength or average discrimination success. The defensible contribution is an association between greater reported visual access and better metacognitive use, not independent causation by awareness, necessity, or equality of unconscious and conscious capacities.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_df727f5e46681b3d",
+                "location_detail": "Methods—Task; Behavioral results",
+                "observation": "Gratings appeared for 500 ms, followed by Up/Down discrimination and then either wagering or Guess/Seen. Independently titrated contrasts produced 76% versus 79% overall accuracy; blind-field Guess trials were 74% correct.",
+                "unit_ids": [
+                  "page:2",
+                  "page:3"
+                ]
+              },
+              {
+                "asset_id": "SRC_df727f5e46681b3d",
+                "location_detail": "Differences between hemifields in the capacity for metacognition",
+                "observation": "Wager–accuracy correlations were 0.52 normal versus 0.30 blind, with a direct Fisher-transformed difference test, p<0.001. Comparing low-contrast normal with high-contrast blind trials still favored normal monitoring, 0.45 versus 0.25, p<0.005, despite higher blind-field discrimination performance.",
+                "unit_ids": [
+                  "page:4"
+                ]
+              },
+              {
+                "asset_id": "SRC_df727f5e46681b3d",
+                "location_detail": "Introduction on secondary awareness; Discussion—Blindsight",
+                "observation": "Descriptions of earlier static-stimulus studies distinguish absent visual phenomenology from awareness of stimulus presence. The authors also allow subjective nonvisual experience to accompany successful blind-field judgments.",
+                "unit_ids": [
+                  "page:2",
+                  "page:6"
+                ]
+              }
+            ],
+            "downstream_use": "Y is metacognitive allocation of postdecision wagers: choosing payment contingent on discrimination correctness rather than a coin flip. Its accuracy-coupling demonstrates monitoring beyond merely registering X.",
+            "reason_and_vetting_question": "Retain as a bounded single-patient prospect. Human judgment: is the same-day, condition-level visibility-to-wager transfer sufficiently persuasive for an association between visual access and monitoring, despite lesion-dependent processing differences?",
+            "remaining_alternative": "The intact field could supply more reliable trialwise evidence or different decision cues despite matched average accuracy. Report-conditioned accuracies differed, and lesion, hemisphere, wagering strategy, or nonvisual confidence could affect monitoring. Physical contrast reversal does not match internal evidence or isolate awareness.",
+            "supported_claim": "In GY, the hemifield with more reported visual awareness supported better accuracy-sensitive postdecision wagering, despite approximately matched overall visual discrimination.",
+            "x_and_existence": "X is visual information specifying whether the vertical grating occupies the upper or lower quadrant. Above-chance discrimination establishes its availability in both fields, including blind-field trials reported as guesses; this establishes usable content, not unconsciousness by itself."
+          },
+          {
+            "awareness_evidence": "The neural comparison inherits the condition-level awareness evidence and transfer limitations above; it is not a trialwise contrast of equally accurate seen and unseen judgments.",
+            "comparison": "Normal-versus-blind activation was tested under titrated overall accuracy. The narrower correct-unseen comparison was also attempted, but its estimate and effective comparison coverage are not reported.",
+            "contribution_reasoning": "These findings constrain neural interpretations based only on superior average discrimination, but BOLD activation is not demonstrated downstream mental use. The attempted correct-unseen analysis remains unresolved rather than supporting a negative finding. Neither widespread activation nor the uncorrected amygdala observation establishes broadcast, flexibility, or emotional processing.",
+            "decision": "context",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_df727f5e46681b3d",
+                "location_detail": "fMRI differences; Table 1; Figures 3–4 captions",
+                "observation": "Normal-field stimulation produced greater prefrontal/parietal activity, with reported clusters corrected at p<0.05. The blind-greater-than-normal amygdala cluster did not survive correction, p=0.289.",
+                "unit_ids": [
+                  "page:4",
+                  "page:5"
+                ]
+              },
+              {
+                "asset_id": "SRC_df727f5e46681b3d",
+                "location_detail": "Additional correct-unseen comparisons; Discussion alternatives",
+                "observation": "The authors report reduced power and nothing systematic for blind correct-unseen versus normal correct-unseen trials, without contrast estimates. They acknowledge preparatory flexibility, weak-signal amplification, and metacognition as alternative activation interpretations.",
+                "unit_ids": [
+                  "page:4",
+                  "page:6"
+                ]
+              }
+            ],
+            "downstream_use": "No additional behavioral Y is established by the activation contrasts. Up/Down performance measures direct registration; the separately demonstrated downstream function is wagering-based monitoring.",
+            "reason_and_vetting_question": "Keep as neural context. Human check: are activation differences being substituted for evidence that awareness changes a tested downstream function?",
+            "remaining_alternative": "Hemisphere, lesion-related reorganization, weak-input processing, reporting demands, or metacognitive differences could contribute to the activation pattern.",
+            "supported_claim": "Greater normal-field prefrontal/parietal activity survives approximate first-order performance matching, but does not itself establish another awareness-to-function mapping.",
+            "x_and_existence": "The same grating-location information is available in both regimes. Neural localization does not establish a separate information-bearing content or mental function."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The article contains its own interpretable behavioral awareness–use comparison: greater reported visual access accompanies better metacognitive wagering under active, achieved discrimination-performance control. Its value is bounded by separate reporting blocks and single-patient, lesion-dependent processing. Neural findings remain context.",
+        "reading_gaps": [
+          "Original Persaud and Lau (2008) and Schurger et al. (2006, 2008) studies are unavailable; their awareness evidence is known only through this article’s descriptions.",
+          "Contrast-specific visibility rates, raw observations, and plotted figure images were not supplied. All supplied article text, table entries, and captions were read."
+        ],
+        "source_identity": {
+          "reason": "The published article’s title, author list, and DOI match the requested paper.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "D02",
+        "original_record_sha256": "d177b180d9e76c691ca5082c917e24001aaa40c0ffd1549f6852274c6ddb4715",
+        "calibration_input_sha256": "6960b787588fd178177f978943133838de587dcff3d458e8371f2adf595c3fa8",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_D03": {
+      "paper_id": "REF_D03",
+      "title": "Keizer et al. (2015)",
+      "doi": "10.3758/s13423-014-0706-2",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "The actual instruction was to discriminate Gabor presence from absence, not report subjective visibility or an experienced conjunction. Calibration used 200 trials and a staircase intended to drive detection to chance. After binding, detection was tested at the binding-task mask strength without feedback; two participants with replicated above-chance performance were excluded. This concerns the item carrying X, so it is a plausible indirect availability check, not a known unrelated-content measure. However, nonsignificance for retained individuals does not establish unawareness, and achieved detection estimates are not reported. Ineffective masking is described as allowing conscious processing, but no corresponding S1 awareness result is supplied. Transfer from the post-task detection test to incidental S1 processing is therefore bounded.",
+            "comparison": "The within-participant comparison changed mask proximity to S1: ineffective masking inserted 100-ms blank screens around it. Target type and mask strength were shared, and S1–S2 timing was equated. Individual calibration supports mask effectiveness, but it did not match internal signal strength across regimes. The comparison is plausibly visibility-related rather than a verified conscious-versus-unconscious split.",
+            "contribution_reasoning": "The useful contribution is the joint feature-dependent effect after effectively masked S1, together with an actual masking-by-binding comparison and a broader same-experiment analysis—not simply faster responses after less effective masking. These observations provisionally challenge complete disappearance of joint-feature carryover under effective masking. The stricter analysis is interpretable for its selected participants because its rules and results are reported, but the broader analysis weakens masked-only detection. Nondetection of moderation remains informative only as an uncertain comparison, not evidence of equality. Results 2 is a reanalysis, not an independent replication; the article’s stronger necessity conclusion is not retained.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_b0d11f89da53b97c",
+                "location_detail": "Results, first RT analysis",
+                "observation": "Reported binding costs were 5.8 ms after effectively masked S1, t(27)=1.8, p=.04 one-tailed, and 8.6 ms after ineffectively masked S1. The direct masking-by-orientation-by-location test was F(1,27)=0.25, p>.6.",
+                "unit_ids": [
+                  "page:4"
+                ]
+              },
+              {
+                "asset_id": "SRC_b0d11f89da53b97c",
+                "location_detail": "Initial exclusions and Results 2",
+                "observation": "Including initially excluded poor performers made both regime-specific RT costs nonsignificant, ps>.08. Removing RT cutoffs preserved the overall orientation-by-location interaction, F(1,33)=4.7, p<.05, but neither regime-specific planned comparison was significant. Masking moderation remained undetected, F(1,33)=0.31, p>.55.",
+                "unit_ids": [
+                  "page:3",
+                  "page:5"
+                ]
+              },
+              {
+                "asset_id": "SRC_b0d11f89da53b97c",
+                "location_detail": "Tasks 1–3 and post-task selection",
+                "observation": "Presence/absence detection calibrated masks before binding and evaluated them afterward. Binding used the final calibration strength increased by 10%; two participants passed both above-chance screening stages and were excluded. No retained-group detection estimate or ineffective-S1 awareness test is reported.",
+                "unit_ids": [
+                  "page:2",
+                  "page:3"
+                ]
+              },
+              {
+                "asset_id": "SRC_b0d11f89da53b97c",
+                "location_detail": "Accuracy analyses",
+                "observation": "Ineffectively masked S1 produced faster but slightly less accurate S2 responses. Accuracy also showed no detected masking modulation of the joint feature interaction in the broader analysis, F(1,33)=0.33, p>.5; this does not establish equivalence.",
+                "unit_ids": [
+                  "page:4",
+                  "page:5"
+                ]
+              }
+            ],
+            "downstream_use": "Participants judged S2 orientation. Dependence of that later response on the joint repetition or alternation of S1 orientation and location indicates use of earlier information, rather than direct registration of S1. Conservatively, Y is joint-feature-dependent carryover into later orientation decisions, consistent with binding, short-term maintenance and retrieval considered together—not separately demonstrated capacities.",
+            "reason_and_vetting_question": "Retain as a tentative supplementary prospect. Human vetting should judge whether indirect item-presence evidence and the selected-sample masked effect provide useful constraint despite missing ineffective-S1 awareness verification and weakened regime-specific results. That judgment should not treat nonsignificant moderation as equivalence or require a unique binding mechanism.",
+            "remaining_alternative": "Residual conscious access and weaker effective-S1 evidence could produce a smaller, noisier carryover effect. Location-dependent orientation priming could also mimic binding. The point estimates remain compatible with scalar attenuation; the null interaction does not defeat that account or establish an independent causal role for awareness.",
+            "supported_claim": "Joint orientation–location carryover into later judgments was detected after effectively masked S1 in the stricter analysis. Broader analysis preserved joint carryover overall, but not separate detection within either masking regime. Neither analysis detected masking-dependent modulation: a bounded awareness-use prospect, not proof that consciousness is unnecessary or effects are equal.",
+            "x_and_existence": "X is S1 orientation and spatial-position information, not awareness of an already-composed conjunction. Presented Gabors supplied both features; the joint repetition effect supports usable feature information across the experiment, with weaker regime-specific evidence after effective masking. The awareness check concerns the source item; it does not establish conscious experience of its bound relation."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The article contains its own relevant experiment and an interpretable, though fragile, joint-feature comparison. Its value survives as tentative comparative evidence after integrating the less selective analysis, without adopting the authors’ necessity or equality claims.",
+        "reading_gaps": [
+          "Only extracted article text and figure captions were supplied; graphical panels and any underlying data were unavailable.",
+          "Tables 1–2 duplicate the ineffective-mask label across both blocks. Reported exclusions do not fully reconcile with df-implied analysis sizes. Detection estimates, ineffective-S1 awareness results and uncertainty intervals for the critical difference are unreported."
+        ],
+        "source_identity": {
+          "reason": "Title, authors, DOI and journal pagination match the requested article. Online publication in 2014 is consistent with the supplied 2015 journal identity.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "D03",
+        "original_record_sha256": "6621fa6507812b58830ab7b98a8d7cf6dad42ee17cf262c1e35a89c50ff4d289",
+        "calibration_input_sha256": "1d13486efb65519b157b0ebc7ac9523f612b0f6bf8bbb4029759cf26cb383c7c",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_D04": {
+      "paper_id": "REF_D04",
+      "title": "Lamy et al. (2015)",
+      "doi": "10.1177/0956797614556777",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "Participants first discriminated the later target orientation, then rated perception of the preceding colored circle 0 (not visible at all) to 3 (clearly visible). Experiments 1/2 had 53%/39% cue-present rating-0 trials; nonzero ratings defined aware trials, and rating-3-only analyses reportedly gave similar Experiment-1 results. Experiment 2 added a separate 100-trial cue-localization block: rating-0 accuracy 25.07% (SE 3.24%), t<1, against 25% chance. This converges with subjective reports but does not prove exhaustive invisibility or first-order matching; replacing target response by cue localization changes attention/task demands. Experiment 3 used a coarser binary cue report; the authors explicitly acknowledge partial-awareness contamination. Its different timing and suppression do not inherit the Experiment-2 validation.",
+            "comparison": "Experiments 1 and 2: matching-color same-versus-different-location benefit, compared between visibility 0 and visibility 1–3; Experiment 3: same-color benefit compared between saw/did-not-see trials.",
+            "contribution_reasoning": "Located positive unaware effects plus actual direct nondifference tests offer more than an unaware-only priming result. Physical settings and task demands remain fixed within experiments. The useful constraint is that strong spatial capture can coexist with reported invisibility and did not measurably grow with reported visibility here; uncertain internal evidence and limited null precision bound that claim.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "asset-d3b306923fed731fa669",
+                "location_detail": "Experiment 1 procedure/results; Fig. 2 and Table 1",
+                "observation": "Matching-color benefits: aware 50 ms (SE 10.35), unaware 36 ms (SE 10.62); both positive, direct difference F(1,52)=1.76,p>.19.",
+                "unit_ids": [
+                  "page:5",
+                  "page:6"
+                ]
+              },
+              {
+                "asset_id": "asset-d3b306923fed731fa669",
+                "location_detail": "Experiment 2 results and awareness-check block",
+                "observation": "Benefits 55/40 ms aware/unaware; direct difference F<1. Null-rated cue localization was 25.07% (SE 3.24%).",
+                "unit_ids": [
+                  "page:7",
+                  "page:8"
+                ]
+              },
+              {
+                "asset_id": "asset-d3b306923fed731fa669",
+                "location_detail": "Experiment 3 procedure/results and Note 1",
+                "observation": "Same-color benefits 104 ms in both regimes (SE 11/12), both p<.0001; direct difference F<1. Binary visibility may conceal partial awareness.",
+                "unit_ids": [
+                  "page:9",
+                  "page:10",
+                  "page:11"
+                ]
+              }
+            ],
+            "downstream_use": "Spatial attentional capture by a task-relevant cue, operationalized as improved subsequent-target orientation-response time when target and cue share location. This is use of earlier X in selecting a later target, rather than a direct cue report.",
+            "reason_and_vetting_question": "Retain as a descriptive preserved-capture prospect. Does the author judge subjective colored-circle visibility sufficiently content aligned for spatial/color-contingent capture, given delayed reporting and the explicit binary-report limitation? Do not treat nonsignificance as equality.",
+            "remaining_alternative": "Internal cue evidence was not matched, cue reporting followed the target response, report criterion/retention can sort trials, and the binary report has acknowledged sensitivity limits. No equivalence margin or positive null evidence was supplied.",
+            "supported_claim": "Task-relevant spatial cueing is demonstrable on trials reported as unseen, and these experiments detected no awareness-linked change in its magnitude. This is descriptive preservation within this paradigm, not equivalence.",
+            "x_and_existence": "X is the pretarget colored-circle cue, including its spatial position and color relevant to the search set. It was physically presented under the same duration/suppression settings in both reported regimes. Color-contingent location effects on a later target establish use beyond cue registration."
+          },
+          {
+            "awareness_evidence": "The same trialwise colored-circle reports described above concern the focal cue. Higher reports reflect conscious cue experience rather than a manipulated signal increment, but endogenous internal strength and report differences remain. Experiment-2 objective validation adds bounded convergence; Experiment-3 binary reports explicitly allow partial awareness.",
+            "comparison": "Preserve the focal color-relation × cue-location mapping in each physical experiment. Experiments 1/2 compare relevant and irrelevant cue colors; Experiment 3 compares same and different cue-target colors during singleton search, crossed with reported visibility.",
+            "contribution_reasoning": "The fixed-setting aware/unaware contrasts and their full factorial structure provide a source-grounded association worth vetting despite weak signal control. Experiment 3 supplies a directly motivated contrary net-benefit pattern; it cannot silently confer diagnostic control on Experiments 1/2 or on the standalone cost claim. The article constrains operational spatial selection more securely than object-file updating as a unique mechanism.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "asset-d3b306923fed731fa669",
+                "location_detail": "Experiments 1 and 2 color × location × awareness results",
+                "observation": "Omnibus interactions F(4,52)=14.99 and F(4,44)=12.30. Irrelevant-color costs were 33 versus 1 ms and 35 versus 2 ms aware/unaware; direct differences p<.04 in each experiment.",
+                "unit_ids": [
+                  "page:6",
+                  "page:7"
+                ]
+              },
+              {
+                "asset_id": "asset-d3b306923fed731fa669",
+                "location_detail": "Experiment 3 planned control and critical results",
+                "observation": "Same-color benefits 104/104 ms, different-color benefits 8/43 ms aware/unaware. Omnibus F(4,45)=13.74,p<.0001; different-color direct contrast F(1,45)=3.92,p<.055. This trend is not a conventionally significant isolated difference.",
+                "unit_ids": [
+                  "page:9",
+                  "page:10"
+                ]
+              },
+              {
+                "asset_id": "asset-d3b306923fed731fa669",
+                "location_detail": "General Discussion and Note 1",
+                "observation": "Object-updating interpretation relies on earlier continuity findings not supplied here. Note 1 acknowledges the unexpected same/different-color disparity within unseen trials and attributes it to partial awareness.",
+                "unit_ids": [
+                  "page:10",
+                  "page:11"
+                ]
+              }
+            ],
+            "downstream_use": "Color-dependent spatial guidance of subsequent target selection: cue-target position changes the response benefit/cost differently depending on color relation. Capture and same-location costs are components of this common operational mapping; object-file updating is a proposed mechanism, with inhibition/disengagement alternatives.",
+            "reason_and_vetting_question": "Retain the whole mapping and qualified component results. Is Experiment 3 sufficient to challenge the independently justified simple same-Y scalar account, given its p<.055 component contrast and acknowledged contamination, or should its E classification remain physical-only? Earlier continuity experiments would be required to make a stronger object-file-specific claim.",
+            "remaining_alternative": "Experiments 1/2 can reflect stronger amplification of both signed effects. Experiment 3 is consistent with selective strengthening of a mismatch cost superimposed on capture; whether the whole mapping meets the frozen diagnostic scalar-account criterion needs explicit scoped review. Earlier continuity evidence is unavailable for a specific object-file mechanism, and Experiment-3 partial awareness prevents a necessity claim.",
+            "supported_claim": "Reported awareness is associated with a changed color-dependent spatial-selection profile. The Experiment-3 planned reduction in net benefit for seen different-color cues challenges a simple account predicting uniform strengthening of positive cueing, but its component contrast is imprecise and the underlying mixture of capture and mismatch cost remains unresolved.",
+            "x_and_existence": "The same pretarget colored circle provides color and position for the subsequent selection mapping. Experiment-3 target color is unpredictable, so different-color cues remain task relevant; they must not be equated with the ignored cues of Experiments 1/2."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "A useful same-cue awareness/use comparison: physically fixed liminal cues were grouped by trialwise subjective visibility while subsequent-target spatial cueing was measured. Relevant-color capture survives reported invisibility with directly tested descriptive nondifferences; irrelevant/different-color cueing changes across visibility. This supports a bounded functional profile, without establishing equality, awareness causation or necessity of consciousness for object-file formation.",
+        "reading_gaps": [
+          "All supplied extracted text units page:1–page:12 were read. Graphical source pixels were not provided; axes, captions and text were read, but Figure-4 higher-rating accuracy values cannot be recovered precisely from text.",
+          "Supplement inventory has not been independently verified; no additional supplement text was supplied.",
+          "Carmel & Lamy (2014) continuity controls and the brief-exposure pilot were described but originals/data were not supplied. The conservative spatial-selection claim does not require their object-file mechanism to be established.",
+          "Experiment-2 accuracy prose is internally inconsistent: p.6 states more errors for aware trials, followed by a sentence saying fewer errors when consciously perceived; Table 1 and the first statement support more errors overall. RT claims are separated from that inconsistency."
+        ],
+        "source_identity": {
+          "reason": "DOI 10.1177/0956797614556777, title, four authors and experimental content match. Supplied version is the November 2014 OnlineFirst article (bibliographic record year 2015); ResearchGate cover pages precede ten article pages.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [
+        {
+          "experiment_id": "P000003_E01",
+          "experiment_label": "Experiment 1",
+          "source_location": "asset-d3b306923fed731fa669 page:4 Experiment 1 Methods; results pages 5–6",
+          "functional_structure_assessment": "factorial-functional-required",
+          "functional_structure_reason": "The same cue color/location information, target-orientation response, and cue-target stage occur across the relevant/same-color and irrelevant/different-color cells. The three-way awareness × color relation × location analysis tests one mapping from cue properties to spatial prioritization of later target processing. Benefits and costs alone do not prove distinct functions; retain the focal factorial relation before the optional capture component.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Cue content is available to influence a later target decision, awareness of that same colored-circle cue is measured, and spatial target processing supplies distinct downstream use. This supports CORE discovery without assuming strong E or a particular object-file mechanism.",
+          "notes": "Focal mapping: relevant cue benefit 50 ms aware versus 36 ms unaware; irrelevant cost 33 versus 1 ms; omnibus F(4,52)=14.99, p<.000 as printed. These signed changes can reflect scalar amplification, so no E-diagnostic promotion. The linked target-color capture component independently demonstrates a positive function; it does not establish the full factorial mapping under unawareness.",
+          "support_roles": []
+        },
+        {
+          "experiment_id": "P000003_E02",
+          "experiment_label": "Experiment 2",
+          "source_location": "asset-d3b306923fed731fa669 page:7 Experiment 2 Methods/Results; continuation pages 8–9",
+          "functional_structure_assessment": "factorial-functional-required",
+          "functional_structure_reason": "The same cue color/location information, target-orientation response, and cue-target stage occur across the relevant/same-color and irrelevant/different-color cells. The three-way awareness × color relation × location analysis tests one mapping from cue properties to spatial prioritization of later target processing. Benefits and costs alone do not prove distinct functions; retain the focal factorial relation before the optional capture component.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Cue content is available to influence a later target decision, awareness of that same colored-circle cue is measured, and spatial target processing supplies distinct downstream use. This supports CORE discovery without assuming strong E or a particular object-file mechanism.",
+          "notes": "Focal mapping: relevant benefit 55 ms aware versus 40 ms unaware; irrelevant cost 35 versus 2 ms; three-way F(4,44)=12.30, p<.0001. Null-visibility cue localization in the later validation block is 25.07% (SE3.24), t<1, versus 25% chance; no equivalence/indirect sensitivity advantage shown. Do not silently transfer validation across experiments.",
+          "support_roles": []
+        },
+        {
+          "experiment_id": "P000003_E03",
+          "experiment_label": "Experiment 3",
+          "source_location": "asset-d3b306923fed731fa669 page:9 Experiment 3 Method; Results page 10",
+          "functional_structure_assessment": "factorial-functional-required",
+          "functional_structure_reason": "The same cue color/location information, target-orientation response, and cue-target stage occur across the relevant/same-color and irrelevant/different-color cells. The three-way awareness × color relation × location analysis tests one mapping from cue properties to spatial prioritization of later target processing. Benefits and costs alone do not prove distinct functions; retain the focal factorial relation before the optional capture component.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "Cue content is available to influence a later target decision, awareness of that same colored-circle cue is measured, and spatial target processing supplies distinct downstream use. This supports CORE discovery without assuming strong E or a particular object-file mechanism.",
+          "notes": "Focal mapping: same-color benefit 104 ms in each awareness bin; different-color benefit 43 ms unseen versus 8 ms seen (direct contrast F(1,45)=3.92,p<.055); omnibus F(4,45)=13.74,p<.0001. This planned reduction challenges simple strengthening in this changed task, but awareness reports are binary and the paper acknowledges partial-awareness contamination. Speed/accuracy tradeoff, coarse reports and unavailable mechanistic auxiliary evidence prevent unqualified object-file/necessity or invariance claims.",
+          "support_roles": []
+        }
+      ],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "D04",
+        "original_record_sha256": "4a609064e38f1c3aee1eb21207cf286646d000c32b89259dd608851ec3ed96d7",
+        "calibration_input_sha256": "992b98da6d720bfc1546f2f60c86b4ad8d8027303a7cf8961a1e17c3642d15d2",
+        "source": "Saved pipeline snapshot in prospect-roles/dossiers.json; active run not accessed",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_D05": {
+      "paper_id": "REF_D05",
+      "title": "Dali et al. (2023)",
+      "doi": "10.1371/journal.pone.0283158",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "Participants were trained to signal recognition of a commission error with a right-button response on the immediately following Go trial instead of the usual left response. This directly concerns the prior action's erroneous status, not merely stimulus visibility. However, operational classification counted any deviation from the usual response as awareness; an ordinary left response counted as unawareness. Thus, reported errors plausibly indicate conscious access, whereas unreported errors could include missed reports or attentional lapses. Awareness of the erroneous letter's identity was not separately measured. The article's description of reduced awareness in Hester et al. is secondary evidence from an unavailable original, not validation of these classifications.",
+            "comparison": "Within participants, later inhibition was compared following reported versus unreported errors, separately for same-letter and different-letter No-Go opportunities. Stimuli lasted 700 ms with a 600-ms interval throughout; successive No-Go events were separated by four to twelve Go trials. Presentation settings were fixed, but internal attention, encoding strength and error evidence were not matched or titrated.",
+            "contribution_reasoning": "This is a useful bounded prospect because an immediate, content-aligned error report predicts later performance selectively when the previously failed situation recurs. The task's instructed error-dependent contingency supplies a concrete route by which knowledge of having erred can guide later inhibition. The result goes beyond comparing stronger and weaker physical presentations. Nevertheless, the awareness-by-context interaction does not eliminate stronger internal registration or attention as a common cause. The fully reported group interaction supplies an informative nondetection, not equivalence: awareness-related correction was not demonstrably different between users and controls. Cannabis-use moderation adds heterogeneity without establishing cannabis causation.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "asset-b9b1dcc783961a409c38",
+                "location_detail": "Methods 2.3 and 2.4.1: reporting instruction, contingency and outcome model",
+                "observation": "Errors were signalled on the next Go trial. After 75% of first-presentation errors, the next No-Go repeated the failed letter; after correct inhibition, it always differed. Participants knew this contingency. Models predicted inhibition on that later No-Go.",
+                "unit_ids": [
+                  "section:2:body"
+                ]
+              },
+              {
+                "asset_id": "asset-b9b1dcc783961a409c38",
+                "location_detail": "Results 3.3 and Table 4, Model 1; Model 2 narrative",
+                "observation": "For N=70, awareness-by-trial-type OR was 1.76, 95% CI [1.07, 2.89]; the narrative identifies better same-stimulus inhibition after aware errors. Awareness-by-group OR was 0.96 [0.57, 1.62]. In the 36 users, same-stimulus correction showed awareness-by-CUI β=-0.67 [-1.21, -0.14] and awareness-by-onset β=-0.62 [-1.22, -0.02]. Several Model 2 table odds ratios conflict with coefficients or prose.",
+                "unit_ids": [
+                  "section:2:body"
+                ]
+              }
+            ],
+            "downstream_use": "Y is subsequent, context-sensitive response inhibition after an error, conservatively interpreted as prospective behavioral adjustment rather than proof of a particular memory mechanism.",
+            "reason_and_vetting_question": "Retain for human vetting: is the immediate report and recurrence-sensitive performance pattern sufficiently informative about access to error status despite shared attention and reporting demands?",
+            "remaining_alternative": "Better attention or stronger internal error evidence could jointly support reporting and later inhibition. Letter encoding, expectancy and general response caution could contribute; the interaction does not uniquely separate them.",
+            "supported_claim": "Reported awareness of a commission error is associated with improved later inhibition particularly when the failed stimulus recurs.",
+            "x_and_existence": "X is that one's preceding response violated the withholding rule. The logged response and repetition rule establish an actual error; the instructed report supports accessible error information on reported trials. Neither error occurrence nor later success independently establishes an internal representation of X on unreported trials. This claim does not substitute letter identity for error status."
+          },
+          {
+            "awareness_evidence": "The same immediate error-status instruction provides the aligned comparison. Its broad scoring and nonreport ambiguity remain; no independent awareness validation was supplied.",
+            "comparison": "Post-No-Go Go-response times were expressed relative to the pre-No-Go Go response. Analysis began at least three trials after the No-Go to avoid the immediate awareness-button switching artifact. Aware and unaware errors were directly contrasted, alongside correct stops.",
+            "contribution_reasoning": "This separately contributes a different behavioral direction: unreported errors produced greater later slowing, rather than a uniformly larger adjustment after reported errors. The direct, delayed response-speed contrast is interpretable evidence concerning subsequent motor-response dynamics under fixed presentation settings. It does not establish adaptive benefit, unconscious learning, or deliberate caution. Unlike the inhibition mapping, its value rests on its own contrast; the recurrence interaction is not borrowed as its control.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "asset-b9b1dcc783961a409c38",
+                "location_detail": "Methods 2.4.2; Results 3.4; Discussion",
+                "observation": "Both aware and unaware errors were followed by slower responses than correct stops. Slowing was greater after unaware than aware errors, t(236)=3.80, p<.001. The discussion explicitly allows nonfunctional orienting or reactivity instead of adaptive control.",
+                "unit_ids": [
+                  "section:2:body"
+                ]
+              }
+            ],
+            "downstream_use": "Y is adjustment of subsequent motor-response speed, not successful error correction.",
+            "reason_and_vetting_question": "Retain as a bounded behavioral prospect: does delayed slowing offer useful evidence of error-dependent response adjustment, without treating slowing itself as beneficial learning?",
+            "remaining_alternative": "Unreported errors may accompany lapses, surprise or conflict that prolong later responses. Reporting-related motor processes could also persist beyond the excluded immediate trials.",
+            "supported_claim": "Later response slowing differs by reported error awareness, with greater slowing following unreported errors.",
+            "x_and_existence": "X remains the preceding response's erroneous status. Errors objectively occurred in both categories; conscious recognition is supported by the reporting instruction, while registration on nonreport trials remains uncertain."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The article contains its own aligned error-awareness comparisons with later behavioral outcomes. Recurrence-sensitive inhibition is the strongest contribution; neither causal awareness effects nor unconscious error representation are established.",
+        "reading_gaps": [
+          "Graphical pixels were unavailable; figure captions were read.",
+          "No supplements were supplied, and their inventory is unverified.",
+          "Referenced originals, including Hester et al. (2009), Carey et al. (2015), and Dali and Hester (2021), were unavailable.",
+          "OSF data/code were not supplied. Model 2 contains conflicting odds-ratio reporting."
+        ],
+        "source_identity": {
+          "reason": "Supplied front matter matches the requested title, authors and DOI.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [
+        {
+          "experiment_id": "P000016_E01",
+          "experiment_label": "Learning from Inhibition Errors task: cannabis users and controls",
+          "source_location": "asset-b9b1dcc783961a409c38 / section:2:body / §§2.1, 2.3–2.4, 3.2–3.4; Tables 3–4; Fig 1–2 captions",
+          "functional_structure_assessment": "factorial-functional-required",
+          "functional_structure_reason": "For the focal learning question, own commission-error information is related to one later inhibitory output across same- versus different-stimulus contexts and error-awareness categories. The awareness-by-trial-type interaction directly tests this conditional corrective-use mapping; evaluating isolated cells would lose its meaning. Cannabis group and use indices are moderators of this same mapping. The later Go reaction-time adjustment is a distinct output/time-stage and cannot substitute for the focal context-specific correction function.",
+          "disposition": "comparison-bearing",
+          "disposition_reason": "The own commission error is a specific internally generated X; a next-trial error-signaling response substantively attempts to assess awareness of that error; later correct inhibition, especially upon recurrence of the failed letter, is a distinct plausible adaptive use Y. The focal correction comparison is retained for discovery independently of its weak signal control and incomplete unaware-capacity evidence. A separate source-located later-speed adjustment comparison is linked at its distinct temporal/output scope; its adaptive interpretation remains ambiguous and it does not establish correction.",
+          "notes": "§2.3: aware reports require a right-button response instead of the next Go response; operational categorization treats left then left as unaware and any deviation as aware. This broad classification leaves report/compliance limitations. Letter identity awareness is not separately measured; no assertion is made that error awareness establishes awareness of every letter feature. §3.3/Table 4 Model 1: awareness×trial-type beta=0.56, CI [0.06,1.06], OR=1.76 [1.07,2.89]. Neither active first-order matching nor an explicit equivalence margin is reported. Stronger error/stimulus encoding can increase same-stimulus corrective benefit; the interaction alone does not violate that account. §3.4 reports more slowing following unaware than aware errors, but Discussion also considers reactivity/orienting alternatives; that slowing does not establish learning or strategic regulation. No figure pixels, supplementary inventory verification, code reproduction or data reanalysis were available/performed.",
+          "support_roles": []
+        }
+      ],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "D05",
+        "original_record_sha256": "b507f01454a10af14bdd2dcfb8b2c015930abe4869fa6423beef5603b1c99add",
+        "calibration_input_sha256": "3aced8a26c9e3b30fd50870c478e5993d88a666bfce6d26f6bf048f0667fd326",
+        "source": "Saved pipeline snapshot in prospect-roles/dossiers.json; active run not accessed",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_D06": {
+      "paper_id": "REF_D06",
+      "title": "Murphy & Bloom (2015)",
+      "doi": "10.5539/ijps.v7n3p76",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "Participants reported target identities after the stream; they were not asked about visibility or confidence. Correct free recall positively supports conscious access to T2 identity by report time; recognition is weaker because the response list permits guessing and re-exposure. Incorrect reports can reflect forgetting or order errors after initial access, so they do not establish unawareness. This is a plausible content-aligned reportability comparison, not a calibrated awareness score. The article describes earlier missed-target priming and contrary behavioral nulls, but those unavailable originals cannot validate awareness here. Jointly, the evidence supports access-linked facilitation without demonstrating unconscious semantic availability.",
+            "comparison": "Within each experiment, compare related versus unrelated T3-report accuracy separately for correctly and incorrectly reported T2, restricting analysis to T1-correct trials. T2 presentation settings were fixed across report groups; internal signal strength was neither matched nor titrated. Experiment 2 was a separate-sample replication, not a controlled awareness manipulation.",
+            "contribution_reasoning": "The results sections identify the analysis population as all T1-correct trials, rather than selecting only successful T3 reports. Both experiments provide interpretable estimates and direct interaction tests. Thus the contribution is more than significant versus nonsignificant labels: related-context assistance covaries with same-item T2 reportability under fixed presentation settings. Replication across display durations and response formats adds bounded robustness. The incorrect-report findings constrain observed facilitation in those settings, but low T3 accuracy limits sensitivity; they establish neither equivalence nor consciousness as necessary.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_8f47c36bfed91f92",
+                "location_detail": "Sections 2.1.2–2.1.5 and 3.1: stimuli, timing and response instructions",
+                "observation": "Related pairs shared semantic category and association; unrelated pairs reassigned the words. T2 occurred 270 ms after T1 and T3 at 540 ms. After each stream, participants wrote targets in order or selected and numbered them from a printed list. Each experiment had 26 participants.",
+                "unit_ids": [
+                  "page:3",
+                  "page:4",
+                  "page:6"
+                ]
+              },
+              {
+                "asset_id": "SRC_8f47c36bfed91f92",
+                "location_detail": "Section 2.2 and Table 2: Experiment 1 T3 results",
+                "observation": "On T1-correct trials, related/unrelated T3 accuracy was 67.50%/58.84% with T2 correct and 6.94%/8.12% with T2 incorrect. The T2-performance × context interaction was F(1,24)=25.22, p<.001. The incorrect-T2 relatedness test was nonsignificant, p=.120.",
+                "unit_ids": [
+                  "page:5"
+                ]
+              },
+              {
+                "asset_id": "SRC_8f47c36bfed91f92",
+                "location_detail": "Section 3.2: Experiment 2 T3 results",
+                "observation": "Related/unrelated T3 accuracy was 44.04%/35.37% with T2 correct and 11.19%/11.20% with T2 incorrect. The interaction was F(1,24)=7.89, p=.010; the incorrect-T2 relatedness test had p=.99. Words appeared for 15 ms, versus 70 ms in Experiment 1, with the same 90-ms item cycle.",
+                "unit_ids": [
+                  "page:6"
+                ]
+              },
+              {
+                "asset_id": "SRC_8f47c36bfed91f92",
+                "location_detail": "Response-format tests and discussion of previous studies",
+                "observation": "Response-format × T2-performance × context interactions were nonsignificant in both experiments (p=.53 and .86), not evidence of equivalence. The article describes Shapiro et al.’s missed-T2 facilitation and Peressotti/Rolke behavioral nulls. It subsequently interprets its own nulls as requiring conscious identification; that interpretation exceeds the measurements.",
+                "unit_ids": [
+                  "page:2",
+                  "page:5",
+                  "page:6",
+                  "page:7"
+                ]
+              }
+            ],
+            "downstream_use": "Y is contextual assistance to later T3 identification/report. Related-versus-unrelated T3 accuracy tests use of preceding T2 information, rather than direct registration of T2. It does not isolate perceptual priming from consolidation, retrieval or report-stage inference.",
+            "reason_and_vetting_question": "Retain as a supporting prospect for reportability-linked contextual assistance. Human judgment: is this bounded association useful despite delayed reports and internally unmatched encoding strength? Establishing facilitation under verified unawareness, or awareness necessity, would require additional evidence rather than reinterpretation of these nulls.",
+            "remaining_alternative": "Stronger internal T2 encoding or shared attentional success could both enable correct T2 report and amplify related-context assistance to T3. Conditioning on T2 correctness can also change trial composition. Neither physical matching nor the interaction eliminates this signal account; delayed report leaves awareness during T3 processing uncertain.",
+            "supported_claim": "Across two experiments, a related preceding T2 improved later T3 report more when T2 was correctly reported than when it was missed or incorrect. This supports an association between reportable word information and contextual assistance, not the authors’ stronger claim that conscious identification is necessary.",
+            "x_and_existence": "X is T2 word identity as a semantic/associative cue—not conscious knowledge of the composed T2–T3 relationship. T2 was physically presented in both report regimes, and successful report establishes usable identity information. Internal semantic availability on incorrect-report trials remains unverified; failed priming does not establish absent meaning."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The article contains its own interpretable, content-aligned report-group comparisons and direct tests of differing contextual assistance. Its useful contribution is a bounded reportability association under fixed presentation conditions. Response-stage repetition results provide supporting controls, not an independent awareness comparison.",
+        "reading_gaps": [
+          "Original Shapiro et al. Experiment 2 and Peressotti/Rolke studies were not supplied. Similar task timing makes them relevant leads, but repetition, awareness assessment and outcome sensitivity cannot be checked; the article notes 24 versus 16 target exposures.",
+          "No contemporaneous visibility measure, report-latency assessment, conditional trial counts or breakdown of incorrect T2 responses is supplied."
+        ],
+        "source_identity": {
+          "reason": "The title-page title, authors, year and DOI match the requested article. All nine supplied text units were read.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "D06",
+        "original_record_sha256": "0b1bf5d41423cd1d5a79179f0d9c5a52a79ac4e6600c3b0b41c16b5458ed8846",
+        "calibration_input_sha256": "df2437b7a50fe6c95550a16d50c96d687d0df9f5565b7c4083ec7eacef87c835",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_G13": {
+      "paper_id": "REF_G13",
+      "title": "More Power to the Unconscious: Conscious, but Not Unconscious, Exogenous Attention Requires Location Variation",
+      "doi": "10.1177/0956797614560770",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "Immediately after cueing, participants localized the annulus left/right, instructed to “attend to the circle, not the dot” and respond accurately. The masked instruction described one circle appearing earlier. This addresses X but measures registration, not subjective experience. Visible accuracy was 97.8%; selected masked accuracy was 49.30%, p=.46. Chance-based selection and nonsignificance do not prove unawareness. Experiment 2 improves transfer through matched trial sequences and visible practice previews, but remains a separate posttask sample. Sixteen excluded masked observers averaged 72.28% accuracy while generally reporting inability to see the cue; these informal reports concern a different subgroup and challenge accuracy-as-awareness classification. Jointly, the access contrast is plausible, not a validated phenomenal separation.",
+            "comparison": "Experiment 1 compared 20 red, unmasked-cue observers with 24 of 40 black, masked-cue observers meeting the authors’ chance criterion. Cue locations were fixed or randomized; presentation strength and participants were not matched across visibility regimes.",
+            "contribution_reasoning": "The same visible cues facilitated targets when their locations varied, so their fixed-location failure was not general cue impotence. The schedule-specific pattern adds information beyond stronger input simply producing greater facilitation. Replication and the longer-SOA control constrain sensitivity and timing explanations, without matching internal evidence or identifying an awareness-specific mechanism.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_ea329d700cce9957",
+                "location_detail": "Experiment 1 procedure and results",
+                "observation": "Fixed-cue facilitation was 15.7 ms for selected masked observers, p<.001, versus 2.1 ms for visible observers, p=.407; validity×visibility F(1,42)=14.00, p=.001. Random-cue facilitation was 14.9 and 14.2 ms respectively, both p<.001; these estimates do not establish equivalence.",
+                "unit_ids": [
+                  "page:2",
+                  "page:3",
+                  "page:4"
+                ]
+              },
+              {
+                "asset_id": "SRC_ea329d700cce9957",
+                "location_detail": "Above-chance masked subgroup",
+                "observation": "The 16 above-chance masked observers generally reported not seeing the cue and showed 8.5-ms fixed-cue facilitation. Their intermediate result is not an established graded-awareness comparison.",
+                "unit_ids": [
+                  "page:5"
+                ]
+              },
+              {
+                "asset_id": "SRC_ea329d700cce9957",
+                "location_detail": "Experiments 2 and 3 controls",
+                "observation": "Experiment 2 matched 420-trial sequences across cueing and localization: 13 chance-selected observers averaged 49.39% localization and showed 15.6-ms fixed-cue facilitation, p=.001. Experiment 3’s 20 retained visible observers showed −2.9-ms facilitation at 100-ms SOA, p=.317.",
+                "unit_ids": [
+                  "page:6",
+                  "page:7"
+                ]
+              },
+              {
+                "asset_id": "SRC_ea329d700cce9957",
+                "location_detail": "Accuracy and false-alarm controls",
+                "observation": "Misses were below 1%; reported correlations did not detect associations between false alarms and spatial RT differences. This weakens a simple response-propensity explanation but does not eliminate decision dynamics.",
+                "unit_ids": [
+                  "page:6",
+                  "page:8",
+                  "page:9"
+                ]
+              }
+            ],
+            "downstream_use": "Y is location-specific prioritization of a later target, operationalized by invalid-minus-valid dot-detection RT. Detecting the subsequent dot is downstream of cue localization, not another direct test of X.",
+            "reason_and_vetting_question": "Retain as a bounded prospect, not evidence that consciousness abolishes attention. Human judgment: is the schedule-specific dissociation useful despite uncertain phenomenal separation and strength-dependent competition? Independent awareness causality would require additional experimental control.",
+            "remaining_alternative": "Effective cue strength could amplify competing inhibition or adaptation and thereby reduce net facilitation. Color, masking effectiveness, duration and participants differ; residual awareness and task transfer remain uncertain. Neither the inversion nor interaction eliminates this awareness-independent signal account.",
+            "supported_claim": "Repeated masked spatial cues produced greater facilitation of later dot detection than salient unmasked cues: a useful provisional awareness–use comparison concerning net spatial prioritization.",
+            "x_and_existence": "X is the earlier annulus’s left/right location. It was physically instantiated in both regimes; spatially specific target facilitation supports usable location information under masking, without establishing its conscious availability or neural format."
+          },
+          {
+            "awareness_evidence": "The same content-aligned posttask localization evidence and limitations apply. The comparison concerns access to cue location during exposure, inferred retrospectively—not conscious knowledge of repetition or awareness of a remembered regularity.",
+            "comparison": "Identical cue-absent target conditions followed 12 fixed-cue blocks with physically different cue exposures. Matching later probes does not match earlier acquisition.",
+            "contribution_reasoning": "This establishes a persistent influence of visible cue history and supplies mechanistic context for the immediate-use prospect. Independently, however, a more mask-resistant induction yielding a larger aftereffect adds no located constraint beyond an effective-signal explanation.",
+            "decision": "context",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_ea329d700cce9957",
+                "location_detail": "Experiment 1 no-cue results",
+                "observation": "Across 120 cue-absent trials, new-minus-old RT was −12.2 ms after visible cues, p=.001, versus 1.6 ms after masked cues, p=.621; location×visibility F(1,42)=9.17, p=.004.",
+                "unit_ids": [
+                  "page:4"
+                ]
+              },
+              {
+                "asset_id": "SRC_ea329d700cce9957",
+                "location_detail": "Experiment 2 no-cue replication",
+                "observation": "The 13 fixed-cue chance-selected observers showed −2.1-ms aftereffect, p=.692. This is interpretable nondetection, not evidence of equivalence or zero capacity.",
+                "unit_ids": [
+                  "page:7"
+                ]
+              }
+            ],
+            "downstream_use": "Y is persistent location-dependent prioritization when the cue is no longer present.",
+            "reason_and_vetting_question": "Use as context, not a separate prospect. Human judgment: can it help explain the immediate dissociation without borrowing that mapping’s inverted pattern to promote this stronger-induction/larger-aftereffect comparison?",
+            "remaining_alternative": "Induction-dependent adaptation, inhibition or expectancy can explain the later bias. Masked nondetection does not establish awareness necessity.",
+            "supported_claim": "Visible repeated cues generated a later bias against their former location; masked aftereffects were not detected.",
+            "x_and_existence": "X remains earlier cue location. Old/new RT differences establish retained influence after visible exposure; masked nondetection does not establish that retained location information was absent."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The immediate cue-location–target-prioritization comparison offers a bounded, schedule-specific empirical prospect. Awareness classification and signal control remain insufficient for the authors’ necessity claims.",
+        "reading_gaps": [
+          "The online Supplemental Material referenced on pages 3 and 10 was not supplied. Only the article’s description of its alternative RT-cutoff result is available.",
+          "No systematic subjective-visibility instruction or report dataset is supplied."
+        ],
+        "source_identity": {
+          "reason": "The published article’s title, authors, DOI and pagination match the supplied record. All ten supplied text pages were read; no supplement or earlier version was supplied.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "G13",
+        "original_record_sha256": "b859a278c4810f44c4675b41daa6f4a97ca08c020e01fdbdd7f3ede93f626f70",
+        "calibration_input_sha256": "517c860f48636b53e2a259112385634f3ff291c207c42d151ecad750630c1691",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_G14": {
+      "paper_id": "REF_G14",
+      "title": "Disentangling perceptual awareness from nonconscious processing in rhesus monkeys (Macaca mulatta)",
+      "doi": "10.1073/pnas.2017543118",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "E7 asked, immediately after choice but before feedback, how sure participants were that they saw the cue location: 0 meant “I saw nothing at all,” and 3 “I saw it clearly.” This directly addresses X, unlike merely testing reward-rule knowledge.",
+            "comparison": "E7 compares 0-rated with 2–3-rated trials at the same 17-ms duration. Some later-session 17-ms trials supplemented sparse categories. E6 separately compares performance before and after information about cues at fixed 33 ms.",
+            "contribution_reasoning": "Fixed presentation settings, location-aligned reports, and an initially supplied opposite-location rule provide a useful comparison beyond stronger-input/larger-effect findings. The observations concern whether choices follow or oppose usable location information, not successful unconscious inhibition or consciousness being necessary.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_990f512970e66ae1",
+                "location_detail": "Experiments 6–7; Fig. 4 and accompanying results",
+                "observation": "E7 reports below-chance rewarded choices on 0-rated trials and above-chance choices on 2–3-rated trials. The reported χ(3)=24.8, P<0.0001 concerns departure from expected accuracy quartiles, not a direct visibility-group contrast. At unchanged 33 ms in E6, 67% of participants reporting seeing cues after being informed reached the 80% success criterion.",
+                "unit_ids": [
+                  "page:7",
+                  "page:8"
+                ]
+              },
+              {
+                "asset_id": "SRC_d0a06d35a33b6b1e",
+                "location_detail": "Author-version E7 procedure/analysis; Table S1",
+                "observation": "Twenty participants were recruited; three with very sparse 0 ratings were excluded/replaced. Analysis ultimately allowed six trials per report category and added later-session 17-ms trials where needed. Reports preceded correctness feedback; congruent training preceded blocks.",
+                "unit_ids": [
+                  "page:22",
+                  "page:24",
+                  "page:39"
+                ]
+              }
+            ],
+            "downstream_use": "Choosing a reward-bearing chest under an opposite-cue instruction, against a trained cue-following tendency, demonstrates spatial response selection rather than simply reporting cue location.",
+            "reason_and_vetting_question": "Retain as bounded association evidence. Are postchoice reports and sparse-category pooling adequate for the directional-choice contribution?",
+            "remaining_alternative": "Stronger internal signals could support both clearer reports and rule application; weaker signals could favor congruent choices. Retention, report criteria, attention and practice remain alternatives.",
+            "supported_claim": "Reported access to brief cue-location information is associated with opposing versus following that cue in human spatial choices.",
+            "x_and_existence": "X is the star cue’s left/right location. Opposite choices when reportedly seen and cue-following bias when reportedly unseen establish usable spatial information in both categories, without establishing unconscious representation of the inverse reward rule."
+          },
+          {
+            "awareness_evidence": "Retrospective strategy questions recorded voluntary references to stars and their predictiveness. Included short-cue participants reported no cues; explicit star-based strategies support access in the long-cue group. The end-session 64-trial test instructed selection of the chest containing the flash. Its selected-sample chance result is weak corroboration: four above-threshold E1 performers were replaced.",
+            "comparison": "Masked 17/33-ms versus 250-ms cues preceded targets by 667 ms. Exposure duration and internal evidence were not matched.",
+            "contribution_reasoning": "The gaze sequence and baseline comparisons locate a change from cue-directed capture to anticipatory opposite-side preparation. This is a bounded eye-response prospect, not proof that awareness independently causes redirection. Rule-nonreporting participants’ null facilitation does not establish that they possessed an unconscious inverse rule.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_990f512970e66ae1",
+                "location_detail": "E1 results and Fig. 1",
+                "observation": "Short cues slowed eye-based target selection relative to two-cue baseline (F(1,2989)=13.36, P<0.0001); report-aware long cues facilitated it. Both initially attracted gaze, but the latter group redirected before target onset. Long-cue rule-nonreporters showed 324 versus 312 ms, P=0.227.",
+                "unit_ids": [
+                  "page:2",
+                  "page:3",
+                  "page:5"
+                ]
+              },
+              {
+                "asset_id": "SRC_d0a06d35a33b6b1e",
+                "location_detail": "E1 methods and supplementary S1–S2 captions",
+                "observation": "Selected eye-tracked localization performance gave t(15)=1.04, P=0.31. The masked-short keypress cue test was nonsignificant (N=16, P=0.39), but no mean contrast is supplied; it cannot establish absent interference. Unmasked 33-ms cues facilitated participants reporting predictiveness.",
+                "unit_ids": [
+                  "page:18",
+                  "page:19",
+                  "page:24",
+                  "page:30",
+                  "page:32"
+                ]
+              }
+            ],
+            "downstream_use": "Cue-dependent gaze preparation affects localization time for a subsequently appearing target.",
+            "reason_and_vetting_question": "Retain the eye-response comparison; judge its diagnostic value without treating crossover alone as signal control.",
+            "remaining_alternative": "Longer exposure may support location retention and strategic inversion, whereas weaker evidence favors capture. Such strength-dependent processing can produce the crossover.",
+            "supported_claim": "Human cue-location information guides subsequent target localization differently across report-supported visibility regimes.",
+            "x_and_existence": "X remains cue location, demonstrated through location-specific gaze and target-response effects. Nonreport of predictiveness in the 250-ms subgroup is not denial of seeing the cue."
+          },
+          {
+            "awareness_evidence": "Focal monkeys supplied no awareness reports. Human reports support a possible transfer, but forced-guessing localization nulls used selection: 13 above-threshold performers were replaced. Above-chance localization indicates registration, not automatically awareness. The published discussion also describes earlier monkeys reporting “stimulus not there” at 17/33 ms; that original is unavailable. Different viewing geometry, rewards and E2’s 13-ms presentations weaken calibration transfer.",
+            "comparison": "Monkey short/long regimes reproduce human behavioral directions, but their awareness difference remains independently unvalidated.",
+            "contribution_reasoning": "Cue-guided behavior is established, and donor evidence makes awareness transfer worth considering. Neither behavioral similarity nor the crossover itself supplies the missing monkey awareness premise; the no-retraining control also warrants narrower interpretation than the narrative suggests.",
+            "decision": "unresolved",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_990f512970e66ae1",
+                "location_detail": "E2/E4 results and discussion",
+                "observation": "E2 showed short-cue slowing and long-cue facilitation. E4’s two retained monkeys averaged 43.5% correct with short cues, P=0.00018; long-condition testing stopped upon reaching a learning criterion. The discussion explicitly acknowledges absent monkey subjective reports.",
+                "unit_ids": [
+                  "page:5",
+                  "page:6",
+                  "page:8"
+                ]
+              },
+              {
+                "asset_id": "SRC_d0a06d35a33b6b1e",
+                "location_detail": "Monkey methods, awareness exclusions and supplementary S5",
+                "observation": "E2 used 13/17-ms cues. Only one monkey completed the no-retraining control: overall accuracy was 46%, P=0.063, versus 40% in its last 260 trials, P=0.00078. Human cue bias persisted in all 49 participants despite awareness-test exclusions.",
+                "unit_ids": [
+                  "page:19",
+                  "page:20",
+                  "page:21",
+                  "page:24",
+                  "page:36"
+                ]
+              }
+            ],
+            "downstream_use": "The same location-to-orienting and reward-choice mappings occur in monkeys.",
+            "reason_and_vetting_question": "Does independent monkey detection evidence justify transfer to these particular stimuli and tasks? This requires the original evidence or new calibration.",
+            "remaining_alternative": "Signal strength and training-dependent response control could explain both regimes without the proposed awareness difference.",
+            "supported_claim": "Monkey cue-dependent behavioral signatures are clear; interpreting them as an awareness-use comparison remains unresolved.",
+            "x_and_existence": "Cue-location information influences monkey orienting and choices. Its neural format is unspecified, but its behavioral availability is not the main uncertainty."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The human experiments provide content-aligned awareness/use comparisons, especially fixed-duration E7. They do not certify the article’s stronger monkey-awareness or necessity claims.",
+        "reading_gaps": [
+          "Figure images, linked raw data, movies and registration originals were not supplied; captions cannot supply missing plotted estimates.",
+          "Full mixed-interval E7 results, a direct visibility contrast estimate and unambiguous final analysis N are not supplied.",
+          "The final PNAS supplement and Andersen, Basile and Hampton (2014) original are needed to assess version and monkey-calibration transfer."
+        ],
+        "source_identity": {
+          "reason": "The published article matches the requested study. The additional source identifies the same work but is an alternate author manuscript with appended supplementary text, not an independent replication.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "G14",
+        "original_record_sha256": "4b5ee5d62e03c0dba14f7a4f75e4c7b2e25d75daf5d751a05ec8be1a38d15702",
+        "calibration_input_sha256": "7be8db6c213cff4edca464f8561e293607b98fdbce9eb7efd0b41750aeacf538",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_G15": {
+      "paper_id": "REF_G15",
+      "title": "Orienting Attention Without Awareness",
+      "doi": "10.1037/0096-1523.23.1.168",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "The actual instruction was to report whether observers saw the cue, after responding to the target. Experiment 1 queried only the dim-cue block; Experiments 2–3 queried every trial. These reports concern the same isolated lateralized event, making the spatial-content alignment plausible, although side discrimination was not separately verified. Positive reports support subjective access; negative reports support reported nonseeing, not absence of every conscious impression. Failure to reorient is not independent awareness evidence. Experiment 3's target-dependent seeing rates weaken the inference that posttrial reports cleanly describe awareness before target processing.",
+            "comparison": "Experiment 2 intermixed brightness levels, held target-viewing conditions constant, equated report requirements and excluded detected eye movements. Reports, not luminance labels, defined awareness. Its reduced-sample luminance analysis found no effects or interactions (all ps > .20), which does not establish matching. Experiment 3 used one nominal cue luminance within 40-trial blocks, but adjusted monitor brightness between blocks to maintain mixed seeing. Neither design matched internal cue evidence across report groups.",
+            "contribution_reasoning": "This is a supporting prospect for how subjective access relates to spatial prioritization, not proof of two distinct mechanisms or awareness-dependent necessity. Experiment 2's report-conditioned reversal survives important task, target-visibility and eye-movement controls. Experiment 3 contributes positive longer-delay comparisons using a single nominal cue luminance, while its short-delay result establishes cue-side use without reported seeing. Its longer-delay nonreplication bounds the persistence of that facilitation. Together these observations add more than a stronger-input/larger-effect result, although they remain compatible with different processing requirements operating on scalar cue evidence.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_5ab376e10cae116b",
+                "location_detail": "Experiment 2, Results and Table 2",
+                "observation": "Among 14 retained observers, expected meant opposite the cue and unexpected meant the cue side. Seen-trial RTs were 459 versus 489 ms; unseen-trial RTs were 566 versus 550 ms. The awareness-by-location interaction was F(1,13)=23.22, p<.001; both simple cueing effects were significant. Error results showed no apparent speed–accuracy trade-off.",
+                "unit_ids": [
+                  "page:6",
+                  "page:7"
+                ]
+              },
+              {
+                "asset_id": "SRC_5ab376e10cae116b",
+                "location_detail": "Experiment 3, Table 3 and SOA-specific contrasts",
+                "observation": "For eight observers, at 500 ms, seen expected/unexpected RTs were 470/515 ms and unseen RTs 550/550 ms. At 1,000 ms they were 461/523 and 535/539 ms. Awareness-by-location interactions were significant at both delays (p<.01); unseen location contrasts were nonsignificant (Fs<1). Thus persistent unseen cue-side facilitation did not replicate.",
+                "unit_ids": [
+                  "page:8",
+                  "page:9"
+                ]
+              },
+              {
+                "asset_id": "SRC_5ab376e10cae116b",
+                "location_detail": "Experiment 3, 80-ms contrasts, Table 4 and Discussion",
+                "observation": "At 80 ms, unseen expected/unexpected RTs were 602/572 ms, with a significant cue-side benefit, F(1,7)=16.37, p<.01. Seen means were 576/561 ms; the awareness-by-location interaction was F<1, not evidence of equality. Seeing reports depended on target location: 69% for opposite-side targets versus 46% for cue-side targets, consistent with possible interruption or masking.",
+                "unit_ids": [
+                  "page:8",
+                  "page:9",
+                  "page:10"
+                ]
+              },
+              {
+                "asset_id": "SRC_5ab376e10cae116b",
+                "location_detail": "Experiment 1, Procedure, Results and Discussion",
+                "observation": "The cue lasted 15 ms, followed by the target after the stated 500-ms delay; observers then reported seeing/not seeing. Experiment 1 showed a cueing reversal (interaction p<.01), but illumination, target visibility, block order and report-task requirements differed between regimes, making this weaker corroboration.",
+                "unit_ids": [
+                  "page:4",
+                  "page:5"
+                ]
+              }
+            ],
+            "downstream_use": "Y is spatial prioritization supporting later X/O identification. Location-dependent target RTs demonstrate use of earlier cue information, rather than direct cue detection. The instructed opposite-side rule was shared task knowledge, not the focal awareness comparison.",
+            "reason_and_vetting_question": "Retain as a bounded supporting prospect. Human judgment: is the report-conditioned spatial pattern useful for the intended synthesis despite unmatched internal evidence and delayed, target-sensitive reports, without interpreting awareness as independently causal?",
+            "remaining_alternative": "Weaker or slower cue evidence could still facilitate the cue side while failing to support instructed opposite-side allocation, producing the crossover without a causal role for awareness. Report criterion, retention and target-induced masking also remain alternatives. Experiment 2 excluded one observer with excessive unseen-trial errors, restricting inference to the retained population. The longer-delay nulls do not establish equivalence, zero capacity or necessity. Distinguishing awareness from these alternatives would require additional controlled evidence.",
+            "supported_claim": "Reported seeing of a lateralized cue accompanies instructed opposite-side benefits in later target identification; cue-side facilitation can occur without reported seeing. The relation depends on delay and experimental setting, rather than showing that awareness is necessary for spatial orienting.",
+            "x_and_existence": "X is the occurrence and side of the peripheral bar. It was physically presented in both report regimes. Cue-location-dependent target performance establishes usable spatial information on unseen Experiment 2 trials and unseen short-delay Experiment 3 trials. Longer-delay unseen nulls do not independently establish that the information remained available. No particular neural representation is required."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The article contains its own interpretable, content-linked subjective-awareness comparisons of downstream spatial use. Their bounded value survives the contrary longer-delay findings, but does not establish independent causation by awareness.",
+        "reading_gaps": [
+          "No separate supplement or cited original experiments were supplied; their descriptions remain secondary context.",
+          "The extraction contains inconsistent Experiment 3 omnibus significance signs, degrees of freedom and aggregate seeing percentages. No page images or trial-level data were supplied to resolve these; the assessment relies on tables and explicit SOA-specific contrasts."
+        ],
+        "source_identity": {
+          "reason": "The title, author and publication header match the requested published article, which reports its own experiments.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "G15",
+        "original_record_sha256": "cb325ac61acccc4950efc91cbc4334a000f0e95fee981f534463f647e6fc1608",
+        "calibration_input_sha256": "7c520c9eac517148e3f7b74a3b63d677ded5b0e85050ff1e32b3746ae89635d3",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_G16": {
+      "paper_id": "REF_G16",
+      "title": "Neural correlates of error awareness",
+      "doi": "10.1016/j.neuroimage.2006.11.014",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "After each response window, participants reported whether they had initially looked in the correct direction. Recorded errors reported as incorrect were classified as aware; those reported as correct were classified as unaware. This directly addresses initial-response error content. Reports followed a 1000-ms response window, during a 2000-ms rating period; retention, correction and reporting biases remain possible. The 3% false-alarm rate supports report specificity, not perfect sensitivity.",
+            "comparison": "The comparison uses naturally occurring errors within the same task and participants, not manipulated awareness. Acquisition of error evidence was not matched: aware errors had larger initial saccades than unaware errors, 7.5° versus 6.0°. Nonsignificant latency and RCZ differences do not establish matched internal signals.",
+            "contribution_reasoning": "Trial-specific, content-aligned reports and an actual between-category accuracy contrast provide a bounded association beyond an externally stronger-input/larger-effect comparison. However, the result supports next-trial accuracy, not the authors’ broader claim that awareness enables the entire speed–accuracy adjustment function. Whole-sample slowing was not detected, and the nine participants selected for showing slowing cannot independently establish an awareness-specific effect.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_fec9c18baf797c8b",
+                "location_detail": "Results, Behavioural data; Table 2",
+                "observation": "In 13 participants, next-trial error rates were 12.49% ± 2.8 after aware errors and 18.79% ± 3.9 after unaware errors, T = −2.07, p = 0.03. Group post-error slowing was nonsignificant overall and for both error categories, ps > 0.344.",
+                "unit_ids": [
+                  "page:4",
+                  "page:5"
+                ]
+              },
+              {
+                "asset_id": "SRC_fec9c18baf797c8b",
+                "location_detail": "Task and Eye tracking",
+                "observation": "Initial wrong-direction saccades counted as errors even when immediately corrected; awareness reports explicitly concerned the initial direction.",
+                "unit_ids": [
+                  "page:3"
+                ]
+              },
+              {
+                "asset_id": "SRC_fec9c18baf797c8b",
+                "location_detail": "Introduction; Error awareness and post-error adjustments",
+                "observation": "The article describes contrary earlier slowing findings from Endrass et al., while its Discussion claims adjustments occurred only after aware errors. Those descriptions do not override the focal whole-sample slowing results.",
+                "unit_ids": [
+                  "page:2",
+                  "page:7"
+                ]
+              }
+            ],
+            "downstream_use": "Accuracy on trial N+1 is subsequent action performance, distinct from detecting or reporting the error on trial N.",
+            "reason_and_vetting_question": "Retain as an associational prospect: is this within-task accuracy difference useful despite uncontrolled error-signal strength and serial attentional state?",
+            "remaining_alternative": "Stronger error evidence, better ongoing attention, or effects of the different report responses could produce both acknowledged errors and better subsequent performance without awareness independently enabling adjustment.",
+            "supported_claim": "Explicitly acknowledged antisaccade errors were followed by fewer errors on the next trial than unacknowledged errors.",
+            "x_and_existence": "X is the initial gaze–goal mismatch: looking toward the peripheral stimulus despite the instruction to look away. Eye tracking establishes erroneous actions in both report regimes."
+          },
+          {
+            "awareness_evidence": "The same initial-direction instruction tracks this X, including corrected errors. Nevertheless, reporting occurs after correction, so nonacknowledgment does not establish absence of transient awareness during the corrective movement.",
+            "comparison": "Both categories contain recorded initial errors. Their correction probabilities are directly compared, but saccade amplitude and endogenous evidence differ; no achieved signal matching was demonstrated.",
+            "contribution_reasoning": "This supplies a distinct, plausible online motor-use comparison across retrospective access to the same error content. It shows that report-defined unawareness accompanies substantial corrective performance. Its reverse association is informative for correction itself, not a signal-control argument for next-trial accuracy.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_fec9c18baf797c8b",
+                "location_detail": "Behavioural data; Task",
+                "observation": "Unaware errors were corrected more frequently than aware errors: 76.0% ± 5.6 versus 59.3% ± 7.9, T = −2.54, p = 0.03. Corrected initial errors remained classified as errors.",
+                "unit_ids": [
+                  "page:3",
+                  "page:4"
+                ]
+              }
+            ],
+            "downstream_use": "Immediate corrective gaze movement is a plausible motor adjustment resolving the initial gaze–goal discrepancy.",
+            "reason_and_vetting_question": "Retain provisionally: is corrective reorientation sufficiently diagnostic of using the initial mismatch to merit supplementary awareness–use value?",
+            "remaining_alternative": "Correction could reflect completion of an already prepared antisaccade rather than feedback from the initial error; correction could also obscure later recollection of that error.",
+            "supported_claim": "Recorded errors later denied in the awareness report were often corrected, and more frequently than acknowledged errors.",
+            "x_and_existence": "X remains the initial erroneous gaze relative to the instructed goal—not peripheral-stimulus information or a broadened response program. Recorded errors and subsequent corrections establish a behaviorally resolvable mismatch."
+          },
+          {
+            "awareness_evidence": "Reports measured awareness of the initial action error, not awareness of bodily changes.",
+            "comparison": "Aware and unaware errors differed in insular activity; RCZ activity did not significantly differ. Neither finding establishes matched error information or a downstream autonomic function.",
+            "contribution_reasoning": "These are useful neural-registration and awareness-correlate observations, but the proposed autonomic/interoceptive explanation lacks measured bodily responses and bodily-awareness reports. It therefore does not supply another empirical awareness–use mapping.",
+            "decision": "context",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_fec9c18baf797c8b",
+                "location_detail": "Eye tracking; FMRI data; Discussion",
+                "observation": "Left insular activity was greater for aware errors, T = 4.34, p < 0.0001; the RCZ contrast was nonsignificant, T = 1.32, p = 0.211. Pupillary recording was technically unavailable, and autonomic explanations were explicitly speculative.",
+                "unit_ids": [
+                  "page:3",
+                  "page:4",
+                  "page:5"
+                ]
+              }
+            ],
+            "downstream_use": "No autonomic outcome was measured; regional BOLD differences alone do not demonstrate downstream use.",
+            "reason_and_vetting_question": "Keep as mechanistic context, not a functional prospect.",
+            "remaining_alternative": "Insular activity could reflect stronger error evidence, autonomic implementation, or awareness rather than a demonstrated causal pathway.",
+            "supported_claim": "Error acknowledgment covaried with insular activity, but autonomic use was not established.",
+            "x_and_existence": "Initial-error content is established; the hypothesized visceral content was not measured."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The article contains its own content-aligned behavioral comparisons. Next-trial accuracy is the strongest prospect, with immediate correction a bounded supplementary prospect; neither establishes awareness necessity.",
+        "reading_gaps": [
+          "Supplementary information A and B were referenced but not supplied.",
+          "Original Nieuwenhuis, Endrass and Hester studies were unavailable; their descriptions remain contextual, with task, timing and sensitivity differences unverified.",
+          "Figure images were not supplied; conclusions use extracted text and captions only."
+        ],
+        "source_identity": {
+          "reason": "The supplied article’s title, authors, DOI and publication details match the identified paper.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "G16",
+        "original_record_sha256": "a01de5a8ff18f82e03dbc3af7225a8c6ee72c609f80081c2dd0f71a96808ace1",
+        "calibration_input_sha256": "05cc5a97d448a38ec398a438d8edfc195ff129ecf759a5abd580a1e453c67296",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    },
+    "REF_G17": {
+      "paper_id": "REF_G17",
+      "title": "Adaptation following errors: Error awareness predicts future performance",
+      "doi": "10.3758/s13421-021-01246-2",
+      "assessment": {
+        "assessment_status": "complete",
+        "claims": [
+          {
+            "awareness_evidence": "Participants were trained to signal recognition of a commission error with a right-button response on the immediately following Go trial, before the later inhibition outcome. This instruction addresses conscious recognition that their own action was erroneous, not merely visibility of the letter. However, the analysis classified any departure from the left-on-error/left-on-following-Go pattern as aware. Signalling failures, delayed recognition and unrelated deviations could therefore contaminate both categories. The defensible comparison is between errors classified as reported/aware and unreported/unaware, not independently verified conscious and wholly unconscious error representations.",
+            "comparison": "The groups shared stimulus durations, task instructions and error-recurrence rules; awareness was observed rather than manipulated. This provides a bounded comparison without deliberately increasing stimulus strength, but neither exact item matching nor matched internal evidence was demonstrated. Subject/block random effects address clustering, not momentary attention or error-signal strength. Nonsignificant response-speed and interval differences do not establish matching. The different-letter estimate is interpretable contrary evidence against an unrestricted benefit, but its confidence interval includes substantial benefits, including the same-letter estimate. Separate significant and nonsignificant models do not establish an awareness-by-recurrence interaction.",
+            "contribution_reasoning": "The trained, temporally prior error report and subsequent inhibitory outcome form a plausible content-aligned awareness–use comparison. The task supplies a concrete opportunity for error information to guide later action, and recurrence improves stopping overall. Thus, the result contributes an interpretable association between reported error recognition and delayed corrective control, rather than merely documenting stronger physical input producing a larger effect. The different-letter estimate and response-speed controls bound general-caution interpretations. They do not establish that awareness uniquely causes adaptation, that its benefit is exclusively stimulus-specific, or that error information was used without awareness.",
+            "decision": "prospect",
+            "decisive_evidence": [
+              {
+                "asset_id": "SRC_83d643f01bb90171",
+                "location_detail": "Participants; Results and Table 2, same-stimulus model",
+                "observation": "In the 51-participant study, awareness classification predicted successful inhibition on the next same-letter No-Go: β = 0.50, 95% CI [0.13, 0.83], OR = 1.64 [1.14, 2.30]. Reported correction rates were 78% after aware versus 65% after unaware errors.",
+                "unit_ids": [
+                  "page:2",
+                  "page:5"
+                ]
+              },
+              {
+                "asset_id": "SRC_83d643f01bb90171",
+                "location_detail": "Behavioural task and No-Go event classification",
+                "observation": "Error recognition was signalled on the following Go trial. After 75% of first-presentation errors, the next No-Go repeated the failed letter, which could not appear on intervening Go trials. No-Go trials were separated by 4–12 Go trials; stimuli lasted 700 ms with a 600-ms interval.",
+                "unit_ids": [
+                  "page:2",
+                  "page:3"
+                ]
+              },
+              {
+                "asset_id": "SRC_83d643f01bb90171",
+                "location_detail": "Results, different-stimulus model; final Discussion limitation",
+                "observation": "Overall post-error stopping was higher for same-letter than different-letter trials, 75.26% versus 48.92%. For different-letter trials, the awareness estimate was β = 0.06 [-0.46, 0.60], OR = 1.06 [0.63, 1.90]. The authors note substantially fewer such trials and uncertainty introduced by the dominant recurrence contingency.",
+                "unit_ids": [
+                  "page:5",
+                  "page:8"
+                ]
+              },
+              {
+                "asset_id": "SRC_83d643f01bb90171",
+                "location_detail": "Pre-No-Go reaction-time results; Discussion of signalling interference",
+                "observation": "Awareness did not detectably predict reaction time immediately before the subsequent No-Go, β = -4.11, 95% CI [-23.78, 15.56]. Some early post-error comparisons showed speeding rather than slowing, but the authors acknowledge that the awareness response interferes with response-speed measurement.",
+                "unit_ids": [
+                  "page:6",
+                  "page:7"
+                ]
+              }
+            ],
+            "downstream_use": "Y is successful withholding on a later No-Go under an error-dependent recurrence contingency, not the response used to register or report the original error. Participants knew an error usually predicted recurrence of its letter. The recurrence advantage and awareness-conditioned stopping association support delayed corrective control, although they do not uniquely identify learning, explicit prediction or the representation used.",
+            "reason_and_vetting_question": "Retain as a bounded observational prospect. Human vetting should judge whether the trained report instruction and prospective timing support a sufficiently credible awareness comparison despite broad classification and the signalling action itself.",
+            "remaining_alternative": "Stronger endogenous error evidence or better attention could jointly increase report likelihood, retention of the failed letter and later inhibition. Signalling could also rehearse or mark the error. These explanations survive the speed controls; separating them from an independent awareness contribution requires additional experimental control, not simply rereading.",
+            "supported_claim": "Commission errors classified as aware were more often followed by successful inhibition when the failed letter recurred. This supports awareness-associated delayed corrective performance, not proof that consciousness causes learning or is necessary for correction.",
+            "x_and_existence": "X is the occurrence of one's own commission error: responding to a repeated letter when withholding was required. Objective commission errors occurred in both report categories. Their occurrence establishes an information-bearing event, but does not independently establish internal registration of error content on unreported trials. X is not reformulated as conscious knowledge of letter identity or the predictive contingency, neither of which was separately measured."
+          }
+        ],
+        "paper_decision": "prospect",
+        "paper_reason": "The article contains its own interpretable, content-aligned prospective comparison. Its contribution is awareness-associated delayed inhibitory adaptation. The different-letter nondetection limits, but does not prove, task specificity; response-speed observations serve as controls rather than a separate adaptation claim.",
+        "reading_gaps": [
+          "The described OSF data and code were not supplied; report-compliance details cannot be independently checked.",
+          "Cited original motor and anti-saccade studies were unavailable. Their mixed findings remain secondary descriptions, not independent validation of this awareness measure.",
+          "Only extracted text and figure captions were supplied; figure artwork was not inspected."
+        ],
+        "source_identity": {
+          "reason": "Title, authors and DOI match. The 2021 online publication date is compatible with the 2022 journal volume.",
+          "status": "match"
+        },
+        "unread_source_units": []
+      },
+      "experiment_structure": [],
+      "source_generation": null,
+      "reader_job": null,
+      "assessment_source_generation": null,
+      "assessment_packet_sha256": null,
+      "reference_provenance": {
+        "calibration_case": "G17",
+        "original_record_sha256": "905b57cc88d4134d0baf37d6845d451c723301700bdde1106a80de6c15873fa8",
+        "calibration_input_sha256": "5812c566c83e73ec4cf444526ef742af9f039273db8fe5818d03ce6e2d520edb",
+        "source": "Archived exact pipeline source-reader result; source packet not reread",
+        "scope": "Approved fixed evaluator reference; never imported into the scientific run or source-only readers"
+      }
+    }
+  },
+  "limitations": [
+    "Reference facts retain their original coverage and limitations; no new source reading or independent certification is claimed.",
+    "Target and reference may represent different extraction views of the same logical work; disclose differences rather than force a self-tie.",
+    "No reference judgments enter the active scientific ledger or scientific reader context."
+  ]
+}

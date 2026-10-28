@@ -166,6 +166,9 @@ def _factor_value_schema():
 
 
 def _schema(job):
+    if job.get("ranking_layout"):
+        from .advisory_rankings import schema
+        return schema(job)
     text = {"type": "string", "minLength": 1}
     if job["kind"] == "ranking":
         tier = {"type": "object", "additionalProperties": False,
@@ -198,6 +201,9 @@ def _schema(job):
 
 
 def _prompt(job, policy, records):
+    if job.get("ranking_layout"):
+        from .advisory_rankings import prompt
+        return prompt(job, policy, records)
     inventory = []
     for row in records:
         clean = {k: row[k] for k in ("paper_id", "title", "doi", "assessment", "experiment_structure")}
@@ -232,6 +238,8 @@ def _manifest(workspace):
         raise ValueError("Advisory policy changed")
     if _hash(_read(workspace / "snapshot.json")) != m["snapshot_sha256"]:
         raise ValueError("Advisory source snapshot changed")
+    if m.get("reference_baseline_sha256") and _hash(_read(workspace / "reference_baseline.json")) != m["reference_baseline_sha256"]:
+        raise ValueError("Evaluator baseline changed")
     return workspace, m
 
 
@@ -318,10 +326,19 @@ def _job(workspace, entry):
     for name, key in (("prompt.txt", "prompt_sha256"), ("schema.json", "schema_sha256")):
         if _bytes_hash((directory / name).read_bytes()) != entry[key]:
             raise ValueError("Advisory work file changed: " + name)
+    if job.get("ranking_layout"):
+        expected_baseline = origin / "reference_baseline.json"
+        if Path(job["reference_baseline_path"]).resolve() != expected_baseline.resolve():
+            raise ValueError("Evaluator baseline must belong to the bound workspace")
+        if _hash(_read(expected_baseline)) != job["reference_baseline_sha256"]:
+            raise ValueError("Bound evaluator baseline changed")
     return directory, job
 
 
 def _current(job, rows, policy, references=None):
+    if job.get("ranking_layout"):
+        from .advisory_rankings import current
+        return current(job, rows, policy)
     present = all(pid in rows and isinstance(rows[pid].get("assessment"), dict)
                   and rows[pid]["assessment"].get("claims") for pid in job["cohort"])
     return (present and all(rows[pid]["assessment"].get("paper_decision") == "prospect" for pid in job["targets"]) and
@@ -330,6 +347,18 @@ def _current(job, rows, policy, references=None):
 
 
 def prepare(export, workspace, *, model, effort, harness, actor, reason, kinds=("ranking",),
+            paper_ids=None, batch_size=20, previous=None, timeout_seconds=900, max_prompt_bytes=None,
+            replaces=None, legacy=False):
+    settings=dict(model=model,effort=effort,harness=harness,actor=actor,reason=reason,kinds=kinds,
+                  paper_ids=paper_ids,batch_size=batch_size,previous=previous,timeout_seconds=timeout_seconds,max_prompt_bytes=max_prompt_bytes)
+    if legacy or list(dict.fromkeys(kinds)) == ["factors"]:
+        if replaces: raise ValueError("Replacement pass applies to the complete-reference ranking workflow")
+        return _prepare_legacy(export, workspace, **settings)
+    from .advisory_rankings import prepare as fixed_prepare
+    return fixed_prepare(export, workspace, replaces=replaces, **settings)
+
+
+def _prepare_legacy(export, workspace, *, model, effort, harness, actor, reason, kinds=("ranking",),
             paper_ids=None, batch_size=20, previous=None, timeout_seconds=900, max_prompt_bytes=None):
     export, workspace = Path(export).resolve(), Path(workspace).resolve()
     if workspace.exists() or workspace == export or workspace in export.parents:
@@ -454,6 +483,15 @@ def _validate_answer(job, answer, schema):
     if errors:
         raise ValueError("Invalid advisory answer: " + errors[0].message)
     body = answer["result"]
+    if job.get("ranking_layout"):
+        for role, head in body["placements"].items():
+            for pid in job["targets"]:
+                q=head[pid]
+                if q["comparability"] in {"comparable", "qualified-lead"} and (q["supported_claim_key"] is None or q["closest_reference"] is None or not q["source_basis"]):
+                    raise ValueError("Positive comparability needs a focal claim, reference and evidence pointers")
+                if q["tier"] is None and q["comparability"] != "unresolved":
+                    raise ValueError("Unrankable target must preserve unresolved comparability")
+        return
     if job["kind"] == "ranking":
         for head in body["rankings"].values():
             ids = [p for t in head["tiers"] for p in t["paper_ids"]] + [u["paper_id"] for u in head["unrankable"]]
@@ -520,6 +558,9 @@ def submit(workspace, job_id, answer_path, execution_path, *, events_path=None):
 
 
 def indices(job, result, role):
+    if job.get("ranking_layout"):
+        from .advisory_rankings import indices as fixed_indices
+        return fixed_indices(job, result, role)
     ranks = {p: i for i, t in enumerate(result["rankings"][role]["tiers"]) for p in t["paper_ids"]}
     refs = job["references"][role]
     values = {}
@@ -570,6 +611,9 @@ def status(workspace):
 
 def render(workspace):
     root, manifest = _manifest(workspace)
+    if manifest.get("ranking_layout"):
+        from .advisory_rankings import render as fixed_render
+        return fixed_render(root)
     summary = status(root)
     snapshot = _read(root / "snapshot.json")
     output = {pid: {"paper_id": pid, "title": row.get("title"), "assessment": row["assessment"], "experiment_structure": row["experiment_structure"],
@@ -633,7 +677,7 @@ def main(argv=None):
     p.add_argument("--actor", required=True); p.add_argument("--reason", required=True)
     p.add_argument("--kind", action="append", choices=["ranking", "factors"])
     p.add_argument("--paper-id", action="append", help="Optional subset of flagged prospects; non-prospect IDs are rejected"); p.add_argument("--batch-size", type=int, default=20)
-    p.add_argument("--previous", type=Path); p.add_argument("--timeout-seconds", type=int, default=900)
+    p.add_argument("--previous", type=Path); p.add_argument("--replaces", type=Path, help="Explicitly commissioned replacement pass on the same export; preserves the prior review"); p.add_argument("--timeout-seconds", type=int, default=900)
     p.add_argument("--max-prompt-bytes", type=int)
     p = sub.add_parser("claim", help="Create a one-time dispatch ticket before launching a review worker")
     p.add_argument("--workspace", required=True, type=Path); p.add_argument("--job-id", required=True); p.add_argument("--owner", required=True)
@@ -652,7 +696,7 @@ def main(argv=None):
             result = prepare(args.export, args.workspace, model=args.model, effort=args.effort, harness=args.harness,
                              actor=args.actor, reason=args.reason, kinds=args.kind or ("ranking",), paper_ids=args.paper_id,
                              batch_size=args.batch_size, previous=args.previous, timeout_seconds=args.timeout_seconds,
-                             max_prompt_bytes=args.max_prompt_bytes)
+                             max_prompt_bytes=args.max_prompt_bytes, replaces=args.replaces)
         elif args.command == "claim":
             result = claim(args.workspace, args.job_id, owner=args.owner)
         elif args.command == "submit":
