@@ -30,9 +30,14 @@ def context_arguments(parser):
 
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "advisory":
+        from .advisory import main as advisory_main
+        return advisory_main(argv[1:])
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--root", type=Path, default=ROOT, help="Location of recipient run directories")
     sub = p.add_subparsers(dest="command", required=True)
+    sub.add_parser("advisory", help="Optional post-reading review exchange; run advisory --help", add_help=False)
     doctor = sub.add_parser("doctor", help="Read-only host/access inventory; no inference")
     doctor.add_argument("--output", type=Path)
     context_arguments(doctor)
@@ -238,6 +243,8 @@ def main(argv=None):
     verify.add_argument("--directory", type=Path, default=ROOT)
     args = p.parse_args(argv)
     try:
+        if args.command == "advisory":
+            raise ValueError("Use sweep advisory SUBCOMMAND with explicit --export/--workspace; it does not use --root or --run-id")
         if args.command == "doctor":
             from .capabilities import discover
             from .profiles import recommend

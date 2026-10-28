@@ -1667,7 +1667,7 @@ class Coordinator:
                         assessment = paper.get("assessment")
                         if not assessment:
                             continue
-                        row = {k: paper.get(k) for k in ("paper_id", "title", "doi", "year", "status", "packet_path", "reader_job", "source_generation", "publication_status", "version", "version_of", "relation", "version_relations", "possible_duplicates")}
+                        row = {k: paper.get(k) for k in ("paper_id", "title", "doi", "year", "status", "packet_path", "reader_job", "source_generation", "publication_status", "version", "version_of", "relation", "version_relations", "possible_duplicates", "assessment_source_generation", "assessment_packet_sha256")}
                         row.update(acquisition_gaps=paper.get("retrieval", {}).get("packet", {}).get("acquisition_gaps", []), assessment=assessment, human_decision=paper.get("human_decision", "pending"),
                                    in_reading_queue=assessment["paper_decision"] in {"prospect", "unresolved"} and paper.get("human_decision") != "declined")
                         native = self.store.get_state('native-assessment:' + paper['paper_id'])

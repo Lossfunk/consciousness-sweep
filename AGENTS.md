@@ -275,6 +275,37 @@ sources, unresolved identity, depth limits and deferred uncertainty are not scie
 saturation. Native certification remains a separate workflow with its own complete
 ledger and frozen requirements.
 
+## Optional advisory review
+
+Only when indicated by the user or an already recorded review schedule, use the
+[post-reading advisory exchange](EXECUTION.md#on-demand-advisory-review) on a quiet
+published delivery. Suitable moments include a pause or completion of the admitted
+work under an indexed-paper allowance. It is not a new scientific stage or a
+mandatory completion gate. Do not trigger it on every reading or threshold crossing.
+
+Use the separate `post-reading-review-annotator` role with explicit accessible,
+authorized settings; Sol 6.1/medium is the recommended retained configuration.
+Give that worker only its bound advisory prompt and schema. Static reference cards
+and existing assessments are permitted for this role and must never enter source-only
+scientific readers. Use no inherited supervisor conversation or prior advisory grades.
+Keep model work within the agreed allowance and shared capacity; external consumption
+is not automatically included in adapter counters.
+
+Claim each prepared job once before inference. Keep its dispatch ticket, exact
+requested settings, returned envelope and execution receipt. Unknown outcome,
+usage or provider identity remains unknown; there is no automatic retry, refund,
+model substitution or paid API fallback. An outstanding ticket is not permission
+for a second call. Reconcile an available saved answer through normal submission;
+otherwise retain the unresolved advisory job and continue unrelated sweep work.
+
+Reuse completed annotations only under identical input, cohort, policy, profile
+and same-export/run bindings. Source changes stale the annotations without changing
+readings. Missing references remain ranges; do not import another run's judgments,
+force reference retrieval or invent a score. Advisory tiers and factor grades are
+human-review aids, never exclusions, paper-role decisions, citation/process gates,
+scientific strength certification or stopping conditions. Do not modify an active
+release to install the tool; it may read its export externally without migration.
+
 ## Storage
 
 Do not create full database copies at ordinary checkpoints, heartbeat/status

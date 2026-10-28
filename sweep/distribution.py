@@ -111,6 +111,8 @@ def _collect(root):
         include(root / "sweep" / "provider_docs.json", "sweep/provider_docs.json")
     if (root / "sweep" / "calibration_reference.json").is_file():
         include(root / "sweep" / "calibration_reference.json", "sweep/calibration_reference.json")
+    if (root / "sweep" / "advisory_policy.json").is_file():
+        include(root / "sweep" / "advisory_policy.json", "sweep/advisory_policy.json")
     for name in ('o200k_base.tiktoken','cl100k_base.tiktoken','tokenizer_LICENSE.txt'):
         if (root/'sweep'/name).is_file():
             include(root/'sweep'/name, 'sweep/'+name)
@@ -164,6 +166,8 @@ def runtime_fingerprint(root=None):
             files['sweep/'+name] = _sha(root/'sweep'/name)
     if (root / "sweep" / "calibration_reference.json").is_file():
         files["sweep/calibration_reference.json"] = _sha(root / "sweep" / "calibration_reference.json")
+    if (root / "sweep" / "advisory_policy.json").is_file():
+        files["sweep/advisory_policy.json"] = _sha(root / "sweep" / "advisory_policy.json")
     for name in READER_FILES:
         relative = "runtime/source_reader/" + name
         files[relative] = _sha(root / relative)

@@ -174,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r65**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r66**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -186,6 +186,37 @@ Open `runs/<RUN_ID>/delivery/index.html` for the latest published checkpoint.
 The JSONL/CSV outputs retain original readings, source pointers, acquisition and
 reading gaps, and separate human dispositions. **Prospect**, **context** and
 **unresolved** describe supported contributions; they do not settle final inclusion.
+
+### Advisory ranking and factor notes
+
+A prospect is a paper with a source-grounded contribution worth reviewing, not an
+accepted primary or support at the strength of the reference papers. A paper can
+contain useful, contextual and unresolved claims together.
+
+When requested, run the [advisory review exchange](EXECUTION.md#on-demand-advisory-review)
+after a quiet delivery checkpoint: at a pause, after an indexed-paper allowance
+has drained, or at another agreed review milestone. It uses completed extractions;
+it does not commission another full-text reading. Nothing runs automatically at
+10,000 papers or on every worker completion. Indexed papers without full-text
+assessments do not acquire invented scores.
+
+Ranking produces provisional primary/support tiers and reference-relative indices.
+A separate optional pass assigns 0–4 factor and fit grades with reasons. The index
+is derived from placement against the fixed reference papers, not an absolute
+strength estimate or probability. Missing references produce ranges. Different
+batches do not establish a resolved global order. Expand each entry to inspect
+its unchanged assessment, annotations and provenance.
+
+These outputs never change scientific decisions, discovery eligibility, queues or
+stopping. The retained ranking policy is `rank-calibrated-v2`; experimental rubric
+revisions are not silently substituted. Completed unchanged work can be reused at
+later checkpoints. Pending or failed scoring leaves papers unscored and does not
+block the sweep. Use the existing authorized allowance and shared worker capacity;
+no extra billing or provider fallback is implied.
+
+The review command can read an older run's published export from a separate new
+release. This does not migrate that run or authorize resuming it under new code.
+Keep its active release and ledger untouched.
 
 `status` reports active work, deferred coverage, source and access blocks, and
 execution limits. An exhausted active queue with deferred papers is a selective

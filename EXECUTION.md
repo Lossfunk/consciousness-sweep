@@ -1836,3 +1836,120 @@ backups; they do not certify capacity for an arbitrarily large sweep. Report
 actual before/after bytes, retained restore points and archive failures. If disk
 space becomes insufficient, keep the run operationally paused with the reason;
 never report scientific exhaustion.
+
+
+## On-demand advisory review
+
+This exchange is separate from scientific reading and the ledger. Use it only
+when requested, within the existing resource agreement. At a pause, at the end of
+admitted work (for example after a 10,000-indexed-paper limit), or at another agreed
+milestone, first publish a quiet validated delivery using the run's active release.
+An indexed-paper count includes excluded and unread papers; review annotates only
+exported full-text assessments with extracted claims. No new source hunt or full-text
+reading is required to fill a score.
+
+Prepare ranking work from the published export, with exact available settings:
+
+```sh
+.venv/bin/python -B -m sweep advisory prepare \
+  --export runs/RUN_ID/delivery/prospects.jsonl \
+  --workspace workspace/review-RUN_ID-001 \
+  --kind ranking --model gpt-6.1-sol --effort medium --harness codex \
+  --actor supervisor --reason "Requested advisory review at the settled checkpoint"
+```
+
+Add `--kind factors` to commission separate 0–4 factor and primary/support-fit
+annotations as well. Ranking and factor work are separate calls, preserving the
+retained ranking method. Default ranking batches contain 20 requested papers plus available reference
+papers. Factor batches target at most eight claims while keeping each paper
+intact; an unusually long paper gets its own job rather than being truncated. Use `--paper-id` repeatedly for a smaller scope or
+choose `--batch-size`. `--max-prompt-bytes` is an optional explicit per-request bound;
+an oversized request fails without truncation or inference. Each request records
+`--timeout-seconds` (default 900), which its supervising worker must enforce.
+There is no hidden total-call allowance and no automatic model execution.
+
+The workspace contains an immutable policy, source snapshot, manifest and jobs.
+Each job has `request.json`, `prompt.txt` and `schema.json`. Locate jobs with:
+
+```sh
+.venv/bin/python -B -m sweep advisory status --workspace workspace/review-RUN_ID-001
+.venv/bin/python -B -m sweep advisory claim \
+  --workspace workspace/review-RUN_ID-001 --job-id JOB_ID --owner review-worker-001
+```
+
+Dispatch only if `new_dispatch` is true. Use a fresh annotator with the returned
+exact requested profile, prompt and schema, no tools or inherited conversation,
+and the recorded timeout. This is a `post-reading-review-annotator`, not a
+source-only scientific reader: it receives fixed assessments and static reference
+profiles but cannot revise them. Keep reference cards and old assessments away
+from the scientific reader role. Advisory calls share the authorized harness
+capacity and spending agreement; they are external work, not adapter-counted calls.
+
+The worker returns the schema-bound envelope containing `job_id`,
+`binding_sha256` and `result`. Save that answer unchanged. The supervisor separately
+records the observed execution receipt, using the dispatch ID from the claim:
+
+```json
+{
+  "dispatch_id": "EXACT_DISPATCH_ID",
+  "requested_profile": {"harness": "codex", "model": "gpt-6.1-sol", "effort": "medium"},
+  "outcome": "completed",
+  "reported": {"harness": "codex", "model": null, "effort": null, "provider_identity": null},
+  "usage": null
+}
+```
+
+Fill observed values where genuinely available. Requested settings or worker
+self-reports do not prove provider identity. Unknown usage is not zero consumption.
+A reported model/effort/harness mismatch is preserved but not accepted as the
+requested annotation. Do not infer a refund or silently switch configurations.
+
+```sh
+.venv/bin/python -B -m sweep advisory submit \
+  --workspace workspace/review-RUN_ID-001 --job-id JOB_ID \
+  --answer workspace/answer.json --execution workspace/execution.json
+.venv/bin/python -B -m sweep advisory render --workspace workspace/review-RUN_ID-001
+```
+
+Open `workspace/review-RUN_ID-001/index.html`; `review.json` preserves the complete
+annotation data. The view includes unchanged scientific assessments, factor grades
+when commissioned, source reasons and request provenance. Ranking indices equal
+100 times the fraction of fixed references ranked below a paper, with half-credit
+for ties. A reference's own self-tie is included. Missing, ambiguous or unrankable
+references create a range without renormalization. A zero means below the available
+reference standard, not scientific exclusion. Rank tiers are cohort-dependent;
+indices from different batches are approximate review aids rather than a resolved
+cross-batch total order. The user still decides primary/support acceptance through
+the existing separate human-review workflow.
+
+At a later quiet checkpoint, reuse completed unchanged batches instead of
+commissioning the whole corpus again:
+
+```sh
+.venv/bin/python -B -m sweep advisory prepare \
+  --export runs/RUN_ID/delivery/prospects.jsonl \
+  --workspace workspace/review-RUN_ID-002 --previous workspace/review-RUN_ID-001 \
+  --kind ranking --model gpt-6.1-sol --effort medium --harness codex \
+  --actor supervisor --reason "Requested review update for new or changed assessments"
+```
+
+Reuse requires the same resolved export path/run, exact requested profile, policy,
+reference bindings and unchanged full job cohort. Reused jobs remain referenced
+at their original workspace with immutable answers/receipts; do not delete that
+workspace. Changed inputs create new advisory work and stale old indices. Unrelated
+new records do not invalidate an unchanged cohort. `status` separately lists
+assessments newly added since preparation. Choose only requested kinds again;
+unchanged factor results are reused only when factor work is included.
+
+An unsettled overlapping prior job blocks issuance of a duplicate advisory call.
+Inspect and reconcile its original ticket and saved response. Do not erase a ticket,
+assume expiry proves termination, launch another call on an unknown outcome, or
+rewrite an accepted answer. Preserve failed drafts and any uncertain usage. Scoring
+may remain partial/unscored while ordinary sweep work continues; it never sets STOP,
+changes eligibility, closes frontiers or blocks scientific delivery.
+
+For an older paused run, the new review command can operate from a separate release
+using the older release's published JSONL as `--export` and a separate workspace.
+It never opens the SQLite database. Keep preparing, validating, delivering and
+resuming that run with its bound release; advisory use alone needs no continuation
+or code replacement inside the active release.
