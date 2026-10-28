@@ -1953,3 +1953,75 @@ using the older release's published JSONL as `--export` and a separate workspace
 It never opens the SQLite database. Keep preparing, validating, delivering and
 resuming that run with its bound release; advisory use alone needs no continuation
 or code replacement inside the active release.
+
+
+### Rubric selection and calibration
+
+The retained advisory policy is `rank-calibrated-v2`, with separate
+`boundary-v3` factor annotations. Its complete instructions, factor definitions
+and reference profiles are distributed in `sweep/advisory_policy.json`. These are
+review preferences calibrated on saved scientific assessments, not new eligibility
+rules or a statistical model of scientific truth.
+
+The reference set contains three primary examples: Tsushima (2006), Persaud's
+performance-matched wagering paper (2011), and Keizer (2015). The eight support
+examples are Lin & Murray (2015), Lamy (2015), Ben-Haim (2021), McCormick (1997),
+Klein (2007), Dali & Hester (2022), Dali et al. (2023), and Murphy & Bloom (2015).
+The profiles retain their source coverage, qualifications and remaining alternatives.
+Reference membership does not force an example above a new paper, or a primary
+above a support in the independent support ranking.
+
+Calibration used 22 previously source-reviewed papers containing 46 fixed
+contributions. Seven papers informed development; fifteen were held out from
+that selection, including contextual/unresolved cases. They were previously
+reviewed literature, not unseen publications or a random scientific sample.
+Fresh isolated Codex sessions requested Sol 6.1/medium as the annotator and
+Astra 6/xhigh as the reference judge. Astra ranked the same fixed evidence without
+seeing Sol's grades, candidate rubric, weights or ranking. Exact backend/provider
+identity and credit cost remained unverified. Astra is a comparison judge, not
+ground truth, and is not a required production scoring call.
+
+Selection prioritized relative order over exact numerical agreement. General
+rubric candidates were compared by the number of reversed strict Astra
+preferences, then unresolved preferences; Astra ties were not forced into an
+order. The factor rubric was selected by development agreement on the ordinal
+factor/fit grades. The retained rubric was locked before the fifteen-paper
+validation. Only four of those validation papers received paired factor grades;
+all fifteen received independent ranking comparisons.
+
+Nonnegative weighted summaries were also explored under constrained weight
+choices, with distance from the initial weights penalized. Some holistic
+preferences could not be expressed by the coarse factor totals, and multiple
+weight settings produced the same order. Therefore the selected ordering uses
+Sol's direct, source-grounded primary/support tiers. The policy's `factor_weights`
+retain fixed diagnostic preferences for provenance; the portable command does
+not use them to sort papers or calculate an aggregate factor score. The displayed
+index is the reference-placement calculation described above. It is not an
+optimized weighted strength estimate.
+
+On strict preferences between the fifteen held-out papers, the retained scorer
+produced:
+
+| Review head | Concordant | Reversed | Unresolved/tied | Strict Astra pairs |
+|---|---:|---:|---:|---:|
+| Primary | 89 | 0 | 6 | 95 |
+| Support | 67 | 2 | 19 | 88 |
+
+Across all 22 papers, including development and cross-set pairs, the corresponding
+counts were 191/1/16 for primary and 143/16/37 for support. Pair comparisons share
+papers and are not independent statistical trials. The more favorable held-out
+subset must not conceal the weaker full-set support ordering.
+
+Later general support-rubric revisions were checked on nine additional papers
+and then eight further withheld papers. Each test set was frozen before its
+calls; once reviewed, it became development evidence for any subsequent revision.
+Some changes improved selected comparisons or replaced reversals with ties, but
+failed the fresh test or worsened earlier ordering. They did not establish a
+consistent improvement and were not substituted for the retained policy.
+No paper-specific bonuses, forced reference labels or silent relabeling were added.
+
+Fine support ordering remains provisional and sensitive to cohort and judgment.
+Scoring cannot repair missing or incorrect extraction. This internal calibration
+does not establish reliability across thousands of papers; keep reasons, ties,
+source questions and human review visible. Raw calibration answers and expected
+orders stay outside the portable distribution and scientific-reader context.

@@ -1,6 +1,6 @@
 {
   "calibration": "Versioned compact seed reference is coordinator-only; it is never included in model source packets or ordinary reader prompts.",
-  "created_at": "2026-10-28T05:52:05.723283+00:00",
+  "created_at": "2026-10-28T06:04:29.636606+00:00",
   "excluded": [
     "source PDFs",
     "run history",
@@ -14,8 +14,8 @@
     ".gitignore": "5950d2ee44c8f4b6cd58507b3fefe4f209079c5f4e1c3adf98e52c8bb3aa3d57",
     "AGENTS.md": "9c55f81519b1db85377f1db59ea4f7b94f1e383e03341fab5517c23b9f4af8f1",
     "CLAUDE.md": "612f3b78552bc55a779fbea65f3c438fdcd8d4b4bc1415c92c62f804be8d416e",
-    "EXECUTION.md": "50ecca6819235cf71f2b584dab0d34c6d26d054cf6da09be7b419f303934d569",
-    "README.md": "5429b82c3c222e0559a9e7bc9cbb319ce467361a07df686b27803c2de6bfe886",
+    "EXECUTION.md": "7b2a46cc909a345c33850b8db4144dfac26fbe672e76d8bd1f4845eb363965f5",
+    "README.md": "ee50b90784e6e47403b4709d73d4bd59a25bf0a1c2fa4ac2fe522d5e87024c83",
     "agent_candidates.json": "65507ce12b862feed3aee48bde53084e4f8cea8f8e5596afbea91e38231df616",
     "bootstrap.py": "453a92a7bd78989bc0480fb01a6d38667c7f2cab641e6c88212978d6884381ad",
     "development/prospect_contract_v1.md": "7940a69a378a49b18d130be127cbde180d8653ac4e819751a4a524a08af91fcd",

@@ -174,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r66**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r67**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -209,7 +209,9 @@ its unchanged assessment, annotations and provenance.
 
 These outputs never change scientific decisions, discovery eligibility, queues or
 stopping. The retained ranking policy is `rank-calibrated-v2`; experimental rubric
-revisions are not silently substituted. Completed unchanged work can be reused at
+revisions are not silently substituted. See [rubric selection and calibration](EXECUTION.md#rubric-selection-and-calibration)
+for the reference set, independent judge comparison, held-out results and limits.
+Completed unchanged work can be reused at
 later checkpoints. Pending or failed scoring leaves papers unscored and does not
 block the sweep. Use the existing authorized allowance and shared worker capacity;
 no extra billing or provider fallback is implied.
