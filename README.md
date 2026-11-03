@@ -105,7 +105,7 @@ Finish a requested final review with `advisory report`. It produces both formats
 
 | Output | Contents |
 |---|---|
-| `README.md` / `index.html` | Overview, scope and qualified leads |
+| `README.md` / `index.html` | Primary/support reading index and coverage |
 | `primary.md` / `primary.html` | Primary candidates and named reference comparisons |
 | `support.md` / `support.html` | Support candidates and what prevents a primary recommendation |
 | `other-papers.md` / `other-papers.html` | Brief saved reasons for every other assessed paper |
@@ -121,7 +121,7 @@ See [researcher delivery](docs/README.md#deliver-a-researcher-reading-list).
 
 Runs preserve sources, first readings, IDs, receipts, holds and accounting. Resume
 uses the exact active release. **Do not replace files inside a bound release.**
-This distribution is **portable 1.0.0-r76**; adopting new runtime code requires the
+This distribution is **portable 1.0.0-r77**; adopting new runtime code requires the
 documented backed-up continuation. External advisory reports can read a published
 older export without migrating or resuming that scientific run.
 

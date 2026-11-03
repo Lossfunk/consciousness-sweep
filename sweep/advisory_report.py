@@ -437,13 +437,18 @@ def write_report(suggestions, final_reviews, workspace, *, narratives=None):
         notice = '<div class="notice"><p>These recommendations compare saved study evidence with the three primary and eight support references. A primary candidate is comparable in a particular contribution, not necessarily equal to every primary. Support can be useful without primary-grade controls. The original assessments, limitations and disagreements remain intact.</p></div>'
         intro = "<h1>Studies to read</h1><p>Start with the primary and support candidates. Each study page explains what was tested, what was found, why it belongs in that reading list, and what still limits the interpretation.</p>" + notice
         counts = data["provenance"]["category_counts"]
-        intro += "<p><strong>" + str(counts.get("primary", 0)) + " primary candidates · " + str(counts.get("support", 0)) + " support candidates · " + str(counts.get("qualified", 0)) + " qualified leads.</strong></p>"
+        intro += "<p><strong>" + str(counts.get("primary", 0)) + " primary candidates · " + str(counts.get("support", 0)) + " support candidates.</strong></p>"
         intro += "<p>This report accounts for all " + str(len(ordered)) + " assessed papers in the bound published export. The independent final review has current accepted answers for " + str(len(data["judgments"])) + " of " + str(data["provenance"]["selected_final_papers"]) + " selected papers. Other prospects remain explicitly outside that review; missing evidence is not rejection.</p>"
         if missing:
             intro += '<div class="notice"><p>' + str(len(missing)) + ' accepted legacy reviews lack a concise procedure opening. Their original analytical study accounts remain available; no additional model work was automatically commissioned to rewrite them.</p></div>'
         intro += '<details><summary>Terms used in the saved study accounts</summary><p>X is the information being studied; Y is the distinct use made of it. Primary and support are reading recommendations. “Prospect” is the earlier scientific screening label. CORE concerns eligibility for citation expansion, a separate decision. Numbered claims remain separate findings from the same paper; their labels do not rank strength.</p></details>'
-        intro += '<ul><li><a href="primary.html">Primary candidates: studies and reference comparisons</a></li><li><a href="support.html">Support candidates: useful contributions and why they fall short of primary</a></li><li><a href="other-papers.html">Every other assessed paper: brief reason and full evidence</a></li></ul>'
-        intro += "<h2>Qualified leads</h2>" + "".join(_card(pid, data, names) for pid in lists["qualified"])
+        for role in ("primary", "support"):
+            intro += "<h2>" + LABELS[role] + " (" + str(len(lists[role])) + ")</h2>"
+            intro += '<p><a href="' + role + '.html">Full study descriptions, reference comparisons and limitations</a></p><ul>'
+            intro += ''.join('<li><a href="papers/' + pid + '.html">' + html.escape(data["rows"][pid].get("title") or pid) + '</a></li>' for pid in lists[role]) + '</ul>'
+        intro += '<h2>Other assessed papers and optional follow-ups</h2><p><a href="other-papers.html">Other assessed papers: brief reasons and full evidence</a></p>'
+        if lists["qualified"]:
+            intro += '<p>Lower-priority optional follow-ups: <a href="other-papers.html#qualified">' + str(len(lists["qualified"])) + ' qualified leads with unresolved evidential or interpretive gaps</a>. These are outside the primary and support reading lists.</p>'
         intro += '<footer><p>Prepared from saved extractions and accepted review answers. This report introduces no new inference or source verification. Alphabetical lists do not imply a strength ranking. <a href="provenance.json">Coverage and execution evidence</a>.</p></footer>'
         _write(temporary / "index.html", _shell("Studies to read", intro))
         for role in ("primary", "support"):
@@ -455,7 +460,7 @@ def write_report(suggestions, final_reviews, workspace, *, narratives=None):
         for cat in LABELS:
             if cat in ("primary", "support") or not lists[cat]:
                 continue
-            others += "<section><h2>" + html.escape(LABELS[cat]) + " (" + str(len(lists[cat])) + ")</h2>" + "".join(_card(pid, data, names, brief=True) for pid in lists[cat]) + "</section>"
+            others += '<section id="' + html.escape(cat, quote=True) + '"><h2>' + html.escape(LABELS[cat]) + " (" + str(len(lists[cat])) + ")</h2>" + "".join(_card(pid, data, names, brief=True) for pid in lists[cat]) + "</section>"
         others += "<script>document.getElementById('filter').addEventListener('input',function(){let q=this.value.toLowerCase();document.querySelectorAll('[data-search]').forEach(el=>el.hidden=!el.dataset.search.includes(q));});</script>"
         _write(temporary / "other-papers.html", _shell("Other assessed papers", others))
         refs = "<h1>The reference studies</h1><p>These are the fixed three-primary and eight-support evaluator snapshots used for the comparisons. They are the comparison standard, rather than additional discoveries or newly reread sources.</p>"

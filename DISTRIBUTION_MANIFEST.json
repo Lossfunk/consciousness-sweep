@@ -1,6 +1,6 @@
 {
   "calibration": "Versioned compact seed reference is coordinator-only; it is never included in model source packets or ordinary reader prompts.",
-  "created_at": "2026-11-03T10:32:45.924690+00:00",
+  "created_at": "2026-11-03T12:36:22.958344+00:00",
   "excluded": [
     "source PDFs",
     "run history",
@@ -14,8 +14,8 @@
     ".gitignore": "5950d2ee44c8f4b6cd58507b3fefe4f209079c5f4e1c3adf98e52c8bb3aa3d57",
     "AGENTS.md": "e3bbcad02994bdab06de67ea43adc4b04a43ee608c1e4751f7143664dc642d8a",
     "CLAUDE.md": "612f3b78552bc55a779fbea65f3c438fdcd8d4b4bc1415c92c62f804be8d416e",
-    "EXECUTION.md": "9547bbda46e3b39260b2a5c7680212dd7f1a5ed06dc64b9756f7be05ecadcc08",
-    "README.md": "b31c1e06c6f3b45385c21c3a6fadcebbead173f16ed53fb0d6134abbe02acf30",
+    "EXECUTION.md": "690a89164a374c0fd255a5f144110c26f71d561b93b37bab355b77648691f6e7",
+    "README.md": "8bb3a3b09757d0f2ffeaee86fd37659c8a3549d12b48da24a098cb5cc613566d",
     "agent_candidates.json": "65507ce12b862feed3aee48bde53084e4f8cea8f8e5596afbea91e38231df616",
     "bootstrap.py": "453a92a7bd78989bc0480fb01a6d38667c7f2cab641e6c88212978d6884381ad",
     "development/prospect_contract_v1.md": "7940a69a378a49b18d130be127cbde180d8653ac4e819751a4a524a08af91fcd",
@@ -96,7 +96,7 @@
     "sweep/advisory_policy.json": "3424d98bf3908e99fc66012692ea91c4bde4679c570fb02b4214759cc2ef7518",
     "sweep/advisory_rankings.py": "04efb1066a806b4d545c8ef00f15dcd388ba2cb644ac9047909138278f05c28c",
     "sweep/advisory_references.json": "33f779057e493752814e8c3ab42d39e9a382ae47ea2167f800a5505b3770aee7",
-    "sweep/advisory_report.py": "060c5686bf90b1f9bdf2840ae71c6c7972cf027bde305a97008d90d57572d690",
+    "sweep/advisory_report.py": "d57dc1b29c8205093f0788483eb9e39a58f60e525ab2659c3d827a29fc050bf1",
     "sweep/backup_storage.py": "ec4802a85bd971b5c1004794e80213c93fb3bb83e77dd139ceb87527a09d960f",
     "sweep/calibration.py": "ebb7bc0b04c3497e800361dcd3a9bcf2c38c887f6aad9c58ebd07e302871fc8d",
     "sweep/calibration_reference.json": "2a43368aa41f2590704289a3bbaec5ffa242cd8863c94a6d92b18bafa93eba12",

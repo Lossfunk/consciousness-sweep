@@ -2210,7 +2210,11 @@ prose; it performs no inference, retrieval, new assessment or scientific mutatio
   --workspace workspace/researcher-report-RUN_ID-001
 ```
 
-Open the new report's `README.md` for Markdown or `index.html` for HTML. Both
+Open the new report's `README.md` for Markdown or `index.html` for HTML. The
+overview lists the recommended primary candidates first, followed by support
+candidates, with links to their full explanations. Qualified leads are lower-priority
+optional follow-ups in the other-assessed-paper catalogue, outside those reading
+lists; their full cards do not appear on the overview. Both
 formats use the same generated explanations. Markdown links point to `primary.md`,
 `support.md`, `other-papers.md`, `references.md` and `papers/PAPER_ID.md`, using
 relative paths for GitHub. HTML retains navigation and local search. Both formats
