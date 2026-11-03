@@ -103,6 +103,8 @@ def schema(job):
             }
             heads[role] = {"type": "object", "additionalProperties": False, "properties": props, "required": list(props)}
         props = {**heads, "recommended_role": {"type": "string", "enum": ["primary", "support", "qualified", "out", "unresolved"]}, "recommendation_reason": text}
+        if job.get("researcher_narrative_layout") == "procedure-lead-v1":
+            props["procedure"] = {"type": "string", "minLength": 1}
         papers[pid] = {"type": "object", "additionalProperties": False, "properties": props, "required": list(props)}
     return {"type": "object", "additionalProperties": False, "properties": {
         "job_id": {"type": "string", "enum": [job["job_id"]]},
@@ -123,6 +125,8 @@ def recommended_role(paper):
 
 def validate(job, answer):
     for pid, paper in answer["result"]["papers"].items():
+        if job.get("researcher_narrative_layout") == "procedure-lead-v1" and not paper["procedure"].strip():
+            raise ValueError("Researcher procedure lead must contain substantive text or an explicit evidence gap")
         if paper["recommended_role"] != recommended_role(paper):
             raise ValueError("Final recommendation contradicts its primary/support comparisons")
         for role in ("primary", "support"):
@@ -140,7 +144,8 @@ def prompt(job, policy, records, baseline, final_policy):
             claim["advisory_claim_key"] = out["paper_id"] + ":C" + str(number)
         return out
     # Deliberately exclude source workspace, prior roles, scores, recommendations and receipts.
-    return (final_policy["instructions"] + "\n\nRETAINED GENERAL ROLE RUBRIC\n" + final_policy["retained_qualitative_rubric"]
+    narrative = ("\nRESEARCHER PROCEDURE LEAD: Also return procedure for every target: a concise 2–4 sentence concrete experimental sequence in ordinary researcher-readable prose. Describe what participants saw and did, how awareness of the same information was assessed, the distinct downstream response and the compared conditions. Start with the task rather than validation statistics, X/Y labels or inferential shorthand. Use only the supplied facts; preserve design/report timing limits and explicitly identify missing procedure details. Add no facts, outcomes, stronger claims or new role rules. This is editorial wording inside this same requested call, not another reading or interpretation pass.\n" if job.get("researcher_narrative_layout") == "procedure-lead-v1" else "")
+    return (final_policy["instructions"] + narrative + "\n\nRETAINED GENERAL ROLE RUBRIC\n" + final_policy["retained_qualitative_rubric"]
             + "\nREFERENCE PROFILES\n" + a._canonical(policy["reference_profiles"])
             + "\nFIXED REFERENCE EVIDENCE\n" + a._canonical([clean(p) for p in baseline["papers"].values()])
             + "\nBOUND FINAL REVIEW\n" + a._canonical({k: job[k] for k in ("job_id", "binding_sha256", "profile", "targets", "references")})
@@ -212,6 +217,7 @@ def prepare(suggestion_workspace, workspace, *, actor, reason, model="gpt-6-astr
                "final_policy_path": str(workspace / "final_policy.json"), "final_policy_sha256": a._hash(final_policy),
                "policy_sha256": a._hash(policy), "claim_keys_by_paper": {p: [p + ":C" + str(i) for i in range(1, len(eligible[p]["evidence"]["assessment"]["claims"]) + 1)] for p in batch},
                "actor": actor, "reason": reason, "timeout_seconds": timeout_seconds}
+        job["researcher_narrative_layout"] = "procedure-lead-v1"
         job["binding_sha256"] = a._hash(job)
         text = prompt(job, policy, [eligible[p]["evidence"] for p in batch], baseline, final_policy)
         if max_prompt_bytes is not None and len(text.encode("utf-8")) > max_prompt_bytes:

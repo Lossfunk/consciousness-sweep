@@ -724,6 +724,11 @@ def main(argv=None):
     p.add_argument("--workspace", required=True, type=Path); p.add_argument("--job-id", required=True)
     p.add_argument("--answer", required=True, type=Path); p.add_argument("--execution", required=True, type=Path)
     p.add_argument("--events", type=Path, help="Complete raw Codex JSONL; absent/invalid evidence is retained unverified, never accepted")
+    p = sub.add_parser("report", help="Deliver readable study narratives and every other assessed paper without new inference")
+    p.add_argument("--suggestions", required=True, type=Path)
+    p.add_argument("--final-review", action="append", required=True, type=Path, help="Bound original final workspace; repeat for a separately authorized replacement")
+    p.add_argument("--narratives", type=Path, help="Optional separately preserved, row/review-bound editorial procedure notes for legacy answers")
+    p.add_argument("--workspace", required=True, type=Path, help="New report directory outside the scientific run and review inputs")
     for name in ("status", "render"):
         p = sub.add_parser(name); p.add_argument("--workspace", required=True, type=Path)
     args = parser.parse_args(argv)
@@ -739,6 +744,9 @@ def main(argv=None):
                                    model=args.model, effort=args.effort, harness=args.harness, paper_ids=args.paper_id,
                                    batch_size=args.batch_size, previous=args.previous, timeout_seconds=args.timeout_seconds,
                                    max_prompt_bytes=args.max_prompt_bytes)
+        elif args.command == "report":
+            from .advisory_report import write_report
+            result = write_report(args.suggestions, args.final_review, args.workspace, narratives=args.narratives)
         elif args.command == "claim":
             result = claim(args.workspace, args.job_id, owner=args.owner)
         elif args.command == "submit":

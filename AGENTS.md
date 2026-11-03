@@ -356,6 +356,17 @@ Source changes stale final recommendations. Reuse unchanged bound jobs through
 release can review the published export externally without migrating or resuming
 a paused scientific run. No final-review calls are implied by a ranking-only request.
 
+For the final human delivery, use `advisory report` with the bound suggestion and
+final-review workspaces. Explain the study, findings, named reference comparison,
+limitations and why a support lacks a primary recommendation. Include brief saved
+reasons for every other full-text-assessed paper. Keep context, unresolved evidence,
+unreviewed prospects and existing references separate; do not fabricate rejection.
+This is deterministic presentation, with no new model calls, downloads or scientific
+changes. New final-review requests include the concrete procedure lead in the same
+requested call. For legacy answers, use only separately authorized, preserved and
+row/review-bound editorial notes; never repeat an old inference just for formatting. Use a new external report directory, preserve original inputs and check its
+coverage against the published export. See the [researcher report](EXECUTION.md#researcher-reading-report).
+
 ## Storage
 
 Do not create full database copies at ordinary checkpoints, heartbeat/status

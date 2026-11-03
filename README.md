@@ -174,7 +174,7 @@ scientific identifiers and submits both outputs together; automatic adapters
 remain available for screening. See the [execution reference](EXECUTION.md) for
 configuration, leases, recovery and supervision.
 
-**Keep release directories immutable.** This is **portable 1.0.0-r74**. A paused
+**Keep release directories immutable.** This is **portable 1.0.0-r75**. A paused
 existing run can adopt the workflow through the explicit, backed-up
 [continuation procedure](EXECUTION.md#versioned-operational-continuation).
 Completed work and accounting remain intact; pending work follows the recorded
@@ -232,13 +232,24 @@ For a final researcher reading list, request the optional
 [independent final review](EXECUTION.md#independent-final-reading-review).
 It sends the firm primary/support candidates to **GPT-6 Astra at xhigh reasoning**,
 using the same saved scientific evidence and complete reference baseline. Astra
-receives neither Sol's scores nor its suggested roles. It can recommend primary,
+receives neither Sol's scores nor its suggested roles. It also writes a short, concrete
+participant-task description in that same response, using only the supplied facts.
+No separate interpretation call is added. It can recommend primary,
 support, qualified, out or unresolved; a primary suggestion can become support,
 and a support suggestion can leave the final list. Qualified leads remain outside
 this final pass.
 
-The final output separates primary and support reading lists and preserves
-qualifications, disagreements, pending work and original Sol recommendations.
+The final researcher delivery is a [readable study report](EXECUTION.md#researcher-reading-report).
+It separates primary and support candidates and explains what each study tested,
+what it found, its comparison with the named reference study, and its limitations.
+Support entries also explain what prevents a primary recommendation. Every other
+full-text-assessed paper receives a brief reason and a link to its complete evidence.
+Context, insufficient evidence, existing references and prospects outside final
+review remain distinct. Unreviewed or missing evidence is never described as rejection.
+
+`advisory report` builds this output from the existing bound extractions and accepted
+answers, with no further model calls or downloads. It preserves qualifications,
+disagreements, pending work and original Sol recommendations.
 These are evidence-based reading recommendations, not accepted scientific roles
 or a guarantee that the full texts have been independently verified. This step
 runs only when requested, within authorized resources. It never blocks or resumes

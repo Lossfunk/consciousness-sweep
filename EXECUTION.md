@@ -2133,6 +2133,11 @@ including scope, achieved evidence and remaining alternatives, without new
 compulsory Bayes, equivalence, causal, replication or primary-grade support gates.
 
 The schema requires both comparisons and a recommendation for every target.
+New requests also require a concise procedure lead in that same response: what
+participants saw and did, the awareness measure, the distinct downstream response
+and compared conditions. Missing procedure details remain explicit. This is
+editorial presentation of the supplied facts, not a further reading or model pass.
+Legacy bound requests retain their original schema and answers without this field.
 A primary-comparable contribution gives a primary reading recommendation;
 otherwise a support-comparable contribution gives support. Remaining plausible
 leads are qualified. Missing comparison evidence remains unresolved; below both
@@ -2186,6 +2191,73 @@ patch or migrate its active release, edit its ledger or resume it for this step.
 Final review evaluates the saved extractions; independent full-text verification
 or targeted retrieval is a separate request. “Final” means the last advisory
 selection step for researcher reading, not scientific certification or certainty.
+
+
+### Researcher reading report
+
+After the requested final review, deliver a report for the researcher rather than
+only technical records. This command arranges existing extraction and reviewer
+prose; it performs no inference, retrieval, new assessment or scientific mutation.
+
+```sh
+.venv/bin/python -B -m sweep advisory report \
+  --suggestions workspace/review-RUN_ID-001 \
+  --final-review workspace/final-review-RUN_ID-001 \
+  --workspace workspace/researcher-report-RUN_ID-001
+```
+
+Open the new report's `index.html`. Primary and support pages give the supported
+finding, named comparator and reading rationale; each study's page explains the
+design, information X, awareness measure, distinct use Y, results and alternatives
+in ordinary paragraphs. Support pages also show the independent primary comparison
+and what prevents a primary recommendation. If its focal claim differs from the
+support claim, both remain explicit. A primary comparison to one reference does
+not assert equal strength to all three. Reference evidence is readable alongside
+the target, retaining the fixed baseline and its limitations.
+
+`other-papers.html` accounts for every other assessed paper in that published
+export with a brief saved reason and a full narrative evidence page. Distinguish
+context, unresolved scientific evidence, qualified/out final outcomes, existing
+references, prospects outside final review and selected jobs without current
+accepted answers. Do not invent disqualification reasons for unreviewed prospects,
+missing text or incomplete assessments. Keep every original claim separately;
+never construct a stronger finding from different experiments. The report does
+not commission scoring of context/unresolved papers or change any scientific gate.
+
+Repeat `--final-review` to include a separately authorized replacement workspace
+alongside the original seven or other independent accepted jobs. The command reads
+hash-bound original answers, receipts and observed-execution audits, not edited
+`review.json`, combined reports or HTML. All workspaces must share the same
+run/export, suggestion pass, reference baseline and final policy. Identical reused
+jobs count once. Overlapping independent accepted judgments are rejected rather
+than silently choosing one; an incomplete historical call stays in provenance.
+Stale or unverified answers supply no reading recommendation.
+
+Legacy accepted reviews may use an explicitly supplied `--narratives PATH` file
+for separately preserved editorial procedure descriptions. Its
+`researcher-editorial-notes-v1` object records the exact `export_path`,
+`suggestion_manifest_sha256`, declared editor profile/unknown provider identity,
+and a `papers` map. Each entry has the unchanged exported `row_sha256`, accepted
+`judgment_sha256` and a nonempty `procedure` paragraph. The command verifies these
+bindings and the file hash; stale or unreviewed entries are rejected. Editorial
+notes cannot provide new role decisions. Authoring them requires the user's
+existing editorial authorization and does not authorize replaying an old model
+ticket. No notes or extra calls are created automatically. The report flags
+legacy recommendations whose concise opening is still unavailable. Preserve the
+original reviewer and scientific wording separately from editorial prose.
+
+Use a NEW output directory outside the scientific run and input workspaces. Existing
+reports are not overwritten. The output binds its export, input manifests, accepted
+jobs and generated files in `provenance.json`, with compact structured coverage in
+`report.json`. It copies no PDFs, databases or raw execution logs. It rechecks the
+published export before atomic publication and refuses a changing snapshot.
+
+For an older paused run, render externally with the new immutable release. Keep
+the active run and old advisory workspaces unchanged; no migration or resume is
+needed. Report scope is the bound published export, not unpublished ledger rows.
+If newer assessments must be included, first obtain a quiet validated publication
+through that run's own active release under the existing supervision agreement.
+Then make a new report; reuse unchanged accepted reviews without new inference.
 
 
 ### Rubric selection and calibration
