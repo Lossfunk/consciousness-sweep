@@ -6,6 +6,10 @@ plans use `focused-v1`, an explicit selective-coverage and single-reading workfl
 Its coverage/review choices supersede the native registered workflow only in the
 portable runner; scientific eligibility and interpretation stay unchanged.
 
+For the ordinary execution and review path, start with the [guide](docs/README.md).
+The [code map](sweep/README.md) explains module responsibilities. This reference
+retains the complete interfaces, compatibility and recovery procedures.
+
 ## Files and identities
 
 Each new run receives a unique filesystem-safe `RUN_ID`. `init` refuses to
@@ -2206,7 +2210,12 @@ prose; it performs no inference, retrieval, new assessment or scientific mutatio
   --workspace workspace/researcher-report-RUN_ID-001
 ```
 
-Open the new report's `index.html`. Primary and support pages give the supported
+Open the new report's `README.md` for Markdown or `index.html` for HTML. Both
+formats use the same generated explanations. Markdown links point to `primary.md`,
+`support.md`, `other-papers.md`, `references.md` and `papers/PAPER_ID.md`, using
+relative paths for GitHub. HTML retains navigation and local search. Both formats
+are included in the report's file hashes. No publishing, model call or scientific
+change is implied by Markdown export. Primary and support pages give the supported
 finding, named comparator and reading rationale; each study's page explains the
 design, information X, awareness measure, distinct use Y, results and alternatives
 in ordinary paragraphs. Support pages also show the independent primary comparison

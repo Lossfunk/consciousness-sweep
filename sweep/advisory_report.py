@@ -468,12 +468,14 @@ def write_report(suggestions, final_reviews, workspace, *, narratives=None):
                     refs += "<h3>Reference claim " + str(index) + "</h3>" + "".join(_section(label, claim.get(key), names) for key, label in CLAIM_FIELDS) + _evidence(claim, names)
                 refs += "</article>"
         _write(temporary / "references.html", _shell("Reference studies", refs))
+        from .advisory_markdown import write_markdown
+        data["provenance"]["markdown"] = write_markdown(temporary)
         provenance = dict(data["provenance"], created_at=datetime.now(timezone.utc).isoformat(),
                           renderer_sha256=a._bytes_hash(Path(__file__).read_bytes()))
         report = {"format": FORMAT, "reading_lists": lists, "coverage": provenance,
                   "papers": [{"paper_id": pid, "title": data["rows"][pid].get("title"), "category": data["categories"][pid],
                               "summary": _brief(data["rows"][pid], data["judgments"].get(pid), data["categories"][pid]),
-                              "row_sha256": a._hash(data["rows"][pid]), "page": "papers/" + pid + ".html"} for pid in ordered]}
+                              "row_sha256": a._hash(data["rows"][pid]), "page": "papers/" + pid + ".html", "markdown_page": "papers/" + pid + ".md"} for pid in ordered]}
         a._once(temporary / "report.json", report)
         provenance["files"] = {p.relative_to(temporary).as_posix(): a._bytes_hash(p.read_bytes()) for p in sorted(temporary.rglob("*")) if p.is_file()}
         a._once(temporary / "provenance.json", provenance)
@@ -490,7 +492,7 @@ def write_report(suggestions, final_reviews, workspace, *, narratives=None):
     finally:
         if temporary.exists():
             shutil.rmtree(temporary)
-    return {"report": str(destination / "index.html"), "assessed_papers": len(ordered),
+    return {"report": str(destination / "index.html"), "markdown": str(destination / "README.md"), "assessed_papers": len(ordered),
             "reading_list_counts": {role: len(lists[role]) for role in ("primary", "support", "qualified")},
             "category_counts": counts, "accepted_final_papers": len(data["judgments"]),
             "new_model_calls": 0, "scientific_run_mutations": 0}

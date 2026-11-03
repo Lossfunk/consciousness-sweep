@@ -356,12 +356,17 @@ Source changes stale final recommendations. Reuse unchanged bound jobs through
 release can review the published export externally without migrating or resuming
 a paused scientific run. No final-review calls are implied by a ranking-only request.
 
+The [guide](docs/README.md) gives the ordinary execution/review path, and the
+[module map](sweep/README.md) explains the code. Keep detailed recovery and
+compatibility requirements in this contract and EXECUTION.md.
+
 For the final human delivery, use `advisory report` with the bound suggestion and
 final-review workspaces. Explain the study, findings, named reference comparison,
 limitations and why a support lacks a primary recommendation. Include brief saved
 reasons for every other full-text-assessed paper. Keep context, unresolved evidence,
 unreviewed prospects and existing references separate; do not fabricate rejection.
-This is deterministic presentation, with no new model calls, downloads or scientific
+Deliver the linked Markdown `README.md` and the HTML `index.html`; do not claim
+that exporting Markdown has published run results to GitHub. This is deterministic presentation, with no new model calls, downloads or scientific
 changes. New final-review requests include the concrete procedure lead in the same
 requested call. For legacy answers, use only separately authorized, preserved and
 row/review-bound editorial notes; never repeat an old inference just for formatting. Use a new external report directory, preserve original inputs and check its

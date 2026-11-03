@@ -16,7 +16,8 @@ import zipfile
 
 MANIFEST = "DISTRIBUTION_MANIFEST.json"
 SCIENCE_VERSION = "consciousness-sweep-0.9.14"
-DOCS = ("README.md", "AGENTS.md", "CLAUDE.md", "EXECUTION.md")
+DOCS = ("README.md", "AGENTS.md", "CLAUDE.md", "EXECUTION.md",
+        "docs/README.md", "sweep/README.md", "runtime/README.md")
 READER_FILES = ("__init__.py", "schema.py", "reading_instructions.txt", "policy.json", "policy_crosswalk.txt")
 MUTABLE_ROOTS = {"runs", "workspace", ".venv", ".git"}
 NESTED_MUTABLE_PATHS = {"science/runs", "science/outputs/consolidated"}
